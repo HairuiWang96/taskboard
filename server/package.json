@@ -1,0 +1,21 @@
+{
+  "name": "taskboard-server",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "drizzle-orm": "^0.30.10",
+    "fastify": "^4.27.0",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.6",
+    "drizzle-kit": "^0.21.4",
+    "tsx": "^4.11.2",
+    "typescript": "^5.4.5"
+  }
+}

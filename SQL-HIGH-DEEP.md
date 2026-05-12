@@ -1,0 +1,711 @@
+# SQL & PostgreSQL — Senior Developer Deep Reference
+**Priority: HIGH**
+
+> Covers: query planning, EXPLAIN ANALYZE, index types, window functions, CTEs, transactions, locking, performance patterns, and common interview questions.
+
+---
+
+## Table of Contents
+
+1. [How PostgreSQL Executes Queries](#1-how-postgresql-executes-queries)
+2. [EXPLAIN ANALYZE](#2-explain-analyze)
+3. [Index Types & Strategy](#3-index-types--strategy)
+4. [Window Functions](#4-window-functions)
+5. [CTEs — Common Table Expressions](#5-ctes--common-table-expressions)
+6. [Subqueries vs JOINs](#6-subqueries-vs-joins)
+7. [Transactions & Locking](#7-transactions--locking)
+8. [VACUUM & Table Bloat](#8-vacuum--table-bloat)
+9. [Advanced Query Patterns](#9-advanced-query-patterns)
+10. [Common Interview Questions](#10-common-interview-questions)
+
+---
+
+## 1. How PostgreSQL Executes Queries
+
+### Query lifecycle
+
+```text
+1. Parser       — validates SQL syntax, builds parse tree
+2. Rewriter     — applies rules (e.g. view expansion)
+3. Planner/Optimizer — generates multiple possible execution plans,
+                       estimates cost of each, picks the cheapest
+4. Executor     — runs the chosen plan, returns rows
+
+The planner uses STATISTICS — stored estimates about data distribution.
+If stats are stale (table changed a lot since last ANALYZE), the planner
+picks bad plans. ANALYZE updates the stats; AUTOVACUUM runs it automatically.
+```
+
+### The cost model
+
+```text
+Planner assigns a cost to each operation:
+  seq_page_cost     = 1.0   (reading a page sequentially)
+  random_page_cost  = 4.0   (reading a page at random — seeks are expensive)
+  cpu_tuple_cost    = 0.01  (processing each row)
+  cpu_operator_cost = 0.0025
+
+Lower cost = preferred plan.
+
+Planner may choose a sequential scan over an index scan if:
+  - The table is small (sequential scan is fast)
+  - The query returns a large % of rows (index adds overhead vs full scan)
+  - WORK_MEM is low (can't do hash join in memory)
+
+Always verify with EXPLAIN ANALYZE — planner estimates can be wrong.
+```
+
+---
+
+## 2. EXPLAIN ANALYZE
+
+### Reading the output
+
+```sql
+EXPLAIN ANALYZE
+  SELECT u.name, COUNT(t.id) as task_count
+  FROM users u
+  LEFT JOIN tasks t ON t.user_id = u.id
+  WHERE u.created_at > '2024-01-01'
+  GROUP BY u.id, u.name
+  ORDER BY task_count DESC;
+
+-- Example output:
+-- Sort  (cost=245.32..247.82 rows=1000 width=40) (actual time=15.3..15.4 rows=850 loops=1)
+--   ->  HashAggregate  (cost=185.00..195.00 rows=1000 width=40) (actual time=14.1..14.6 rows=850 loops=1)
+--       ->  Hash Left Join  (cost=50.00..160.00 rows=5000 width=32) (actual time=2.1..11.5 rows=5000 loops=1)
+--             Hash Cond: (t.user_id = u.id)
+--             ->  Seq Scan on tasks t  (cost=0.00..90.00 rows=5000) (actual time=0.01..4.2 rows=5000 loops=1)
+--             ->  Hash  (cost=40.00..40.00 rows=800 width=24) (actual time=1.9..1.9 rows=850 loops=1)
+--                   ->  Index Scan using idx_users_created_at on users u  (cost=0.28..40.00 rows=800) (actual time=0.05..1.7 rows=850 loops=1)
+--                         Index Cond: (created_at > '2024-01-01')
+-- Planning Time: 0.8 ms
+-- Execution Time: 15.6 ms
+```
+
+### What to look for
+
+```text
+(cost=X..Y rows=Z):
+  X = startup cost (cost to return first row)
+  Y = total cost (cost to return all rows)
+  rows = estimated row count
+  Planner's ESTIMATE — compare to "actual" to spot bad estimates
+
+(actual time=X..Y rows=Z loops=N):
+  X = actual startup time in ms
+  Y = actual total time in ms
+  rows = actual rows returned
+  loops = how many times this node ran
+
+Warning signs:
+  estimated rows=10, actual rows=10000 → stale statistics → run ANALYZE
+  Seq Scan on a large table → missing index?
+  nested loop with many loops → might need a hash join instead
+  Sort with "Disk" → sort exceeded work_mem → increase work_mem
+
+SET work_mem = '256MB'; -- increase for a session (not globally — per-query cost)
+EXPLAIN (ANALYZE, BUFFERS) SELECT ...; -- show buffer cache hits/misses
+```
+
+### Useful EXPLAIN options
+
+```sql
+-- Show buffer cache usage (hits = good, reads = disk I/O)
+EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) SELECT ...;
+
+-- JSON format for tooling
+EXPLAIN (ANALYZE, FORMAT JSON) SELECT ...;
+
+-- Just the plan without executing (safe on writes)
+EXPLAIN SELECT ...;           -- no ANALYZE = no execution
+EXPLAIN UPDATE tasks SET ...; -- safe, doesn't actually run the UPDATE
+```
+
+---
+
+## 3. Index Types & Strategy
+
+### B-tree (default)
+
+```sql
+-- Good for: equality, range, ORDER BY, LIKE 'prefix%'
+CREATE INDEX idx_tasks_created_at ON tasks(created_at);
+CREATE INDEX idx_users_email ON users(email);
+
+-- B-tree supports:
+-- =, <, <=, >, >=, BETWEEN, IN, IS NULL, LIKE 'abc%' (prefix only)
+-- ORDER BY (eliminates sort step)
+-- Used for: most standard queries
+
+-- ✗ B-tree does NOT help with:
+-- LIKE '%suffix' (no prefix to seek on)
+-- Full-text search
+-- Array containment
+```
+
+### Composite index — column order matters
+
+```sql
+-- Composite index: covers queries on (a), (a, b), but NOT (b) alone
+CREATE INDEX idx_tasks_user_status ON tasks(user_id, status);
+
+-- ✓ Uses the index:
+SELECT * FROM tasks WHERE user_id = $1;
+SELECT * FROM tasks WHERE user_id = $1 AND status = 'open';
+
+-- ✗ Does NOT use the index (starts with second column):
+SELECT * FROM tasks WHERE status = 'open'; -- full scan needed
+
+-- Rule: put the most selective column first (highest cardinality)
+-- Exception: if you always filter on both, put the equality column first
+
+-- Covering index: include non-key columns to avoid a "heap fetch"
+CREATE INDEX idx_tasks_user_covering ON tasks(user_id) INCLUDE (title, status);
+-- Query: SELECT title, status FROM tasks WHERE user_id = $1
+-- With covering index: satisfied entirely from index, no heap access (index-only scan)
+```
+
+### Partial index
+
+```sql
+-- Index only a subset of rows — smaller, faster for targeted queries
+CREATE INDEX idx_tasks_open ON tasks(created_at)
+WHERE status = 'open';
+-- Only indexes open tasks — much smaller if most tasks are closed
+
+-- ✓ Uses this index:
+SELECT * FROM tasks WHERE status = 'open' AND created_at > '2024-01-01';
+
+-- ✗ Does NOT use it (condition doesn't match the WHERE clause):
+SELECT * FROM tasks WHERE status = 'closed' AND created_at > '2024-01-01';
+
+-- Use case: soft-delete — index only non-deleted rows
+CREATE INDEX idx_users_active ON users(email) WHERE deleted_at IS NULL;
+```
+
+### GIN index (Generalized Inverted Index)
+
+```sql
+-- Good for: arrays, JSONB, full-text search
+-- GIN indexes the elements/keys, not the row as a whole
+
+-- Array containment
+CREATE INDEX idx_posts_tags ON posts USING GIN(tags);
+SELECT * FROM posts WHERE tags @> ARRAY['javascript']; -- uses GIN index
+-- @> means "contains"
+
+-- JSONB
+CREATE INDEX idx_events_data ON events USING GIN(data);
+SELECT * FROM events WHERE data @> '{"type": "click"}'; -- uses GIN index
+
+-- Full-text search
+CREATE INDEX idx_articles_search ON articles USING GIN(
+  to_tsvector('english', title || ' ' || body)
+);
+SELECT * FROM articles
+WHERE to_tsvector('english', title || ' ' || body) @@ to_tsquery('javascript');
+```
+
+### Index maintenance
+
+```sql
+-- Check index usage (low scans + large size = useless index)
+SELECT
+  indexrelname,
+  idx_scan,        -- how many times the index was used
+  idx_tup_read,    -- rows returned via index
+  pg_size_pretty(pg_relation_size(indexrelid)) AS size
+FROM pg_stat_user_indexes
+ORDER BY idx_scan ASC;
+
+-- Rebuild a bloated index without locking
+REINDEX INDEX CONCURRENTLY idx_tasks_created_at;
+
+-- Add index without locking the table (takes longer)
+CREATE INDEX CONCURRENTLY idx_new ON tasks(some_column);
+-- Without CONCURRENTLY: locks the table for writes during creation
+```
+
+---
+
+## 4. Window Functions
+
+### What window functions do
+
+```sql
+-- Window functions compute a value across a set of rows related to the current row
+-- Unlike GROUP BY, they don't collapse rows — each row keeps its own data
+
+-- Syntax:
+function_name() OVER (
+  PARTITION BY column  -- divide rows into groups (like GROUP BY but non-collapsing)
+  ORDER BY column      -- order within the partition
+  ROWS/RANGE BETWEEN   -- define the frame (subset of the partition)
+)
+```
+
+### ROW_NUMBER, RANK, DENSE_RANK
+
+```sql
+-- ROW_NUMBER: unique sequential number (no ties)
+-- RANK: same rank for ties, skips numbers after ties (1,1,3)
+-- DENSE_RANK: same rank for ties, no gaps (1,1,2)
+
+SELECT
+  name,
+  score,
+  ROW_NUMBER() OVER (ORDER BY score DESC) AS row_num,   -- 1,2,3,4,5
+  RANK()       OVER (ORDER BY score DESC) AS rank,      -- 1,1,3,4,5
+  DENSE_RANK() OVER (ORDER BY score DESC) AS dense_rank -- 1,1,2,3,4
+FROM players;
+
+-- Per-group ranking (PARTITION BY)
+SELECT
+  user_id,
+  task_title,
+  created_at,
+  ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) AS task_num
+FROM tasks;
+-- task_num = 1 means the user's most recent task
+```
+
+### Practical: get the latest record per group
+
+```sql
+-- Common pattern: most recent row per user (without subquery)
+SELECT user_id, task_title, created_at
+FROM (
+  SELECT
+    user_id,
+    task_title,
+    created_at,
+    ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) AS rn
+  FROM tasks
+) ranked
+WHERE rn = 1;
+
+-- In Drizzle ORM with raw SQL:
+const latestPerUser = await db.execute(sql`
+  SELECT user_id, task_title, created_at
+  FROM (
+    SELECT user_id, task_title, created_at,
+           ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) AS rn
+    FROM tasks
+  ) ranked
+  WHERE rn = 1
+`);
+```
+
+### Aggregate window functions
+
+```sql
+-- Running total (cumulative sum)
+SELECT
+  date,
+  revenue,
+  SUM(revenue) OVER (ORDER BY date) AS running_total
+FROM daily_revenue;
+
+-- Moving average (last 7 days)
+SELECT
+  date,
+  revenue,
+  AVG(revenue) OVER (
+    ORDER BY date
+    ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+  ) AS moving_avg_7d
+FROM daily_revenue;
+
+-- Percentage of total
+SELECT
+  category,
+  amount,
+  ROUND(amount / SUM(amount) OVER () * 100, 2) AS pct_of_total
+FROM sales;
+-- SUM(amount) OVER () = sum across ALL rows (no partition)
+
+-- Lag/Lead: access previous or next row's value
+SELECT
+  date,
+  revenue,
+  LAG(revenue, 1) OVER (ORDER BY date) AS prev_day_revenue,
+  revenue - LAG(revenue, 1) OVER (ORDER BY date) AS daily_change
+FROM daily_revenue;
+```
+
+---
+
+## 5. CTEs — Common Table Expressions
+
+### Basic CTE
+
+```sql
+-- WITH clause: name a subquery and reference it like a table
+-- Makes complex queries readable — breaks into named steps
+
+WITH active_users AS (
+  SELECT id, name, email
+  FROM users
+  WHERE last_login > NOW() - INTERVAL '30 days'
+    AND deleted_at IS NULL
+),
+user_task_counts AS (
+  SELECT user_id, COUNT(*) AS task_count
+  FROM tasks
+  WHERE status = 'open'
+  GROUP BY user_id
+)
+SELECT
+  u.name,
+  u.email,
+  COALESCE(utc.task_count, 0) AS open_tasks
+FROM active_users u
+LEFT JOIN user_task_counts utc ON utc.user_id = u.id
+ORDER BY open_tasks DESC;
+```
+
+### Recursive CTE (hierarchical data)
+
+```sql
+-- Use for: threaded comments, org charts, menu trees, category hierarchies
+
+-- Schema: categories with parent_id (self-referential)
+CREATE TABLE categories (
+  id INT PRIMARY KEY,
+  name TEXT,
+  parent_id INT REFERENCES categories(id)
+);
+
+-- Get all descendants of category 1 (any depth)
+WITH RECURSIVE category_tree AS (
+  -- Base case: the root
+  SELECT id, name, parent_id, 0 AS depth
+  FROM categories
+  WHERE id = 1
+
+  UNION ALL
+
+  -- Recursive case: children of rows already in the result
+  SELECT c.id, c.name, c.parent_id, ct.depth + 1
+  FROM categories c
+  JOIN category_tree ct ON ct.id = c.parent_id
+)
+SELECT * FROM category_tree ORDER BY depth, name;
+
+-- Threaded comments (get full thread from root comment)
+WITH RECURSIVE thread AS (
+  SELECT id, content, parent_id, 0 AS level
+  FROM comments WHERE id = $rootId
+
+  UNION ALL
+
+  SELECT c.id, c.content, c.parent_id, t.level + 1
+  FROM comments c
+  JOIN thread t ON t.id = c.parent_id
+)
+SELECT * FROM thread ORDER BY level;
+```
+
+### CTE vs subquery — when to use which
+
+```sql
+-- CTE: better readability, can be referenced multiple times, always materialized in PG < 12
+-- Subquery: sometimes optimized better by planner (inlined into main query)
+
+-- PG 12+: CTEs are inlined by default (can be optimized by planner)
+-- Force materialization (evaluate once):
+WITH expensive AS MATERIALIZED (
+  SELECT * FROM huge_table WHERE complex_condition
+)
+SELECT * FROM expensive WHERE x = 1
+UNION ALL
+SELECT * FROM expensive WHERE y = 2;
+-- Without MATERIALIZED: expensive might run twice
+```
+
+---
+
+## 6. Subqueries vs JOINs
+
+```sql
+-- Correlated subquery: runs once PER ROW — often slow
+SELECT u.name,
+  (SELECT COUNT(*) FROM tasks WHERE tasks.user_id = u.id) AS task_count
+FROM users u;
+-- For 1000 users: 1001 queries (1 for users, 1 per user for count)
+
+-- ✓ Rewrite as JOIN + GROUP BY: one query
+SELECT u.name, COUNT(t.id) AS task_count
+FROM users u
+LEFT JOIN tasks t ON t.user_id = u.id
+GROUP BY u.id, u.name;
+
+-- EXISTS vs IN:
+-- IN: evaluates the subquery, builds a list, checks membership
+-- EXISTS: stops as soon as it finds one match — often faster
+
+-- ✗ IN can be slow for large subquery results
+SELECT * FROM users
+WHERE id IN (SELECT user_id FROM tasks WHERE status = 'open');
+
+-- ✓ EXISTS: short-circuits
+SELECT * FROM users u
+WHERE EXISTS (
+  SELECT 1 FROM tasks t
+  WHERE t.user_id = u.id AND t.status = 'open'
+);
+
+-- Modern Postgres: optimizer often rewrites IN as EXISTS anyway
+-- Use EXPLAIN to verify which plan it chose
+```
+
+---
+
+## 7. Transactions & Locking
+
+### Isolation levels
+
+```sql
+-- PostgreSQL isolation levels (weakest to strongest):
+
+READ COMMITTED (default):
+  Each statement sees data committed before THAT statement started.
+  Problem: non-repeatable reads — same row read twice in a tx can give different results.
+
+REPEATABLE READ:
+  All statements in the tx see a snapshot from tx start.
+  Protects: non-repeatable reads.
+  Problem: phantom reads (new rows inserted by other txs might be invisible... mostly).
+
+SERIALIZABLE:
+  Strongest. Transactions appear to run one after another.
+  Protects everything. Slowest — more aborts/retries.
+
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+BEGIN;
+  SELECT balance FROM accounts WHERE id = 1; -- snapshot taken here
+  -- Other tx commits a change to balance — you still see original value
+  SELECT balance FROM accounts WHERE id = 1; -- same result
+COMMIT;
+```
+
+### Locking patterns
+
+```sql
+-- SELECT FOR UPDATE: lock the rows you're reading (prevent concurrent modification)
+BEGIN;
+  SELECT * FROM accounts WHERE id = 1 FOR UPDATE; -- locks this row
+  -- Other transactions trying to FOR UPDATE the same row will WAIT
+  UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+COMMIT;
+
+-- FOR UPDATE SKIP LOCKED: claim work without blocking (job queues)
+BEGIN;
+  SELECT * FROM job_queue
+  WHERE status = 'pending'
+  ORDER BY created_at
+  LIMIT 1
+  FOR UPDATE SKIP LOCKED; -- skip rows locked by other workers
+  -- Update the claimed job
+  UPDATE job_queue SET status = 'processing' WHERE id = $claimedId;
+COMMIT;
+-- Multiple workers can safely claim different jobs concurrently
+
+-- Advisory locks: application-level locks (no table involved)
+SELECT pg_try_advisory_lock(12345); -- returns true if lock acquired, false if taken
+SELECT pg_advisory_unlock(12345);
+-- Use for: distributed mutex, preventing concurrent cron jobs
+```
+
+### Deadlocks
+
+```sql
+-- Deadlock: two transactions each hold a lock the other needs
+-- PostgreSQL detects and kills one of them (ERROR: deadlock detected)
+
+-- Prevention: always acquire locks in the same ORDER across all transactions
+-- ✗ Tx1: locks account 1, then 2 | Tx2: locks account 2, then 1 → deadlock
+-- ✓ Tx1 and Tx2: always lock lower ID first → no deadlock
+
+-- In application code with Drizzle:
+await db.transaction(async (tx) => {
+  const [fromAccount, toAccount] = [Math.min(a, b), Math.max(a, b)]; // consistent order
+  const from = await tx.select().from(accounts)
+    .where(eq(accounts.id, fromAccount)).for('update').get();
+  const to   = await tx.select().from(accounts)
+    .where(eq(accounts.id, toAccount)).for('update').get();
+  // ... transfer logic
+});
+```
+
+---
+
+## 8. VACUUM & Table Bloat
+
+### Why VACUUM exists
+
+```text
+PostgreSQL uses MVCC (Multi-Version Concurrency Control):
+  Updates don't overwrite rows — they mark old rows as "dead" and insert new ones.
+  Deletes mark rows as "dead" — they stay on disk.
+
+Dead rows ("dead tuples") accumulate over time → table bloat.
+Old transaction IDs accumulate → transaction ID wraparound (catastrophic).
+
+VACUUM: reclaims dead tuples, updates visibility map, prevents XID wraparound.
+VACUUM FULL: reclaims disk space (requires table lock, rarely needed).
+AUTOVACUUM: background process that runs VACUUM automatically.
+```
+
+```sql
+-- Check table bloat
+SELECT
+  relname AS table_name,
+  n_dead_tup AS dead_tuples,
+  n_live_tup AS live_tuples,
+  ROUND(n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0) * 100, 1) AS dead_pct,
+  last_autovacuum,
+  last_autoanalyze
+FROM pg_stat_user_tables
+ORDER BY n_dead_tup DESC;
+
+-- Manual vacuum (non-blocking):
+VACUUM tasks;
+
+-- Update statistics only:
+ANALYZE tasks;
+
+-- Both:
+VACUUM ANALYZE tasks;
+
+-- Reclaim disk space (locks table — avoid in production during peak hours):
+VACUUM FULL tasks;
+```
+
+---
+
+## 9. Advanced Query Patterns
+
+### Upsert (INSERT OR UPDATE)
+
+```sql
+-- ON CONFLICT: handle constraint violations instead of erroring
+INSERT INTO users (email, name, updated_at)
+VALUES ('user@example.com', 'Alice', NOW())
+ON CONFLICT (email) DO UPDATE
+  SET name = EXCLUDED.name,         -- EXCLUDED = the row that was rejected
+      updated_at = EXCLUDED.updated_at;
+
+-- Only update if something actually changed (avoid unnecessary writes):
+ON CONFLICT (email) DO UPDATE
+  SET name = EXCLUDED.name
+  WHERE users.name IS DISTINCT FROM EXCLUDED.name; -- skip if same value
+
+-- Ignore duplicates entirely:
+INSERT INTO user_events (user_id, event_type)
+VALUES ($1, $2)
+ON CONFLICT DO NOTHING;
+
+-- In Drizzle:
+await db.insert(users)
+  .values({ email, name })
+  .onConflictDoUpdate({
+    target: users.email,
+    set: { name, updatedAt: new Date() },
+  });
+```
+
+### Bulk operations
+
+```sql
+-- Insert many rows at once (one round trip)
+INSERT INTO tasks (title, user_id, status)
+VALUES
+  ('Task 1', 1, 'open'),
+  ('Task 2', 1, 'open'),
+  ('Task 3', 2, 'open');
+
+-- In Drizzle:
+await db.insert(tasks).values([
+  { title: 'Task 1', userId: 1 },
+  { title: 'Task 2', userId: 1 },
+  { title: 'Task 3', userId: 2 },
+]);
+
+-- COPY: fastest for bulk imports (CSV → table)
+COPY tasks (title, user_id) FROM '/path/to/data.csv' CSV HEADER;
+```
+
+### JSONB queries
+
+```sql
+-- JSONB: stored in binary format (faster, supports indexing)
+-- JSON: stored as text (exact whitespace preserved)
+
+-- Accessing JSONB fields
+SELECT data->>'name' AS name        -- text value (double arrow)
+FROM events;
+SELECT data->'address'->'city'      -- nested (returns JSONB)
+FROM events;
+
+-- Filtering on JSONB
+SELECT * FROM events
+WHERE data->>'type' = 'click';                     -- equality
+WHERE data @> '{"type": "click", "page": "home"}'; -- contains (GIN index helps)
+WHERE data ? 'optional_field';                     -- key exists
+
+-- Update a specific JSONB field
+UPDATE events
+SET data = jsonb_set(data, '{status}', '"processed"')
+WHERE id = $1;
+
+-- Expand JSONB array to rows
+SELECT jsonb_array_elements(data->'tags') AS tag FROM posts;
+```
+
+### Pagination patterns
+
+```sql
+-- Offset pagination (simple, gets slower as offset grows)
+SELECT * FROM tasks ORDER BY created_at DESC LIMIT 20 OFFSET 200;
+-- Problem: DB must scan and skip 200 rows — slow on large tables
+
+-- Keyset / cursor pagination (fast regardless of page number)
+-- First page:
+SELECT * FROM tasks ORDER BY created_at DESC, id DESC LIMIT 20;
+-- Next page: pass last row's values as cursor
+SELECT * FROM tasks
+WHERE (created_at, id) < ($lastCreatedAt, $lastId) -- use the composite key
+ORDER BY created_at DESC, id DESC
+LIMIT 20;
+-- DB seeks directly to cursor position — O(log n) regardless of depth
+```
+
+---
+
+## 10. Common Interview Questions
+
+### "What is the difference between INNER JOIN and LEFT JOIN?"
+
+> INNER JOIN returns only rows that have matches in BOTH tables. LEFT JOIN returns ALL rows from the left table, with NULL values for right-table columns when there's no match. Use LEFT JOIN when you want to keep rows from the left table even if they have no related data (e.g., users with no tasks).
+
+### "How do you optimize a slow query?"
+
+> 1. Run `EXPLAIN ANALYZE` to see the execution plan. 2. Check for Seq Scan on large tables — usually needs an index. 3. Check estimated vs actual row counts — huge mismatch means stale stats, run `ANALYZE`. 4. Check for N+1 patterns — nested loops with many iterations. 5. Check if `work_mem` is causing disk sorts. 6. Add a missing index. 7. Rewrite correlated subqueries as JOINs. 8. Use a covering index to avoid heap fetches.
+
+### "What is a window function and when would you use one?"
+
+> Window functions compute a value across a set of rows related to the current row, without collapsing the rows (unlike GROUP BY). Use cases: ranking within a group (ROW_NUMBER OVER PARTITION BY), running totals (SUM OVER ORDER BY), getting the latest row per user (ROW_NUMBER = 1 filter), lag/lead comparisons between consecutive rows.
+
+### "What is MVCC?"
+
+> Multi-Version Concurrency Control — PostgreSQL's strategy for handling concurrent transactions. Instead of locking rows on update, Postgres creates a new version of the row and marks the old one as dead. Readers see a snapshot of the data at their transaction start time — they never block writers and writers never block readers. Dead rows are cleaned up by VACUUM.
+
+### "What is the difference between a CTE and a subquery?"
+
+> Both define a named result set used in a query. A CTE (`WITH` clause) is more readable, can be self-referential (recursive), and can be referenced multiple times. In PostgreSQL 12+, CTEs are inlined by default (same as subqueries for the planner). Before PG 12, CTEs were always materialized (evaluated once, not re-optimized with the outer query). For complex, multi-step queries: use CTEs for readability. For simple single-use cases: subquery is fine.
+
+### "How do you prevent N+1 queries?"
+
+> Use JOINs or eager loading instead of looping and querying. In Drizzle: use `db.query.users.findMany({ with: { tasks: true } })` which generates a JOIN. In raw SQL: JOIN and aggregate in one query. In application code: batch IDs and use a single `WHERE id IN (...)` query rather than one query per ID.
