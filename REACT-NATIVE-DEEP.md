@@ -533,3 +533,103 @@ function AnimatedCard() {
 ### "What are the main differences between iOS and Android in React Native?"
 
 > Key differences: shadows work differently (iOS: shadowColor/shadowOffset/shadowOpacity, Android: elevation). Navigation back behavior (iOS: swipe right, Android: hardware back button — handle with `BackHandler`). Font rendering (iOS uses San Francisco, Android uses Roboto by default). Keyboard behavior (Android back button closes keyboard, iOS requires explicit Keyboard.dismiss()). Permission request flows differ. `SafeAreaView` handles the platform-specific notch/status bar areas. The `Platform.OS` check lets you apply platform-specific code or styles.
+
+---
+
+## Most Asked React Native Interview Questions
+
+### "How does React Native differ from a WebView app?"
+
+> React Native compiles to native components — `<View>` becomes `UIView` on iOS and `android.view.View` on Android. Not a WebView (not rendering HTML in a browser). The JavaScript runs in a separate thread and communicates with native via a bridge (or the new JSI — JavaScript Interface). Performance is close to fully native because the actual UI rendering uses native components. WebView apps (Cordova, Ionic) render HTML/CSS — more portable but worse performance and feel.
+
+### "What is the difference between the Old Architecture (Bridge) and New Architecture (JSI/Fabric)?"
+
+> **Old Architecture**: JS and native code run in separate threads and communicate asynchronously via a serialized JSON bridge — every JS↔native call is serialized/deserialized, async, and has overhead. **New Architecture**: JSI (JavaScript Interface) allows JS to hold direct references to native objects and call native methods synchronously — no bridge, no serialization. Fabric is the new rendering system (concurrent rendering). TurboModules are the new native modules (loaded lazily). Result: faster, synchronous native access, better performance.
+
+### "What is the difference between `ScrollView` and `FlatList`?"
+
+> `ScrollView` renders ALL children at once — bad for long lists (memory issues, slow initial render). Use for short content (settings screens, forms). `FlatList` renders only visible items (windowed/virtualized) — efficient for any length list. Also provides: `keyExtractor`, `onEndReached` for pagination, `refreshing`/`onRefresh` for pull-to-refresh, `getItemLayout` for performance optimization.
+
+```jsx
+// FlatList — always use for dynamic lists
+<FlatList
+    data={items}
+    keyExtractor={item => item.id.toString()}
+    renderItem={({ item }) => <ItemRow item={item} />}
+    onEndReached={loadMore}
+    onEndReachedThreshold={0.5}
+    refreshing={isRefreshing}
+    onRefresh={handleRefresh}
+/>
+```
+
+### "How do you handle navigation in React Native?"
+
+> React Navigation is the de-facto standard. Key navigators: **Stack** — push/pop screens (like iOS navigation controller). **Tab** — bottom tabs. **Drawer** — side menu. **Native Stack** — uses native navigation components for better performance and correct animations. Nest navigators for complex flows. Pass params with `navigation.navigate('Screen', { id: 123 })`, read with `route.params`.
+
+```jsx
+const Stack = createNativeStackNavigator();
+
+function App() {
+    return (
+        <NavigationContainer>
+            <Stack.Navigator>
+                <Stack.Screen name="Home" component={HomeScreen} />
+                <Stack.Screen name="Details" component={DetailsScreen} />
+            </Stack.Navigator>
+        </NavigationContainer>
+    );
+}
+
+// Navigate with params
+navigation.navigate('Details', { itemId: 42 });
+// Read params
+const { itemId } = route.params;
+```
+
+### "What is Expo and when do you choose it over bare React Native?"
+
+> Expo is a framework and platform on top of React Native. **Managed Expo**: no native code, build in the cloud with EAS Build, OTA updates with EAS Update, huge library of pre-built native modules. Great for most apps. **Expo bare workflow** or **pure React Native**: when you need a native module not in Expo's ecosystem, or specific native customizations. Rule: start with Expo managed; eject only if necessary. Expo has closed most of the gap with pure RN in recent years.
+
+### "How do you optimize React Native performance?"
+
+> Key techniques: `FlatList` with `getItemLayout` (skip dynamic measurement), `React.memo` to prevent re-renders, `useCallback`/`useMemo` for stable references, move animations off the JS thread with `Animated` using `useNativeDriver: true` (or use Reanimated 2 which runs fully on UI thread), avoid `StyleSheet` objects created inline, use `InteractionManager.runAfterInteractions` for heavy work after navigation. Profile with Flipper or the React Native DevTools.
+
+```jsx
+// Run animations on native thread
+Animated.timing(value, {
+    toValue: 1,
+    duration: 300,
+    useNativeDriver: true,  // runs on UI thread, no JS bridge
+}).start();
+
+// Or use Reanimated 2 — worklets run on UI thread
+const style = useAnimatedStyle(() => ({
+    transform: [{ translateX: withSpring(offset.value) }],
+}));
+```
+
+### "What is the difference between `AsyncStorage` and other storage options?"
+
+> `AsyncStorage` — simple key-value store, async, unencrypted, no querying, 6MB limit on some platforms. Good for: preferences, non-sensitive settings. **MMKV** — faster synchronous storage (10x faster than AsyncStorage), good for high-frequency reads. **SQLite** (expo-sqlite or react-native-sqlite-storage) — relational, queryable, good for complex offline data. **Keychain/Keystore** (react-native-keychain) — encrypted, OS-level secure storage — use for tokens and passwords. **WatermelonDB/RxDB** — reactive databases for complex offline-first apps.
+
+### "How do you handle platform-specific code?"
+
+> Three approaches: 1) `Platform.OS` check inline. 2) Platform-specific file extensions (`.ios.tsx` / `.android.tsx`) — Metro bundler picks the right one automatically. 3) `Platform.select()` for selecting values.
+
+```jsx
+// Inline check
+const statusBarHeight = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight;
+
+// Platform.select
+const styles = StyleSheet.create({
+    container: {
+        paddingTop: Platform.select({ ios: 44, android: 24, default: 0 }),
+    }
+});
+
+// File extensions — automatically resolved by Metro
+// Button.ios.tsx  → used on iOS
+// Button.android.tsx → used on Android
+import Button from './Button'; // Metro picks the right file
+```

@@ -606,3 +606,116 @@ git checkout abc1234               # or: git reset --hard abc1234
 # reflog entries are kept for 90 days by default
 # After 90 days or git gc, truly lost
 ```
+
+---
+
+## Most Asked Git Interview Questions
+
+### "What is the difference between `merge` and `rebase`?"
+
+> Both integrate changes from one branch to another. `merge` creates a new merge commit that ties together both histories — history is preserved exactly as it happened, non-destructive. `rebase` rewrites commits from your branch on top of the target branch — linear history, no merge commit, cleaner log. Rule: **never rebase shared/public branches** (rewrites history, breaks teammates' repos). Rebase local feature branches before merging for clean history; merge to integrate into main.
+
+```bash
+# Merge — preserves all history, adds merge commit
+git checkout main && git merge feature-branch
+
+# Rebase — replays feature commits on top of main (linear history)
+git checkout feature-branch && git rebase main
+# then fast-forward merge:
+git checkout main && git merge feature-branch
+```
+
+### "What is the difference between `git reset`, `git revert`, and `git restore`?"
+
+> `git reset` moves the branch pointer — can unstage, undo commits, or discard changes (destructive, rewrites history — don't use on pushed commits). `git revert` creates a NEW commit that undoes a previous commit — safe for shared branches, history preserved. `git restore` discards working directory changes for specific files (doesn't touch commits).
+
+```bash
+# reset modes:
+git reset --soft HEAD~1   # undo last commit, keep changes staged
+git reset --mixed HEAD~1  # undo last commit, keep changes unstaged (default)
+git reset --hard HEAD~1   # undo last commit, DISCARD all changes — destructive!
+
+# Safe undo for shared branches:
+git revert abc1234        # creates new "Revert" commit — history intact
+
+# Discard file changes (not commits):
+git restore src/file.ts
+```
+
+### "What is `git stash`?"
+
+> `git stash` saves your uncommitted changes (staged and unstaged) onto a stack and reverts the working directory to HEAD — lets you switch branches with a clean state. `git stash pop` reapplies the most recent stash and removes it. `git stash apply` reapplies without removing. Useful for: quick context switches, pulling latest without committing WIP.
+
+```bash
+git stash                          # stash current changes
+git stash push -m "WIP: auth form" # with description
+git stash list                     # see all stashes
+git stash pop                      # apply latest and drop it
+git stash apply stash@{2}          # apply a specific stash
+git stash drop stash@{0}           # delete a stash
+```
+
+### "What is a detached HEAD state?"
+
+> Normally HEAD points to a branch name (which points to a commit). Detached HEAD means HEAD points directly to a commit hash — not a branch. This happens when you `git checkout <commit-hash>` or a tag. Any commits you make won't belong to a branch and will be lost when you switch away (garbage collected). Fix: create a branch from the detached state with `git checkout -b new-branch`.
+
+### "How does `git cherry-pick` work?"
+
+> Cherry-pick applies the changes from a specific commit onto the current branch — without merging the whole branch. Creates a new commit with the same changes but a different hash. Useful for: backporting a bug fix to an older release branch, taking one specific commit from a feature branch.
+
+```bash
+# Apply commit abc1234 to current branch
+git cherry-pick abc1234
+
+# Cherry-pick a range (exclusive start, inclusive end)
+git cherry-pick abc1234..def5678
+
+# Cherry-pick without committing (stage only)
+git cherry-pick --no-commit abc1234
+```
+
+### "What is `git bisect` and when do you use it?"
+
+> `git bisect` performs a binary search through commit history to find which commit introduced a bug. You tell it a good commit and a bad commit; it checks out the midpoint; you test and mark it good/bad; it halves the range — O(log n) commits to test. Invaluable for finding regressions in large histories.
+
+```bash
+git bisect start
+git bisect bad              # current commit is broken
+git bisect good v1.0.0      # this version was working
+# Git checks out midpoint — test it, then:
+git bisect good             # or: git bisect bad
+# Repeat until Git identifies the culprit commit
+git bisect reset            # return to HEAD when done
+```
+
+### "What is the difference between `git fetch` and `git pull`?"
+
+> `git fetch` downloads changes from remote but doesn't update your working branch — safe, non-destructive. `git pull` = `git fetch` + `git merge` (or `git rebase` with `--rebase` flag) — immediately integrates changes. Best practice: `fetch` then review (`git log origin/main`), then merge/rebase manually — more control. `git pull --rebase` is a good default to keep linear history.
+
+### "What is a Git hook?"
+
+> Git hooks are scripts that run automatically at specific Git events: `pre-commit` (runs before commit — lint, format, tests), `commit-msg` (validate commit message format), `pre-push` (run tests before push), `post-merge` (run npm install after pull). Stored in `.git/hooks/`. Share via tools like Husky (npm) which sets up hooks from package.json.
+
+```bash
+# .husky/pre-commit
+npm run lint && npm run type-check
+
+# .husky/commit-msg  
+npx commitlint --edit $1  # enforce conventional commits format
+```
+
+### "What are conventional commits?"
+
+> A standardized commit message format that makes history readable and enables automation (changelogs, semantic versioning, release notes). Format: `type(scope): description`. Types: `feat` (new feature → minor version bump), `fix` (bug fix → patch bump), `BREAKING CHANGE` (→ major bump), `docs`, `chore`, `refactor`, `test`, `ci`.
+
+```
+feat(auth): add OAuth2 Google login
+fix(tasks): prevent duplicate creation on double-click
+feat!: remove deprecated v1 API endpoints
+
+BREAKING CHANGE: v1 endpoints removed, migrate to v2
+```
+
+### "How do you resolve a merge conflict?"
+
+> 1) `git status` to see conflicting files. 2) Open each file — conflict markers show `<<<<<<< HEAD` (your changes), `=======` (separator), `>>>>>>> branch` (incoming). 3) Edit to desired result, remove all markers. 4) `git add` the resolved files. 5) `git commit` (or `git rebase --continue` if rebasing). Use `git mergetool` for a visual diff. Prevention: pull frequently, keep branches short-lived.

@@ -1145,3 +1145,136 @@ Common causes and fixes:
   Random data:      Use fixed seeds or vi.spyOn(Math, 'random')
   Race conditions:  Use waitFor() with assertions, not arbitrary sleeps
 ```
+
+---
+
+## Most Asked Testing Interview Questions
+
+### "What is the difference between unit, integration, and e2e tests?"
+
+> **Unit tests** test a single function/class in isolation — fast, no I/O, mocked dependencies. **Integration tests** test how multiple units work together — may hit a real database or file system, slower. **E2E (end-to-end) tests** test the whole system from the user's perspective — real browser, real backend, slowest, most confidence. The Testing Pyramid: many unit tests (cheap), some integration, few e2e (expensive). The Testing Trophy (Kent C. Dodds for frontend): emphasis on integration tests because they test behavior, not implementation.
+
+### "What is the difference between mocks, stubs, and spies?"
+
+> **Stub** — replaces a function with a fixed canned response. No assertions on how it was called. **Mock** — a stub with built-in assertions — verifies it was called with specific args a specific number of times. **Spy** — wraps the real function, lets it execute, and records how it was called. Use stubs/mocks to isolate; use spies when you want the real behavior but also need to assert on calls.
+
+```ts
+// Stub — replace with fixed return
+jest.spyOn(userService, 'findById').mockResolvedValue({ id: 1, name: 'Alice' });
+
+// Mock — assert it was called
+expect(emailService.send).toHaveBeenCalledWith({
+    to: 'alice@example.com',
+    subject: 'Welcome',
+});
+
+// Spy — real implementation + observe calls
+const spy = jest.spyOn(console, 'error');
+doSomething();
+expect(spy).toHaveBeenCalledTimes(1);
+spy.mockRestore();
+```
+
+### "What is TDD (Test-Driven Development)?"
+
+> TDD is a development cycle: **Red** — write a failing test for the feature. **Green** — write the minimal code to make the test pass. **Refactor** — clean up the code while keeping tests green. Benefits: forces thinking about the interface before implementation, gives confidence to refactor, produces naturally testable code. Criticism: can feel slow upfront; not always practical for exploratory code. Best for: well-defined business logic, algorithms, API contracts.
+
+### "What should you test and what should you avoid testing?"
+
+> **Test**: behavior (what the function does), edge cases (empty input, boundary values), error paths. **Avoid**: implementation details (internal variable names, private methods) — these make tests brittle; every refactor breaks them even if behavior is unchanged. Test the public API/contract. Don't test third-party libraries — trust them. Don't test TypeScript types — the compiler does that.
+
+```ts
+// ✗ Testing implementation detail — breaks on refactor
+expect(component.state.isLoading).toBe(false);
+
+// ✓ Testing behavior — what the user sees
+expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+expect(screen.getByText('Alice')).toBeInTheDocument();
+```
+
+### "What is code coverage and what are its limits?"
+
+> Code coverage measures what percentage of lines/branches/functions are executed during tests. 100% coverage doesn't mean your code is correct — a test that calls a function but makes no assertions gives 100% coverage with zero confidence. Coverage is a useful sanity check (low coverage = clear gaps) but not a quality metric. Aim for high coverage on business logic; less critical for boilerplate and UI glue.
+
+### "How do you test async code?"
+
+> In Jest: `async/await` in the test, or return a Promise. For timers: `jest.useFakeTimers()` + `jest.runAllTimers()`. For React async state updates: `waitFor()` from Testing Library.
+
+```ts
+// async/await
+it('fetches user data', async () => {
+    const user = await getUser(1);
+    expect(user.name).toBe('Alice');
+});
+
+// React Testing Library async
+it('shows user after loading', async () => {
+    render(<UserProfile id={1} />);
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    await waitFor(() => {
+        expect(screen.getByText('Alice')).toBeInTheDocument();
+    });
+});
+
+// Fake timers
+jest.useFakeTimers();
+startDebounce();
+jest.runAllTimers();
+expect(mockFn).toHaveBeenCalled();
+```
+
+### "What is snapshot testing and when is it useful?"
+
+> Snapshot tests capture the rendered output of a component and save it to a file. On subsequent runs, they compare against the saved snapshot — any change fails the test. Useful for catching unintended UI regressions. Downside: snapshots get outdated fast and developers often blindly update them (`jest --updateSnapshot`) without reviewing. Best used for small, stable components; avoid for dynamic data or complex trees.
+
+### "What is the difference between `toBe` and `toEqual` in Jest?"
+
+> `toBe` uses `Object.is` — checks reference equality (same object in memory). `toEqual` recursively checks that two objects have the same value (deep equality). Always use `toEqual` for objects and arrays; `toBe` for primitives and when you specifically need reference equality.
+
+```ts
+const a = { x: 1 };
+const b = { x: 1 };
+
+expect(a).toBe(b);     // ✗ FAILS — different objects
+expect(a).toEqual(b);  // ✓ PASSES — same shape and values
+
+expect(1).toBe(1);     // ✓ primitives: toBe is fine
+```
+
+### "How do you test React components with Testing Library?"
+
+> Testing Library philosophy: test components as a user would — via visible text, roles, and labels — not via class names or component internals. `getBy*` throws if not found (use for elements that must exist). `queryBy*` returns null if not found (use for asserting absence). `findBy*` waits for element to appear (async).
+
+```tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+
+it('increments counter on click', () => {
+    render(<Counter />);
+    const button = screen.getByRole('button', { name: /increment/i });
+    expect(screen.getByText('Count: 0')).toBeInTheDocument();
+    fireEvent.click(button);
+    expect(screen.getByText('Count: 1')).toBeInTheDocument();
+});
+
+// Prefer userEvent over fireEvent — more realistic
+import userEvent from '@testing-library/user-event';
+await userEvent.type(screen.getByRole('textbox'), 'Alice');
+```
+
+### "What is property-based testing?"
+
+> Instead of writing specific test cases, you define properties that should always hold and let the framework generate hundreds of random inputs to try to break them. Libraries: `fast-check` (JS), `hypothesis` (Python). Great for: algorithms, parsers, data transformation functions where you can define invariants (encode then decode = original, sort result is always sorted).
+
+```ts
+import fc from 'fast-check';
+
+// Property: sorting twice gives same result as sorting once
+fc.assert(
+    fc.property(fc.array(fc.integer()), (arr) => {
+        const once = [...arr].sort((a, b) => a - b);
+        const twice = [...once].sort((a, b) => a - b);
+        expect(once).toEqual(twice);
+    })
+);
+// fast-check generates hundreds of random arrays automatically
+```

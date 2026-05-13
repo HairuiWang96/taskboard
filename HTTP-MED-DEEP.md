@@ -577,3 +577,90 @@ source.addEventListener('taskUpdated', (e) => updateTask(JSON.parse(e.data)));
 ### "How does HTTPS work?"
 
 > HTTPS is HTTP over TLS. The TLS handshake establishes a shared secret: the client and server exchange public keys, verify the server's certificate is signed by a trusted Certificate Authority, and derive symmetric encryption keys. All subsequent HTTP traffic is encrypted with those symmetric keys. In TLS 1.3, this handshake takes one round trip.
+
+---
+
+## Most Asked HTTP & Networking Interview Questions
+
+### "What happens when you type a URL into a browser?"
+
+> 1) **DNS resolution** — browser checks cache, then OS cache, then queries DNS resolver to convert domain to IP. 2) **TCP connection** — three-way handshake (SYN → SYN-ACK → ACK). 3) **TLS handshake** (for HTTPS) — exchange certificates, negotiate session key. 4) **HTTP request** — browser sends `GET / HTTP/1.1` with headers. 5) **Server processes** — handles routing, DB queries, etc. 6) **Response** — server returns HTML with status 200. 7) **Browser parses** HTML, discovers CSS/JS/images, makes additional requests, renders the page.
+
+### "What are HTTP status codes? List the key ones."
+
+```
+1xx — Informational
+  100 Continue
+
+2xx — Success
+  200 OK
+  201 Created         (POST that creates a resource)
+  204 No Content      (success but no body — DELETE)
+
+3xx — Redirection
+  301 Moved Permanently  (SEO-safe redirect, browser caches)
+  302 Found              (temporary redirect)
+  304 Not Modified       (cached version is still valid)
+
+4xx — Client Error
+  400 Bad Request        (invalid input)
+  401 Unauthorized       (not authenticated)
+  403 Forbidden          (authenticated but not authorized)
+  404 Not Found
+  409 Conflict           (e.g. duplicate resource)
+  422 Unprocessable Entity (validation failed)
+  429 Too Many Requests
+
+5xx — Server Error
+  500 Internal Server Error
+  502 Bad Gateway
+  503 Service Unavailable
+```
+
+### "What is the difference between HTTP/1.1, HTTP/2, and HTTP/3?"
+
+> **HTTP/1.1**: one request per TCP connection (or persistent with Keep-Alive but still sequential). Head-of-line blocking — slow request blocks others. **HTTP/2**: multiplexing — multiple requests over a single connection concurrently. Header compression (HPACK). Server push. Significantly faster for multiple resources. **HTTP/3**: runs over QUIC (UDP-based) instead of TCP. Eliminates TCP head-of-line blocking. Faster connection setup. Better on unreliable networks (mobile).
+
+### "What is REST and what are its constraints?"
+
+> REST (Representational State Transfer) is an architectural style with 6 constraints: 1) **Client-server** separation. 2) **Stateless** — each request contains all info needed; no session state on server. 3) **Cacheable** — responses declare if they're cacheable. 4) **Uniform interface** — resources identified by URLs, standard HTTP methods. 5) **Layered system** — client doesn't know if it's talking to origin or proxy. 6) **Code on demand** (optional). Statelessness is the most commonly violated — many "REST" APIs use server-side sessions.
+
+### "What are HTTP methods and what makes them idempotent?"
+
+> **Idempotent** — calling N times gives same result as calling once. `GET`, `PUT`, `DELETE`, `HEAD` are idempotent. `POST` is NOT (each call creates a new resource). `PATCH` is NOT guaranteed idempotent. Safe methods (read-only, no side effects): `GET`, `HEAD`, `OPTIONS`. Why it matters: safe to retry idempotent methods on network failure.
+
+```
+GET    → retrieve, safe, idempotent
+POST   → create, not safe, not idempotent
+PUT    → full replace, idempotent
+PATCH  → partial update, not guaranteed idempotent
+DELETE → delete, idempotent
+```
+
+### "What is CORS and how does it work?"
+
+> Cross-Origin Resource Sharing — browsers block JS from making requests to a different origin (different domain, port, or protocol) by default. The server opts in by returning `Access-Control-Allow-Origin` headers. **Preflight**: for non-simple requests (PUT, DELETE, custom headers), browser first sends `OPTIONS` request to check if allowed. Never set `Access-Control-Allow-Origin: *` on APIs that use cookies for auth.
+
+```
+// Server response headers:
+Access-Control-Allow-Origin: https://myapp.com
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Allow-Credentials: true  // needed for cookies
+```
+
+### "What is the difference between cookies, localStorage, and sessionStorage?"
+
+> **Cookies** — sent automatically with every request to the matching domain; can be HttpOnly (no JS access), Secure (HTTPS only), SameSite; can expire; used for sessions and auth. **localStorage** — persistent across tabs and sessions, no expiry, same origin only, JS only, not sent in requests (~5MB). **sessionStorage** — same as localStorage but cleared when the tab closes; not shared between tabs.
+
+### "What is caching and what are the key HTTP cache headers?"
+
+> HTTP caching prevents redundant requests. `Cache-Control: max-age=3600` — cache for 1 hour. `Cache-Control: no-cache` — always revalidate with server before using cache. `Cache-Control: no-store` — never cache (sensitive data). `ETag` — server generates a hash of the content; client sends it in `If-None-Match`; server returns 304 if unchanged. `Last-Modified` + `If-Modified-Since` — same idea with timestamps. Immutable assets (content-hashed filenames) use `max-age=31536000, immutable`.
+
+### "What is WebSocket and when do you use it?"
+
+> WebSocket is a full-duplex, persistent connection between client and server — both sides can send messages at any time. HTTP is request-response; WebSocket is bidirectional. Use for: real-time features (chat, live notifications, collaborative editing, live sports scores, trading dashboards). Overkill for: simple polling, infrequent updates (use Server-Sent Events or polling instead).
+
+### "What is the difference between TCP and UDP?"
+
+> **TCP** — reliable, ordered, error-checked delivery; connection-oriented (handshake required); retransmits lost packets; used by HTTP, SSH, email. **UDP** — fire and forget, no connection, no guaranteed delivery or order, no retransmission; faster, lower overhead; used by DNS, video streaming, gaming, WebRTC (where speed > reliability, and old data is worthless anyway).

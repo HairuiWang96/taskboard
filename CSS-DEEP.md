@@ -974,3 +974,210 @@ transform: triggers composite only (GPU, doesn't affect other elements)
 
 Rule: for animations, always use transform: translate() instead of top/left
 ```
+
+---
+
+## Most Asked CSS Interview Questions
+
+### "What is the CSS box model?"
+
+> Every element is a rectangular box with 4 layers from inside out: **content** (text/image), **padding** (space inside border), **border**, **margin** (space outside border). By default `box-sizing: content-box` means `width` only covers content — padding and border add to the total size. `box-sizing: border-box` makes `width` include padding and border — far more predictable and what most modern projects use globally.
+
+```css
+*, *::before, *::after { box-sizing: border-box; } /* set globally */
+
+.box {
+    width: 200px;
+    padding: 20px;
+    border: 2px solid black;
+    /* content-box total: 200 + 40 + 4 = 244px wide */
+    /* border-box total: 200px wide (content shrinks to 156px) */
+}
+```
+
+### "What is the difference between `position` values?"
+
+> `static` (default) — normal flow, top/left/etc. have no effect. `relative` — normal flow but top/left offset relative to itself; creates a stacking context. `absolute` — removed from flow, positioned relative to nearest non-static ancestor. `fixed` — removed from flow, positioned relative to viewport (stays on screen while scrolling). `sticky` — hybrid: normal flow until scroll threshold, then sticks like fixed.
+
+```css
+.parent { position: relative; }
+
+.child {
+    position: absolute;
+    top: 0; right: 0; /* top-right corner of .parent */
+}
+
+.header {
+    position: sticky;
+    top: 0; /* sticks to top of viewport when scrolling past it */
+}
+```
+
+### "How does Flexbox work?"
+
+> Flexbox is a one-dimensional layout model (row OR column). The container controls alignment of its direct children. Key properties on the container: `flex-direction`, `justify-content` (main axis), `align-items` (cross axis), `flex-wrap`. Key properties on children: `flex-grow` (how much extra space to take), `flex-shrink` (how much to shrink), `flex-basis` (base size), shorthand `flex: grow shrink basis`.
+
+```css
+.container {
+    display: flex;
+    justify-content: space-between; /* horizontal distribution */
+    align-items: center;            /* vertical centering */
+    gap: 16px;
+}
+
+.item { flex: 1; }          /* all items grow equally */
+.featured { flex: 2; }      /* takes twice as much space */
+
+/* Classic centering */
+.center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+```
+
+### "How does CSS Grid work?"
+
+> Grid is a two-dimensional layout model (rows AND columns simultaneously). Define tracks with `grid-template-columns` / `grid-template-rows`. `fr` unit distributes available space. `grid-column` / `grid-row` on children control placement. `grid-template-areas` lets you name regions for readable layouts.
+
+```css
+.layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;    /* sidebar + main */
+    grid-template-rows: auto 1fr auto;   /* header + content + footer */
+    grid-template-areas:
+        "header header"
+        "sidebar main"
+        "footer footer";
+    min-height: 100vh;
+    gap: 16px;
+}
+
+.header  { grid-area: header; }
+.sidebar { grid-area: sidebar; }
+.main    { grid-area: main; }
+.footer  { grid-area: footer; }
+```
+
+### "What is specificity and how is it calculated?"
+
+> Specificity determines which CSS rule wins when multiple rules target the same element. Calculated as (a, b, c): a = inline styles, b = IDs, c = classes/attributes/pseudo-classes, elements/pseudo-elements count less. Higher specificity wins regardless of order. Equal specificity: last rule wins. `!important` overrides all — avoid it except for utility classes.
+
+```
+Selector                    Specificity
+────────────────────────────────────────
+*                           (0, 0, 0)
+p                           (0, 0, 1)
+.class                      (0, 1, 0)
+#id                         (1, 0, 0)
+style="..."                 (1, 0, 0, 0) — inline
+p.class                     (0, 1, 1)
+#id .class p                (1, 1, 1)
+```
+
+### "What is the difference between `em`, `rem`, `%`, `vh/vw`?"
+
+> `px` — absolute pixels, never scales. `em` — relative to the current element's font-size (compounding in nested elements). `rem` — relative to the root (`html`) font-size — predictable, great for spacing/typography. `%` — relative to parent's corresponding property. `vh`/`vw` — percentage of viewport height/width. Rule of thumb: `rem` for font sizes and spacing, `%` for widths in fluid layouts, `vh/vw` for full-screen sections.
+
+```css
+html { font-size: 16px; }     /* 1rem = 16px globally */
+
+.container { width: 80%; }    /* 80% of parent's width */
+.hero       { height: 100vh; } /* full viewport height */
+
+/* rem is predictable: */
+.text { font-size: 1.25rem; }  /* always 20px regardless of nesting */
+
+/* em compounds: */
+.outer { font-size: 1.5em; }   /* 24px (1.5 × 16) */
+.inner { font-size: 1.5em; }   /* 36px (1.5 × 24) — oops */
+```
+
+### "What is a CSS pseudo-class vs pseudo-element?"
+
+> Pseudo-classes (`:`) select elements based on state or position: `:hover`, `:focus`, `:nth-child()`, `:not()`, `:checked`. Pseudo-elements (`::`) target a specific part of an element or insert generated content: `::before`, `::after`, `::placeholder`, `::first-line`.
+
+```css
+/* Pseudo-class — state */
+button:hover   { background: darken; }
+input:focus    { outline: 2px solid blue; }
+li:nth-child(odd) { background: #f5f5f5; }
+
+/* Pseudo-element — part of element */
+p::first-line  { font-weight: bold; }
+.required::after {
+    content: ' *';
+    color: red;
+}
+```
+
+### "What are CSS custom properties (variables)?"
+
+> Custom properties (`--name: value`) store reusable values in the cascade. Defined on an element (usually `:root` for global), inherited by descendants, overridable at any scope. Unlike preprocessor variables, they are live — changing them in JS or via media queries updates all usages instantly.
+
+```css
+:root {
+    --color-primary: #3b82f6;
+    --spacing-md: 16px;
+    --radius: 8px;
+}
+
+.button {
+    background: var(--color-primary);
+    padding: var(--spacing-md);
+    border-radius: var(--radius);
+}
+
+/* Override in dark mode */
+@media (prefers-color-scheme: dark) {
+    :root { --color-primary: #60a5fa; }
+}
+
+/* Override in a component scope */
+.danger-zone { --color-primary: #ef4444; }
+```
+
+### "What is the stacking context and z-index?"
+
+> `z-index` only works on positioned elements (non-static) and flex/grid children. A stacking context is a group of elements painted as a unit — `z-index` only compares elements within the same context. Many properties create a new context: `position + z-index`, `opacity < 1`, `transform`, `filter`, `isolation: isolate`. A child can never visually escape its parent's stacking context.
+
+```css
+.modal-backdrop {
+    position: fixed;
+    z-index: 100;
+    isolation: isolate; /* create new stacking context — children z-index is relative here */
+}
+
+/* Fix the "z-index isn't working" bug: */
+/* Check if a parent has opacity, transform, or filter — that's usually the cause */
+```
+
+### "How does CSS specificity relate to the cascade?"
+
+> The cascade is the algorithm CSS uses to resolve conflicting declarations. In order: 1) Origin & importance (user-agent < author < user, `!important` reverses) 2) Specificity 3) Order of appearance (last wins). Understanding this prevents the anti-pattern of fighting specificity with `!important` — the fix is usually to restructure selectors.
+
+### "What is the difference between `display: none`, `visibility: hidden`, and `opacity: 0`?"
+
+> `display: none` — element removed from layout entirely, takes no space, not accessible to screen readers. `visibility: hidden` — invisible but space is preserved, not accessible. `opacity: 0` — invisible, space preserved, still accessible to screen readers and keyboard focus, still receives pointer events. Use `opacity + pointer-events: none` for animations; `display: none` to truly remove; ARIA attributes to control screen reader visibility independently.
+
+### "What are CSS transitions vs animations?"
+
+> Transitions interpolate between two states triggered by state changes (hover, class toggle). Animations (`@keyframes`) run automatically, can loop, and support multiple steps. Use transitions for simple hover/focus effects; use animations for repeating effects, complex multi-step sequences, or when you need to trigger without a state change.
+
+```css
+/* Transition — triggered by :hover */
+.button {
+    background: blue;
+    transition: background 200ms ease, transform 200ms ease;
+}
+.button:hover { background: darkblue; transform: scale(1.02); }
+
+/* Animation — runs on load */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+.spinner {
+    animation: spin 1s linear infinite;
+}
+```

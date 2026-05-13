@@ -825,3 +825,66 @@ mlflow.register_model(f"runs:/{run_id}/model", "TaskClassifier")
 ### "What is RAG and when would you use it over fine-tuning?"
 
 > RAG (Retrieval-Augmented Generation) retrieves relevant documents at query time and adds them to the LLM's prompt context. Use RAG when your knowledge base is large (can't fit in context), frequently updated (re-training is too slow), or requires citing sources. Use fine-tuning when you need to change the model's behavior, style, or output format — not just what it knows. In practice: start with RAG + good prompting; only fine-tune if you can't achieve the needed behavior with prompting.
+
+---
+
+## Most Asked AI/ML Interview Questions
+
+### "What is the difference between supervised, unsupervised, and reinforcement learning?"
+
+> **Supervised learning** — trains on labeled data (input-output pairs); learns to predict output for new inputs. Examples: classification (spam/not spam), regression (house price). **Unsupervised learning** — no labels; finds patterns and structure in data. Examples: clustering (K-means), dimensionality reduction (PCA), anomaly detection. **Reinforcement learning** — agent learns by taking actions in an environment and receiving rewards/penalties; learns a policy to maximize cumulative reward. Examples: game playing (AlphaGo), robotics, recommendation systems.
+
+### "What is overfitting and how do you prevent it?"
+
+> Overfitting: the model memorizes training data (including noise) and performs poorly on unseen data — high training accuracy, low validation accuracy. Prevention: **Regularization** (L1/L2 — penalizes large weights), **Dropout** (randomly zero out neurons during training), **Early stopping** (stop training when validation loss starts increasing), **More data** (or data augmentation), **Simpler model** (reduce parameters), **Cross-validation** (k-fold to detect overfitting earlier).
+
+### "What is the difference between precision and recall?"
+
+> **Precision** — of all the items predicted positive, what fraction were actually positive? (minimize false positives — use when false alarms are costly: spam filter, fraud alert). **Recall** (sensitivity) — of all actual positives, what fraction did we predict positive? (minimize false negatives — use when missing a case is costly: cancer screening, fraud detection). **F1 score** — harmonic mean of precision and recall — balanced metric when both matter.
+
+```
+Precision = TP / (TP + FP)   → "of what I predicted positive, how many were right?"
+Recall    = TP / (TP + FN)   → "of all actual positives, how many did I catch?"
+F1        = 2 * (P * R) / (P + R)
+```
+
+### "What is the bias-variance tradeoff?"
+
+> **Bias** — error from wrong assumptions (underfitting — model too simple, misses patterns). **Variance** — sensitivity to fluctuations in training data (overfitting — model too complex, memorizes noise). The tradeoff: increasing model complexity reduces bias but increases variance. The goal: find the sweet spot (minimum total error). Regularization explicitly manages this. Ensemble methods (bagging, boosting) reduce variance or bias respectively.
+
+### "What is gradient descent?"
+
+> Gradient descent is the optimization algorithm used to train most ML models. The idea: compute the gradient (partial derivatives) of the loss function with respect to model parameters, then step in the opposite direction (downhill). Repeat until convergence. Key variants: **Batch GD** — gradient over whole dataset (accurate but slow). **SGD (Stochastic)** — gradient over one sample (fast, noisy). **Mini-batch SGD** — gradient over a small batch (balance of both — used in practice). **Adam** — adaptive learning rates per parameter, most popular optimizer.
+
+### "What is a neural network and how does backpropagation work?"
+
+> A neural network is layers of neurons (linear transformation + activation function). **Forward pass**: input flows through layers, producing a prediction. **Loss** is computed (how wrong the prediction is). **Backpropagation**: using the chain rule, compute gradients of the loss with respect to every weight — flowing backwards through the network. **Gradient descent** then updates all weights. This is repeated for many batches until loss converges.
+
+### "What is a transformer and what problem did it solve?"
+
+> The Transformer architecture (2017, "Attention Is All You Need") replaced RNNs for sequence tasks. The key innovation: **self-attention** — each token in a sequence attends to all other tokens simultaneously (no sequential processing). This enables: parallelization (much faster training), capturing long-range dependencies (RNNs struggled with long sequences), and massive scaling. All modern LLMs (GPT, BERT, Claude, Gemini) are based on transformers.
+
+### "What is the difference between a generative and discriminative model?"
+
+> **Discriminative** — models the boundary between classes; learns `P(y|x)` — given input, what's the probability of each class? Examples: logistic regression, SVM, most classifiers. **Generative** — models the data distribution; learns `P(x|y)` — given a class, what does the data look like? Can generate new samples. Examples: Naive Bayes, GANs, VAEs, diffusion models, LLMs. LLMs are generative — they learn the distribution of text and generate by sampling from it.
+
+### "What is RAG (Retrieval-Augmented Generation)?"
+
+> RAG combines a retrieval system with a language model. Instead of relying solely on what the LLM memorized during training, RAG retrieves relevant documents from an external knowledge base (vector DB, search index) at inference time and includes them in the prompt as context. Benefits: up-to-date information (not frozen at training cutoff), citable sources, reduced hallucination for factual questions, ability to use private/proprietary data. Standard architecture for building LLM applications over custom data.
+
+### "What are embeddings and how are they used?"
+
+> Embeddings are dense vector representations of data (text, images, users, items) that capture semantic meaning — similar things have similar vectors (close in vector space). Created by neural networks. Uses: semantic search (find similar documents), recommendation systems (similar users/items), RAG (retrieve relevant chunks by similarity), classification, clustering. Tools: OpenAI Embeddings API, sentence-transformers, store in vector DBs (Pinecone, pgvector, Weaviate).
+
+```ts
+// Text similarity with embeddings
+const vec1 = await embedText("What is machine learning?");
+const vec2 = await embedText("Explain supervised learning");
+const similarity = cosineSimilarity(vec1, vec2); // high — semantically related
+
+// RAG: retrieve chunks most similar to query
+const queryVec = await embedText(userQuery);
+const relevant = await vectorDB.search(queryVec, topK: 5);
+const context = relevant.map(r => r.text).join('\n');
+const answer = await llm.complete(`Context: ${context}\nQuestion: ${userQuery}`);
+```

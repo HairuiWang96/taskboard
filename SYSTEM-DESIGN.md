@@ -1603,3 +1603,72 @@ Surge pricing:
 
 *Built for: senior full stack interviews and daily engineering decisions.*
 *Stack focus: TypeScript · Node.js · React · Postgres · Redis · AWS*
+
+---
+
+## Most Asked System Design Interview Questions
+
+### "How do you design a URL shortener (like bit.ly)?"
+
+> Core components: 1) **ID generation** — convert a long URL to a short key. Use base62 encoding of an auto-increment ID or a hash (MD5 first 7 chars). 2) **Storage** — `{ short_key → long_url }` in a key-value store (Redis) for speed, with a database for durability. 3) **Redirect** — HTTP 301 (permanent, browser caches) vs 302 (temporary, every request hits your server — preferred for analytics). 4) **Scale** — cache hot URLs in Redis, shard database by short key.
+
+```
+POST /shorten { url: "https://long.url/..." }
+→ generate key → store in DB + cache → return short URL
+
+GET /{key}
+→ check Redis cache → if miss, check DB → 302 redirect to long URL
+→ increment click counter asynchronously
+```
+
+### "How do you design a rate limiter?"
+
+> Algorithms: **Token Bucket** — bucket refills at fixed rate; each request consumes a token; allows bursts up to bucket size. **Sliding Window Counter** — most accurate; tracks timestamps of requests in a rolling window. **Fixed Window Counter** — simplest; resets counter every window; vulnerable to burst at boundary. Store counters in Redis (atomic `INCR` + `EXPIRE`). For distributed systems, Redis is the source of truth so all instances share the same count.
+
+```
+For each request:
+  key = "rate:{user_id}:{current_window}"
+  count = INCR key
+  if count == 1: EXPIRE key window_seconds
+  if count > limit: return 429 Too Many Requests
+```
+
+### "How do you design a notification system?"
+
+> Requirements: push (mobile), email, SMS, in-app. Key challenges: reliability, ordering, deduplication, and scale. Architecture: 1) **API service** accepts notification requests and publishes to a message queue (Kafka/SQS). 2) **Workers** consume from queue and call third-party providers (APNs, FCM, SendGrid, Twilio). 3) **Retry with exponential backoff** for failures. 4) **User preferences** table controls which channels are enabled. 5) **Deduplication** via idempotency keys prevents duplicate sends on retry.
+
+### "How do you design a distributed cache?"
+
+> Key decisions: **Eviction policy** — LRU (most common), LFU, TTL. **Consistency** — write-through (write to cache + DB together, always consistent, slower writes) vs write-behind (write to cache, async to DB, faster, risk of data loss) vs cache-aside (app checks cache, on miss loads from DB and populates cache — most flexible). **Invalidation** — hardest problem: TTL-based, event-driven invalidation, or versioned keys. Use Redis Cluster for horizontal sharding.
+
+### "How do you design a news feed (like Twitter/Instagram)?"
+
+> Two models: **Fan-out on write (push)** — when user posts, immediately write to all followers' feed lists. Fast reads, slow writes, expensive for celebrities (millions of followers). **Fan-out on read (pull)** — feed is assembled at read time by querying people you follow. Fast writes, slow reads. **Hybrid** — fan-out on write for normal users, fan-out on read for celebrities (high follower count). Store feeds in Redis sorted sets (score = timestamp). Paginate with cursor-based pagination.
+
+### "What is the difference between SQL and NoSQL? When to use each?"
+
+> **SQL (relational)**: structured schema, ACID transactions, powerful JOINs, great for complex queries. Use for: financial data, user accounts, anything needing strong consistency and relations. **NoSQL**: flexible schema, horizontal scaling, designed for specific access patterns. Document stores (MongoDB) for nested/variable data. Key-value (Redis) for caching/sessions. Column-family (Cassandra) for time-series/wide rows. Graph (Neo4j) for relationships. Rule: start with SQL; switch to NoSQL when you have a specific scale/flexibility problem SQL can't solve well.
+
+### "How do you handle database scaling?"
+
+> **Vertical scaling** (bigger server) — easiest, limited ceiling. **Read replicas** — replicate to read-only replicas; primary handles writes. Handles read-heavy workloads. **Caching** — Redis/Memcached in front of DB for hot data. **Connection pooling** — PgBouncer for Postgres; databases handle limited connections. **Sharding** (horizontal partitioning) — split data across multiple DB instances by a shard key. Complex: cross-shard queries, re-sharding. **CQRS** — separate read and write models.
+
+### "What is CAP theorem?"
+
+> In a distributed system you can only guarantee 2 of 3: **Consistency** (every read sees the latest write), **Availability** (every request gets a response), **Partition tolerance** (system works despite network partitions). Network partitions are unavoidable in distributed systems, so the real choice is CP vs AP. CP (Zookeeper, HBase): consistent but may reject requests during partition. AP (Cassandra, DynamoDB): always responds but may return stale data. Most systems tune this via consistency levels per operation.
+
+### "How do you design a file storage system (like S3 or Dropbox)?"
+
+> Components: 1) **Metadata service** — stores file info (name, size, owner, version, chunk list) in a SQL DB. 2) **Chunk storage** — files split into fixed-size chunks (4MB), each stored with content-hash as key (deduplication). 3) **Upload** — client chunks file, uploads chunks to block storage (S3/CDN), then commits metadata. 4) **Sync** — delta sync: only upload changed chunks. 5) **CDN** for fast global downloads. 6) **Versioning** — store each version's chunk list; point to same chunks when unchanged.
+
+### "How do you design a search autocomplete system?"
+
+> Requirements: low latency (<100ms), relevant suggestions, scale. Architecture: 1) **Trie data structure** — each node is a character, leaf nodes store top-N results and frequencies. 2) **Precomputed results** — at each node, cache top suggestions (don't traverse on every keystroke). 3) **Updates** — batch-update trie from analytics logs (don't update on every search — too slow). 4) **Serving** — store trie in Redis; consistent hashing to route by prefix to the right cache node. 5) **Debounce** on the frontend — don't query on every keystroke.
+
+### "How do you handle distributed transactions?"
+
+> Distributed transactions (across multiple services/DBs) are hard because you can't use a single DB transaction. Patterns: **Two-Phase Commit (2PC)** — coordinator asks all participants to prepare, then commits or aborts. Blocking: if coordinator fails, participants are stuck. **Saga pattern** — sequence of local transactions; each publishes an event; on failure, compensating transactions undo previous steps. Choreography sagas (event-driven) vs Orchestration sagas (central coordinator). Sagas embrace eventual consistency — use when strict atomicity isn't required.
+
+### "What is a message queue and when do you use it?"
+
+> A message queue decouples producers from consumers — producers don't wait for consumers. Benefits: absorbs traffic spikes (buffer), enables async processing, improves resilience (consumer can be down temporarily). Use cases: sending emails/notifications, processing uploads, order fulfillment, any slow/unreliable operation you don't want in the request path. Kafka: high throughput, durable, replay. RabbitMQ: flexible routing, lower throughput. SQS: managed, simple. Key concepts: at-least-once delivery, idempotency, dead-letter queues for failed messages.

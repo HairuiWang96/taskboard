@@ -707,3 +707,89 @@ What NOT to use:
 ### "What is the difference between useNavigate and Link?"
 
 > `<Link>` renders an anchor tag — declarative navigation on click, handled in JSX. `useNavigate()` returns a function for programmatic navigation — use inside event handlers, effects, or after an async operation (e.g., navigate to dashboard after successful login). `<NavLink>` is `<Link>` but with an `isActive` callback for styling the active route.
+
+---
+
+## Most Asked React Ecosystem Interview Questions
+
+### "What problem does Redux solve and when should you use it?"
+
+> Redux solves predictable global state management: one store, state only changes via actions, pure reducer functions. Enables time-travel debugging, action replay, and easy state inspection. Use Redux when: multiple distant components need the same state, state changes are complex (many interdependencies), you need the DevTools for debugging. Don't use Redux for: server state (use React Query/SWR), simple local state (useState), small apps. Redux Toolkit (RTK) is the modern way — eliminates boilerplate.
+
+```ts
+// Redux Toolkit slice
+const tasksSlice = createSlice({
+    name: 'tasks',
+    initialState: [] as Task[],
+    reducers: {
+        added: (state, action: PayloadAction<Task>) => {
+            state.push(action.payload); // Immer allows "mutations"
+        },
+        completed: (state, action: PayloadAction<string>) => {
+            const task = state.find(t => t.id === action.payload);
+            if (task) task.done = true;
+        },
+    },
+});
+```
+
+### "What is React Query (TanStack Query) and why use it over useEffect + fetch?"
+
+> React Query manages server state — fetching, caching, synchronizing, and updating. Replaces the pattern of `useEffect → fetch → useState`. Benefits: automatic caching (same query across components shares one request), background refetching (data stays fresh), loading/error states built-in, pagination/infinite scroll helpers, optimistic updates, deduplication. `useEffect` for data fetching is boilerplate-heavy and easy to get wrong (race conditions, stale closures, no caching).
+
+```ts
+// useEffect approach — verbose, no caching, race conditions
+useEffect(() => {
+    setLoading(true);
+    fetch('/api/tasks').then(r => r.json()).then(data => {
+        setTasks(data); setLoading(false);
+    }).catch(setError);
+}, []);
+
+// React Query — caching, background refresh, shared state
+const { data: tasks, isLoading, error } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: () => fetch('/api/tasks').then(r => r.json()),
+    staleTime: 30_000, // consider data fresh for 30s
+});
+```
+
+### "What is Zustand and how does it compare to Redux?"
+
+> Zustand is a minimal state management library — one hook, no boilerplate, no Provider required. Store is a hook; subscribe to only the slice you need (auto-prevents re-renders for unrelated state). Best for: simple-to-medium global state where Redux feels like overkill. Redux is better for: complex state logic, teams that benefit from strict patterns, extensive DevTools usage.
+
+```ts
+import { create } from 'zustand';
+
+const useTaskStore = create<{
+    tasks: Task[];
+    add: (task: Task) => void;
+    complete: (id: string) => void;
+}>((set) => ({
+    tasks: [],
+    add: (task) => set(state => ({ tasks: [...state.tasks, task] })),
+    complete: (id) => set(state => ({
+        tasks: state.tasks.map(t => t.id === id ? { ...t, done: true } : t)
+    })),
+}));
+
+// In component — only re-renders when tasks changes, not add/complete
+const tasks = useTaskStore(state => state.tasks);
+const add = useTaskStore(state => state.add);
+```
+
+### "What is Next.js and what rendering strategies does it support?"
+
+> Next.js is a React framework with file-based routing, server-side rendering, and full-stack capabilities. Rendering strategies: **SSG (Static Site Generation)** — HTML built at build time, fastest, cached at CDN. **SSR (Server-Side Rendering)** — HTML generated on each request, always fresh, slower. **ISR (Incremental Static Regeneration)** — SSG but revalidates after N seconds. **CSR (Client-Side Rendering)** — traditional React SPA. **RSC (React Server Components)** — App Router default, runs on server, zero JS bundle. Choose per route based on data freshness needs.
+
+### "What is Vite and why did it replace Create React App?"
+
+> Vite is a build tool that uses native ES modules in development — the browser imports files directly without bundling, so dev server starts in milliseconds regardless of project size. HMR (Hot Module Replacement) updates only the changed module. For production, it uses Rollup for optimized bundles. CRA (Create React App) was slow because it bundled everything with webpack on every change. Vite is 10-100x faster in dev. CRA is now deprecated.
+
+### "What is Tailwind CSS and how does it differ from CSS Modules?"
+
+> Tailwind CSS is a utility-first CSS framework — you compose small utility classes directly in HTML/JSX (`flex`, `text-lg`, `bg-blue-500`, `hover:bg-blue-600`). Zero custom CSS, no naming things, no context switching. PurgeCSS removes unused classes so production bundle is tiny. CSS Modules are component-scoped CSS files — you write real CSS, class names are hashed to avoid collisions. Tailwind is better for rapid development and design systems; CSS Modules are better for complex component-specific styles.
+
+### "What is Storybook and why use it?"
+
+> Storybook is a tool for building and documenting UI components in isolation — without running the full app. Each "story" renders a component in a specific state. Benefits: develop components without data dependencies, visual regression testing, design system documentation, share with designers. Integrates with Chromatic for visual diff CI. Great for component libraries and design systems.

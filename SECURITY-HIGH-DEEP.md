@@ -591,3 +591,96 @@ async function getPatientRecord(recordId: string, actorId: string) {
 ### "What is the principle of least privilege?"
 
 > Every component should have access to only what it needs — nothing more. Examples: DB user only has SELECT/INSERT/UPDATE on specific tables (not DROP); API route handlers can only read the user's own data (row-level access check); frontend tokens have limited scope; IAM roles have minimal permissions. Applied at every layer: code, DB, infrastructure, human access.
+
+---
+
+## Most Asked Security Interview Questions
+
+### "What is the OWASP Top 10 and which are most important to know?"
+
+> The OWASP Top 10 is the standard list of most critical web security risks. Most important: **Injection** (SQL, command — use parameterized queries). **Broken Authentication** (weak sessions, no rate limiting). **XSS** (injecting scripts — sanitize output). **Broken Access Control** (users accessing other users' data — always authorize server-side). **Security Misconfiguration** (default passwords, open S3 buckets, debug mode in prod). **SSRF** (server making requests to internal services based on user input).
+
+### "What is XSS and how do you prevent it?"
+
+> Cross-Site Scripting: attacker injects malicious script into a page served to other users. **Stored XSS**: script saved in DB, served to all visitors. **Reflected XSS**: script in URL, executed when victim visits link. **DOM XSS**: client-side JS writes attacker-controlled data into the DOM. Prevention: escape all output (React does this by default with JSX), never use `dangerouslySetInnerHTML` with user data, set Content-Security-Policy header, use `HttpOnly` cookies (JS can't read them).
+
+```jsx
+// ✗ XSS vulnerability
+<div dangerouslySetInnerHTML={{ __html: userInput }} />
+element.innerHTML = userInput;
+
+// ✓ React escapes automatically
+<div>{userInput}</div>
+
+// ✓ If you must render HTML — sanitize first
+import DOMPurify from 'dompurify';
+<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(userInput) }} />
+```
+
+### "What is CSRF and how do you prevent it?"
+
+> Cross-Site Request Forgery: a malicious site tricks a logged-in user's browser into making a request to your site — the browser automatically sends cookies. Prevention: **CSRF tokens** — server generates a random token, embeds in forms, validates on submission (attacker's site can't read your page to get the token). **SameSite cookie attribute** — `SameSite=Lax/Strict` prevents cookies from being sent on cross-site requests. Modern SPAs using `Authorization: Bearer` headers are not vulnerable (browsers don't auto-send custom headers cross-origin).
+
+### "What is SQL injection and how do you prevent it?"
+
+> SQL injection: user input is concatenated into a SQL query, allowing attackers to alter the query logic — access other users' data, bypass login, drop tables. Prevention: **always use parameterized queries** or prepared statements. ORMs handle this automatically. Never build queries with string concatenation. Input validation is a secondary defense, not sufficient alone.
+
+```js
+// ✗ SQL injection
+const query = `SELECT * FROM users WHERE email = '${email}'`;
+// email = "' OR '1'='1" → returns all users
+
+// ✓ Parameterized query
+const { rows } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+```
+
+### "What is the difference between authentication and authorization?"
+
+> **Authentication** (AuthN) — verifying WHO you are: login with password, OAuth, biometrics. **Authorization** (AuthZ) — verifying WHAT you're allowed to do: can this user access this resource? Authentication always comes first. Common mistake: checking auth on the frontend only — authorization MUST be enforced server-side on every request. Frontend checks are UX only.
+
+### "How do HTTPS and TLS work?"
+
+> TLS (Transport Layer Security) encrypts data in transit. The handshake: 1) Client sends supported cipher suites. 2) Server sends its certificate (contains public key, signed by a trusted CA). 3) Client verifies certificate. 4) They negotiate a session key using asymmetric encryption (RSA or Diffie-Hellman). 5) All subsequent communication encrypted with the symmetric session key (AES). HTTPS = HTTP over TLS. Prevents eavesdropping and man-in-the-middle attacks.
+
+### "What is Content Security Policy (CSP)?"
+
+> CSP is an HTTP response header that whitelists allowed sources for scripts, styles, images, etc. It's the most powerful XSS mitigation — even if an attacker injects a `<script>` tag, the browser refuses to execute it if the source isn't whitelisted.
+
+```
+Content-Security-Policy: default-src 'self'; script-src 'self' cdn.example.com; object-src 'none'
+```
+
+### "What are security headers every web app should have?"
+
+```
+Strict-Transport-Security: max-age=31536000; includeSubDomains  (force HTTPS)
+X-Content-Type-Options: nosniff                                  (prevent MIME sniffing)
+X-Frame-Options: DENY                                            (prevent clickjacking)
+Content-Security-Policy: default-src 'self'                      (XSS mitigation)
+Referrer-Policy: strict-origin-when-cross-origin                 (control referrer info)
+Permissions-Policy: camera=(), microphone=()                     (disable browser features)
+```
+
+### "What is SSRF (Server-Side Request Forgery)?"
+
+> SSRF: attacker tricks the server into making HTTP requests to internal services (AWS metadata endpoint, internal APIs, databases) that the attacker can't reach directly. Example: a URL preview feature that fetches user-provided URLs could be exploited with `http://169.254.169.254/latest/meta-data/` (AWS metadata). Prevention: allowlist valid external domains, block requests to private IP ranges (10.x, 172.16.x, 192.168.x, 169.254.x), use a dedicated fetch proxy.
+
+### "What is the principle of least privilege?"
+
+> Every component (user, service, process, API key) should have only the minimum permissions needed to do its job — nothing more. Examples: database user for the app should only have SELECT/INSERT/UPDATE on needed tables, not DROP or access to other DBs. AWS IAM roles scoped to specific resources. API keys with limited scopes. Regular users shouldn't have admin access. Limits blast radius when credentials are compromised.
+
+### "How do you securely store passwords?"
+
+> Never store plaintext passwords. Never use MD5/SHA1/SHA256 directly — they're too fast (billions/sec with GPUs). Use a purpose-built slow hash: **bcrypt** (most common), **Argon2** (recommended for new projects — winner of Password Hashing Competition), **scrypt**. These are intentionally slow and have a cost factor you can increase over time. Always use a salt (bcrypt does this automatically) to prevent rainbow table attacks.
+
+```js
+const bcrypt = require('bcrypt');
+
+// Hash on registration
+const hash = await bcrypt.hash(password, 12); // 12 = cost factor
+await db.query('INSERT INTO users (password_hash) VALUES ($1)', [hash]);
+
+// Verify on login
+const match = await bcrypt.compare(inputPassword, storedHash);
+if (!match) return res.status(401).json({ error: 'Invalid credentials' });
+```

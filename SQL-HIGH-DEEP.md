@@ -709,3 +709,158 @@ LIMIT 20;
 ### "How do you prevent N+1 queries?"
 
 > Use JOINs or eager loading instead of looping and querying. In Drizzle: use `db.query.users.findMany({ with: { tasks: true } })` which generates a JOIN. In raw SQL: JOIN and aggregate in one query. In application code: batch IDs and use a single `WHERE id IN (...)` query rather than one query per ID.
+
+---
+
+## Most Asked SQL Interview Questions
+
+### "What is the difference between INNER, LEFT, RIGHT, and FULL JOIN?"
+
+> `INNER JOIN` — only rows that match in BOTH tables. `LEFT JOIN` — all rows from the left table, matched rows from right (NULLs where no match). `RIGHT JOIN` — all rows from the right, matched from left. `FULL OUTER JOIN` — all rows from both, NULLs where no match on either side. In practice: LEFT JOIN is by far the most common. RIGHT JOIN is always rewritable as a LEFT JOIN with tables swapped.
+
+```sql
+-- All users, even those with no orders (LEFT JOIN)
+SELECT u.name, COUNT(o.id) AS order_count
+FROM users u
+LEFT JOIN orders o ON o.user_id = u.id
+GROUP BY u.id, u.name;
+
+-- Only users who HAVE orders (INNER JOIN)
+SELECT u.name, o.total
+FROM users u
+INNER JOIN orders o ON o.user_id = u.id;
+```
+
+### "What is the difference between WHERE and HAVING?"
+
+> `WHERE` filters rows BEFORE grouping — it operates on individual rows and cannot use aggregate functions. `HAVING` filters AFTER grouping — it operates on groups and can use aggregates. You need `GROUP BY` to use `HAVING`.
+
+```sql
+-- WHERE: filter before grouping
+SELECT department, AVG(salary)
+FROM employees
+WHERE active = true          -- filter individual rows first
+GROUP BY department
+HAVING AVG(salary) > 70000;  -- then filter groups
+```
+
+### "What are indexes and how do they work?"
+
+> An index is a separate data structure (usually a B-tree) that stores column values sorted, with pointers to rows. Queries on indexed columns skip full table scans. Trade-off: faster reads, slower writes (index must be updated on INSERT/UPDATE/DELETE), extra storage. Always index: foreign keys, columns in WHERE/JOIN/ORDER BY, high-cardinality columns. Avoid indexing every column — over-indexing hurts write performance.
+
+```sql
+-- Single column index
+CREATE INDEX idx_users_email ON users(email);
+
+-- Composite index — useful when filtering/sorting by both columns together
+-- Order matters: (last_name, first_name) helps queries on last_name alone,
+-- but NOT first_name alone
+CREATE INDEX idx_name ON users(last_name, first_name);
+
+-- Check if a query uses an index
+EXPLAIN ANALYZE SELECT * FROM users WHERE email = 'alice@example.com';
+```
+
+### "What are window functions?"
+
+> Window functions perform calculations across a set of rows related to the current row without collapsing them into a group (unlike `GROUP BY`). The `OVER()` clause defines the window. Key functions: `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`, `LAG()`/`LEAD()` (access previous/next row), `SUM()`/`AVG()` as running totals.
+
+```sql
+-- Rank employees by salary within each department
+SELECT
+    name,
+    department,
+    salary,
+    RANK()       OVER (PARTITION BY department ORDER BY salary DESC) AS rank,
+    ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) AS row_num,
+    LAG(salary)  OVER (PARTITION BY department ORDER BY salary DESC) AS prev_salary
+FROM employees;
+
+-- Running total
+SELECT date, amount,
+    SUM(amount) OVER (ORDER BY date ROWS UNBOUNDED PRECEDING) AS running_total
+FROM transactions;
+```
+
+### "What is a CTE (Common Table Expression) and why use it?"
+
+> A CTE (`WITH` clause) is a named temporary result set scoped to the query. Benefits: readability (break complex queries into named steps), reusability within the same query, and enabling recursion. Recursive CTEs can walk trees and hierarchies.
+
+```sql
+-- Readable: break into steps
+WITH active_users AS (
+    SELECT id, name FROM users WHERE active = true
+),
+high_value_orders AS (
+    SELECT user_id, SUM(total) AS lifetime_value
+    FROM orders
+    GROUP BY user_id
+    HAVING SUM(total) > 1000
+)
+SELECT u.name, o.lifetime_value
+FROM active_users u
+JOIN high_value_orders o ON o.user_id = u.id;
+
+-- Recursive: walk org hierarchy
+WITH RECURSIVE org_tree AS (
+    SELECT id, name, manager_id, 0 AS level
+    FROM employees WHERE manager_id IS NULL   -- root
+    UNION ALL
+    SELECT e.id, e.name, e.manager_id, t.level + 1
+    FROM employees e
+    JOIN org_tree t ON t.id = e.manager_id   -- join to parent
+)
+SELECT * FROM org_tree ORDER BY level;
+```
+
+### "What is the difference between `DELETE`, `TRUNCATE`, and `DROP`?"
+
+> `DELETE` removes rows one by one, fires triggers, can be rolled back, can have WHERE clause. `TRUNCATE` removes ALL rows at once — faster (doesn't log individual rows), resets auto-increment, cannot have WHERE, can be rolled back in PostgreSQL (not MySQL). `DROP` removes the entire table structure and all data — cannot be rolled back.
+
+### "What are transactions and the ACID properties?"
+
+> A transaction is a group of operations that execute as an atomic unit. ACID: **Atomicity** — all or nothing; if one operation fails, all are rolled back. **Consistency** — data always moves from one valid state to another. **Isolation** — concurrent transactions don't interfere (controlled by isolation level). **Durability** — committed transactions survive crashes (written to disk).
+
+```sql
+BEGIN;
+  UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+  UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+  -- If either fails, ROLLBACK undoes both
+COMMIT;
+```
+
+### "What are the SQL isolation levels?"
+
+> Isolation levels control what concurrent transactions can see. From least to most strict: **READ UNCOMMITTED** (can read uncommitted changes — dirty reads). **READ COMMITTED** (only reads committed data — default in most DBs). **REPEATABLE READ** (same query returns same rows within transaction). **SERIALIZABLE** (transactions execute as if serial — no phantom reads). Higher isolation = fewer anomalies but more locking/contention.
+
+### "What is normalization? Explain 1NF, 2NF, 3NF."
+
+> Normalization reduces redundancy and improves data integrity by organizing tables. **1NF**: each column holds atomic values (no arrays/sets), each row is unique. **2NF**: 1NF + every non-key column fully depends on the whole primary key (eliminates partial dependencies — relevant for composite keys). **3NF**: 2NF + no transitive dependencies (non-key columns don't depend on other non-key columns). In practice, aim for 3NF; denormalize deliberately for read performance.
+
+### "What is the N+1 query problem?"
+
+> N+1 happens when you fetch N records then run 1 additional query per record to get related data — 1 + N queries total instead of 1. Fix: use a JOIN or `IN` clause to fetch all related data in one query, or use an ORM's eager loading.
+
+```sql
+-- N+1: 1 query for posts + 1 query per post for author = 1 + N queries
+SELECT * FROM posts;
+-- then for each post: SELECT * FROM users WHERE id = post.user_id
+
+-- Fix: single JOIN — always 1 query
+SELECT p.title, u.name AS author
+FROM posts p
+JOIN users u ON u.id = p.user_id;
+```
+
+### "What is EXPLAIN and how do you read it?"
+
+> `EXPLAIN` (or `EXPLAIN ANALYZE`) shows the query execution plan — how the database will (or did) retrieve data. Key things to look for: **Seq Scan** on large tables = missing index. **Nested Loop** with large row counts = potential performance problem. **cost** = estimated work, **actual time** (with ANALYZE) = real time. **rows** = estimated vs actual row count — large differences indicate stale statistics.
+
+```sql
+EXPLAIN ANALYZE
+SELECT * FROM orders WHERE user_id = 42 AND status = 'pending';
+
+-- If you see: Seq Scan on orders (cost=0.00..15420.00 rows=1234320)
+-- → add an index on (user_id, status)
+-- After: Index Scan using idx_orders_user_status (cost=0.43..8.46 rows=3)
+```

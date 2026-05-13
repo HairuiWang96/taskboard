@@ -1177,3 +1177,69 @@ fastify.get('/metrics', async (req, reply) => {
 Never conflate the two: a DB outage should remove pods from load balancing
 (readiness fails) but NOT restart them (liveness should still pass).
 ```
+
+---
+
+## Most Asked CI/CD & Deployment Interview Questions
+
+### "What is Infrastructure as Code (IaC) and why use it?"
+
+> IaC means managing infrastructure (servers, networks, databases) through machine-readable config files instead of manual console clicks. Benefits: version controlled (review infra changes like code), reproducible (exact same environment every time), auditable (git history shows who changed what), automatable (deploy infra in CI/CD). Tools: **Terraform** (multi-cloud, declarative HCL), **AWS CDK** (TypeScript/Python, imperative), **Pulumi** (general-purpose languages), **CloudFormation** (AWS-specific YAML/JSON).
+
+### "What is a rolling deployment vs blue-green vs canary?"
+
+> **Rolling**: update instances one at a time — some run old version, some new during deployment. Zero downtime but mixed versions temporarily. **Blue-Green**: two identical environments; instant cutover, instant rollback, requires double infrastructure. **Canary**: shift small % of traffic (e.g. 5%) to new version, monitor, gradually increase. Smallest blast radius — catches bugs before full rollout. **Feature flags**: deploy code to all users but enable features for a percentage — separate deployment from release.
+
+### "What is a health check and why is it important in deployments?"
+
+> A health check is an endpoint (`/health` or `/healthz`) that returns 200 when the service is ready to handle traffic. Load balancers and orchestrators use it to: stop sending traffic to unhealthy instances, wait for new deployments to be ready before removing old ones (readiness probe), detect and restart crashed services (liveness probe). Without health checks, a deployment might route traffic to instances that aren't ready yet.
+
+```js
+// Express health endpoint
+app.get('/health', async (req, res) => {
+    try {
+        await db.query('SELECT 1'); // verify DB is reachable
+        res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    } catch (err) {
+        res.status(503).json({ status: 'unhealthy', error: err.message });
+    }
+});
+```
+
+### "What is semantic versioning (semver)?"
+
+> Semver is a versioning scheme: `MAJOR.MINOR.PATCH`. **PATCH** (1.0.1) — backward-compatible bug fix. **MINOR** (1.1.0) — new backward-compatible feature. **MAJOR** (2.0.0) — breaking change. Pre-release: `1.0.0-beta.1`. Automated tools (semantic-release, changesets) read conventional commits and bump versions automatically. Libraries must follow semver strictly; apps use it more loosely.
+
+### "What are feature flags and how do you implement them?"
+
+> Feature flags (feature toggles) decouple deployment from release. Deploy code to production with the feature disabled; enable it for specific users/% of traffic via config without redeployment. Enables: gradual rollouts, A/B testing, instant kill switch if something breaks, testing in production with internal users. Simple implementation: DB/Redis-backed flags. Managed services: LaunchDarkly, Flagsmith, Unleash, PostHog.
+
+```ts
+async function isEnabled(flag: string, userId: string): Promise<boolean> {
+    const config = await redis.get(`flag:${flag}`);
+    if (!config) return false;
+    const { enabled, rolloutPercent, userIds } = JSON.parse(config);
+    if (!enabled) return false;
+    if (userIds?.includes(userId)) return true;
+    // Consistent hash so same user always gets same result
+    return hashUser(userId) % 100 < rolloutPercent;
+}
+```
+
+### "What is observability and what are the three pillars?"
+
+> Observability is the ability to understand what's happening inside a system from its external outputs. The three pillars: **Metrics** — numeric measurements over time (request rate, error rate, latency, CPU — use for dashboards and alerting). **Logs** — structured records of events (use structured JSON logging, correlate with trace IDs). **Traces** — record of a request's journey across services (distributed tracing — identifies which service in a chain is slow). Tools: Prometheus + Grafana (metrics), ELK Stack (logs), Jaeger/Zipkin/OpenTelemetry (traces).
+
+### "How do you do a zero-downtime database migration?"
+
+> Schema changes must be backward-compatible with the currently running code. Safe multi-step approach: 1) **Expand**: add new column (nullable or with default) — old code ignores it. 2) **Migrate**: backfill data, update app to write both old and new column. 3) **Contract**: drop old column once all instances run new code. Never drop a column or rename it in one step — old running instances will crash immediately.
+
+```
+Step 1: ALTER TABLE users ADD COLUMN name_new VARCHAR(255);
+Step 2: UPDATE users SET name_new = name_old; (deploy code writing both)
+Step 3: ALTER TABLE users DROP COLUMN name_old; (after all instances updated)
+```
+
+### "What is a rollback strategy and how do you implement one?"
+
+> A rollback strategy lets you revert to the previous working version quickly. For apps: keep the previous Docker image/deployment config ready; rollback = redeploy previous version (`kubectl rollout undo`, ECS update service with old task definition). For databases: only safe if you used an expand/contract migration (new columns, not dropped old ones). Test rollback in staging. Feature flags give instant rollback without redeployment. Define RTO (recovery time objective) before an incident, not during.

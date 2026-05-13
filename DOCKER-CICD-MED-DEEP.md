@@ -709,3 +709,103 @@ spec:
 ### "How do you handle database migrations in a CI/CD pipeline?"
 
 > Migrations need to be backwards-compatible with the previous code version — both can be live simultaneously during rolling deployment. Pattern: first migration adds nullable columns (old code ignores them, new code writes to them). Deploy new code. Later migration makes column NOT NULL or drops old columns only after all instances run the new code. Never drop a column in the same deployment as the code that removes references to it.
+
+---
+
+## Most Asked Docker & CI/CD Interview Questions
+
+### "What is Docker and why use it?"
+
+> Docker packages an application and all its dependencies into a container — a lightweight, isolated, reproducible environment. "Works on my machine" becomes irrelevant because the container runs the same everywhere. Key benefits: consistency across dev/staging/prod, fast startup (seconds vs minutes for VMs), easy scaling, dependency isolation. Containers share the host OS kernel (unlike VMs which each have their own) — lighter weight.
+
+### "What is the difference between a Dockerfile, image, and container?"
+
+> **Dockerfile** — a recipe (text file of instructions) for building an image. **Image** — a read-only snapshot built from the Dockerfile; can be stored in a registry (Docker Hub, ECR). **Container** — a running instance of an image; ephemeral by default, writable layer on top of the image. Multiple containers can run from the same image simultaneously.
+
+```dockerfile
+# Dockerfile — multi-stage build (smaller final image)
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS production
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY package*.json ./
+RUN npm ci --omit=dev
+EXPOSE 3000
+CMD ["node", "dist/index.js"]
+```
+
+### "What is Docker Compose and when do you use it?"
+
+> Docker Compose defines and runs multi-container applications — your app, database, cache, and any other services declared in a single `docker-compose.yml`. `docker compose up` starts everything; `down` stops and removes containers. Used for local development and simple deployments. Not for production at scale (use Kubernetes or managed services then).
+
+```yaml
+services:
+  app:
+    build: .
+    ports: ["3000:3000"]
+    environment:
+      DATABASE_URL: postgres://postgres:password@db:5432/mydb
+    depends_on: [db, redis]
+
+  db:
+    image: postgres:16-alpine
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    environment:
+      POSTGRES_PASSWORD: password
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  postgres_data:
+```
+
+### "What is CI/CD and what's the difference between CI, CD (delivery), and CD (deployment)?"
+
+> **Continuous Integration (CI)** — developers merge code frequently; every push automatically runs build + tests. Catches integration bugs early. **Continuous Delivery** — after CI passes, the artifact is automatically prepared and ready to deploy to production with a manual trigger. **Continuous Deployment** — goes further: every passing CI run is automatically deployed to production with no human intervention. Most companies do CI + Delivery; full Continuous Deployment requires high test confidence.
+
+### "What makes a good CI/CD pipeline?"
+
+> Fast feedback (under 10 minutes for core checks), reliable (no flaky tests), stages: lint → type-check → test → build → deploy. Use caching aggressively (node_modules, Docker layers). Fail fast — run quick checks first. Secrets injected via environment variables, never in code. Preview deployments for PRs. Rollback strategy defined.
+
+```yaml
+# GitHub Actions example
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npm run lint && npm run type-check && npm test
+  
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - run: npm run build
+      - run: deploy-to-production.sh
+```
+
+### "What is the difference between `COPY` and `ADD` in Dockerfile?"
+
+> `COPY` copies files from build context to the image — straightforward, preferred. `ADD` does everything `COPY` does, plus: auto-extracts tar files and can fetch URLs. Use `COPY` by default; use `ADD` only when you specifically need the tar extraction feature. Fetching URLs with `ADD` is an anti-pattern (better to use `curl` + `RUN` so layers are explicit and cacheable).
+
+### "What are Docker volumes and why use them?"
+
+> Containers are ephemeral — data written inside is lost when the container stops. Volumes persist data outside the container lifecycle. Three types: **Named volumes** (managed by Docker, best for databases), **bind mounts** (maps a host directory into the container — great for dev, source code hot-reload), **tmpfs** (in-memory, not persisted). In production, use named volumes or external storage (RDS, S3) instead of relying on container storage.
+
+### "What are environment-specific configs and how do you handle secrets in CI/CD?"
+
+> Never commit secrets. Inject via: **Environment variables** (set in CI platform — GitHub Secrets, GitLab Variables). **Secret managers** (AWS Secrets Manager, HashiCorp Vault) for production. **`.env` files** for local dev only (gitignored). In Docker: use `--env-file` or `environment:` in Compose. In Kubernetes: use Secrets. Rotate secrets regularly and audit access.
+
+### "What is the difference between blue-green deployment and canary deployment?"
+
+> **Blue-green**: run two identical production environments (blue = current, green = new). Flip traffic all at once to green. Instant rollback (flip back to blue). Requires double infrastructure. **Canary**: gradually shift traffic to the new version — 5% → 25% → 100%. Monitor error rates and metrics at each step. Roll back only to the affected percentage. More complex but reduces blast radius. Both achieve zero-downtime deployments.

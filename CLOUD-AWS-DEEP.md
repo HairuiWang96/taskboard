@@ -915,3 +915,51 @@ Reserved capacity saves 30-40%:
 ### "What is CloudFront and when would you put it in front of your API?"
 
 > CloudFront is AWS's CDN. For static assets (React app, images), always put CloudFront in front of S3 — it serves from edge nodes near users (~10ms vs 150ms), reduces S3 costs, and gives DDoS protection for free. For APIs: put CloudFront in front of ALB when you have publicly cacheable GET responses (product catalogs, reference data, public content). Not worth it for personalized or real-time data. CloudFront also lets you add WAF rules and rate limiting at the edge before requests reach your servers.
+
+---
+
+## Most Asked Cloud & AWS Interview Questions
+
+### "What is the difference between EC2, Lambda, and ECS/EKS?"
+
+> **EC2** — virtual machines you manage (OS, patches, scaling). Full control, highest overhead. Use when you need long-running processes, specific OS config, or GPU access. **Lambda** — serverless functions triggered by events; you only pay per execution; auto-scales to zero; limited to 15min timeout, 10GB memory. Use for event-driven tasks, short-lived jobs, API backends with spiky traffic. **ECS** — run Docker containers managed by AWS; less overhead than EC2. **EKS** — managed Kubernetes; most control and portability but most complexity.
+
+### "What is the difference between S3, EBS, and EFS?"
+
+> **S3** — object storage; flat namespace with buckets/keys; unlimited storage, globally accessible via URL, highly durable (11 9s), cheap. Use for: static assets, backups, data lakes, file uploads. Not a filesystem. **EBS** — block storage attached to a single EC2 instance (like a hard drive); low latency, high throughput; persists independently of the instance. Use for: EC2 root volumes, databases. **EFS** — elastic file system that can be mounted by multiple EC2 instances simultaneously (NFS); scales automatically. Use for: shared file storage across instances.
+
+### "What is IAM and how do you follow least privilege?"
+
+> IAM (Identity and Access Management) controls who can do what in AWS. Core concepts: **Users** (people), **Roles** (assumed by services/EC2/Lambda — no long-term credentials), **Groups** (collection of users), **Policies** (JSON documents defining allow/deny for actions on resources). Best practices: never use root account for daily work, use roles instead of access keys for services, grant minimum permissions needed, use SCPs in Organizations to set guardrails.
+
+```json
+{
+  "Effect": "Allow",
+  "Action": ["s3:GetObject", "s3:PutObject"],
+  "Resource": "arn:aws:s3:::my-bucket/*"
+}
+```
+
+### "What is a VPC and why does it matter?"
+
+> A VPC (Virtual Private Cloud) is your private network in AWS — isolated from other AWS customers. Key components: **Subnets** (public subnet has route to Internet Gateway; private subnet doesn't). **Security Groups** — stateful firewall at instance level (allow rules only). **NACLs** — stateless firewall at subnet level. **Internet Gateway** — connect VPC to internet. **NAT Gateway** — allow private subnet instances to make outbound internet requests without being publicly accessible. Databases should always be in private subnets.
+
+### "What is the difference between RDS, DynamoDB, and ElastiCache?"
+
+> **RDS** — managed relational database (PostgreSQL, MySQL, Aurora); auto-backups, read replicas, multi-AZ failover. Use when you need SQL, JOINs, ACID transactions. **DynamoDB** — managed NoSQL key-value/document store; single-digit millisecond latency at any scale; serverless, auto-scales. Use for: session storage, leaderboards, IoT, anything with predictable access patterns (no ad-hoc queries). **ElastiCache** — managed Redis or Memcached; in-memory caching layer in front of databases. Use to reduce database load for frequently-read data.
+
+### "What is Auto Scaling and how does it work?"
+
+> Auto Scaling automatically adjusts the number of EC2 instances (or ECS tasks, Lambda concurrency) based on demand. Components: **Launch Template** (what to launch), **Auto Scaling Group** (min/max/desired count), **Scaling Policies** (when to scale). Types: **Target Tracking** — maintain a metric (e.g., 70% CPU); **Step Scaling** — scale by N instances when threshold crossed; **Scheduled Scaling** — scale before known traffic spikes. Always set min > 0 for availability; pair with a load balancer.
+
+### "What is the difference between SQS, SNS, and EventBridge?"
+
+> **SQS** — message queue; consumer pulls messages; decouples producer/consumer; messages persist until consumed; use for task queues, work distribution. **SNS** — pub/sub; publisher sends to a topic, all subscribers receive (push); used for fan-out (one event → multiple destinations). **EventBridge** — event bus with routing rules; route events from AWS services, SaaS apps, or your code to targets based on content; use for event-driven architectures, replacing cron jobs, integrating services.
+
+### "What is CloudFront and when do you use it?"
+
+> CloudFront is AWS's CDN — caches content at edge locations globally. Reduces latency (content served from nearest location), reduces origin load, absorbs DDoS. Use for: serving static assets (S3-backed), API caching at the edge, protecting origins behind CloudFront (origin never directly exposed), Lambda@Edge for request/response manipulation. Set aggressive cache headers for immutable assets.
+
+### "What are the key metrics to monitor in production?"
+
+> **The Four Golden Signals** (Google SRE): **Latency** (how long requests take — distinguish success vs error latency), **Traffic** (requests/sec, transactions/sec), **Errors** (rate of failed requests — 5xx, timeouts), **Saturation** (how full the service is — CPU, memory, disk, DB connections). AWS tools: CloudWatch (metrics, logs, alarms), X-Ray (distributed tracing), CloudTrail (API audit log).

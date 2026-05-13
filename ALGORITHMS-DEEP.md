@@ -926,3 +926,172 @@ Mutating input when you shouldn't:
   If algorithm modifies the array, mention it and offer to work on a copy
   Make a copy if needed: const nums = [...input]
 ```
+
+---
+
+## Most Asked Algorithms & Data Structures Interview Questions
+
+### "What is Big O notation?"
+
+> Big O describes the upper bound of an algorithm's time or space complexity as input size n grows — ignoring constants and lower-order terms. The most common: O(1) constant, O(log n) binary search, O(n) linear scan, O(n log n) efficient sorts, O(n²) nested loops, O(2ⁿ) exponential. Always analyze worst case unless told otherwise. Space complexity follows the same rules but measures memory usage.
+
+```
+O(1)      → array index lookup, hash map get
+O(log n)  → binary search, balanced BST lookup
+O(n)      → linear search, single loop
+O(n log n)→ merge sort, heap sort
+O(n²)     → bubble sort, comparing all pairs
+O(2ⁿ)     → generating all subsets
+```
+
+### "When do you use each data structure?"
+
+```
+Array          → ordered, index access O(1), insert/delete O(n)
+Linked List    → frequent insert/delete at head/tail O(1), no index access
+Hash Map       → O(1) avg get/set/delete; unordered
+Set            → uniqueness checks O(1), deduplication
+Stack (LIFO)   → undo history, DFS, balanced parentheses
+Queue (FIFO)   → BFS, task queues, sliding window
+Heap           → always get min/max O(1), insert O(log n) — top-K problems
+Tree (BST)     → sorted data, O(log n) ops if balanced
+Trie           → prefix search, autocomplete
+Graph          → relationships, paths, networks
+```
+
+### "What is the difference between BFS and DFS?"
+
+> **BFS (Breadth-First Search)** uses a queue — explores all neighbors at current depth before going deeper. Finds the **shortest path** in an unweighted graph. **DFS (Depth-First Search)** uses a stack (or recursion) — goes as deep as possible before backtracking. Better for: detecting cycles, topological sort, finding all paths, maze solving. BFS = level by level; DFS = go deep first.
+
+```js
+// BFS — shortest path in unweighted graph
+function bfs(graph, start, target) {
+    const queue = [[start, [start]]];
+    const visited = new Set([start]);
+    while (queue.length) {
+        const [node, path] = queue.shift();
+        if (node === target) return path;
+        for (const neighbor of graph[node]) {
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                queue.push([neighbor, [...path, neighbor]]);
+            }
+        }
+    }
+    return null;
+}
+```
+
+### "Explain binary search."
+
+> Binary search works on **sorted** arrays — repeatedly halve the search space. Compare mid element to target: if equal, done; if target is smaller, search left half; if larger, search right half. O(log n) time. Common bugs: off-by-one in the boundary conditions.
+
+```js
+function binarySearch(arr, target) {
+    let left = 0, right = arr.length - 1;
+    while (left <= right) {
+        const mid = left + Math.floor((right - left) / 2); // avoids integer overflow
+        if (arr[mid] === target) return mid;
+        if (arr[mid] < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1; // not found
+}
+```
+
+### "What is dynamic programming?"
+
+> DP solves problems by breaking them into overlapping subproblems and caching results (memoization = top-down, tabulation = bottom-up). Identify: 1) Can the problem be broken into subproblems? 2) Do subproblems overlap (same subproblem solved multiple times)? 3) Does optimal solution depend on optimal subproblem solutions? Classic examples: Fibonacci, coin change, longest common subsequence, knapsack.
+
+```js
+// Fibonacci — naive is O(2ⁿ), memoized is O(n)
+function fib(n, memo = {}) {
+    if (n <= 1) return n;
+    if (memo[n]) return memo[n];
+    return memo[n] = fib(n - 1, memo) + fib(n - 2, memo);
+}
+
+// Bottom-up tabulation
+function fibDP(n) {
+    const dp = [0, 1];
+    for (let i = 2; i <= n; i++) dp[i] = dp[i-1] + dp[i-2];
+    return dp[n];
+}
+```
+
+### "What is a sliding window?"
+
+> A sliding window maintains a subset (subarray/substring) of fixed or variable size as it moves through the data — avoids recomputing from scratch each step. O(n) instead of O(n²). Use for: max/min subarray of size k, longest substring with constraint, fixed-size window statistics.
+
+```js
+// Maximum sum subarray of size k — O(n)
+function maxSumWindow(arr, k) {
+    let windowSum = arr.slice(0, k).reduce((a, b) => a + b, 0);
+    let maxSum = windowSum;
+    for (let i = k; i < arr.length; i++) {
+        windowSum += arr[i] - arr[i - k]; // slide: add new, remove old
+        maxSum = Math.max(maxSum, windowSum);
+    }
+    return maxSum;
+}
+```
+
+### "What is two pointers technique?"
+
+> Use two indices moving through an array — often from both ends, or one fast and one slow. Reduces O(n²) brute force to O(n). Common uses: pair sum in sorted array, remove duplicates in-place, reverse array, find cycle in linked list (fast/slow pointers).
+
+```js
+// Two sum in sorted array — O(n)
+function twoSum(arr, target) {
+    let left = 0, right = arr.length - 1;
+    while (left < right) {
+        const sum = arr[left] + arr[right];
+        if (sum === target) return [left, right];
+        if (sum < target) left++;
+        else right--;
+    }
+    return [];
+}
+
+// Detect cycle in linked list (Floyd's algorithm)
+function hasCycle(head) {
+    let slow = head, fast = head;
+    while (fast && fast.next) {
+        slow = slow.next;
+        fast = fast.next.next;
+        if (slow === fast) return true;
+    }
+    return false;
+}
+```
+
+### "What sorting algorithms should you know?"
+
+```
+Algorithm      Time (avg)   Time (worst)  Space   Stable  Notes
+──────────────────────────────────────────────────────────────────────
+Bubble Sort    O(n²)        O(n²)         O(1)    Yes     Never use in prod
+Insertion Sort O(n²)        O(n²)         O(1)    Yes     Good for small/nearly-sorted
+Merge Sort     O(n log n)   O(n log n)    O(n)    Yes     Consistent, good for linked lists
+Quick Sort     O(n log n)   O(n²)         O(log n) No     Fastest in practice (cache-friendly)
+Heap Sort      O(n log n)   O(n log n)    O(1)    No      Good worst-case, used in priority queues
+Counting Sort  O(n + k)     O(n + k)      O(k)    Yes     Only for integers in known range
+```
+
+### "How do you find the Kth largest element?"
+
+> Use a **min-heap of size K** — maintain the K largest elements seen so far. When heap exceeds K, pop the minimum. After scanning all elements, the heap's top is the Kth largest. O(n log k) time, O(k) space. Better than sorting (O(n log n)) when k << n.
+
+```js
+// Using JavaScript (manual min-heap with sorted array for simplicity)
+function kthLargest(nums, k) {
+    // Real solution uses a proper min-heap
+    return nums.sort((a, b) => b - a)[k - 1];
+}
+
+// Or use QuickSelect — O(n) average, O(n²) worst
+```
+
+### "What is a hash map and how does it handle collisions?"
+
+> A hash map stores key-value pairs. A hash function maps the key to a bucket index. Collisions (two keys hash to same bucket) are handled by: **Chaining** — each bucket holds a linked list of entries (most common). **Open addressing** — on collision, probe for the next empty slot. Average O(1) get/set; O(n) worst case when everything hashes to same bucket. Load factor (ratio of entries to buckets) triggers rehashing when too high (typically > 0.75).

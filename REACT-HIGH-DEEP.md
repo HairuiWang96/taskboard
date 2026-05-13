@@ -800,3 +800,173 @@ function MouseTracker({ children }) {
 ### "What are React Server Components?"
 
 > RSC are components that render exclusively on the server. They never ship to the browser (zero bundle contribution), can directly access databases and environment variables, and cannot use state, effects, or event handlers. They interleave with Client Components — Server Components for data and static content, Client Components (marked with 'use client') for interactivity. Reduces bundle size and eliminates client-side data fetching waterfalls.
+
+---
+
+## Most Asked Advanced React Interview Questions
+
+### "How does React Fiber work?"
+
+> Fiber is React's internal reconciliation engine (rewritten in React 16). The key innovation: rendering is now interruptible. Previously, reconciliation was a single synchronous recursive call — it blocked the main thread for large trees. Fiber breaks work into small units (fibers — one per component). The scheduler can pause work, yield to the browser for higher-priority tasks (user input, animations), then resume. This enables concurrent features: `startTransition`, `Suspense`, streaming SSR.
+
+### "What is `startTransition` and when do you use it?"
+
+> `startTransition` marks state updates as non-urgent — they can be interrupted by more urgent updates (typing, clicking). Without it, every state update is treated as urgent and blocks the UI. Use for: filtering/sorting large lists, tab switching, search results — any update where showing stale UI briefly is acceptable.
+
+```jsx
+import { startTransition, useState } from 'react';
+
+function SearchPage() {
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+
+    function handleInput(e) {
+        // Urgent: update input immediately
+        setQuery(e.target.value);
+
+        // Non-urgent: can be interrupted if user keeps typing
+        startTransition(() => {
+            setResults(filterLargeDataset(e.target.value));
+        });
+    }
+
+    return <input value={query} onChange={handleInput} />;
+}
+```
+
+### "What is React's `key` prop and why does it matter for lists?"
+
+> `key` is React's identifier for elements in a list. During reconciliation, React uses keys to match old elements with new ones. Stable keys (like item IDs) let React detect moves/additions/removals efficiently. Index as key is problematic: when items reorder, React thinks item at index 0 is the same element — state (like input text) gets associated with the wrong item, and animations break. Always use stable unique IDs.
+
+```jsx
+// ✗ Index as key — breaks when items reorder
+{items.map((item, i) => <Item key={i} {...item} />)}
+
+// ✓ Stable ID
+{items.map(item => <Item key={item.id} {...item} />)}
+```
+
+### "What are Higher-Order Components (HOCs) and their drawbacks?"
+
+> An HOC is a function that takes a component and returns a new enhanced component. Pattern for reusing component logic (before hooks). Drawbacks: prop collision (HOC and wrapped component may use same prop name), wrapper hell (deep nesting in DevTools), non-obvious data flow. Custom hooks replaced most HOC use cases — prefer hooks for logic reuse; HOCs still valid for cross-cutting concerns like error boundaries.
+
+```jsx
+// HOC pattern
+function withAuth(Component) {
+    return function WrappedComponent(props) {
+        const { user } = useAuth();
+        if (!user) return <Redirect to="/login" />;
+        return <Component {...props} user={user} />;
+    };
+}
+
+const ProtectedPage = withAuth(DashboardPage);
+// Equivalent custom hook approach is usually cleaner
+```
+
+### "What is render props and how does it compare to hooks?"
+
+> Render props: a component accepts a function as a prop and calls it in render — shares behavior with children. Like HOCs, mostly superseded by hooks for stateful logic sharing. Render props still useful for inversion of control (letting parent control what gets rendered).
+
+```jsx
+// Render prop — passes mouse position to children
+function MouseTracker({ render }) {
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    return (
+        <div onMouseMove={e => setPos({ x: e.clientX, y: e.clientY })}>
+            {render(pos)}
+        </div>
+    );
+}
+
+<MouseTracker render={({ x, y }) => <p>Mouse: {x}, {y}</p>} />
+
+// Equivalent custom hook — cleaner
+function useMouse() {
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    useEffect(() => {
+        const handler = e => setPos({ x: e.clientX, y: e.clientY });
+        window.addEventListener('mousemove', handler);
+        return () => window.removeEventListener('mousemove', handler);
+    }, []);
+    return pos;
+}
+```
+
+### "How does React batch state updates?"
+
+> In React 18+, all state updates are automatically batched — even in async callbacks, setTimeout, and event handlers. Multiple `setState` calls in the same event handler result in one re-render. In React 17 and earlier, batching only happened inside React event handlers; async updates each triggered a re-render. Use `flushSync` (rare) to opt out of batching when you need the DOM to update immediately.
+
+```jsx
+// React 18: all 3 updates batched → 1 re-render
+setTimeout(() => {
+    setA(1);
+    setB(2);
+    setC(3);
+}, 1000);
+
+// Force immediate render (rare — e.g., measure DOM)
+import { flushSync } from 'react-dom';
+flushSync(() => setCount(c + 1)); // DOM updated synchronously here
+```
+
+### "What is the `useImperativeHandle` hook?"
+
+> `useImperativeHandle` customizes what is exposed when a parent uses a `ref` on a child component. Instead of exposing the whole DOM node or component instance, you expose a specific API. Used with `forwardRef`. Useful for: exposing `focus()`, `scroll()`, `reset()` methods to parents while keeping internal implementation private.
+
+```jsx
+const Input = forwardRef((props, ref) => {
+    const inputRef = useRef();
+
+    useImperativeHandle(ref, () => ({
+        focus: () => inputRef.current.focus(),
+        clear: () => { inputRef.current.value = ''; },
+    }));
+
+    return <input ref={inputRef} {...props} />;
+});
+
+// Parent
+const inputRef = useRef();
+<Input ref={inputRef} />
+<button onClick={() => inputRef.current.focus()}>Focus</button>
+```
+
+### "What is code splitting and how does React handle it?"
+
+> Code splitting defers loading of JavaScript until it's actually needed — reduces initial bundle size, faster first load. React supports it natively with `React.lazy()` + `Suspense`. The dynamic `import()` creates a split point; bundlers (Vite, webpack) automatically create separate chunks.
+
+```jsx
+// Before: everything loaded upfront
+import HeavyDashboard from './HeavyDashboard';
+
+// After: HeavyDashboard loaded only when rendered
+const HeavyDashboard = React.lazy(() => import('./HeavyDashboard'));
+
+function App() {
+    return (
+        <Suspense fallback={<Loading />}>
+            <Routes>
+                <Route path="/dashboard" element={<HeavyDashboard />} />
+            </Routes>
+        </Suspense>
+    );
+}
+```
+
+### "What is the `useDeferredValue` hook?"
+
+> `useDeferredValue` defers updating a value until the browser is idle — similar to `startTransition` but for values you don't control (e.g., coming from props). The component renders immediately with the old value, then re-renders with the new value when the browser is free. Shows stale content instead of blocking.
+
+```jsx
+function SearchResults({ query }) {
+    const deferredQuery = useDeferredValue(query);
+    const isStale = deferredQuery !== query;
+
+    return (
+        <div style={{ opacity: isStale ? 0.5 : 1 }}>
+            <ResultsList query={deferredQuery} />
+        </div>
+    );
+}
+```

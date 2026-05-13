@@ -730,3 +730,60 @@ Visual test:
 ### "What is a skip link?"
 
 > A visually hidden link at the very top of the page that becomes visible on focus. Allows keyboard and screen reader users to jump past the repeated navigation to the main content, without pressing Tab 20+ times on every page load. The target needs `tabIndex="-1"` so it can receive programmatic focus when the link is activated.
+
+---
+
+## Most Asked Accessibility Interview Questions
+
+### "What is WCAG and what are the levels?"
+
+> WCAG (Web Content Accessibility Guidelines) is the international standard for web accessibility published by W3C. Organized around 4 principles (POUR): **Perceivable**, **Operable**, **Understandable**, **Robust**. Three conformance levels: **A** (minimum — must fix), **AA** (standard — required by most laws and hiring expectations), **AAA** (enhanced — aspirational, not always achievable). Most companies target AA. Key laws: ADA (USA), Section 508 (US federal), EN 301 549 (EU).
+
+### "What is ARIA and when should you use it?"
+
+> ARIA (Accessible Rich Internet Applications) is a set of attributes (`role`, `aria-label`, `aria-expanded`, etc.) that add semantic information to HTML for assistive technologies. The #1 rule: **use native HTML elements first** — `<button>` is better than `<div role="button">` because it's keyboard-focusable, activatable with Enter/Space, and communicates role automatically. Use ARIA only when native HTML can't express the semantics (e.g., custom dropdowns, modals, tabs, live regions).
+
+```html
+<!-- ✗ Don't do this — needs all ARIA manually + keyboard handling -->
+<div role="button" tabindex="0" aria-pressed="false" onclick="...">Click me</div>
+
+<!-- ✓ Use native button — gets everything for free -->
+<button type="button">Click me</button>
+
+<!-- ✓ ARIA where HTML is insufficient — custom modal -->
+<div role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title">Confirm Delete</h2>
+</div>
+```
+
+### "What is the minimum color contrast ratio?"
+
+> WCAG AA requires: **4.5:1** for normal text (< 18pt or < 14pt bold), **3:1** for large text (≥ 18pt or ≥ 14pt bold) and UI components (buttons borders, icons, input borders). WCAG AAA: 7:1 for normal text. Check with tools: WebAIM Contrast Checker, browser DevTools accessibility panel. Common failure: light gray text on white background.
+
+### "What elements must be keyboard accessible?"
+
+> All interactive elements must be reachable and operable with keyboard alone: links (`Tab`, `Enter`), buttons (`Tab`, `Enter`, `Space`), form fields (`Tab`), dropdowns (`Arrow` keys), modals (trap focus inside, `Escape` to close), dialogs, date pickers. Test by unplugging your mouse and tabbing through the whole page. The tab order should follow the visual reading order.
+
+### "What is a focus trap and when do you need one?"
+
+> A focus trap keeps keyboard focus inside a component — typically a modal dialog. Without it, pressing Tab in a modal would move focus behind it to the page underneath, which is disorienting for screen reader users. Implement by intercepting Tab/Shift+Tab when focus would leave the container and cycling back. Libraries: `focus-trap-react`, Headless UI dialogs handle this automatically.
+
+### "What are ARIA live regions?"
+
+> Live regions announce dynamic content changes to screen readers without focus moving to the element. `aria-live="polite"` — announces when idle (non-urgent: stock ticker, search results). `aria-live="assertive"` — interrupts immediately (errors, alerts — use sparingly). Use `role="status"` for polite and `role="alert"` as shorthand.
+
+```html
+<!-- Search results update — announce when ready -->
+<div aria-live="polite" aria-atomic="true">
+    Found 42 results
+</div>
+
+<!-- Error message — announce immediately -->
+<div role="alert">
+    Invalid email address
+</div>
+```
+
+### "What alt text should images have?"
+
+> **Informative images**: describe what the image conveys — not "image of" or "photo of", but what it communicates. **Decorative images**: `alt=""` — screen reader skips it entirely. **Functional images** (buttons/links): describe the action, not the image (e.g., `alt="Search"` not `alt="magnifying glass"`). **Complex images** (charts/graphs): provide a text description of the data, not just "bar chart". Never omit `alt` — that causes screen readers to read the file name.

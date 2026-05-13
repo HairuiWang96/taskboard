@@ -729,3 +729,92 @@ ListenableBuilder(
 ### "What state management would you choose for a Flutter app?"
 
 > For small-to-medium apps: `Provider` with `ChangeNotifier` is straightforward and officially recommended. For larger apps with complex async state: `Riverpod` — it's like TanStack Query + Zustand combined, type-safe, testable, with built-in caching and async state handling. Avoid `setState` for anything shared between screens — it doesn't scale. Bloc/Cubit is popular in enterprise teams (explicit events and states), but has more boilerplate than Riverpod.
+
+---
+
+## Most Asked Flutter Interview Questions
+
+### "What is Flutter and how does it differ from React Native?"
+
+> Flutter is Google's UI toolkit using Dart. Key difference: Flutter doesn't use native UI components — it renders everything itself using Skia/Impeller graphics engine (like a game engine). React Native bridges to native components; Flutter draws its own. Results: pixel-perfect consistency across platforms, no native component quirks, but widgets don't automatically match platform conventions. Flutter targets: iOS, Android, Web, Desktop (Windows, macOS, Linux) from one codebase.
+
+### "What is the widget tree and how does Flutter render UI?"
+
+> In Flutter, everything is a widget. Widgets are immutable descriptions of UI — they're cheap to create and recreate. Flutter maintains three trees: **Widget tree** (what you write — immutable config), **Element tree** (lifecycle — manages the widget-to-render connection), **Render Object tree** (layout and painting). When state changes, Flutter rebuilds the widget subtree, diffs against the element tree, and only updates what changed in the render tree.
+
+### "What is the difference between `StatelessWidget` and `StatefulWidget`?"
+
+> `StatelessWidget` — immutable, no internal state; rebuilds entirely when parent rebuilds. `StatefulWidget` — has a companion `State` object that persists across rebuilds; `setState()` triggers a rebuild of only this widget's subtree. Use stateless when there's no internal state; stateful when the widget manages its own state. With state management libraries (Riverpod, Bloc), you often use stateless widgets and read state from a provider.
+
+```dart
+// Stateless — pure function of its inputs
+class Greeting extends StatelessWidget {
+    final String name;
+    const Greeting({required this.name});
+    @override
+    Widget build(BuildContext context) => Text('Hello, $name!');
+}
+
+// Stateful — manages internal counter
+class Counter extends StatefulWidget {
+    @override
+    State<Counter> createState() => _CounterState();
+}
+class _CounterState extends State<Counter> {
+    int _count = 0;
+    @override
+    Widget build(BuildContext context) => TextButton(
+        onPressed: () => setState(() => _count++),
+        child: Text('Count: $_count'),
+    );
+}
+```
+
+### "What is `BuildContext` and why does it matter?"
+
+> `BuildContext` is a handle to the location of a widget in the widget tree. It's used to: find ancestor widgets (`Theme.of(context)`, `Navigator.of(context)`), access inherited data, show dialogs and snackbars. It's only valid during the build phase — storing it and using it later (after an async gap) can cause "context used after unmount" errors. Check `mounted` before using context after `await`.
+
+```dart
+// Safe async context use
+Future<void> save() async {
+    await apiCall();
+    if (!mounted) return; // check before using context
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved!')));
+}
+```
+
+### "What is Riverpod and why use it over Provider?"
+
+> Riverpod is a state management library by the same author as Provider but redesigned to fix Provider's issues: no BuildContext required to read state, compile-time safety (no runtime ProviderNotFound errors), works outside of the widget tree, better testability, supports async providers natively. Provider is simpler but Riverpod is recommended for new projects. Both use a `ChangeNotifier`/reactive model.
+
+```dart
+// Riverpod provider
+final tasksProvider = StateNotifierProvider<TasksNotifier, List<Task>>(
+    (ref) => TasksNotifier(),
+);
+
+// In widget (ConsumerWidget)
+class TaskList extends ConsumerWidget {
+    @override
+    Widget build(BuildContext context, WidgetRef ref) {
+        final tasks = ref.watch(tasksProvider);
+        return ListView(children: tasks.map((t) => TaskTile(task: t)).toList());
+    }
+}
+```
+
+### "What is the difference between `hot reload` and `hot restart`?"
+
+> **Hot reload** — injects updated Dart code into the running VM without restarting the app; preserves state (scroll position, form data, navigation stack). Takes ~1 second. Only works for stateless/build changes — doesn't reinitialize `initState`. **Hot restart** — fully restarts the app from scratch; loses state; faster than cold restart (no recompile). Use hot reload for UI tweaks; hot restart when you change `initState`, global variables, or main().
+
+### "What are `Keys` in Flutter and when do you need them?"
+
+> Keys help Flutter match widgets across rebuilds — important when reordering, adding, or removing items in a list. Without keys, Flutter matches by position; with keys, it matches by identity. Types: `ValueKey` (use an ID), `ObjectKey` (use an object), `UniqueKey` (always new — forces rebuild), `GlobalKey` (access widget/state from anywhere — use sparingly). Most needed for: animated list reorders, preserving form state when list items move.
+
+```dart
+ListView(
+    children: tasks.map((task) =>
+        TaskTile(key: ValueKey(task.id), task: task) // stable key
+    ).toList(),
+)
+```

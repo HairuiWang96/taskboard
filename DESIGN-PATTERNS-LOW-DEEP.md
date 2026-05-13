@@ -711,3 +711,184 @@ Anemic Domain Model:
 ### "What is the Factory pattern?"
 
 > A Factory abstracts object creation — the caller requests an object without knowing which concrete class it gets. The factory decides based on input. Use when: object creation is complex, the type depends on runtime conditions, you want to centralize creation logic. Example: `createNotification(user)` returns Email/SMS/Push notification based on user preferences — caller just calls `.send()`.
+
+---
+
+## Most Asked Design Patterns Interview Questions
+
+### "What are the three categories of design patterns?"
+
+> **Creational** — how objects are created: Singleton, Factory, Builder, Prototype. **Structural** — how objects are composed: Adapter, Decorator, Proxy, Facade, Composite. **Behavioral** — how objects communicate: Observer, Strategy, Command, Iterator, State. In interviews, know at least one from each category deeply and be able to explain why you'd use it.
+
+### "What is the Singleton pattern and what are its downsides?"
+
+> Ensures a class has only one instance and provides a global access point to it. Use cases: database connection pool, logger, config. Downsides: hard to test (global state, can't be mocked easily), introduces tight coupling, violates single responsibility (manages its own lifecycle). In modern JS/TS, module singletons (just export a single instance) are more idiomatic.
+
+```ts
+class Database {
+    private static instance: Database;
+    private constructor() {}  // prevent direct instantiation
+
+    static getInstance(): Database {
+        if (!Database.instance) Database.instance = new Database();
+        return Database.instance;
+    }
+
+    query(sql: string) { /* ... */ }
+}
+
+// Module singleton (simpler, more idiomatic)
+export const db = new Database();
+```
+
+### "What is the Observer pattern?"
+
+> Defines a one-to-many dependency: when one object (subject/publisher) changes state, all its dependents (observers/subscribers) are notified automatically. Foundation of event-driven programming. Used everywhere: DOM events, React state, RxJS, EventEmitter, Redux.
+
+```ts
+class EventEmitter<T> {
+    private listeners: Map<string, ((data: T) => void)[]> = new Map();
+
+    on(event: string, fn: (data: T) => void) {
+        (this.listeners.get(event) ?? this.listeners.set(event, []).get(event)!).push(fn);
+    }
+
+    emit(event: string, data: T) {
+        this.listeners.get(event)?.forEach(fn => fn(data));
+    }
+
+    off(event: string, fn: (data: T) => void) {
+        const fns = this.listeners.get(event) ?? [];
+        this.listeners.set(event, fns.filter(f => f !== fn));
+    }
+}
+```
+
+### "What is the Factory pattern?"
+
+> Provides an interface for creating objects without specifying their concrete class — the factory decides which class to instantiate. Useful when the exact type to create depends on runtime conditions, or when you want to centralize complex creation logic.
+
+```ts
+interface Logger { log(msg: string): void; }
+class ConsoleLogger implements Logger { log(msg: string) { console.log(msg); } }
+class FileLogger implements Logger { log(msg: string) { /* write to file */ } }
+
+class LoggerFactory {
+    static create(type: 'console' | 'file'): Logger {
+        switch (type) {
+            case 'console': return new ConsoleLogger();
+            case 'file': return new FileLogger();
+        }
+    }
+}
+
+const logger = LoggerFactory.create(process.env.LOG_TARGET as 'console' | 'file');
+```
+
+### "What is the Strategy pattern?"
+
+> Defines a family of algorithms, encapsulates each one, and makes them interchangeable. The client selects the algorithm at runtime. Eliminates `if/else` or `switch` chains. Open/closed principle: add new strategies without modifying existing code.
+
+```ts
+type SortStrategy = (arr: number[]) => number[];
+
+const quickSort: SortStrategy = (arr) => { /* ... */ return arr; };
+const mergeSort: SortStrategy = (arr) => { /* ... */ return arr; };
+
+class Sorter {
+    constructor(private strategy: SortStrategy) {}
+    sort(arr: number[]) { return this.strategy(arr); }
+    setStrategy(strategy: SortStrategy) { this.strategy = strategy; }
+}
+
+const sorter = new Sorter(quickSort);
+sorter.sort([3, 1, 2]);
+sorter.setStrategy(mergeSort); // swap algorithm at runtime
+```
+
+### "What is the Decorator pattern?"
+
+> Dynamically adds behavior to an object by wrapping it, without modifying the original class or using inheritance. Each decorator wraps the component and adds its behavior before/after delegating to the inner object. Used in: middleware pipelines, logging wrappers, caching layers.
+
+```ts
+interface DataSource { read(): string; write(data: string): void; }
+
+class FileDataSource implements DataSource { /* basic file read/write */ }
+
+class EncryptionDecorator implements DataSource {
+    constructor(private wrapped: DataSource) {}
+    write(data: string) { this.wrapped.write(encrypt(data)); }
+    read() { return decrypt(this.wrapped.read()); }
+}
+
+class CompressionDecorator implements DataSource {
+    constructor(private wrapped: DataSource) {}
+    write(data: string) { this.wrapped.write(compress(data)); }
+    read() { return decompress(this.wrapped.read()); }
+}
+
+// Stack decorators: compression wraps encryption wraps file
+const source = new CompressionDecorator(new EncryptionDecorator(new FileDataSource()));
+```
+
+### "What is the Command pattern?"
+
+> Encapsulates a request as an object — with execute and undo methods. Decouples the sender from the receiver. Enables: undo/redo history, queuing operations, logging commands, macro recording.
+
+```ts
+interface Command { execute(): void; undo(): void; }
+
+class TextEditor {
+    text = '';
+    history: Command[] = [];
+
+    executeCommand(cmd: Command) {
+        cmd.execute();
+        this.history.push(cmd);
+    }
+
+    undoLast() {
+        this.history.pop()?.undo();
+    }
+}
+
+class InsertCommand implements Command {
+    constructor(private editor: TextEditor, private text: string, private pos: number) {}
+    execute() { this.editor.text = insert(this.editor.text, this.text, this.pos); }
+    undo() { this.editor.text = remove(this.editor.text, this.text, this.pos); }
+}
+```
+
+### "What is the Proxy pattern?"
+
+> Provides a substitute that controls access to the real object. Can add: lazy initialization (create expensive object only when needed), access control, caching, logging, request throttling. JavaScript `Proxy` is a language-level implementation.
+
+```ts
+function createCachingProxy<T extends object>(target: T): T {
+    const cache = new Map<string, unknown>();
+    return new Proxy(target, {
+        get(obj, prop: string) {
+            const value = obj[prop as keyof T];
+            if (typeof value === 'function') {
+                return (...args: unknown[]) => {
+                    const key = `${prop}:${JSON.stringify(args)}`;
+                    if (cache.has(key)) return cache.get(key);
+                    const result = value.apply(obj, args);
+                    cache.set(key, result);
+                    return result;
+                };
+            }
+            return value;
+        }
+    });
+}
+```
+
+### "What is SOLID and why does it matter?"
+
+> Five OOP design principles for maintainable, extensible code:
+> - **S**ingle Responsibility — a class has one reason to change
+> - **O**pen/Closed — open for extension, closed for modification (add new behavior without changing existing code)
+> - **L**iskov Substitution — subclasses must be substitutable for their base class
+> - **I**nterface Segregation — clients shouldn't depend on interfaces they don't use (many small interfaces > one big one)
+> - **D**ependency Inversion — depend on abstractions, not concretions (inject dependencies rather than hardcoding them)

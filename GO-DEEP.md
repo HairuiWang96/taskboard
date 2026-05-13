@@ -828,3 +828,166 @@ func TestAdd(t *testing.T) {
 ### "Explain Go's concurrency model."
 
 > Go uses CSP (Communicating Sequential Processes). Goroutines are the execution units; channels are the communication mechanism. The runtime schedules goroutines using an M:N model — M goroutines on N OS threads (N = number of CPU cores by default, set by GOMAXPROCS). Go's `select` statement lets a goroutine wait on multiple channel operations — whichever is ready first proceeds. This model makes concurrent code compositional and avoids shared-state bugs by design.
+
+---
+
+## Most Asked Go Interview Questions
+
+### "What makes Go different from other languages?"
+
+> Go is compiled, statically typed, garbage collected, and built for concurrency. Key differentiators: goroutines (lightweight threads — run millions concurrently), channels (typed communication between goroutines), no inheritance (uses composition and interfaces), no generics for years (added in 1.18), fast compilation, single binary output (no runtime dependency), built-in tooling (`go fmt`, `go test`, `go vet`). Designed for backend services at scale.
+
+### "What is a goroutine and how does it differ from a thread?"
+
+> A goroutine is a lightweight concurrent function managed by the Go runtime — not an OS thread. Goroutines start with ~2KB stack (grows dynamically), vs ~1MB for OS threads. The Go runtime multiplexes thousands of goroutines onto a small number of OS threads (M:N scheduling). You can run millions of goroutines; thousands of OS threads would exhaust memory. Start a goroutine with `go func()`.
+
+```go
+// Start goroutines
+go func() {
+    fmt.Println("running concurrently")
+}()
+
+// With a WaitGroup to wait for completion
+var wg sync.WaitGroup
+for i := 0; i < 10; i++ {
+    wg.Add(1)
+    go func(id int) {
+        defer wg.Done()
+        fmt.Printf("worker %d\n", id)
+    }(i)
+}
+wg.Wait()
+```
+
+### "What are channels and how do you use them?"
+
+> Channels are typed conduits for communication between goroutines — "don't communicate by sharing memory; share memory by communicating." Unbuffered channels block until both sender and receiver are ready (synchronization). Buffered channels have a capacity — send doesn't block until full.
+
+```go
+ch := make(chan int)         // unbuffered
+ch := make(chan int, 10)     // buffered, capacity 10
+
+// Send and receive
+ch <- 42      // send (blocks until receiver ready if unbuffered)
+val := <-ch   // receive
+
+// Close and range
+close(ch)
+for val := range ch { fmt.Println(val) } // reads until channel closed
+
+// Select — like a switch for channels
+select {
+case msg := <-ch1:
+    fmt.Println("from ch1:", msg)
+case ch2 <- "hello":
+    fmt.Println("sent to ch2")
+case <-time.After(1 * time.Second):
+    fmt.Println("timeout")
+}
+```
+
+### "What is the difference between a pointer and a value receiver?"
+
+> Value receiver: method gets a copy of the struct — can't modify the original. Pointer receiver: method gets a reference — can modify the original and avoids copying large structs. Rule: if any method needs a pointer receiver, use pointer receivers for all methods on that type for consistency.
+
+```go
+type Counter struct { count int }
+
+func (c Counter) Value() int { return c.count }        // value receiver — read-only fine
+func (c *Counter) Increment() { c.count++ }             // pointer receiver — modifies struct
+func (c *Counter) Reset() { c.count = 0 }
+
+c := Counter{}
+c.Increment()  // Go auto-takes address: (&c).Increment()
+fmt.Println(c.Value()) // 1
+```
+
+### "How does Go handle errors?"
+
+> Go uses explicit error returns — no exceptions. Functions return `(value, error)`. Callers must handle the error. `errors.New("msg")` or `fmt.Errorf("context: %w", err)` create errors. `errors.Is(err, target)` checks error identity in the chain. `errors.As(err, &target)` extracts a specific error type from the chain. `%w` verb wraps errors for unwrapping.
+
+```go
+func divide(a, b float64) (float64, error) {
+    if b == 0 {
+        return 0, fmt.Errorf("divide: %w", ErrDivisionByZero)
+    }
+    return a / b, nil
+}
+
+result, err := divide(10, 0)
+if err != nil {
+    if errors.Is(err, ErrDivisionByZero) {
+        // handle specifically
+    }
+    log.Fatal(err)
+}
+```
+
+### "What is `defer` and when do you use it?"
+
+> `defer` schedules a function call to run when the surrounding function returns — regardless of how it returns (normal, panic, early return). LIFO order if multiple defers. Used for: cleanup (close files/connections, release locks), logging, recovering from panics.
+
+```go
+func readFile(path string) ([]byte, error) {
+    f, err := os.Open(path)
+    if err != nil { return nil, err }
+    defer f.Close()  // always runs when readFile returns
+
+    return io.ReadAll(f)
+}
+
+// Multiple defers run LIFO
+defer fmt.Println("1")
+defer fmt.Println("2")
+// Output: 2, then 1
+```
+
+### "What is a Go interface?"
+
+> An interface is a set of method signatures. Any type that implements all the methods satisfies the interface implicitly — no `implements` keyword. The empty interface `interface{}` (or `any` in Go 1.18+) accepts any type. Interfaces enable polymorphism and testability (mock by providing a test implementation).
+
+```go
+type Writer interface {
+    Write(p []byte) (n int, err error)
+}
+
+// Both satisfy Writer implicitly:
+// os.File has Write method → satisfies Writer
+// bytes.Buffer has Write method → satisfies Writer
+
+func writeAll(w Writer, data []byte) error {
+    _, err := w.Write(data)
+    return err
+}
+// Works with any type that has Write — including test mocks
+```
+
+### "What is the difference between `make` and `new`?"
+
+> `new(T)` allocates zeroed storage for T and returns a pointer `*T` — rarely used directly. `make(T, ...)` initializes slices, maps, and channels and returns the type itself (not a pointer) — required for these types because they need internal initialization beyond zeroing.
+
+```go
+p := new(int)        // *int, points to zeroed int
+s := make([]int, 5)  // []int of length 5, capacity 5
+m := make(map[string]int)
+ch := make(chan int, 10)
+
+// Slice literal (most common)
+s := []int{1, 2, 3}
+m := map[string]int{"a": 1}
+```
+
+### "What is panic and recover?"
+
+> `panic` stops normal execution, unwinds the stack, and runs deferred functions. `recover` (called inside a deferred function) catches a panic and returns the panic value — preventing crash. Use sparingly: only for truly unrecoverable errors (logic violations, nil pointer on startup). Normal errors should use error returns.
+
+```go
+func safeDiv(a, b int) (result int, err error) {
+    defer func() {
+        if r := recover(); r != nil {
+            err = fmt.Errorf("recovered from panic: %v", r)
+        }
+    }()
+    return a / b, nil // panics if b == 0
+}
+```

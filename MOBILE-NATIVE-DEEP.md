@@ -689,3 +689,89 @@ navController.popBackStack()    // go back
 ### "How is SwiftUI similar to React?"
 
 > Both are declarative UI frameworks where you describe what the UI should look like based on state, and the framework handles updates. `@State` in SwiftUI = `useState` in React. `@ObservedObject` / `@StateObject` = external state (like Zustand). `@EnvironmentObject` = React Context. Views (structs with a `body` property) = components. The rendering engine diffs the view tree and applies minimal updates. `task { }` modifier = `useEffect`. The key difference: SwiftUI is compiled and runs on-device with no virtual DOM.
+
+---
+
+## Most Asked Mobile Native Interview Questions
+
+### "What is the difference between iOS and Android app lifecycle?"
+
+> **iOS**: `application:didFinishLaunchingWithOptions` (launch) → `applicationDidBecomeActive` (foreground) → `applicationWillResignActive` → `applicationDidEnterBackground` (background, ~10min) → `applicationWillTerminate`. **Android**: Activities have: `onCreate` → `onStart` → `onResume` (running) → `onPause` → `onStop` → `onDestroy`. Android can kill background processes more aggressively. Key difference: iOS apps can't freely run in background (limited background modes); Android is more permissive but varies by manufacturer.
+
+### "What is the difference between `Activity` and `Fragment` in Android?"
+
+> An `Activity` is a single screen with a UI — entry point of the app, has its own lifecycle. A `Fragment` is a reusable UI component that lives inside an Activity — has its own lifecycle tied to the Activity's. Fragments enable: multi-pane layouts on tablets, navigation within an Activity (Fragment backstack), reusable UI pieces. Modern Android uses a single-Activity architecture with Navigation Component managing a Fragment backstack.
+
+### "What is Auto Layout on iOS?"
+
+> Auto Layout is iOS's constraint-based layout system — you define relationships between views (spacing, alignment, sizing) rather than absolute positions. The engine solves the constraints to determine frames. Constraints: leading/trailing (not left/right — respects RTL), top/bottom, width/height, center X/Y, aspect ratio. Avoid conflicting constraints (unsatisfiable) and ambiguous layouts (under-constrained). In code: NSLayoutConstraint API or SnapKit; in Interface Builder: visual constraint editor.
+
+### "What is ARC (Automatic Reference Counting) in Swift/iOS?"
+
+> ARC automatically manages memory for class instances — tracks how many references point to each instance; when count drops to 0, the instance is deallocated. No garbage collector (no pauses). Problem: retain cycles — two objects hold strong references to each other (both reach count 0 but neither deallocates). Fix: use `weak` (optional, can become nil) or `unowned` (non-optional, assumes object lives at least as long) for one side of the cycle. Common in closures capturing `self`.
+
+```swift
+class ViewModel {
+    var onUpdate: (() -> Void)?
+    
+    func load() {
+        api.fetch { [weak self] data in  // [weak self] breaks retain cycle
+            guard let self else { return }
+            self.process(data)
+            self.onUpdate?()
+        }
+    }
+}
+```
+
+### "What is the difference between `struct` and `class` in Swift?"
+
+> `struct` is a value type — copies on assignment. `class` is a reference type — shares the same instance. Swift encourages structs for model data (Thread-safe copies, no unintended sharing, no inheritance needed). Use classes when: you need inheritance, you need identity (same instance = same object), or you need reference semantics (shared mutable state). SwiftUI `View` is a struct — because the framework owns the lifecycle and recreates views frequently.
+
+```swift
+var a = Point(x: 0, y: 0)
+var b = a           // copy — struct
+b.x = 10
+a.x // 0 — unaffected
+
+var objA = Node()
+var objB = objA     // reference — class
+objB.value = 10
+objA.value // 10 — same object!
+```
+
+### "What is SwiftUI and how does it differ from UIKit?"
+
+> SwiftUI is Apple's declarative UI framework (2019). You describe what the UI should look like for a given state — SwiftUI handles updates. Reactive: state changes automatically re-render affected views. Compared to UIKit: less code, no storyboards needed, live previews in Xcode, cross-platform (iOS/macOS/watchOS same code). Downsides: less mature (missing some components), harder to customize deeply, requires iOS 13+. UIKit is imperative — you manually update views when data changes.
+
+```swift
+struct TaskRow: View {
+    let task: Task
+    @State private var isDone = false
+    
+    var body: some View {
+        HStack {
+            Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(isDone ? .green : .gray)
+                .onTapGesture { isDone.toggle() }
+            Text(task.title)
+                .strikethrough(isDone)
+        }
+    }
+}
+```
+
+### "What is Jetpack Compose in Android?"
+
+> Jetpack Compose is Android's modern declarative UI toolkit (2021, stable). Like SwiftUI, you describe UI as composable functions that React to state. Replaces XML layouts. Key concepts: `@Composable` functions, `remember`/`mutableStateOf` for state, `LaunchedEffect` for side effects (like `useEffect`), `State hoisting` (lift state up). The mental model is very similar to React.
+
+```kotlin
+@Composable
+fun TaskRow(task: Task) {
+    var isDone by remember { mutableStateOf(false) }
+    Row {
+        Checkbox(checked = isDone, onCheckedChange = { isDone = it })
+        Text(task.title, textDecoration = if (isDone) TextDecoration.LineThrough else null)
+    }
+}
+```
