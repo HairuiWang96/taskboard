@@ -296,6 +296,38 @@ const triple = multiply(3);
 double(5); // 10
 triple(5); // 15
 
+// HOW do double/triple accept arguments?
+// multiply(2) returns a function — double IS that function:
+//   double === (number => number * 2)
+// So calling double(5) is the same as: (number => number * 2)(5) → 10
+//
+// Two-step breakdown:
+//   multiply(2)(5)
+//           ↑    ↑
+//       factor  number
+//       = 2     = 5   → 2 * 5 = 10
+//
+// double(5) is just the same thing split into two steps:
+//   const double = multiply(2); // step 1: lock in factor = 2
+//   double(5);                  // step 2: provide number = 5
+
+// This pattern is called partial application — you're pre-filling one argument (factor) and leaving the other (number) open for later.
+
+// (number => number * 2)(5) — this is an IIFE (Immediately Invoked Function Expression)
+// Pattern: (function definition)(arguments)
+//
+// Same thing, different styles:
+//   (function(x) { return x * 2; })(5); // regular function IIFE → 10
+//   (x => x * 2)(5);                    // arrow function IIFE   → 10
+//   (number => number * 2)(5);          // same — no name needed  → 10
+//
+// Normal vs IIFE:
+//   const double = number => number * 2; double(5); // define, then call by name
+//   (number => number * 2)(5);                      // define and call in one shot
+//
+// IIFEs are also the Fix 2 for the var loop bug above — they capture the
+// current value of i in a new scope on each iteration
+
 // Module pattern (pre-ESM)
 const bankAccount = (() => {
     let balance = 0; // private
@@ -334,13 +366,13 @@ dog.bark = function () {
 
 dog.bark(); // found on dog itself
 dog.breathe(); // not on dog → walk chain → found on animal
-dog.toString(); // not on dog → not on animal → found on Object.prototype
+dog.toString(); //! not on dog → not on animal → found on Object.prototype
 
-// prototype chain: dog → animal → Object.prototype → null
+//! prototype chain: dog → animal → Object.prototype → null
 
 Object.getPrototypeOf(dog) === animal; // true
 dog.hasOwnProperty('bark'); // true
-dog.hasOwnProperty('breathe'); // false (it's on the prototype)
+dog.hasOwnProperty('breathe'); //! false (it's on the prototype)
 ```
 
 ### Classes (syntactic sugar over prototypes)
@@ -370,7 +402,7 @@ class Dog extends Animal {
     #breed;
 
     constructor(name, breed) {
-        super(name); // must call super before using this
+        super(name); //! must call super before using this
         this.#breed = breed;
     }
 
@@ -381,7 +413,7 @@ class Dog extends Animal {
 
 const dog = new Dog('Rex', 'Husky');
 
-// Under the hood:
+//! Under the hood:
 // Dog.prototype.__proto__ === Animal.prototype
 // dog.__proto__ === Dog.prototype
 ```
@@ -396,20 +428,58 @@ const proto = {
     },
 };
 const obj = Object.create(proto); // obj's prototype = proto
-const empty = Object.create(null); // no prototype at all (no toString etc.)
+const empty = Object.create(null); //! no prototype at all (no toString etc.)
 
 // Object.assign: shallow copy / mixin
+// MIXIN means merging properties from one or more objects into another — "mixing in" extra behavior
+// Same method, different intent:
+//   Object.assign({}, source)         → shallow COPY (cloning)
+//   Object.assign(target, source)     → MIXIN (merging into existing object)
+
+// const target = { a: 1 };
+// const source = { b: 2, c: 3 };
+// Object.assign(target, source);
+// // target is now { a: 1, b: 2, c: 3 }
+// The source's properties got "mixed in" to the target.
+
+// Object.assign always:
+
+// Mutates the first argument (target) — properties are written into it
+// Returns that same target (so result and target point to the same object in memory)
+// Never touches the sources — it only reads from them
+
+// The danger
+
+// const defaults = { color: 'red', size: 10 };
+// const config = Object.assign(defaults, { size: 20 }); // ← mutates defaults!
+// defaults.size // 20 — defaults is now corrupted
+
+//! This is why the common pattern is to pass an empty object as the first argument:
+// const config = Object.assign({}, defaults, { size: 20 });
+// // defaults is untouched, config is a new object
+// Or use spread, which always creates a new object:
+
+// const config = { ...defaults, size: 20 }; // defaults never mutated
+
+// Mixin example — composing behavior without class inheritance:
+//   const canSwim = { swim() { console.log('swimming'); } };
+//   const canFly  = { fly()  { console.log('flying');   } };
+//   const duck = { name: 'Donald' };
+//   Object.assign(duck, canSwim, canFly); // duck now has swim() and fly() mixed in
+//   duck.swim(); // 'swimming'
+//   duck.fly();  // 'flying'
+// Unlike class inheritance (one parent only), mixins let you compose from multiple sources
 const target = { a: 1 };
 const result = Object.assign(target, { b: 2 }, { c: 3 });
-// result = target = { a: 1, b: 2, c: 3 } — mutates target!
+//! result = target = { a: 1, b: 2, c: 3 } — mutates target!
 
 // Spread for immutable version
 const merged = { ...obj1, ...obj2 }; // new object, doesn't mutate
 
 // Shallow vs deep copy
 const shallow = { ...original }; // nested objects still shared
-const deep = structuredClone(original); // ES2022 deep clone (most cases)
-const deepOld = JSON.parse(JSON.stringify(original)); // loses: functions, Date, undefined
+const deep = structuredClone(original); //! ES2022 deep clone (most cases)
+const deepOld = JSON.parse(JSON.stringify(original)); //! loses: functions, Date, undefined
 ```
 
 ---
