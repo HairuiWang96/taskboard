@@ -60,6 +60,55 @@ console.log('5'); // synchronous
 // Rule: sync → all micro-tasks → one macro-task → all micro-tasks → next macro-task
 ```
 
+### Event loop execution order (detailed)
+
+**Three queues:**
+
+| Queue             | Examples                                                           |
+| ----------------- | ------------------------------------------------------------------ |
+| Call Stack (sync) | Regular code, function calls                                       |
+| Micro-task Queue  | `Promise.then/catch/finally`, `queueMicrotask`, `MutationObserver` |
+| Macro-task Queue  | `setTimeout`, `setInterval`, `setImmediate`, I/O callbacks         |
+
+**Steps each tick:**
+
+1. Run all synchronous code on the call stack to completion
+2. Drain the **entire** microtask queue — including any new microtasks added _during_ this step
+3. Pick **ONE** macrotask and run it
+4. Drain the **entire** microtask queue again
+5. Repeat from step 3
+
+```js
+console.log('1 - sync');
+
+setTimeout(() => console.log('2 - macro'), 0);
+
+Promise.resolve()
+    .then(() => console.log('3 - micro'))
+    .then(() => console.log('4 - micro (chained)')); // added during micro drain — still runs before macro
+
+console.log('5 - sync');
+
+// Output: 1 - sync, 5 - sync, 3 - micro, 4 - micro (chained), 2 - macro
+```
+
+**Microtasks are greedy** — any microtask added while draining the microtask queue runs _before_ any macrotask gets a turn:
+
+```js
+// This starves the macrotask queue — setTimeout never fires
+function flood() {
+    Promise.resolve().then(flood); // keeps re-filling the microtask queue
+}
+flood();
+setTimeout(() => console.log('never runs'), 0);
+```
+
+**Key takeaways:**
+
+- `Promise.then` always runs before `setTimeout`, even `setTimeout(..., 0)`
+- `async/await` resumes as a microtask (it's sugar over Promises)
+- In browsers, UI renders happen between macrotasks — heavy microtask chains can block rendering
+
 ### Why micro-tasks run before macro-tasks
 
 ```js
@@ -94,10 +143,10 @@ Node.js has more phases than browser:
 5. check:         setImmediate callbacks
 6. close:         socket.on('close') callbacks
 
-Between each phase: process.nextTick() and Promise micro-tasks drain
-process.nextTick() runs before Promise micro-tasks
+!Between each phase: process.nextTick() and Promise micro-tasks drain
+!process.nextTick() runs before Promise micro-tasks
 
-setImmediate vs setTimeout(fn, 0):
+!setImmediate vs setTimeout(fn, 0):
   In main module: order is non-deterministic
   Inside I/O callback: setImmediate always runs first
 ```
@@ -109,9 +158,9 @@ setImmediate vs setTimeout(fn, 0):
 ### Scope chain
 
 ```js
-// Each function creates a new scope
-// Inner functions can access outer variables (scope chain)
-// Outer functions CANNOT access inner variables
+//! Each function creates a new scope
+//! Inner functions can access outer variables (scope chain)
+//! Outer functions CANNOT access inner variables
 
 const outer = 'I am outer';
 
@@ -132,9 +181,9 @@ function parent() {
 ### var vs let vs const
 
 ```js
-// var — function-scoped, hoisted to function top, initialized as undefined
+//! var — function-scoped, hoisted to function top, initialized as undefined
 function example() {
-    console.log(x); // undefined (hoisted, not error)
+    console.log(x); //! undefined (hoisted, not error)
     var x = 5;
     console.log(x); // 5
 }
@@ -143,6 +192,43 @@ function example() {
 for (var i = 0; i < 3; i++) {
     setTimeout(() => console.log(i), 0); // prints 3, 3, 3 — all share the same i
 }
+
+// WHY: var is function-scoped — only ONE i exists for the whole loop.
+// The root cause: var is function-scoped, not block-scoped
+// var does not create a new i per iteration. There is only one i in the enclosing function scope.
+// All three callbacks close over the same variable.
+// By the time they run (after sync code), the loop has finished and i === 3.
+//
+// Execution timeline:
+//   iteration 0 → schedules callback (ref to i) → i becomes 1
+//   iteration 1 → schedules callback (ref to i) → i becomes 2
+//   iteration 2 → schedules callback (ref to i) → i becomes 3
+//   loop ends (i = 3)
+//   --- sync done, macrotasks run ---
+//   callback 1 reads i → 3
+//   callback 2 reads i → 3
+//   callback 3 reads i → 3
+
+// All three callbacks read i at the time they run, not at the time they were scheduled. By then, i is already 3.
+
+// Fix 1: use let — block-scoped, creates a NEW i binding per iteration
+for (let i = 0; i < 3; i++) {
+    setTimeout(() => console.log(i), 0); // 0, 1, 2
+}
+
+// Fix 2: IIFE — captures the current value in a new scope
+for (var i = 0; i < 3; i++) {
+    (j => setTimeout(() => console.log(j), 0))(i);
+}
+
+// Fix 3: pass as argument — binds value, not reference
+for (var i = 0; i < 3; i++) {
+    setTimeout(console.log.bind(null, i), 0); // 0, 1, 2
+}
+
+//! Key mental model:
+//  var  → closes over the VARIABLE (reference) — all iterations share it
+//  let  → closes over the VALUE at that iteration (new binding each time)
 
 // let/const — block-scoped, hoisted but NOT initialized (temporal dead zone)
 console.log(y); // ReferenceError: Cannot access 'y' before initialization
@@ -155,25 +241,25 @@ for (let i = 0; i < 3; i++) {
 // const — same as let but binding cannot be reassigned
 const obj = { a: 1 };
 obj.a = 2; // ✓ mutating the object is fine
-obj = {}; // ✗ TypeError: cannot reassign a const
+obj = {}; //! ✗ TypeError: cannot reassign a const
 ```
 
 ### Hoisting in detail
 
 ```js
-// Function DECLARATIONS are fully hoisted (definition, not just name)
+//! Function DECLARATIONS are fully hoisted (definition, not just name)
 hello(); // ✓ works
 function hello() {
     console.log('hi');
 }
 
-// Function EXPRESSIONS are NOT (only the variable is hoisted, as undefined)
+//! Function EXPRESSIONS are NOT (only the variable is hoisted, as undefined)
 greet(); // ✗ TypeError: greet is not a function
 var greet = function () {
     console.log('hi');
 };
 
-// Class declarations are hoisted but in TDZ (like let)
+//! Class declarations are hoisted but in TDZ (like let)
 const obj = new Foo(); // ✗ ReferenceError
 class Foo {}
 ```
