@@ -984,3 +984,225 @@ type OnlyString = StringOrNumber extends number ? never : StringOrNumber;
 
 // 4. Bottom type — nothing is assignable to never (except never itself)
 ```
+
+---
+
+## Most Asked TypeScript Interview Questions
+
+### "What is the difference between `interface` and `type`?"
+
+> Both describe object shapes. Key differences: `interface` is extendable with `extends` and supports declaration merging (two `interface Foo` blocks merge into one). `type` is more powerful — can represent unions, intersections, primitives, tuples, and mapped/conditional types. In practice: use `interface` for object shapes that may be extended (API contracts, class blueprints), use `type` for unions, aliases, and complex type manipulations. Either works for most day-to-day cases.
+
+```ts
+interface Animal { name: string; }
+interface Dog extends Animal { breed: string; }
+
+// Declaration merging — adds to existing interface (useful for augmenting libs)
+interface Window { myPlugin: MyPlugin; }
+
+// type for union — interface can't do this
+type Status = 'idle' | 'loading' | 'success' | 'error';
+type StringOrNumber = string | number;
+
+// Intersection type
+type AdminUser = User & { adminLevel: number };
+```
+
+### "What are generics and how do you constrain them?"
+
+> Generics let you write reusable code that works with any type while maintaining type safety. The type is a parameter — specified at call/instantiation time. Use `extends` to constrain what types are accepted.
+
+```ts
+// Without constraint — T could be anything
+function first<T>(arr: T[]): T | undefined {
+    return arr[0];
+}
+
+// With constraint — T must have an id property
+function findById<T extends { id: number }>(items: T[], id: number): T | undefined {
+    return items.find(item => item.id === id);
+}
+
+// Multiple type params
+function merge<T, U>(a: T, b: U): T & U {
+    return { ...a, ...b } as T & U;
+}
+```
+
+### "What are TypeScript utility types?"
+
+> Built-in generic types that transform existing types. The most important:
+
+```ts
+interface User { id: number; name: string; email: string; age: number; }
+
+Partial<User>           // all fields optional
+Required<User>          // all fields required
+Readonly<User>          // all fields read-only
+Pick<User, 'id'|'name'> // only id and name
+Omit<User, 'age'>       // everything except age
+Record<string, User>    // { [key: string]: User }
+Exclude<'a'|'b'|'c', 'a'>    // 'b' | 'c'
+Extract<'a'|'b'|'c', 'a'|'b'> // 'a' | 'b'
+NonNullable<string|null|undefined> // string
+ReturnType<typeof someFunction>    // return type of the function
+Parameters<typeof someFunction>    // tuple of param types
+```
+
+### "What are discriminated unions?"
+
+> A discriminated union is a union of types that all share a common literal property (the discriminant). TypeScript can narrow the type inside a switch/if by checking that property, giving you full type safety in each branch.
+
+```ts
+type Shape =
+    | { kind: 'circle'; radius: number }
+    | { kind: 'rect'; width: number; height: number }
+    | { kind: 'triangle'; base: number; height: number };
+
+function area(shape: Shape): number {
+    switch (shape.kind) {
+        case 'circle':   return Math.PI * shape.radius ** 2;
+        case 'rect':     return shape.width * shape.height;
+        case 'triangle': return 0.5 * shape.base * shape.height;
+        // TypeScript errors if you add a new Shape variant and forget to handle it
+    }
+}
+```
+
+### "What are type guards?"
+
+> Type guards narrow a union type within a conditional block. TypeScript understands `typeof`, `instanceof`, `in`, truthiness checks, and custom type guard functions (returning a type predicate `arg is Type`).
+
+```ts
+// typeof guard
+function format(val: string | number) {
+    if (typeof val === 'string') return val.toUpperCase(); // string here
+    return val.toFixed(2);                                 // number here
+}
+
+// instanceof guard
+function handle(err: Error | string) {
+    if (err instanceof Error) return err.message;
+    return err;
+}
+
+// Custom type guard — use when the above aren't enough
+function isUser(obj: unknown): obj is User {
+    return typeof obj === 'object' && obj !== null && 'id' in obj && 'name' in obj;
+}
+```
+
+### "What are mapped types?"
+
+> Mapped types transform every property in an existing type using a for-in style loop over the keys. They're how utility types like `Partial`, `Readonly`, and `Record` are implemented.
+
+```ts
+// Reimplementing Partial from scratch
+type MyPartial<T> = {
+    [K in keyof T]?: T[K];
+};
+
+// Make all values a string
+type Stringified<T> = {
+    [K in keyof T]: string;
+};
+
+// Practical: form errors type mirrors form values type
+type FormErrors<T> = {
+    [K in keyof T]?: string;
+};
+type LoginForm = { email: string; password: string };
+type LoginErrors = FormErrors<LoginForm>; // { email?: string; password?: string }
+```
+
+### "What are conditional types?"
+
+> Conditional types choose a type based on a condition: `T extends U ? X : Y`. They enable powerful type-level logic. Used extensively in utility types and library types.
+
+```ts
+// NonNullable implemented with conditional type
+type MyNonNullable<T> = T extends null | undefined ? never : T;
+
+// Unwrap array element type
+type ElementOf<T> = T extends (infer E)[] ? E : never;
+type N = ElementOf<number[]>; // number
+
+// Distribute over union automatically
+type ToArray<T> = T extends any ? T[] : never;
+type Arr = ToArray<string | number>; // string[] | number[]
+```
+
+### "What is `unknown` vs `any`?"
+
+> `any` disables all type checking — you can do anything with it, and it spreads (assigning `any` to a typed variable makes that typed too). `unknown` is type-safe: you can assign anything TO `unknown`, but to use it, you must first narrow the type. Always prefer `unknown` over `any` for values you truly don't know the type of (API responses, `catch` clause errors).
+
+```ts
+function processAny(val: any) {
+    val.foo.bar.baz; // ✓ TypeScript allows it — but runtime error if wrong
+}
+
+function processUnknown(val: unknown) {
+    val.foo;         // ✗ Error — must narrow first
+    if (typeof val === 'string') {
+        val.toUpperCase(); // ✓ string here
+    }
+}
+
+// Best practice for catch
+try { ... } catch (err) {
+    if (err instanceof Error) console.error(err.message);
+}
+```
+
+### "What is `never` and when do you use it?"
+
+> `never` is the bottom type — no value can be assigned to it. It represents something that can never happen: a function that always throws, an infinite loop, or the exhausted branches of a union. Most useful as an "exhaustiveness check" — if TypeScript reaches a `never` assignment, it means you forgot to handle a union case.
+
+```ts
+function assertNever(x: never): never {
+    throw new Error(`Unhandled case: ${JSON.stringify(x)}`);
+}
+
+type Direction = 'north' | 'south' | 'east' | 'west';
+function move(dir: Direction) {
+    switch (dir) {
+        case 'north': return 'N';
+        case 'south': return 'S';
+        case 'east':  return 'E';
+        // Forgot 'west' — TypeScript errors on the line below!
+        default: return assertNever(dir);
+    }
+}
+```
+
+### "What is `as const` and when do you use it?"
+
+> `as const` tells TypeScript to infer the narrowest possible literal types and make everything `readonly`. Without it, TypeScript widens string literals to `string`, numbers to `number`, etc.
+
+```ts
+const config = {
+    endpoint: '/api',
+    retries: 3,
+} as const;
+// Type: { readonly endpoint: '/api'; readonly retries: 3 }
+// Without as const: { endpoint: string; retries: number }
+
+const DIRECTIONS = ['north', 'south', 'east', 'west'] as const;
+type Direction = typeof DIRECTIONS[number]; // 'north' | 'south' | 'east' | 'west'
+```
+
+### "What is the `infer` keyword?"
+
+> `infer` is used inside conditional types to capture and name a type that TypeScript infers. It's how you extract sub-types from complex types — like the return type of a function, the element type of an array, or the resolved type of a Promise.
+
+```ts
+// Extract return type (already built-in as ReturnType<T>)
+type MyReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
+
+// Unwrap Promise
+type Awaited<T> = T extends Promise<infer U> ? U : T;
+type Data = Awaited<Promise<User[]>>; // User[]
+
+// Extract first argument type
+type FirstArg<T> = T extends (first: infer F, ...rest: any[]) => any ? F : never;
+```

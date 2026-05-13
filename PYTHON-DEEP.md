@@ -916,3 +916,236 @@ async def create_task(task: Task):
 ### "Explain list comprehensions vs map/filter."
 
 > Both achieve the same result. List comprehensions are generally considered more Pythonic — more readable, no need for `lambda`, slightly faster because the bytecode is optimized. `map` and `filter` return iterators (lazy), while list comprehensions eagerly build a list — use a generator expression `(x for x in ...)` for lazy evaluation. Use `map`/`filter` when the function is already named (no lambda needed): `list(map(str, numbers))` vs `[str(n) for n in numbers]` — both are fine.
+
+---
+
+## Most Asked Python Interview Questions
+
+### "What is the GIL and how does it affect concurrency?"
+
+> The Global Interpreter Lock (GIL) is a mutex in CPython that allows only one thread to execute Python bytecode at a time. This means threads don't give you true parallelism for CPU-bound work — use `multiprocessing` for that (separate processes, no shared GIL). For I/O-bound work (network, disk), threads are still useful because the GIL is released during I/O waits. `asyncio` is the modern alternative for I/O concurrency — single-threaded cooperative multitasking with `async/await`.
+
+```python
+# CPU-bound: use multiprocessing
+from multiprocessing import Pool
+with Pool(4) as p:
+    results = p.map(heavy_computation, data)
+
+# I/O-bound: use asyncio
+import asyncio
+async def fetch_all(urls):
+    async with aiohttp.ClientSession() as session:
+        return await asyncio.gather(*[fetch(session, url) for url in urls])
+```
+
+### "What is the difference between `@classmethod`, `@staticmethod`, and instance methods?"
+
+> Instance methods receive `self` (the instance) as first arg — can access and modify instance and class state. `@classmethod` receives `cls` (the class) as first arg — used as alternative constructors or to access class-level state. `@staticmethod` receives nothing special — just a regular function namespaced inside the class; no access to instance or class.
+
+```python
+class Date:
+    def __init__(self, year, month, day):
+        self.year, self.month, self.day = year, month, day
+
+    def is_weekend(self):                        # instance method
+        import datetime
+        return datetime.date(self.year, self.month, self.day).weekday() >= 5
+
+    @classmethod
+    def from_string(cls, date_str):              # alternative constructor
+        y, m, d = map(int, date_str.split('-'))
+        return cls(y, m, d)
+
+    @staticmethod
+    def is_valid_year(year):                     # utility, no self/cls needed
+        return 1900 <= year <= 2100
+
+d = Date.from_string('2026-05-13')
+Date.is_valid_year(2026)  # True
+```
+
+### "Explain `*args` and `**kwargs`."
+
+> `*args` collects extra positional arguments into a tuple. `**kwargs` collects extra keyword arguments into a dict. Together they let you write functions that accept any number of arguments. The names `args`/`kwargs` are convention — the `*`/`**` is what matters.
+
+```python
+def log(level, *args, **kwargs):
+    # args = ('message', 'extra')
+    # kwargs = {'timestamp': '...', 'user': '...'}
+    print(f"[{level}]", *args, **kwargs)
+
+log('INFO', 'user logged in', timestamp='2026-05-13', user='Alice')
+
+# Unpacking when calling
+def add(a, b, c): return a + b + c
+nums = [1, 2, 3]
+add(*nums)           # same as add(1, 2, 3)
+opts = {'a': 1, 'b': 2, 'c': 3}
+add(**opts)          # same as add(a=1, b=2, c=3)
+```
+
+### "What are context managers and `with` statements?"
+
+> A context manager handles setup and teardown automatically. `__enter__` runs at the start of the `with` block, `__exit__` runs at the end — even if an exception occurs. Built-in examples: `open()` (auto-closes file), `threading.Lock()` (auto-releases). Use `contextlib.contextmanager` decorator to write one with `yield` instead of a full class.
+
+```python
+from contextlib import contextmanager
+
+@contextmanager
+def timer():
+    import time
+    start = time.perf_counter()
+    yield                           # code inside `with` block runs here
+    elapsed = time.perf_counter() - start
+    print(f"Elapsed: {elapsed:.3f}s")
+
+with timer():
+    result = expensive_operation()
+```
+
+### "What is MRO (Method Resolution Order)?"
+
+> MRO defines the order Python searches for methods in a class hierarchy. Python uses the C3 linearization algorithm. `ClassName.__mro__` shows the order. Relevant for multiple inheritance — Python looks left to right in the class definition, then up the chain.
+
+```python
+class A:
+    def hello(self): return 'A'
+
+class B(A):
+    def hello(self): return 'B'
+
+class C(A):
+    def hello(self): return 'C'
+
+class D(B, C): pass  # MRO: D → B → C → A → object
+
+D().hello()      # 'B' — B is first in MRO
+print(D.__mro__) # (<class 'D'>, <class 'B'>, <class 'C'>, <class 'A'>, <class 'object'>)
+```
+
+### "What is the difference between `__init__` and `__new__`?"
+
+> `__new__` creates the instance (allocates memory) — called first, returns the new object. `__init__` initializes it (sets attributes) — called after `__new__`, receives the created object as `self`. In practice you almost never override `__new__` — only for immutable types (subclassing `int`, `str`) or implementing Singleton patterns.
+
+```python
+class Singleton:
+    _instance = None
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+a = Singleton()
+b = Singleton()
+a is b  # True — same instance
+```
+
+### "What are dataclasses?"
+
+> `@dataclass` auto-generates `__init__`, `__repr__`, and `__eq__` from class-level annotations. Much less boilerplate than manual classes. `frozen=True` makes it immutable (and hashable). `field()` gives per-field control (default factories, exclusions).
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass
+class Task:
+    title: str
+    done: bool = False
+    tags: list[str] = field(default_factory=list)  # mutable default — must use field()
+
+t = Task('Buy milk')
+# Task(title='Buy milk', done=False, tags=[])
+# __eq__ compares by value, not identity
+```
+
+### "What is `asyncio` and when do you use it?"
+
+> `asyncio` is Python's event loop for async I/O. Use it when you have many concurrent I/O operations (HTTP requests, DB queries, file reads) and want to handle them without the overhead of threads/processes. `async def` defines a coroutine. `await` suspends it and yields control to the event loop. `asyncio.gather()` runs coroutines concurrently.
+
+```python
+import asyncio, aiohttp
+
+async def fetch(session, url):
+    async with session.get(url) as response:
+        return await response.json()
+
+async def main():
+    async with aiohttp.ClientSession() as session:
+        # All 3 requests run concurrently, total time ≈ max(individual times)
+        results = await asyncio.gather(
+            fetch(session, '/api/users'),
+            fetch(session, '/api/posts'),
+            fetch(session, '/api/comments'),
+        )
+    return results
+
+asyncio.run(main())
+```
+
+### "What is the difference between `is` and `==`?"
+
+> `==` checks value equality (calls `__eq__`). `is` checks identity — whether two variables point to the exact same object in memory. Never use `is` to compare values. The exception: `is None` / `is not None` is idiomatic because `None` is a singleton.
+
+```python
+a = [1, 2, 3]
+b = [1, 2, 3]
+a == b   # True  — same value
+a is b   # False — different objects in memory
+
+c = a
+a is c   # True  — same object
+
+# Correct None check
+if value is None:   # ✓
+if value == None:   # ✗ — works but not idiomatic
+```
+
+### "How does Python's memory management and garbage collection work?"
+
+> Python uses reference counting as its primary memory management — every object tracks how many references point to it; when count hits 0, memory is freed immediately. The problem: circular references (A → B → A) never reach 0. The cyclic garbage collector (gc module) periodically detects and cleans these cycles. `__del__` is called when an object is collected but is unreliable — prefer context managers for cleanup.
+
+### "What is a property decorator?"
+
+> `@property` lets you define getter/setter/deleter methods that look like attribute access from outside the class. Useful for validation, computed attributes, and making APIs cleaner without breaking existing code when you need to add logic to attribute access.
+
+```python
+class Circle:
+    def __init__(self, radius):
+        self._radius = radius
+
+    @property
+    def radius(self):
+        return self._radius
+
+    @radius.setter
+    def radius(self, value):
+        if value < 0:
+            raise ValueError("Radius cannot be negative")
+        self._radius = value
+
+    @property
+    def area(self):                     # computed, read-only
+        import math
+        return math.pi * self._radius ** 2
+
+c = Circle(5)
+c.radius = 10   # calls setter
+c.area          # calls getter — no ()
+```
+
+### "What are `__slots__`?"
+
+> By default, Python stores instance attributes in a `__dict__` (a dictionary per instance). Defining `__slots__ = ['x', 'y']` tells Python to use a fixed-size array instead — no `__dict__`. Benefits: less memory per instance (significant for millions of objects), slightly faster attribute access. Drawbacks: can't add arbitrary attributes, no `__dict__`, complicates multiple inheritance.
+
+```python
+class Point:
+    __slots__ = ['x', 'y']
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+
+# Creating 1M Points uses significantly less memory than without __slots__
+```
+
+### "What is the difference between `copy.copy()` and `copy.deepcopy()`?"
+
+> `copy.copy()` creates a shallow copy — new container, but nested objects are still shared references. `copy.deepcopy()` recursively copies everything — fully independent. Deep copy handles circular references. Use shallow when you only need independence at the top level; deep when you need full isolation.

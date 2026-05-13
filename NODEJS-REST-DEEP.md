@@ -1334,3 +1334,224 @@ Fastify:
    - Move slow work to background queues (email, image processing)
    - Cluster mode or horizontal scaling for CPU-bound work
 ```
+
+---
+
+## Most Asked Node.js Interview Questions
+
+### "How does the Node.js event loop work?"
+
+> Node.js is single-threaded but non-blocking thanks to its event loop and libuv. When you call an async operation (fs, network), Node offloads it to the OS/thread pool and continues executing. When the operation completes, the callback is queued. The event loop processes phases in order: timers (`setTimeout`/`setInterval`) → pending I/O callbacks → idle/prepare → poll (wait for I/O) → check (`setImmediate`) → close callbacks. Microtasks (`Promise`, `process.nextTick`) run between every phase — `nextTick` before Promise callbacks.
+
+```js
+setTimeout(() => console.log('timeout'), 0);
+setImmediate(() => console.log('immediate'));
+Promise.resolve().then(() => console.log('promise'));
+process.nextTick(() => console.log('nextTick'));
+
+// Output: nextTick → promise → timeout → immediate
+// (nextTick and promise are microtasks, run before next phase)
+```
+
+### "What are Node.js Streams and why use them?"
+
+> Streams process data chunk by chunk instead of loading everything into memory. Four types: Readable (data source), Writable (data destination), Duplex (both), Transform (modify data in transit). Crucial for large files, HTTP request/response, and data pipelines. `pipe()` connects streams and handles backpressure automatically.
+
+```js
+const fs = require('fs');
+const zlib = require('zlib');
+
+// Without streams: reads entire file into memory → crashes on large files
+// fs.readFile('huge.csv', callback);
+
+// With streams: constant ~64KB memory usage regardless of file size
+fs.createReadStream('huge.csv')
+    .pipe(zlib.createGzip())
+    .pipe(fs.createWriteStream('huge.csv.gz'));
+
+// HTTP: response is a Writable stream
+app.get('/download', (req, res) => {
+    fs.createReadStream('./large-file.pdf').pipe(res);
+});
+```
+
+### "What is the difference between `process.nextTick` and `setImmediate`?"
+
+> `process.nextTick` fires before the event loop continues to the next phase — even before I/O callbacks. `setImmediate` fires in the check phase, after I/O. `nextTick` has higher priority. Overusing `nextTick` can starve the I/O queue (infinite `nextTick` loop blocks everything). Use `nextTick` for callbacks that should run "after current operation but before I/O"; use `setImmediate` for most other deferred work.
+
+### "How do you handle uncaught exceptions and unhandled rejections in Node.js?"
+
+> Two process-level handlers catch what escapes your try/catch. In production, log the error and gracefully shut down — the process state is unreliable after an uncaught exception.
+
+```js
+process.on('uncaughtException', (err) => {
+    logger.error('Uncaught exception', err);
+    process.exit(1); // must exit — state is corrupt
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled rejection', { reason, promise });
+    process.exit(1);
+});
+
+// Better: use a process manager (PM2, systemd) to restart on crash
+// Even better: don't let errors reach here — handle them at the source
+```
+
+### "What is clustering in Node.js and when do you use it?"
+
+> Node runs in a single process on one CPU core. The `cluster` module forks multiple worker processes that share the same port — the master distributes incoming connections. This uses all CPU cores. Modern alternative: run multiple Node instances behind a load balancer (nginx, HAProxy), or use PM2 which handles clustering for you.
+
+```js
+const cluster = require('cluster');
+const os = require('os');
+
+if (cluster.isPrimary) {
+    const numCPUs = os.cpus().length;
+    for (let i = 0; i < numCPUs; i++) cluster.fork();
+    cluster.on('exit', (worker) => {
+        console.log(`Worker ${worker.process.pid} died — forking replacement`);
+        cluster.fork();
+    });
+} else {
+    // Each worker runs the Express app independently
+    require('./app').listen(3000);
+}
+```
+
+### "What is middleware in Express and how does the chain work?"
+
+> Middleware functions have signature `(req, res, next)`. They run in order of registration. Call `next()` to pass to the next middleware, call `next(err)` to skip to error-handling middleware, or end the request with `res.send()`/`res.json()`. Error-handling middleware has 4 params `(err, req, res, next)` and must be registered last.
+
+```js
+// Logger middleware
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next(); // must call next or request hangs
+});
+
+// Route-specific middleware
+const auth = (req, res, next) => {
+    if (!req.headers.authorization) return res.status(401).json({ error: 'Unauthorized' });
+    next();
+};
+app.get('/protected', auth, handler);
+
+// Error-handling middleware — 4 params, register last
+app.use((err, req, res, next) => {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+});
+```
+
+### "How do you prevent SQL injection / NoSQL injection in Node.js?"
+
+> Never concatenate user input into queries. Always use parameterized queries or an ORM. For NoSQL (MongoDB), sanitize inputs that could be objects (e.g. `{ $gt: '' }`).
+
+```js
+// ✗ SQL injection vulnerability
+const query = `SELECT * FROM users WHERE email = '${req.body.email}'`;
+
+// ✓ Parameterized query (pg library)
+const { rows } = await db.query(
+    'SELECT * FROM users WHERE email = $1',
+    [req.body.email]
+);
+
+// ✓ ORM (Drizzle/Prisma) handles escaping automatically
+const user = await db.select().from(users).where(eq(users.email, req.body.email));
+
+// ✗ NoSQL injection
+User.findOne({ email: req.body.email }); // if email = { $gt: '' }, returns all users
+
+// ✓ Validate with zod first
+const { email } = z.object({ email: z.string().email() }).parse(req.body);
+```
+
+### "What is JWT and how does authentication work with it?"
+
+> JWT (JSON Web Token) is a self-contained token: `header.payload.signature`. The server signs the payload with a secret — anyone can read the payload, but only the server can create valid signatures. Stateless: no session store needed. The client sends the token in `Authorization: Bearer <token>` on every request. The server verifies the signature and reads the claims.
+
+```js
+const jwt = require('jsonwebtoken');
+
+// Sign — on login
+const token = jwt.sign(
+    { userId: user.id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '15m' }   // short-lived access token
+);
+
+// Verify — middleware on protected routes
+function authMiddleware(req, res, next) {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    try {
+        req.user = jwt.verify(token, process.env.JWT_SECRET);
+        next();
+    } catch {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+}
+```
+
+### "What is rate limiting and how do you implement it?"
+
+> Rate limiting restricts how many requests a client can make in a time window — protects against brute force attacks, DoS, and API abuse. Implement per-IP or per-user. In production, store counters in Redis (not in-memory, which breaks with multiple instances).
+
+```js
+const rateLimit = require('express-rate-limit');
+const RedisStore = require('rate-limit-redis');
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100,                   // 100 requests per window per IP
+    standardHeaders: true,
+    store: new RedisStore({ /* redis client */ }),
+    handler: (req, res) =>
+        res.status(429).json({ error: 'Too many requests, slow down.' }),
+});
+
+app.use('/api/', limiter);
+
+// Stricter for login
+const loginLimiter = rateLimit({ windowMs: 60_000, max: 5 });
+app.post('/auth/login', loginLimiter, loginHandler);
+```
+
+### "How do you manage environment variables and secrets in Node.js?"
+
+> Use `dotenv` in development to load `.env` files. Never commit `.env` to git. In production, inject via the deployment platform (Railway, Heroku config vars, AWS SSM, Kubernetes secrets). Validate all required env vars at startup so the app crashes loudly if misconfigured rather than silently later.
+
+```js
+// Validate at startup
+import { z } from 'zod';
+
+const envSchema = z.object({
+    DATABASE_URL: z.string().url(),
+    JWT_SECRET:   z.string().min(32),
+    PORT:         z.coerce.number().default(3000),
+    NODE_ENV:     z.enum(['development', 'production', 'test']),
+});
+
+export const env = envSchema.parse(process.env);
+// If DATABASE_URL is missing: throws at startup with a clear error
+```
+
+### "What is the difference between `require` (CommonJS) and `import` (ESM)?"
+
+> CommonJS (`require`) is synchronous, loads at runtime, outputs a copy of the value (not live binding). ESM (`import`) is static (analyzed at parse time), asynchronous, tree-shakeable, and produces live bindings. Node.js supports both, but they don't mix cleanly. Use `.mjs` or `"type": "module"` in package.json for ESM. Modern packages ship ESM; older Node.js codebases use CJS. Top-level `await` only works in ESM.
+
+```js
+// CommonJS
+const express = require('express');
+module.exports = { myFunction };
+
+// ESM
+import express from 'express';
+export { myFunction };
+export default myFunction;
+
+// Dynamic import works in both — lazy-loads a module
+const { default: heavy } = await import('./heavy-module.js');
+```

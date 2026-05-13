@@ -1077,3 +1077,227 @@ function UserProfile({ userId }) {
 ### "What is prop drilling and how do you solve it?"
 
 > Prop drilling is passing props through multiple intermediate components that don't use them, just to get them to a deeply nested consumer. Solutions: Context API (for state that many components need), component composition (pass components as children rather than data), or state management libraries (Zustand). The best solution often isn't lifting state — it's restructuring components so the state is closer to where it's used.
+
+---
+
+## Most Asked React Interview Questions
+
+### "What is the Virtual DOM and how does React use it?"
+
+> The Virtual DOM is a lightweight JavaScript representation of the real DOM. When state changes, React builds a new Virtual DOM tree, diffs it against the previous one (reconciliation), and applies only the minimal set of real DOM updates. This batching and diffing is faster than naively re-rendering the whole DOM. React 18+ uses the Fiber architecture which makes this work incremental — it can pause, prioritize, and resume rendering work.
+
+### "What is the difference between `useState` and `useReducer`?"
+
+> Both manage local state. `useState` is for simple, independent values. `useReducer` is for complex state with multiple sub-values or when next state depends on the previous in non-trivial ways. `useReducer` gives you a predictable state machine: `(state, action) => newState`. Easier to test the reducer in isolation. Redux follows the same pattern at a global scale.
+
+```jsx
+// useState — fine for simple cases
+const [count, setCount] = useState(0);
+
+// useReducer — better for complex state
+const [state, dispatch] = useReducer((state, action) => {
+    switch (action.type) {
+        case 'increment': return { ...state, count: state.count + 1 };
+        case 'reset':     return { count: 0, error: null };
+        default: return state;
+    }
+}, { count: 0, error: null });
+
+dispatch({ type: 'increment' });
+```
+
+### "When does a React component re-render?"
+
+> A component re-renders when: 1) its own state changes (`setState`), 2) its parent re-renders (even if props didn't change — unless wrapped in `React.memo`), 3) a context it consumes changes. Re-rendering is NOT the same as DOM update — React re-runs the component function, diffs the output, and only updates the DOM where needed. Unnecessary re-renders waste CPU but don't always cause visible slowdowns — profile before optimizing.
+
+### "What is `useCallback` vs `useMemo`?"
+
+> `useMemo` memoizes a **computed value** — reruns only when dependencies change. `useCallback` memoizes a **function** — returns the same function reference unless dependencies change. They solve the same problem: stable references to prevent unnecessary re-renders of `React.memo` children or unnecessary `useEffect` re-runs. `useCallback(fn, deps)` is equivalent to `useMemo(() => fn, deps)`.
+
+```jsx
+const Parent = ({ items }) => {
+    // Without useCallback: new function reference every render → Child re-renders
+    const handleClick = useCallback((id) => {
+        setSelected(id);
+    }, []); // stable reference
+
+    const sorted = useMemo(
+        () => [...items].sort((a, b) => a.name.localeCompare(b.name)),
+        [items] // only re-sort when items change
+    );
+
+    return <Child items={sorted} onClick={handleClick} />;
+};
+```
+
+### "What is the difference between controlled and uncontrolled components?"
+
+> Controlled: React state is the single source of truth — every keystroke calls `onChange` which updates state, and `value` is driven by state. You always know the current value. Uncontrolled: the DOM holds the value — you read it via `ref` when needed (e.g. on submit). Controlled is recommended for most cases (easier validation, instant access to value); uncontrolled is fine for simple forms or when integrating with non-React code.
+
+```jsx
+// Controlled
+const [value, setValue] = useState('');
+<input value={value} onChange={e => setValue(e.target.value)} />
+
+// Uncontrolled
+const ref = useRef();
+<input ref={ref} defaultValue="initial" />
+// read: ref.current.value on submit
+```
+
+### "What are Error Boundaries?"
+
+> Error Boundaries are class components that catch JavaScript errors in their child component tree during rendering, lifecycle methods, and constructors — preventing the whole app from crashing. They can't catch errors in event handlers (use try/catch there) or async code. Define `static getDerivedStateFromError()` to render fallback UI, and `componentDidCatch()` to log errors.
+
+```jsx
+class ErrorBoundary extends React.Component {
+    state = { hasError: false };
+
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error, info) {
+        logErrorToService(error, info.componentStack);
+    }
+
+    render() {
+        if (this.state.hasError) return <h2>Something went wrong.</h2>;
+        return this.props.children;
+    }
+}
+
+// Usage
+<ErrorBoundary>
+    <MyWidget />
+</ErrorBoundary>
+```
+
+### "What are React Portals?"
+
+> Portals let you render a component's output into a different DOM node than its parent — typically used for modals, tooltips, and dropdowns that need to escape overflow/z-index constraints of their parent container. The component still lives in the React tree (events bubble normally), just the DOM placement changes.
+
+```jsx
+import { createPortal } from 'react-dom';
+
+function Modal({ children }) {
+    return createPortal(
+        <div className="modal">{children}</div>,
+        document.getElementById('modal-root') // renders outside #app
+    );
+}
+```
+
+### "What is `useRef` and when should you use it?"
+
+> `useRef` returns a mutable object `{ current: ... }` that persists across renders without causing re-renders when mutated. Two main uses: 1) DOM refs — accessing/focusing DOM elements imperatively. 2) Storing mutable values that shouldn't trigger re-renders (previous value, timer IDs, interval handles).
+
+```jsx
+// DOM access
+const inputRef = useRef(null);
+const focusInput = () => inputRef.current.focus();
+<input ref={inputRef} />
+
+// Mutable value without re-render
+const timerRef = useRef(null);
+const startTimer = () => {
+    timerRef.current = setInterval(tick, 1000);
+};
+const stopTimer = () => clearInterval(timerRef.current);
+```
+
+### "How does Context API work and what are its limitations?"
+
+> Context provides a way to pass data through the component tree without prop drilling. `createContext` creates a context, `Provider` wraps the tree and sets the value, any descendant can `useContext` to read it. Limitation: every component that calls `useContext` re-renders when the context value changes — even if it only uses a tiny slice. Solution: split contexts by update frequency, or use `useMemo` to stabilize the value object.
+
+```jsx
+const ThemeContext = createContext('light');
+
+function App() {
+    const [theme, setTheme] = useState('light');
+    // Memoize value to prevent re-renders when App re-renders for other reasons
+    const value = useMemo(() => ({ theme, setTheme }), [theme]);
+    return (
+        <ThemeContext.Provider value={value}>
+            <Page />
+        </ThemeContext.Provider>
+    );
+}
+
+function Button() {
+    const { theme } = useContext(ThemeContext);
+    return <button className={theme}>Click</button>;
+}
+```
+
+### "What are custom hooks and why use them?"
+
+> A custom hook is a function starting with `use` that calls other hooks. They let you extract and reuse stateful logic between components — without changing the component hierarchy (unlike render props or HOCs). The component stays clean; the hook encapsulates the side effects and state.
+
+```jsx
+function useLocalStorage(key, initialValue) {
+    const [value, setValue] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem(key)) ?? initialValue;
+        } catch { return initialValue; }
+    });
+
+    const set = useCallback((newValue) => {
+        setValue(newValue);
+        localStorage.setItem(key, JSON.stringify(newValue));
+    }, [key]);
+
+    return [value, set];
+}
+
+// Usage — any component can persist state to localStorage in one line
+const [theme, setTheme] = useLocalStorage('theme', 'light');
+```
+
+### "What are React Server Components?"
+
+> Server Components (RSC) run only on the server — they can directly access databases, file systems, and secrets. They send rendered HTML (or a serialized component tree) to the client — zero JavaScript bundle cost for the component. They cannot use `useState`, `useEffect`, or browser APIs. Client Components (`'use client'`) are the traditional React components. The key win: data fetching happens on the server, co-located with the component, without waterfalls.
+
+```jsx
+// app/users/page.tsx — Server Component (Next.js App Router)
+// No 'use client' — runs on server, can await directly
+export default async function UsersPage() {
+    const users = await db.select().from(usersTable); // direct DB access
+    return <UserList users={users} />;
+}
+
+// components/UserList.tsx
+'use client'; // needs interactivity
+export function UserList({ users }) {
+    const [filter, setFilter] = useState('');
+    // ...
+}
+```
+
+### "What is Suspense and what problems does it solve?"
+
+> Suspense lets you declaratively show a loading state while a component is waiting for something (data fetching, lazy-loaded code). The component "suspends" by throwing a Promise — React catches it, shows the `fallback`, and re-renders when the Promise resolves. Works with `React.lazy` for code splitting and with frameworks like Next.js for data fetching.
+
+```jsx
+const HeavyChart = React.lazy(() => import('./HeavyChart'));
+
+function Dashboard() {
+    return (
+        <Suspense fallback={<Spinner />}>
+            <HeavyChart />      {/* code-splits automatically */}
+        </Suspense>
+    );
+}
+```
+
+### "What is the difference between `useEffect` and `useLayoutEffect`?"
+
+> Both run after render. `useEffect` runs asynchronously after the browser has painted — doesn't block the user from seeing the screen. `useLayoutEffect` runs synchronously after DOM mutations but before the browser paints — use it when you need to read layout (element dimensions, scroll positions) and immediately apply changes to avoid a visible flicker. In most cases, `useEffect` is correct and preferred.
+
+```jsx
+// useLayoutEffect: measure then adjust before paint (no flicker)
+useLayoutEffect(() => {
+    const { height } = ref.current.getBoundingClientRect();
+    setTooltipTop(-height - 8); // position tooltip above element
+}, []);
+```
