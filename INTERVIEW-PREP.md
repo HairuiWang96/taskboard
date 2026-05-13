@@ -70,7 +70,7 @@ import { eq, desc } from 'drizzle-orm';
 // SELECT * FROM tasks ORDER BY created_at DESC
 db.select().from(tasks).orderBy(desc(tasks.createdAt));
 
-// INSERT — .returning() gives back the created row (Postgres only)
+//! INSERT — .returning() gives back the created row (Postgres only)
 const [task] = await db.insert(tasks).values({ title: 'Buy milk' }).returning();
 
 // UPDATE
@@ -298,7 +298,7 @@ const inputRef = useRef<HTMLInputElement>(null);
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-// clsx: handles conditional classes
+//! clsx: handles conditional classes
 // twMerge: resolves Tailwind conflicts (px-2 + px-4 → px-4, last wins)
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -403,10 +403,10 @@ document.documentElement.classList.toggle('dark');
 ### JOIN types
 
 ```sql
--- INNER JOIN: only rows that match in BOTH tables
+-- INNER JOIN: !only rows that match in BOTH tables
 SELECT * FROM users INNER JOIN posts ON posts.user_id = users.id;
 
--- LEFT JOIN: all users, even if they have no posts (posts columns = NULL)
+-- LEFT JOIN: !all users, even if they have no posts (posts columns = NULL)
 SELECT * FROM users LEFT JOIN posts ON posts.user_id = users.id;
 ```
 
@@ -487,9 +487,9 @@ import { z } from 'zod';
 
 // Define once — get runtime validation + TypeScript type
 const CreateTaskSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  dueDate: z.string().datetime().optional(), // ISO 8601
+    title: z.string().min(1, 'Title is required').max(200),
+    priority: z.enum(['low', 'medium', 'high']).default('medium'),
+    dueDate: z.string().datetime().optional(), // ISO 8601
 });
 
 // Type inferred — no duplication
@@ -497,23 +497,23 @@ type CreateTaskInput = z.infer<typeof CreateTaskSchema>;
 
 // In a Fastify route:
 fastify.post<{ Body: CreateTaskInput }>('/', async (req, reply) => {
-  const result = CreateTaskSchema.safeParse(req.body); // doesn't throw
-  if (!result.success) {
-    return reply.code(400).send({ error: result.error.flatten() });
-  }
-  const { title, priority } = result.data; // fully typed
-  // ...
+    const result = CreateTaskSchema.safeParse(req.body); // doesn't throw
+    if (!result.success) {
+        return reply.code(400).send({ error: result.error.flatten() });
+    }
+    const { title, priority } = result.data; // fully typed
+    // ...
 });
 
-// .parse() throws on failure — use in trusted contexts
+//! .parse() throws on failure — use in trusted contexts
 const task = CreateTaskSchema.parse(req.body);
 
 // Useful transforms
 const Schema = z.object({
-  id: z.string().uuid(),
-  tags: z.array(z.string()).default([]),           // missing → []
-  email: z.string().email().toLowerCase().trim(),  // sanitize on parse
-  count: z.coerce.number(),                        // "5" → 5 (from query strings)
+    id: z.string().uuid(),
+    tags: z.array(z.string()).default([]), // missing → []
+    email: z.string().email().toLowerCase().trim(), // sanitize on parse
+    count: z.coerce.number(), // "5" → 5 (from query strings)
 });
 ```
 
@@ -533,15 +533,15 @@ const UpdateTaskSchema = CreateTaskSchema.partial(); // all fields optional
 ```ts
 // Global error handler — catches anything thrown in route handlers
 app.setErrorHandler((error, req, reply) => {
-  app.log.error(error);
+    app.log.error(error);
 
-  if (error.statusCode) {
-    // Fastify's own HTTP errors (e.g. reply.code(404).send())
-    return reply.code(error.statusCode).send({ error: error.message });
-  }
+    if (error.statusCode) {
+        // Fastify's own HTTP errors (e.g. reply.code(404).send())
+        return reply.code(error.statusCode).send({ error: error.message });
+    }
 
-  // Unexpected error — don't leak internals to client
-  reply.code(500).send({ error: 'Internal server error' });
+    // Unexpected error — don't leak internals to client
+    reply.code(500).send({ error: 'Internal server error' });
 });
 
 // Throw HTTP errors cleanly from route handlers
@@ -553,23 +553,23 @@ throw new NotFound(); // caught by setErrorHandler above
 ### Async error pattern
 
 ```ts
-// In route handlers, Fastify wraps async functions — rejections are caught automatically
+//! In route handlers, Fastify wraps async functions — rejections are caught automatically
 fastify.get('/:id', async (req, reply) => {
-  const [task] = await db.select().from(tasks).where(eq(tasks.id, req.params.id));
-  if (!task) {
-    return reply.code(404).send({ error: 'Task not found' });
-  }
-  return task;
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, req.params.id));
+    if (!task) {
+        return reply.code(404).send({ error: 'Task not found' });
+    }
+    return task;
 });
 
 // In regular async code, always handle the error path explicitly
 async function fetchUser(id: string) {
-  try {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return { ok: true as const, data: user };
-  } catch (err) {
-    return { ok: false as const, error: 'Database error' };
-  }
+    try {
+        const [user] = await db.select().from(users).where(eq(users.id, id));
+        return { ok: true as const, data: user };
+    } catch (err) {
+        return { ok: false as const, error: 'Database error' };
+    }
 }
 ```
 
@@ -593,18 +593,18 @@ const SECRET = process.env.JWT_SECRET!; // must be long, random, secret
 
 // On login — sign a token
 const token = jwt.sign(
-  { userId: user.id, role: user.role }, // payload — keep small, avoid sensitive data
-  SECRET,
-  { expiresIn: '7d' }
+    { userId: user.id, role: user.role }, // payload — keep small, avoid sensitive data
+    SECRET,
+    { expiresIn: '7d' },
 );
 
 // On every protected request — verify
 try {
-  const payload = jwt.verify(token, SECRET) as { userId: string; role: string };
-  // payload is now the object you signed above
+    const payload = jwt.verify(token, SECRET) as { userId: string; role: string };
+    // payload is now the object you signed above
 } catch (err) {
-  // TokenExpiredError or JsonWebTokenError
-  reply.code(401).send({ error: 'Invalid token' });
+    // TokenExpiredError or JsonWebTokenError
+    reply.code(401).send({ error: 'Invalid token' });
 }
 ```
 
@@ -613,34 +613,34 @@ try {
 ```ts
 // Prehandler runs after parsing but before the route handler
 fastify.addHook('preHandler', async (req, reply) => {
-  const authHeader = req.headers.authorization; // "Bearer <token>"
-  if (!authHeader?.startsWith('Bearer ')) {
-    return reply.code(401).send({ error: 'Missing token' });
-  }
-  const token = authHeader.slice(7);
-  try {
-    req.user = jwt.verify(token, SECRET) as JwtPayload; // augment req type
-  } catch {
-    return reply.code(401).send({ error: 'Invalid token' });
-  }
+    const authHeader = req.headers.authorization; // "Bearer <token>"
+    if (!authHeader?.startsWith('Bearer ')) {
+        return reply.code(401).send({ error: 'Missing token' });
+    }
+    const token = authHeader.slice(7);
+    try {
+        req.user = jwt.verify(token, SECRET) as JwtPayload; // augment req type
+    } catch {
+        return reply.code(401).send({ error: 'Invalid token' });
+    }
 });
 
 // Augment Fastify's Request type so req.user is typed
 declare module 'fastify' {
-  interface FastifyRequest {
-    user: { userId: string; role: string };
-  }
+    interface FastifyRequest {
+        user: { userId: string; role: string };
+    }
 }
 ```
 
 ### JWT vs Sessions — know the trade-off
 
-| | JWT | Sessions |
-| --- | --- | --- |
-| Storage | Client (localStorage / cookie) | Server (DB or Redis) |
-| Revocation | Hard — token is valid until expiry | Easy — delete from store |
-| Scalability | Great — stateless, any server validates | Needs shared store |
-| Use when | Stateless APIs, microservices | Need instant logout, high security |
+|             | JWT                                     | Sessions                           |
+| ----------- | --------------------------------------- | ---------------------------------- |
+| Storage     | Client (localStorage / cookie)          | Server (DB or Redis)               |
+| Revocation  | Hard — token is valid until expiry      | Easy — delete from store           |
+| Scalability | Great — stateless, any server validates | Needs shared store                 |
+| Use when    | Stateless APIs, microservices           | Need instant logout, high security |
 
 ---
 
@@ -651,10 +651,10 @@ declare module 'fastify' {
 import { z } from 'zod';
 
 const EnvSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  JWT_SECRET: z.string().min(32),
-  PORT: z.coerce.number().default(3000),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+    DATABASE_URL: z.string().url(),
+    JWT_SECRET: z.string().min(32),
+    PORT: z.coerce.number().default(3000),
+    NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 
 // This throws at startup if anything is missing — better than undefined errors later
@@ -681,24 +681,21 @@ PORT=3000
 ```ts
 // GET /tasks?page=2&limit=20
 fastify.get<{ Querystring: { page?: number; limit?: number } }>('/', async req => {
-  const page = req.query.page ?? 1;
-  const limit = req.query.limit ?? 20;
-  const offset = (page - 1) * limit;
+    const page = req.query.page ?? 1;
+    const limit = req.query.limit ?? 20;
+    const offset = (page - 1) * limit;
 
-  const [data, countResult] = await Promise.all([
-    db.select().from(tasks).limit(limit).offset(offset).orderBy(desc(tasks.createdAt)),
-    db.select({ count: sql<number>`count(*)` }).from(tasks),
-  ]);
+    const [data, countResult] = await Promise.all([db.select().from(tasks).limit(limit).offset(offset).orderBy(desc(tasks.createdAt)), db.select({ count: sql<number>`count(*)` }).from(tasks)]);
 
-  return {
-    data,
-    pagination: {
-      page,
-      limit,
-      total: Number(countResult[0].count),
-      totalPages: Math.ceil(Number(countResult[0].count) / limit),
-    },
-  };
+    return {
+        data,
+        pagination: {
+            page,
+            limit,
+            total: Number(countResult[0].count),
+            totalPages: Math.ceil(Number(countResult[0].count) / limit),
+        },
+    };
 });
 ```
 
@@ -708,20 +705,20 @@ fastify.get<{ Querystring: { page?: number; limit?: number } }>('/', async req =
 // GET /tasks?cursor=<lastId>&limit=20
 // Cursor = the ID of the last item seen — no offset needed
 const tasks = await db
-  .select()
-  .from(tasks)
-  .where(cursor ? lt(tasks.id, cursor) : undefined) // lt = less than
-  .limit(limit)
-  .orderBy(desc(tasks.createdAt));
+    .select()
+    .from(tasks)
+    .where(cursor ? lt(tasks.id, cursor) : undefined) // lt = less than
+    .limit(limit)
+    .orderBy(desc(tasks.createdAt));
 
-// Why cursor > offset: offset queries get slower as offset grows (DB scans all skipped rows)
+//! Why cursor > offset: offset queries get slower as offset grows (DB scans all skipped rows)
 ```
 
 ---
 
 ## Testing with Vitest
 
-Vitest = Vite-native test runner. Same syntax as Jest, much faster.
+Vitest = Vite-native test runner. !Same syntax as Jest, much faster.
 
 ```bash
 npm install -D vitest
@@ -736,13 +733,13 @@ import { describe, it, expect } from 'vitest';
 import { formatDate } from './utils';
 
 describe('formatDate', () => {
-  it('formats ISO string to readable date', () => {
-    expect(formatDate('2024-01-15T00:00:00Z')).toBe('Jan 15, 2024');
-  });
+    it('formats ISO string to readable date', () => {
+        expect(formatDate('2024-01-15T00:00:00Z')).toBe('Jan 15, 2024');
+    });
 
-  it('returns empty string for null', () => {
-    expect(formatDate(null)).toBe('');
-  });
+    it('returns empty string for null', () => {
+        expect(formatDate(null)).toBe('');
+    });
 });
 ```
 
@@ -753,13 +750,11 @@ import { vi } from 'vitest';
 
 // Mock a module
 vi.mock('./db', () => ({
-  db: { select: vi.fn().mockResolvedValue([{ id: '1', title: 'Test' }]) },
+    db: { select: vi.fn().mockResolvedValue([{ id: '1', title: 'Test' }]) },
 }));
 
 // Mock a function
-const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
-  new Response(JSON.stringify({ ok: true }))
-);
+const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify({ ok: true })));
 
 // Reset between tests
 beforeEach(() => vi.clearAllMocks());
@@ -772,15 +767,15 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { TaskForm } from './TaskForm';
 
 it('calls onCreate with the input value', async () => {
-  const onCreate = vi.fn();
-  render(<TaskForm onCreate={onCreate} />);
+    const onCreate = vi.fn();
+    render(<TaskForm onCreate={onCreate} />);
 
-  fireEvent.change(screen.getByPlaceholderText('Task title'), {
-    target: { value: 'Buy milk' },
-  });
-  fireEvent.click(screen.getByRole('button', { name: /add/i }));
+    fireEvent.change(screen.getByPlaceholderText('Task title'), {
+        target: { value: 'Buy milk' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /add/i }));
 
-  expect(onCreate).toHaveBeenCalledWith('Buy milk');
+    expect(onCreate).toHaveBeenCalledWith('Buy milk');
 });
 ```
 
@@ -796,22 +791,25 @@ type AuthCtx = { user: User | null; logout: () => void };
 const AuthContext = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const logout = () => { setUser(null); localStorage.removeItem('token'); };
-  return <AuthContext.Provider value={{ user, logout }}>{children}</AuthContext.Provider>;
+    const [user, setUser] = useState<User | null>(null);
+    const logout = () => {
+        setUser(null);
+        localStorage.removeItem('token');
+    };
+    return <AuthContext.Provider value={{ user, logout }}>{children}</AuthContext.Provider>;
 }
 
 // Custom hook — throws if used outside provider (good DX)
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be inside AuthProvider');
-  return ctx;
+    const ctx = useContext(AuthContext);
+    if (!ctx) throw new Error('useAuth must be inside AuthProvider');
+    return ctx;
 }
 
 // Usage anywhere in the tree
 function Header() {
-  const { user, logout } = useAuth();
-  return <button onClick={logout}>{user?.name}</button>;
+    const { user, logout } = useAuth();
+    return <button onClick={logout}>{user?.name}</button>;
 }
 ```
 
@@ -820,19 +818,19 @@ function Header() {
 ```ts
 // Use when: multiple related state values, next state depends on current state
 type State = { tasks: Task[]; loading: boolean; error: string | null };
-type Action =
-  | { type: 'FETCH_START' }
-  | { type: 'FETCH_SUCCESS'; payload: Task[] }
-  | { type: 'FETCH_ERROR'; payload: string }
-  | { type: 'ADD_TASK'; payload: Task };
+type Action = { type: 'FETCH_START' } | { type: 'FETCH_SUCCESS'; payload: Task[] } | { type: 'FETCH_ERROR'; payload: string } | { type: 'ADD_TASK'; payload: Task };
 
 function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'FETCH_START': return { ...state, loading: true, error: null };
-    case 'FETCH_SUCCESS': return { ...state, loading: false, tasks: action.payload };
-    case 'FETCH_ERROR': return { ...state, loading: false, error: action.payload };
-    case 'ADD_TASK': return { ...state, tasks: [action.payload, ...state.tasks] };
-  }
+    switch (action.type) {
+        case 'FETCH_START':
+            return { ...state, loading: true, error: null };
+        case 'FETCH_SUCCESS':
+            return { ...state, loading: false, tasks: action.payload };
+        case 'FETCH_ERROR':
+            return { ...state, loading: false, error: action.payload };
+        case 'ADD_TASK':
+            return { ...state, tasks: [action.payload, ...state.tasks] };
+    }
 }
 
 const [state, dispatch] = useReducer(reducer, { tasks: [], loading: false, error: null });
@@ -843,24 +841,25 @@ dispatch({ type: 'FETCH_START' });
 
 ```tsx
 // React class component — no hook equivalent yet
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
+class ErrorBoundary extends React.Component<{ children: React.ReactNode; fallback: React.ReactNode }, { hasError: boolean }> {
+    state = { hasError: false };
 
-  static getDerivedStateFromError() { return { hasError: true }; }
-  componentDidCatch(error: Error) { console.error(error); } // log to Sentry etc.
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+    componentDidCatch(error: Error) {
+        console.error(error);
+    } // log to Sentry etc.
 
-  render() {
-    return this.state.hasError ? this.props.fallback : this.props.children;
-  }
+    render() {
+        return this.state.hasError ? this.props.fallback : this.props.children;
+    }
 }
 
 // Usage
 <ErrorBoundary fallback={<p>Something went wrong</p>}>
-  <TaskList />
-</ErrorBoundary>
+    <TaskList />
+</ErrorBoundary>;
 ```
 
 ### Key React interview concepts
@@ -888,41 +887,41 @@ For complex data shapes, use Drizzle's relations API instead of manual joins.
 import { relations } from 'drizzle-orm';
 
 export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: text('name').notNull(),
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
 });
 
 export const tasks = pgTable('tasks', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
-  title: text('title').notNull(),
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
 });
 
 // Declare the relationship (Drizzle uses these for db.query.*)
 export const usersRelations = relations(users, ({ many }) => ({
-  tasks: many(tasks),
+    tasks: many(tasks),
 }));
 
 export const tasksRelations = relations(tasks, ({ one }) => ({
-  user: one(users, { fields: [tasks.userId], references: [users.id] }),
+    user: one(users, { fields: [tasks.userId], references: [users.id] }),
 }));
 ```
 
 ```ts
 // Query with relations — Drizzle handles the JOIN for you
 const usersWithTasks = await db.query.users.findMany({
-  with: { tasks: true },               // eager load tasks
+    with: { tasks: true }, // eager load tasks
 });
 // Result: [{ id, name, tasks: [{ id, title, ... }] }]
 
 // Filtering nested relations
 const usersWithOpenTasks = await db.query.users.findMany({
-  with: {
-    tasks: {
-      where: eq(tasks.completed, false),
-      orderBy: desc(tasks.createdAt),
+    with: {
+        tasks: {
+            where: eq(tasks.completed, false),
+            orderBy: desc(tasks.createdAt),
+        },
     },
-  },
 });
 ```
 
@@ -934,30 +933,30 @@ Fastify can validate requests and serialize responses via JSON Schema — faster
 
 ```ts
 const createTaskSchema = {
-  body: {
-    type: 'object',
-    required: ['title'],
-    properties: {
-      title: { type: 'string', minLength: 1, maxLength: 200 },
-      priority: { type: 'string', enum: ['low', 'medium', 'high'] },
+    body: {
+        type: 'object',
+        required: ['title'],
+        properties: {
+            title: { type: 'string', minLength: 1, maxLength: 200 },
+            priority: { type: 'string', enum: ['low', 'medium', 'high'] },
+        },
     },
-  },
-  response: {
-    201: {
-      type: 'object',
-      properties: {
-        id: { type: 'string' },
-        title: { type: 'string' },
-        completed: { type: 'boolean' },
-      },
+    response: {
+        201: {
+            type: 'object',
+            properties: {
+                id: { type: 'string' },
+                title: { type: 'string' },
+                completed: { type: 'boolean' },
+            },
+        },
     },
-  },
 };
 
 fastify.post('/', { schema: createTaskSchema }, async (req, reply) => {
-  // req.body is validated before reaching here — 400 sent automatically if invalid
-  reply.code(201);
-  return db.insert(tasks).values(req.body).returning();
+    // req.body is validated before reaching here — 400 sent automatically if invalid
+    reply.code(201);
+    return db.insert(tasks).values(req.body).returning();
 });
 // Bonus: response schema also strips extra fields (security) and serializes faster
 ```
@@ -968,18 +967,18 @@ fastify.post('/', { schema: createTaskSchema }, async (req, reply) => {
 
 ### HTTP status codes — the ones that matter
 
-| Code | Meaning | When to use |
-| --- | --- | --- |
-| 200 | OK | GET success, PATCH/PUT success with body |
-| 201 | Created | POST that creates a resource |
-| 204 | No Content | DELETE success (no body) |
-| 400 | Bad Request | Validation error — client sent bad data |
-| 401 | Unauthorized | Not authenticated (no/bad token) |
-| 403 | Forbidden | Authenticated but not allowed |
-| 404 | Not Found | Resource doesn't exist |
-| 409 | Conflict | Duplicate (e.g., email already registered) |
-| 422 | Unprocessable Entity | Semantically wrong (valid JSON, bad logic) |
-| 500 | Internal Server Error | Unexpected server failure |
+| Code | Meaning               | When to use                                |
+| ---- | --------------------- | ------------------------------------------ |
+| 200  | OK                    | GET success, PATCH/PUT success with body   |
+| 201  | Created               | POST that creates a resource               |
+| 204  | No Content            | DELETE success (no body)                   |
+| 400  | Bad Request           | Validation error — client sent bad data    |
+| 401  | Unauthorized          | Not authenticated (no/bad token)           |
+| 403  | Forbidden             | Authenticated but not allowed              |
+| 404  | Not Found             | Resource doesn't exist                     |
+| 409  | Conflict              | Duplicate (e.g., email already registered) |
+| 422  | Unprocessable Entity  | Semantically wrong (valid JSON, bad logic) |
+| 500  | Internal Server Error | Unexpected server failure                  |
 
 ### Resource naming conventions
 
@@ -1157,10 +1156,10 @@ Dead letter queue (DLQ): jobs that fail too many times go here for inspection
 // In Fastify:
 import rateLimit from '@fastify/rate-limit';
 app.register(rateLimit, {
-  max: 100,          // 100 requests...
-  timeWindow: '1m',  // ...per minute per IP
-  // Redis-backed for multi-server setups:
-  redis: new Redis(),
+    max: 100, // 100 requests...
+    timeWindow: '1m', // ...per minute per IP
+    // Redis-backed for multi-server setups:
+    redis: new Redis(),
 });
 ```
 
@@ -1174,15 +1173,17 @@ app.register(rateLimit, {
 
 // In Fastify with @fastify/websocket:
 fastify.get('/chat', { websocket: true }, (socket, req) => {
-  socket.on('message', (msg) => {
-    // broadcast to all connected clients
-    for (const client of fastify.websocketServer.clients) {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(msg.toString());
-      }
-    }
-  });
-  socket.on('close', () => { /* cleanup */ });
+    socket.on('message', msg => {
+        // broadcast to all connected clients
+        for (const client of fastify.websocketServer.clients) {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(msg.toString());
+            }
+        }
+    });
+    socket.on('close', () => {
+        /* cleanup */
+    });
 });
 
 // At scale: one server can't hold all WebSocket connections
@@ -1287,8 +1288,8 @@ type FunctionProps<T> = { [K in keyof T]: T[K] extends Function ? K : never }[ke
 ```ts
 // Problem: 'as const' loses type checking, type annotation loses literal types
 const config = {
-  port: 3000,
-  env: 'production',
+    port: 3000,
+    env: 'production',
 } satisfies { port: number; env: 'development' | 'production' };
 // ✓ Type-checked against the shape
 // ✓ config.env is still typed as 'production' (not widened to string)
@@ -1332,24 +1333,24 @@ Box model diagram at bottom of Styles tab — click values to edit padding/margi
 // Beyond console.log — these are actually useful
 
 console.table(arrayOfObjects); // renders as a sortable table — great for arrays
-console.dir(element);          // shows DOM element as JS object (all properties)
-console.group('label');        // collapsible group for nested logs
+console.dir(element); // shows DOM element as JS object (all properties)
+console.group('label'); // collapsible group for nested logs
 console.groupEnd();
-console.time('label');         // start timer
-console.timeEnd('label');      // logs "label: 123.4ms"
-console.count('label');        // counts how many times this line ran
-console.trace();               // prints a stack trace at the current call
+console.time('label'); // start timer
+console.timeEnd('label'); // logs "label: 123.4ms"
+console.count('label'); // counts how many times this line ran
+console.trace(); // prints a stack trace at the current call
 console.assert(condition, 'message'); // only logs if condition is FALSE
 
 // Log with CSS styling
 console.log('%cError!', 'color: red; font-size: 20px');
 
 // In the console REPL:
-$0        // the currently selected element in the Elements panel
-$('css')  // shorthand for document.querySelector()
-$$('css') // shorthand for document.querySelectorAll() (returns array, not NodeList)
-$_        // the result of the last expression
-copy($0)  // copies value to clipboard
+$0; // the currently selected element in the Elements panel
+$('css'); // shorthand for document.querySelector()
+$$('css'); // shorthand for document.querySelectorAll() (returns array, not NodeList)
+$_; // the result of the last expression
+copy($0); // copies value to clipboard
 ```
 
 ---
@@ -1589,8 +1590,8 @@ Each suggestion has "Learn more" links and estimates how much fixing it would im
 
 ```ts
 // Add this hook to see every request hit the server
-app.addHook('onRequest', async (req) => {
-  app.log.info({ method: req.method, url: req.url }, 'incoming request');
+app.addHook('onRequest', async req => {
+    app.log.info({ method: req.method, url: req.url }, 'incoming request');
 });
 
 // Fastify uses pino — structured JSON logging
@@ -1604,9 +1605,11 @@ const db = drizzle(pool, { schema, logger: true }); // logs SQL to console
 
 // Or custom logger
 const db = drizzle(pool, {
-  logger: {
-    logQuery(query, params) { console.log('SQL:', query, params); },
-  },
+    logger: {
+        logQuery(query, params) {
+            console.log('SQL:', query, params);
+        },
+    },
 });
 ```
 
@@ -1632,12 +1635,12 @@ Mount:   count = 0  →  interval created, captures count = 0
 const [count, setCount] = useState(0);
 
 useEffect(() => {
-  // This callback closes over count = 0 (its value at mount)
-  // setInterval holds a reference to THIS function forever
-  const id = setInterval(() => {
-    console.log(count); // always prints 0, no matter how many times setCount is called
-  }, 1000);
-  return () => clearInterval(id);
+    // This callback closes over count = 0 (its value at mount)
+    // setInterval holds a reference to THIS function forever
+    const id = setInterval(() => {
+        console.log(count); // always prints 0, no matter how many times setCount is called
+    }, 1000);
+    return () => clearInterval(id);
 }, []); // [] means "run once" — count is never re-captured
 ```
 
@@ -1649,10 +1652,10 @@ The new callback captures the fresh value.
 ```ts
 // ✅ Correct — interval restarts whenever count changes
 useEffect(() => {
-  const id = setInterval(() => {
-    console.log(count); // always the latest count
-  }, 1000);
-  return () => clearInterval(id);
+    const id = setInterval(() => {
+        console.log(count); // always the latest count
+    }, 1000);
+    return () => clearInterval(id);
 }, [count]); // re-runs when count changes → fresh closure each time
 // Downside: the timer resets every time count changes (usually fine)
 ```
@@ -1669,14 +1672,14 @@ const countRef = useRef(count);
 
 // Keep the ref in sync with state on every render
 useEffect(() => {
-  countRef.current = count;
+    countRef.current = count;
 });
 
 useEffect(() => {
-  const id = setInterval(() => {
-    console.log(countRef.current); // reads the ref — always current, never stale
-  }, 1000);
-  return () => clearInterval(id);
+    const id = setInterval(() => {
+        console.log(countRef.current); // reads the ref — always current, never stale
+    }, 1000);
+    return () => clearInterval(id);
 }, []); // interval is created once and never restarted
 
 // Mental model:
@@ -1686,13 +1689,13 @@ useEffect(() => {
 
 **Which fix to use:**
 
-| Situation | Fix |
-| --- | --- |
-| Timer can reset when value changes | Add to deps array |
-| Timer must be stable (e.g. game loop) | `useRef` |
-| You're not sure | Add to deps array — it's simpler and almost always correct |
+| Situation                             | Fix                                                        |
+| ------------------------------------- | ---------------------------------------------------------- |
+| Timer can reset when value changes    | Add to deps array                                          |
+| Timer must be stable (e.g. game loop) | `useRef`                                                   |
+| You're not sure                       | Add to deps array — it's simpler and almost always correct |
 
-> One-line summary for the interview: *"The closure captured an old value because the effect only ran once. Adding it to the deps array re-creates the effect with a fresh closure whenever the value changes."*
+> One-line summary for the interview: _"The closure captured an old value because the effect only ran once. Adding it to the deps array re-creates the effect with a fresh closure whenever the value changes."_
 
 ```ts
 // Object/array as useEffect dep — new reference every render = infinite loop
@@ -1734,12 +1737,14 @@ Setting state on an unmounted component. Common pattern: fetch starts, component
 
 ```ts
 useEffect(() => {
-  const controller = new AbortController();
-  fetch('/tasks', { signal: controller.signal })
-    .then(r => r.json())
-    .then(setTasks)
-    .catch(e => { if (e.name !== 'AbortError') console.error(e); });
-  return () => controller.abort(); // cleanup
+    const controller = new AbortController();
+    fetch('/tasks', { signal: controller.signal })
+        .then(r => r.json())
+        .then(setTasks)
+        .catch(e => {
+            if (e.name !== 'AbortError') console.error(e);
+        });
+    return () => controller.abort(); // cleanup
 }, []);
 ```
 
@@ -1965,14 +1970,509 @@ English filler phrases that buy you a second without sounding awkward:
 
 ### Words that sound confident (use these)
 
-| Instead of... | Say this |
-| --- | --- |
-| "I don't know" | "I'm not sure, but my instinct is..." |
-| "I forgot" | "I'd look this up, but I know it works roughly like..." |
-| "Is this right?" | "I think this is right — does this match what you had in mind?" |
-| "Sorry, I'm confused" | "Let me make sure I understand — are you saying...?" |
-| "I can't do this" | "I'm not immediately seeing the solution — let me break it down." |
-| "This is wrong" | "Actually, let me revisit this — I think there's a better approach." |
+| Instead of...         | Say this                                                             |
+| --------------------- | -------------------------------------------------------------------- |
+| "I don't know"        | "I'm not sure, but my instinct is..."                                |
+| "I forgot"            | "I'd look this up, but I know it works roughly like..."              |
+| "Is this right?"      | "I think this is right — does this match what you had in mind?"      |
+| "Sorry, I'm confused" | "Let me make sure I understand — are you saying...?"                 |
+| "I can't do this"     | "I'm not immediately seeing the solution — let me break it down."    |
+| "This is wrong"       | "Actually, let me revisit this — I think there's a better approach." |
+
+## Role-Based Access Control (RBAC)
+
+Solace has at least 3 user types: patient, advocate, physician. How you model and enforce access matters.
+
+### Modelling roles
+
+```ts
+// schema.ts — add role to users table
+export const users = pgTable('users', {
+  id:    uuid('id').primaryKey().defaultRandom(),
+  name:  text('name').notNull(),
+  email: text('email').notNull().unique(),
+  role:  text('role', { enum: ['patient', 'advocate', 'admin'] }).notNull().default('patient'),
+});
+```
+
+### Enforcing in Fastify — role guard hook
+
+```ts
+// Attach this as a preHandler to routes that need a specific role
+function requireRole(...roles: string[]) {
+  return async (req: FastifyRequest, reply: FastifyReply) => {
+    if (!req.user) return reply.code(401).send({ error: 'Unauthenticated' });
+    if (!roles.includes(req.user.role)) {
+      return reply.code(403).send({ error: 'Forbidden' });
+    }
+  };
+}
+
+// Usage on routes
+fastify.get('/admin/users', { preHandler: requireRole('admin') }, async req => { ... });
+fastify.get('/advocate/caseload', { preHandler: requireRole('advocate', 'admin') }, async req => { ... });
+```
+
+### Row-level security — users can only see their own data
+
+```ts
+// ❌ Never do this — any userId can be passed in the URL
+fastify.get('/tasks/:userId', async req => {
+  return db.select().from(tasks).where(eq(tasks.userId, req.params.userId));
+});
+
+// ✅ Always filter by the authenticated user's id from the JWT
+fastify.get('/tasks', async req => {
+  return db.select().from(tasks).where(eq(tasks.userId, req.user.userId));
+});
+```
+
+### RBAC vs ABAC — know the difference
+
+```text
+RBAC (Role-Based Access Control):
+  Access is granted by role. Simple, predictable.
+  "Advocates can read patient records, patients cannot."
+  Good for: most apps, including Solace.
+
+ABAC (Attribute-Based Access Control):
+  Access based on attributes of user + resource + environment.
+  "Advocate can read patient record ONLY IF they are assigned to that patient."
+  More powerful but complex. Solace almost certainly uses this for patient↔advocate relationship.
+
+// ABAC check in a route:
+fastify.get('/patients/:patientId', { preHandler: requireRole('advocate') }, async req => {
+  // Not just "are you an advocate?" but "are you THIS patient's advocate?"
+  const assignment = await db.select().from(assignments)
+    .where(and(
+      eq(assignments.advocateId, req.user.userId),
+      eq(assignments.patientId, req.params.patientId)
+    ));
+  if (!assignment.length) return reply.code(403).send({ error: 'Not your patient' });
+  // ...
+});
+```
+
+---
+
+## Production Database Migrations
+
+`drizzle-kit push` is dev-only — it applies changes directly. In production you need migration files + safe rollout.
+
+### The workflow
+
+```bash
+# 1. Change schema.ts (e.g. add a new column)
+
+# 2. Generate a migration file (SQL diff, committed to git)
+npx drizzle-kit generate
+# Creates: drizzle/0001_add_priority_to_tasks.sql
+
+# 3. Review the generated SQL before applying!
+cat drizzle/0001_add_priority_to_tasks.sql
+
+# 4. Apply in production (CI/CD runs this before deploy)
+npx drizzle-kit migrate
+```
+
+### Zero-downtime migrations — the expand/contract pattern
+
+Dropping or renaming a column while the old server is still running = downtime. Safe approach:
+
+```text
+Phase 1 — Expand (deploy new code that writes BOTH old and new)
+  - Add the new column (nullable, no NOT NULL yet)
+  - New code writes to both old and new column
+  - Old code still reads old column — no breakage
+
+Phase 2 — Migrate data
+  - Backfill: UPDATE tasks SET new_col = old_col WHERE new_col IS NULL
+  - Run in batches on large tables to avoid locking
+
+Phase 3 — Contract (deploy code that only uses new column)
+  - Add NOT NULL constraint once all rows are populated
+  - Old code is gone — safe to drop old column in next deploy
+```
+
+### What NOT to do in a single migration
+
+```sql
+-- ❌ These lock the table and can cause downtime on large tables:
+ALTER TABLE tasks ADD COLUMN priority TEXT NOT NULL DEFAULT 'medium'; -- full table rewrite on old Postgres
+ALTER TABLE tasks RENAME COLUMN title TO name;                        -- breaks old code still running
+ALTER TABLE tasks DROP COLUMN old_field;                              -- data loss if old code still reads it
+
+-- ✅ Safe alternatives:
+ALTER TABLE tasks ADD COLUMN priority TEXT DEFAULT 'medium';          -- nullable first, backfill, then add NOT NULL
+-- For rename: add new column → backfill → update code → drop old column (3 deploys)
+```
+
+### Drizzle migration tracking
+
+```text
+Drizzle stores applied migrations in a __drizzle_migrations table.
+Running drizzle-kit migrate again is idempotent — already-applied migrations are skipped.
+Always commit migration files to git — they are the source of truth for DB state.
+```
+
+---
+
+## Optimistic Updates
+
+Update the UI immediately on user action, roll back if the server fails. Makes the app feel instant.
+
+### The pattern
+
+```ts
+// useTasks.ts — optimistic complete
+const completeTask = async (id: string) => {
+  // 1. Save previous state for rollback
+  const previousTasks = tasks;
+
+  // 2. Update UI immediately (optimistic)
+  setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: true } : t));
+
+  try {
+    // 3. Fire the actual request
+    await fetch(`/tasks/${id}/complete`, { method: 'PATCH' });
+    // Success — UI is already correct, nothing more to do
+  } catch (err) {
+    // 4. Server failed — roll back to previous state
+    setTasks(previousTasks);
+    // Optionally show an error toast
+  }
+};
+```
+
+### Optimistic delete
+
+```ts
+const deleteTask = async (id: string) => {
+  const previousTasks = tasks;
+  setTasks(prev => prev.filter(t => t.id !== id)); // remove immediately
+
+  try {
+    await fetch(`/tasks/${id}`, { method: 'DELETE' });
+  } catch {
+    setTasks(previousTasks); // put it back on failure
+  }
+};
+```
+
+### When to use it
+
+```text
+✓ Toggle (complete/uncomplete) — near-zero failure rate, feels instant
+✓ Delete — removing from list immediately is great UX
+✓ Any mutation that is usually expected to succeed
+
+✗ Create — you don't have the server-generated ID yet (use a temp ID, swap on success)
+✗ Operations with meaningful failure modes — show loading state instead
+```
+
+---
+
+## Soft Deletes
+
+Healthcare apps almost never hard-delete data — audit trails, compliance, accidental delete recovery.
+
+### Schema
+
+```ts
+export const tasks = pgTable('tasks', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  title:     text('title').notNull(),
+  completed: boolean('completed').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),  // NULL = active, timestamp = deleted
+});
+```
+
+### Queries — always filter out deleted rows
+
+```ts
+import { isNull } from 'drizzle-orm';
+
+// SELECT — exclude soft-deleted
+db.select().from(tasks).where(isNull(tasks.deletedAt));
+
+// "DELETE" — set the timestamp instead
+const [task] = await db.update(tasks)
+  .set({ deletedAt: new Date() })
+  .where(and(eq(tasks.id, id), isNull(tasks.deletedAt)))
+  .returning();
+
+// Restore
+await db.update(tasks)
+  .set({ deletedAt: null })
+  .where(eq(tasks.id, id));
+
+// Hard delete (admin only, purge after retention period)
+await db.delete(tasks).where(eq(tasks.id, id));
+```
+
+### The footgun — forgetting the filter
+
+```ts
+// ❌ This returns deleted records too
+db.select().from(tasks).where(eq(tasks.userId, userId));
+
+// ✅ Always include the soft-delete filter
+db.select().from(tasks).where(
+  and(eq(tasks.userId, userId), isNull(tasks.deletedAt))
+);
+
+// Common pattern: wrap in a helper or use a view
+// CREATE VIEW active_tasks AS SELECT * FROM tasks WHERE deleted_at IS NULL;
+```
+
+### Why healthcare specifically
+
+```text
+HIPAA requires audit trails — knowing WHEN something was deleted is as important as the data itself.
+Medicare billing: a deleted record may still be referenced in a claim.
+Legal holds: data may be frozen pending an investigation — hard delete is forbidden.
+```
+
+---
+
+## React Query (TanStack Query)
+
+The de-facto standard for server state in React apps. Replaces manual fetch + useState + useEffect patterns.
+
+### Why use it over a custom hook
+
+```text
+Custom fetch hook gives you:   data, loading, error
+React Query gives you for free: data, loading, error, caching, deduplication,
+  background refetch, stale-while-revalidate, retry, pagination, optimistic updates, devtools
+```
+
+### Basic usage
+
+```tsx
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+// Fetching — replaces useEffect + fetch + useState
+function TaskList() {
+  const { data: tasks, isLoading, error } = useQuery({
+    queryKey: ['tasks'],          // cache key — same key = same cached data
+    queryFn: () => fetch('/tasks').then(r => r.json()),
+    staleTime: 30_000,            // treat data as fresh for 30s (no refetch)
+  });
+
+  if (isLoading) return <Spinner />;
+  if (error) return <p>Error loading tasks</p>;
+  return tasks.map(t => <TaskRow key={t.id} task={t} />);
+}
+```
+
+### Mutations — create / update / delete
+
+```tsx
+function TaskForm() {
+  const queryClient = useQueryClient();
+
+  const createTask = useMutation({
+    mutationFn: (title: string) =>
+      fetch('/tasks', {
+        method: 'POST',
+        body: JSON.stringify({ title }),
+        headers: { 'Content-Type': 'application/json' },
+      }).then(r => r.json()),
+
+    // After success — invalidate the cache so the list refetches
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+
+  return (
+    <button onClick={() => createTask.mutate('New task')} disabled={createTask.isPending}>
+      {createTask.isPending ? 'Adding...' : 'Add Task'}
+    </button>
+  );
+}
+```
+
+### Optimistic update with React Query
+
+```ts
+useMutation({
+  mutationFn: (id: string) => fetch(`/tasks/${id}/complete`, { method: 'PATCH' }),
+  onMutate: async (id) => {
+    await queryClient.cancelQueries({ queryKey: ['tasks'] });
+    const previous = queryClient.getQueryData(['tasks']);         // snapshot
+    queryClient.setQueryData(['tasks'], (old: Task[]) =>          // optimistic update
+      old.map(t => t.id === id ? { ...t, completed: true } : t)
+    );
+    return { previous };                                          // returned as context
+  },
+  onError: (_err, _id, context) => {
+    queryClient.setQueryData(['tasks'], context?.previous);       // rollback
+  },
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });       // sync with server
+  },
+});
+```
+
+### One-liner mental model for the interview
+
+```text
+"React Query separates server state from UI state. Local useState is for form inputs
+and toggles. Remote data — anything from an API — belongs in React Query, which
+handles caching, deduplication, and background sync automatically."
+```
+
+---
+
+## SSE (Server-Sent Events) vs WebSockets
+
+Both push data from server to client. SSE is simpler and often sufficient.
+
+### Comparison
+
+```text
+                    SSE                           WebSocket
+Protocol            HTTP/1.1 (EventSource API)    WS (separate protocol upgrade)
+Direction           Server → Client only          Bidirectional
+Browser reconnect   Automatic                     Manual
+Complexity          Trivial                       Moderate
+Use when            Notifications, live feeds     Chat, collaborative editing, games
+Proxy/CDN support   Works out of the box          Needs explicit WS support
+```
+
+### SSE in Fastify
+
+```ts
+fastify.get('/events', async (req, reply) => {
+  reply.raw.setHeader('Content-Type', 'text/event-stream');
+  reply.raw.setHeader('Cache-Control', 'no-cache');
+  reply.raw.setHeader('Connection', 'keep-alive');
+  reply.raw.flushHeaders();
+
+  // Send a message
+  const send = (event: string, data: unknown) => {
+    reply.raw.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  send('connected', { message: 'Stream open' });
+
+  // Example: send a notification every 10 seconds
+  const interval = setInterval(() => {
+    send('ping', { time: new Date().toISOString() });
+  }, 10_000);
+
+  // Cleanup when client disconnects
+  req.raw.on('close', () => clearInterval(interval));
+});
+```
+
+### SSE in React
+
+```ts
+useEffect(() => {
+  const es = new EventSource('/events');
+
+  es.addEventListener('notification', (e) => {
+    const data = JSON.parse(e.data);
+    setNotifications(prev => [data, ...prev]);
+  });
+
+  es.onerror = () => es.close(); // browser auto-reconnects by default
+
+  return () => es.close(); // cleanup on unmount
+}, []);
+```
+
+### When to use each at Solace
+
+```text
+SSE:        Advocate gets notified when a new patient is assigned to them
+SSE:        Patient sees "Your advocate is typing..." status update
+WebSocket:  Real-time messaging between patient and advocate (bidirectional)
+WebSocket:  Collaborative care plan editing (multiple advocates on one record)
+```
+
+---
+
+## File Uploads — Fastify + S3
+
+Uploading care documents, insurance cards, etc. to S3. Never stream files through your server to S3 — use presigned URLs.
+
+### Pattern 1 — Presigned URL (recommended)
+
+Client gets a short-lived S3 URL, uploads directly to S3. Server never sees the file bytes.
+
+```ts
+// Server: generate presigned upload URL
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+const s3 = new S3Client({ region: 'us-east-1' });
+
+fastify.post<{ Body: { filename: string; contentType: string } }>(
+  '/upload-url',
+  async (req) => {
+    const key = `documents/${req.user.userId}/${Date.now()}-${req.body.filename}`;
+    const command = new PutObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key: key,
+      ContentType: req.body.contentType,
+    });
+    const url = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 min
+    return { url, key }; // client uses url to PUT, then sends key back to save in DB
+  }
+);
+```
+
+```ts
+// Client: upload directly to S3
+const { url, key } = await fetch('/upload-url', {
+  method: 'POST',
+  body: JSON.stringify({ filename: file.name, contentType: file.type }),
+}).then(r => r.json());
+
+await fetch(url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+
+// Then tell your API to save the reference
+await fetch('/documents', { method: 'POST', body: JSON.stringify({ key, name: file.name }) });
+```
+
+### Pattern 2 — Multipart upload through your server (simpler, smaller files)
+
+```ts
+import multipart from '@fastify/multipart';
+app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
+
+fastify.post('/upload', async (req, reply) => {
+  const data = await req.file(); // single file
+  const buffer = await data.toBuffer();
+
+  await s3.send(new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: `uploads/${Date.now()}-${data.filename}`,
+    Body: buffer,
+    ContentType: data.mimetype,
+  }));
+
+  reply.code(201).send({ ok: true });
+});
+```
+
+### HIPAA note for documents
+
+```text
+S3 buckets storing PHI must:
+  - Have server-side encryption enabled (SSE-S3 or SSE-KMS)
+  - Block all public access (no public ACLs)
+  - Be covered by an AWS BAA (Business Associate Agreement)
+  - Have access logging enabled (who downloaded what document, when)
+  - Use presigned URLs with short expiry (not permanent public URLs)
+```
+
+---
 
 ## Questions to Ask Them
 
