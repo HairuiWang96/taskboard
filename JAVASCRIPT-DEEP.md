@@ -487,7 +487,7 @@ const deepOld = JSON.parse(JSON.stringify(original)); //! loses: functions, Date
 ## 4. this keyword
 
 ```js
-// 'this' refers to the execution context, not where the function is defined
+//! 'this' refers to the execution context, not where the function is defined
 // (except arrow functions — they capture 'this' from definition site)
 
 // 1. Method call: this = the object before the dot
@@ -500,7 +500,7 @@ const obj = {
 obj.greet(); // 'Alice'
 
 // 2. Function call (non-strict): this = global (window/global)
-// In strict mode ('use strict') or ESM: this = undefined
+//! In strict mode ('use strict') or ESM: this = undefined
 function standalone() {
     return this;
 }
@@ -512,7 +512,7 @@ function Person(name) {
 }
 const p = new Person('Bob'); // this = new Person instance
 
-// 4. Explicit binding
+//! 4. Explicit binding
 function greet() {
     return this.name;
 }
@@ -521,7 +521,7 @@ greet.apply({ name: 'Alice' }, []); // apply: same but args as array
 const bound = greet.bind({ name: 'Alice' }); // bind: returns new function, doesn't call
 bound();
 
-// 5. Arrow functions: lexical this (inherits from surrounding scope)
+//! 5. Arrow functions: lexical this (inherits from surrounding scope)
 const obj2 = {
     name: 'Alice',
     greet() {
@@ -531,10 +531,57 @@ const obj2 = {
     broken() {
         function inner() {
             return this.name;
-        } // this = undefined (regular function)
+        } //! this = undefined (regular function)
         return inner();
     },
 };
+
+// The core difference: where does this come from?
+//! Arrow functions — inherit this from the surrounding scope where they were defined
+//! Regular functions — get their own this based on how they are called
+
+// greet() — works correctly
+
+// greet() {
+//     const inner = () => this.name; // arrow function
+//     return inner();
+// }
+// When obj2.greet() is called, this inside greet = obj2.
+// The arrow function inner has no this of its own — it looks up to the enclosing scope (greet) and borrows its this.
+
+// obj2.greet()
+//   → this = obj2  (greet's this)
+//     → inner() arrow → inherits this = obj2
+//       → this.name = 'Alice' ✓
+
+// broken() — fails
+
+// broken() {
+//     function inner() {
+//         return this.name; // regular function
+//     }
+//     return inner();
+// }
+//! inner is a regular function called without a receiver — just inner(), not obj2.inner().
+// So this is undefined (strict mode) or window (sloppy mode). It doesn't matter that it's sitting inside a method.
+
+// obj2.broken()
+//   → this = obj2  (broken's this)
+//     → inner()  ← called as a plain function, no obj2. prefix
+//       → this = undefined  ✗
+// The rule of thumb
+// Arrow functions don't have this — they borrow from wherever they were written.
+// Regular functions get this at call time — it depends on who calls them and how.
+
+// this = obj2 ✓  (arrow — borrows from greet's scope)
+// const inner = () => this.name;
+
+// this = undefined ✗  (regular — called bare, no receiver)
+// function inner() { return this.name; }
+// inner();
+
+//! this = obj2 ✓  (regular — called with receiver)
+// inner.call(this);
 
 // Classic problem: losing 'this' in callbacks
 class Timer {
@@ -543,7 +590,7 @@ class Timer {
     }
 
     start() {
-        // ✗ 'this' lost — setInterval callback is a regular function
+        //! ✗ 'this' lost — setInterval callback is a regular function
         setInterval(function () {
             this.count++;
         }, 1000); // this = undefined
