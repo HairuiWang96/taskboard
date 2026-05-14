@@ -32,13 +32,13 @@
    - May be interrupted in concurrent mode
 3. Commit phase: React diffs old vs new tree → applies minimal DOM changes
    - Always synchronous
-   - DOM mutations, then refs, then effects run here
+   - ‼️ DOM mutations, then refs, then effects run here
 ```
 
 ### The diffing algorithm
 
 ```text
-React assumes:
+‼️ React assumes:
   1. Same component type at same position → update (reuse instance)
   2. Different component type at same position → unmount old, mount new
   3. Key prop → explicitly identify list items across renders
@@ -58,19 +58,25 @@ This is why:
 
 ```jsx
 // Key must be stable, unique among siblings, not array index
-{items.map(item => <Item key={item.id} {...item} />)}
+{
+    items.map(item => <Item key={item.id} {...item} />);
+}
 
 // ✗ Array index as key — breaks on reorder, insert, delete
-{items.map((item, i) => <Item key={i} {...item} />)}
+{
+    items.map((item, i) => <Item key={i} {...item} />);
+}
 
-// Keys reset component state — use deliberately
+// ‼️ Keys reset component state — use deliberately
 // Forcing remount (reset) using key:
-<Input key={userId} defaultValue={user.name} />
+<Input key={userId} defaultValue={user.name} />;
 // When userId changes, Input unmounts and remounts fresh — state reset
 
-// Keys work across conditional branches:
-{isLoggedIn ? <Dashboard key="dashboard" /> : <Login key="login" />}
-// Without keys — React may try to update Dashboard → Login (same position)
+// ‼️ Keys work across conditional branches:
+{
+    isLoggedIn ? <Dashboard key='dashboard' /> : <Login key='login' />;
+}
+// ‼️ Without keys — React may try to update Dashboard → Login (same position)
 // With keys — React knows they're different, unmounts/mounts correctly
 ```
 
@@ -83,7 +89,7 @@ A component re-renders when:
   3. A context it consumes changes
   4. Its props change (but parent re-render already causes this)
 
-Note: re-render ≠ DOM update
+Note: ‼️ re-render ≠ DOM update
   React re-renders (calls function) to compute new virtual DOM
   Then diffs against previous — only CHANGED DOM nodes are updated
   Re-renders are usually fast; unnecessary DOM mutations are slow
@@ -96,24 +102,24 @@ Note: re-render ≠ DOM update
 ### useState internals
 
 ```js
-// useState stores state in a linked list on the fiber (component instance)
-// Hooks must be called in the same order every render — no conditions!
+// useState stores state in a ‼️ linked list on the fiber (component instance)
+// ‼️ Hooks must be called in the same order every render — no conditions!
 // This is why "Rules of Hooks" exist — React uses call order to match state to hook
 
 const [count, setCount] = useState(0);
 
-// Functional update — use when new state depends on old state
-setCount(prev => prev + 1); // safe in concurrent mode, batched updates
+// Functional update — use when new state depends on old state ‼️
+setCount(prev => prev + 1); // ‼️ safe in concurrent mode, batched updates
 
-// ✗ Direct value — stale if called multiple times before re-render
+// ‼️ ✗ Direct value — stale if called multiple times before re-render
 setCount(count + 1);
-setCount(count + 1); // still count+1, not count+2!
+setCount(count + 1); // ‼️ still count+1, not count+2!
 
 // ✓ Functional update — always applies to latest state
 setCount(c => c + 1);
 setCount(c => c + 1); // correctly count+2
 
-// Lazy initialization — only runs on mount, not every render
+// ‼️ Lazy initialization — only runs on mount, not every render
 const [data, setData] = useState(() => JSON.parse(localStorage.getItem('data') ?? '[]'));
 
 // Object state — must spread to preserve other keys
@@ -124,72 +130,155 @@ setForm(prev => ({ ...prev, name: 'Alice' })); // preserve email
 ### useEffect internals
 
 ```js
-// useEffect runs AFTER the browser has painted — non-blocking
-// useLayoutEffect runs AFTER DOM mutations but BEFORE paint — blocking (like componentDidMount)
+// ‼️ useEffect runs AFTER the browser has painted — non-blocking
+// ‼️ useLayoutEffect runs AFTER DOM mutations but BEFORE paint — blocking (like componentDidMount)
+//
+// Full sequence on every render:
+//   1. Component function runs (render phase)
+//      - state/ref values are read
+//      - useEffect(() => {...}) is encountered → callback REGISTERED, not run yet
+//      - JSX is returned
+//   2. React diffs virtual DOM and updates the real DOM
+//   3. Browser paints the screen (user sees the new UI)
+//   4. useEffect callbacks fire
+//      - cleanup of the previous effect runs first (if any)
+//      - then the new effect body runs
+//
+// useLayoutEffect fires between step 2 and 3 — after DOM update but before paint.
+// Use it when you need to measure DOM elements before the user sees them.
 
 useEffect(() => {
-  // Effect body: runs after render + paint
-  const subscription = subscribe(userId);
+    // Effect body: runs after render + paint
+    const subscription = subscribe(userId);
 
-  return () => {
-    // Cleanup: runs before next effect OR on unmount
-    subscription.unsubscribe();
-  };
+    return () => {
+        // Cleanup: runs before next effect OR on unmount
+        subscription.unsubscribe();
+    };
 }, [userId]); // dependency array
 
 // [] — run once on mount, cleanup on unmount
 // [dep] — run on mount + whenever dep changes
-// no array — run after EVERY render (rare, usually a bug)
+// ‼️ no array — run after EVERY render (rare, usually a bug)
 
-// React 18 StrictMode: effects run TWICE on mount in development
+// React 18 StrictMode: effects run TWICE on mount in development ‼️
 // Purpose: verify your cleanup function correctly reverses the effect
 // This catches missing cleanups
 
 // Common patterns
 useEffect(() => {
-  if (!id) return; // guard — don't run if no id
+    if (!id) return; // guard — don't run if no id
 
-  let cancelled = false;
-  fetchUser(id).then(user => {
-    if (!cancelled) setUser(user); // prevent state update after unmount
-  });
+    let cancelled = false;
+    fetchUser(id).then(user => {
+        if (!cancelled) setUser(user); // prevent state update after unmount
+    });
 
-  return () => { cancelled = true; };
+    return () => {
+        cancelled = true;
+    };
 }, [id]);
+
+// Q: If useEffect fires after paint, how does fetched data ever make it to the screen?
+//    The user data needs to be there to paint — so what is actually being painted first?
+//
+// A: "Paint" means whatever React can render with the data it already has — not the final state.
+//    React doesn't wait for your fetch. It paints immediately with the initial state (e.g. []),
+//    then the effect fetches, and setUsers() triggers a SECOND render + paint with real data.
+//
+// Flow for a fetch inside useEffect:
+//   1. Render  → component runs with users = [] (initial state)
+//   2. Paint   → browser shows loading spinner / empty list
+//   3. useEffect fires → fetch starts
+//   4. Data arrives → setUsers(data) called → triggers a NEW render cycle
+//   5. Render  → component runs again with users = [...]
+//   6. Paint   → browser now shows the populated list
+//
+// That's why you always need a loading fallback for the first paint:
+//
+// const [users, setUsers] = useState([]);          // first paint uses this
+// useEffect(() => {
+//     fetch('/api/users')
+//         .then(r => r.json())
+//         .then(data => setUsers(data));            // triggers second render + paint
+// }, []);
+// return users.length === 0 ? <Spinner /> : <UserList users={users} />;
 ```
 
 ### useRef deep dive
 
 ```js
-// useRef returns a mutable box { current: initialValue }
+// ‼️ useRef returns a mutable box { current: initialValue }
 // Changing .current does NOT trigger re-render
-// Same object reference across all renders
+// ‼️ Same object reference across all renders
 
 // Use 1: access DOM nodes
 const inputRef = useRef(null);
-useEffect(() => { inputRef.current.focus(); }, []);
-<input ref={inputRef} />
+useEffect(() => {
+    inputRef.current.focus();
+}, []);
+<input ref={inputRef} />;
 
 // Use 2: store mutable values across renders without triggering re-render
 const renderCount = useRef(0);
-useEffect(() => { renderCount.current++; }); // no dep = after every render
+useEffect(() => {
+    renderCount.current++; // runs after every render, always up-to-date
+}); // no dep = after every render
+// NOTE: unlike usePrevious, this never reads ref.current during render (no return statement).
+// So there's no "one render behind" problem — you read renderCount.current whenever
+// you need it (e.g. in JSX or a handler), and by then the effect has already incremented it.
+// Contrast:
+//   usePrevious → reads ref.current during render's return  → captures stale value → one render behind
+//   renderCount → never reads ref.current during render     → always current when you check it
 
-// Use 3: store latest callback (avoid stale closure)
+// ‼️ Use 3: store latest callback (avoid stale closure)
 const latestCallback = useRef(onSuccess);
-useEffect(() => { latestCallback.current = onSuccess; }); // always latest
+useEffect(() => {
+    latestCallback.current = onSuccess;
+}); // always latest
 
 useEffect(() => {
-  const id = setInterval(() => {
-    latestCallback.current(); // always calls latest version, no stale closure
-  }, 1000);
-  return () => clearInterval(id);
+    const id = setInterval(() => {
+        latestCallback.current(); // always calls latest version, no stale closure
+    }, 1000);
+    return () => clearInterval(id);
 }, []); // interval created once, but always calls latest callback
 
 // Use 4: previous value
+// WHY usePrevious returns the PREVIOUS render's value:
+//
+// The trick is the timing gap between render and useEffect:
+//   1. render() runs  →  ref.current is READ (still holds old value)
+//   2. React paints the DOM
+//   3. useEffect runs →  ref.current is WRITTEN (updated to new value)
+//
+// So the return statement always executes BEFORE the effect updates the ref.
+//
+// Example walkthrough:
+//   Render 1: value="A" → returns undefined (ref not set yet), then effect sets ref.current="A"
+//   Render 2: value="B" → returns "A" (previous!),            then effect sets ref.current="B"
+//   Render 3: value="C" → returns "B" (previous!),            then effect sets ref.current="C"
+//
+// useRef persists across renders without triggering re-renders, and useEffect always
+// runs after return — so the read and write are always exactly one render apart.
+//
+// IMPORTANT: useEffect() does NOT run its callback immediately — it just schedules it.
+// React collects all effects during render and runs them later after painting.
+// So even though useEffect appears before return in the code, the callback hasn't
+// executed yet when return ref.current runs.
+//
+// Code order vs execution order:
+//   useEffect(() => { ... })  → just REGISTERS the callback (nothing runs yet)
+//   return ref.current        → runs immediately, reads the still-old value
+//   [after paint]             → React finally fires the scheduled callback
+//
+// Code order ≠ execution order. useEffect is registration, not immediate execution.
 function usePrevious(value) {
-  const ref = useRef();
-  useEffect(() => { ref.current = value; });
-  return ref.current; // returns value from PREVIOUS render
+    const ref = useRef();
+    useEffect(() => {
+        ref.current = value; // runs AFTER paint — not when this line is reached
+    });
+    return ref.current; // runs DURING render — useEffect callback hasn't fired yet
 }
 ```
 
@@ -198,13 +287,13 @@ function usePrevious(value) {
 ```js
 // useMemo — memoize a COMPUTED VALUE
 const sortedItems = useMemo(
-  () => [...items].sort((a, b) => a.name.localeCompare(b.name)),
-  [items] // recompute only when items changes
+    () => [...items].sort((a, b) => a.name.localeCompare(b.name)),
+    [items], // recompute only when items changes
 );
 
 // useCallback — memoize a FUNCTION REFERENCE
-const handleDelete = useCallback((id) => {
-  setItems(prev => prev.filter(item => item.id !== id));
+const handleDelete = useCallback(id => {
+    setItems(prev => prev.filter(item => item.id !== id));
 }, []); // stable reference — won't cause child re-renders
 
 // When to use:
@@ -218,13 +307,15 @@ const handleDelete = useCallback((id) => {
 
 // The reference equality problem
 useEffect(() => {
-  fetchData(options); // if options is an object created during render:
+    fetchData(options); // if options is an object created during render:
 }, [options]); // new object every render = infinite loop!
 
 // Fix: memoize the object
 const options = useMemo(() => ({ page, limit }), [page, limit]);
 // Or: list primitives as deps
-useEffect(() => { fetchData({ page, limit }); }, [page, limit]);
+useEffect(() => {
+    fetchData({ page, limit });
+}, [page, limit]);
 ```
 
 ### useReducer
@@ -270,48 +361,49 @@ const [state, dispatch] = useReducer(reducer, initialState);
 // Extract stateful logic — NOT just to organize code, but to REUSE it
 
 function useLocalStorage<T>(key: string, initial: T) {
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const stored = localStorage.getItem(key);
-      return stored ? JSON.parse(stored) : initial;
-    } catch {
-      return initial;
-    }
-  });
-
-  const set = useCallback((newValue: T | ((prev: T) => T)) => {
-    setValue(prev => {
-      const next = typeof newValue === 'function'
-        ? (newValue as (prev: T) => T)(prev)
-        : newValue;
-      localStorage.setItem(key, JSON.stringify(next));
-      return next;
+    const [value, setValue] = useState<T>(() => {
+        try {
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : initial;
+        } catch {
+            return initial;
+        }
     });
-  }, [key]);
 
-  return [value, set] as const;
+    const set = useCallback(
+        (newValue: T | ((prev: T) => T)) => {
+            setValue(prev => {
+                const next = typeof newValue === 'function' ? (newValue as (prev: T) => T)(prev) : newValue;
+                localStorage.setItem(key, JSON.stringify(next));
+                return next;
+            });
+        },
+        [key],
+    );
+
+    return [value, set] as const;
 }
 
 // useDebounce
 function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debounced;
+    const [debounced, setDebounced] = useState(value);
+    useEffect(() => {
+        const timer = setTimeout(() => setDebounced(value), delay);
+        return () => clearTimeout(timer);
+    }, [value, delay]);
+    return debounced;
 }
 
 // useOnClickOutside
 function useOnClickOutside(ref: RefObject<HTMLElement>, handler: () => void) {
-  useEffect(() => {
-    const listener = (e: MouseEvent) => {
-      if (!ref.current || ref.current.contains(e.target as Node)) return;
-      handler();
-    };
-    document.addEventListener('mousedown', listener);
-    return () => document.removeEventListener('mousedown', listener);
-  }, [ref, handler]);
+    useEffect(() => {
+        const listener = (e: MouseEvent) => {
+            if (!ref.current || ref.current.contains(e.target as Node)) return;
+            handler();
+        };
+        document.addEventListener('mousedown', listener);
+        return () => document.removeEventListener('mousedown', listener);
+    }, [ref, handler]);
 }
 ```
 
@@ -386,27 +478,27 @@ function TaskList() {
 // Not a replacement for state management — still need useState/useReducer
 
 type ThemeCtx = {
-  theme: 'light' | 'dark';
-  toggle: () => void;
+    theme: 'light' | 'dark';
+    toggle: () => void;
 };
 
 const ThemeContext = createContext<ThemeCtx | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const toggle = useCallback(() => setTheme(t => t === 'light' ? 'dark' : 'light'), []);
+    const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    const toggle = useCallback(() => setTheme(t => (t === 'light' ? 'dark' : 'light')), []);
 
-  // Memoize the context value — prevents unnecessary re-renders
-  const value = useMemo(() => ({ theme, toggle }), [theme, toggle]);
+    // Memoize the context value — prevents unnecessary re-renders
+    const value = useMemo(() => ({ theme, toggle }), [theme, toggle]);
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+    return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 // Custom hook with error boundary
 export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be inside ThemeProvider');
-  return ctx;
+    const ctx = useContext(ThemeContext);
+    if (!ctx) throw new Error('useTheme must be inside ThemeProvider');
+    return ctx;
 }
 ```
 
@@ -436,22 +528,21 @@ const SidebarContext = createContext<boolean>(false);
 ```tsx
 // Prevents re-render if props haven't changed (shallow comparison)
 const TaskItem = React.memo(function TaskItem({ task, onDelete }) {
-  console.log('TaskItem render:', task.id);
-  return <div>{task.title}</div>;
+    console.log('TaskItem render:', task.id);
+    return <div>{task.title}</div>;
 });
 
 // ✗ This defeats memo — new function reference every parent render
-<TaskItem task={task} onDelete={(id) => deleteTask(id)} />
+<TaskItem task={task} onDelete={id => deleteTask(id)} />;
 
 // ✓ Stable function reference with useCallback
-const handleDelete = useCallback((id) => deleteTask(id), [deleteTask]);
-<TaskItem task={task} onDelete={handleDelete} />
+const handleDelete = useCallback(id => deleteTask(id), [deleteTask]);
+<TaskItem task={task} onDelete={handleDelete} />;
 
 // Custom comparison function
 const TaskItem = React.memo(TaskItemBase, (prevProps, nextProps) => {
-  // Return true if props are equal (skip re-render)
-  return prevProps.task.id === nextProps.task.id
-    && prevProps.task.done === nextProps.task.done;
+    // Return true if props are equal (skip re-render)
+    return prevProps.task.id === nextProps.task.id && prevProps.task.done === nextProps.task.done;
 });
 
 // When React.memo is worth it:
@@ -472,22 +563,24 @@ const TaskItem = React.memo(TaskItemBase, (prevProps, nextProps) => {
 import { FixedSizeList as List } from 'react-window';
 
 function VirtualList({ items }) {
-  const Row = ({ index, style }) => (
-    <div style={style}> {/* style contains position — MUST apply */}
-      {items[index].name}
-    </div>
-  );
+    const Row = ({ index, style }) => (
+        <div style={style}>
+            {' '}
+            {/* style contains position — MUST apply */}
+            {items[index].name}
+        </div>
+    );
 
-  return (
-    <List
-      height={600}     // visible area height
-      itemCount={items.length}
-      itemSize={50}    // height of each row
-      width="100%"
-    >
-      {Row}
-    </List>
-  );
+    return (
+        <List
+            height={600} // visible area height
+            itemCount={items.length}
+            itemSize={50} // height of each row
+            width='100%'
+        >
+            {Row}
+        </List>
+    );
 }
 // Only ~15 DOM nodes rendered at a time regardless of list size
 ```
@@ -502,19 +595,21 @@ const Dashboard = lazy(() => import('./Dashboard'));
 const Reports = lazy(() => import('./Reports')); // heavy, loaded only when needed
 
 function App() {
-  return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/reports" element={<Reports />} />
-      </Routes>
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+                <Route path='/dashboard' element={<Dashboard />} />
+                <Route path='/reports' element={<Reports />} />
+            </Routes>
+        </Suspense>
+    );
 }
 
 // Preload before user navigates (on hover over link)
 const preloadDashboard = () => import('./Dashboard');
-<Link onMouseEnter={preloadDashboard} to="/dashboard">Dashboard</Link>
+<Link onMouseEnter={preloadDashboard} to='/dashboard'>
+    Dashboard
+</Link>;
 ```
 
 ### Profiling
@@ -523,12 +618,12 @@ const preloadDashboard = () => import('./Dashboard');
 import { Profiler } from 'react';
 
 function onRenderCallback(id, phase, actualDuration) {
-  console.log(`${id} [${phase}]: ${actualDuration.toFixed(2)}ms`);
+    console.log(`${id} [${phase}]: ${actualDuration.toFixed(2)}ms`);
 }
 
-<Profiler id="TaskList" onRender={onRenderCallback}>
-  <TaskList />
-</Profiler>
+<Profiler id='TaskList' onRender={onRenderCallback}>
+    <TaskList />
+</Profiler>;
 
 // Chrome DevTools → React DevTools → Profiler tab
 // Record → interact → stop → see flame graph
@@ -548,41 +643,42 @@ function onRenderCallback(id, phase, actualDuration) {
 const TabContext = createContext<{ active: string; setActive: (id: string) => void } | null>(null);
 
 function Tabs({ defaultTab, children }) {
-  const [active, setActive] = useState(defaultTab);
-  return (
-    <TabContext.Provider value={{ active, setActive }}>
-      <div>{children}</div>
-    </TabContext.Provider>
-  );
+    const [active, setActive] = useState(defaultTab);
+    return (
+        <TabContext.Provider value={{ active, setActive }}>
+            <div>{children}</div>
+        </TabContext.Provider>
+    );
 }
 
 function Tab({ id, children }) {
-  const { active, setActive } = useContext(TabContext)!;
-  return (
-    <button
-      onClick={() => setActive(id)}
-      aria-selected={active === id}
-    >
-      {children}
-    </button>
-  );
+    const { active, setActive } = useContext(TabContext)!;
+    return (
+        <button onClick={() => setActive(id)} aria-selected={active === id}>
+            {children}
+        </button>
+    );
 }
 
 function TabPanel({ id, children }) {
-  const { active } = useContext(TabContext)!;
-  return active === id ? <div>{children}</div> : null;
+    const { active } = useContext(TabContext)!;
+    return active === id ? <div>{children}</div> : null;
 }
 
 Tabs.Tab = Tab;
 Tabs.Panel = TabPanel;
 
 // Usage — clean, semantic
-<Tabs defaultTab="profile">
-  <Tabs.Tab id="profile">Profile</Tabs.Tab>
-  <Tabs.Tab id="settings">Settings</Tabs.Tab>
-  <Tabs.Panel id="profile"><Profile /></Tabs.Panel>
-  <Tabs.Panel id="settings"><Settings /></Tabs.Panel>
-</Tabs>
+<Tabs defaultTab='profile'>
+    <Tabs.Tab id='profile'>Profile</Tabs.Tab>
+    <Tabs.Tab id='settings'>Settings</Tabs.Tab>
+    <Tabs.Panel id='profile'>
+        <Profile />
+    </Tabs.Panel>
+    <Tabs.Panel id='settings'>
+        <Settings />
+    </Tabs.Panel>
+</Tabs>;
 ```
 
 ### Render props & children as function
@@ -590,24 +686,22 @@ Tabs.Panel = TabPanel;
 ```tsx
 // Pass render logic as a prop — inversion of control
 function DataProvider({ userId, render }) {
-  const [data, setData] = useState(null);
-  useEffect(() => { fetchUser(userId).then(setData); }, [userId]);
-  return render(data);
+    const [data, setData] = useState(null);
+    useEffect(() => {
+        fetchUser(userId).then(setData);
+    }, [userId]);
+    return render(data);
 }
 
-<DataProvider userId="123" render={(user) => <UserCard user={user} />} />
+<DataProvider userId='123' render={user => <UserCard user={user} />} />;
 
 // children as function
 function Toggle({ children }) {
-  const [on, setOn] = useState(false);
-  return children({ on, toggle: () => setOn(o => !o) });
+    const [on, setOn] = useState(false);
+    return children({ on, toggle: () => setOn(o => !o) });
 }
 
-<Toggle>
-  {({ on, toggle }) => (
-    <button onClick={toggle}>{on ? 'ON' : 'OFF'}</button>
-  )}
-</Toggle>
+<Toggle>{({ on, toggle }) => <button onClick={toggle}>{on ? 'ON' : 'OFF'}</button>}</Toggle>;
 ```
 
 ### Higher-Order Components (HOC)
@@ -615,11 +709,11 @@ function Toggle({ children }) {
 ```tsx
 // Wrap a component to add behavior — less common post-hooks, still useful
 function withAuth<P extends object>(Component: React.ComponentType<P>) {
-  return function AuthenticatedComponent(props: P) {
-    const { user } = useAuth();
-    if (!user) return <Navigate to="/login" />;
-    return <Component {...props} />;
-  };
+    return function AuthenticatedComponent(props: P) {
+        const { user } = useAuth();
+        if (!user) return <Navigate to='/login' />;
+        return <Component {...props} />;
+    };
 }
 
 const ProtectedDashboard = withAuth(Dashboard);
@@ -633,21 +727,13 @@ const ProtectedDashboard = withAuth(Dashboard);
 
 ```tsx
 // When parent needs access to a child's DOM node
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  function Input({ className, ...props }, ref) {
-    return (
-      <input
-        ref={ref}
-        className={cn('border rounded px-3 py-2', className)}
-        {...props}
-      />
-    );
-  }
-);
+const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input({ className, ...props }, ref) {
+    return <input ref={ref} className={cn('border rounded px-3 py-2', className)} {...props} />;
+});
 
 // Parent
 const inputRef = useRef<HTMLInputElement>(null);
-<Input ref={inputRef} />
+<Input ref={inputRef} />;
 // inputRef.current is the actual <input> DOM node
 ```
 
@@ -656,15 +742,17 @@ const inputRef = useRef<HTMLInputElement>(null);
 ```tsx
 // Don't expose the raw DOM node — expose a controlled interface
 const FancyInput = React.forwardRef((props, ref) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
-  useImperativeHandle(ref, () => ({
-    focus: () => inputRef.current?.focus(),
-    clear: () => { if (inputRef.current) inputRef.current.value = ''; },
-    // NOT exposing the raw input — parent can't call scrollIntoView etc.
-  }));
+    useImperativeHandle(ref, () => ({
+        focus: () => inputRef.current?.focus(),
+        clear: () => {
+            if (inputRef.current) inputRef.current.value = '';
+        },
+        // NOT exposing the raw input — parent can't call scrollIntoView etc.
+    }));
 
-  return <input ref={inputRef} {...props} />;
+    return <input ref={inputRef} {...props} />;
 });
 ```
 
@@ -677,39 +765,39 @@ const FancyInput = React.forwardRef((props, ref) => {
 ```tsx
 // Controlled: React state drives the input — good for validation, dynamic UI
 function ControlledForm() {
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
+    const [email, setEmail] = useState('');
+    const [error, setError] = useState('');
 
-  const validate = (value: string) => {
-    if (!value.includes('@')) return 'Invalid email';
-    return '';
-  };
+    const validate = (value: string) => {
+        if (!value.includes('@')) return 'Invalid email';
+        return '';
+    };
 
-  return (
-    <input
-      value={email}
-      onChange={e => {
-        setEmail(e.target.value);
-        setError(validate(e.target.value));
-      }}
-    />
-  );
+    return (
+        <input
+            value={email}
+            onChange={e => {
+                setEmail(e.target.value);
+                setError(validate(e.target.value));
+            }}
+        />
+    );
 }
 
 // Uncontrolled: DOM owns the value — simpler, less re-renders, good for simple forms
 function UncontrolledForm() {
-  const emailRef = useRef<HTMLInputElement>(null);
+    const emailRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log(emailRef.current?.value);
-  };
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log(emailRef.current?.value);
+    };
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <input ref={emailRef} defaultValue="" type="email" />
-    </form>
-  );
+    return (
+        <form onSubmit={handleSubmit}>
+            <input ref={emailRef} defaultValue='' type='email' />
+        </form>
+    );
 }
 ```
 
@@ -721,42 +809,40 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 const schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  role: z.enum(['admin', 'user']),
+    email: z.string().email(),
+    password: z.string().min(8),
+    role: z.enum(['admin', 'user']),
 });
 
 type FormData = z.infer<typeof schema>;
 
 function LoginForm() {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setError,
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+        setError,
+    } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const onSubmit = async (data: FormData) => {
-    try {
-      await login(data);
-    } catch (err) {
-      setError('email', { message: 'Invalid credentials' });
-    }
-  };
+    const onSubmit = async (data: FormData) => {
+        try {
+            await login(data);
+        } catch (err) {
+            setError('email', { message: 'Invalid credentials' });
+        }
+    };
 
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <input {...register('email')} type="email" />
-      {errors.email && <p>{errors.email.message}</p>}
+    return (
+        <form onSubmit={handleSubmit(onSubmit)}>
+            <input {...register('email')} type='email' />
+            {errors.email && <p>{errors.email.message}</p>}
 
-      <input {...register('password')} type="password" />
-      {errors.password && <p>{errors.password.message}</p>}
+            <input {...register('password')} type='password' />
+            {errors.password && <p>{errors.password.message}</p>}
 
-      <button disabled={isSubmitting}>
-        {isSubmitting ? 'Logging in...' : 'Log in'}
-      </button>
-    </form>
-  );
+            <button disabled={isSubmitting}>{isSubmitting ? 'Logging in...' : 'Log in'}</button>
+        </form>
+    );
 }
 ```
 
@@ -768,32 +854,34 @@ function LoginForm() {
 
 ```ts
 function useUser(id: string) {
-  const [state, dispatch] = useReducer(reducer, {
-    data: null, loading: true, error: null
-  });
+    const [state, dispatch] = useReducer(reducer, {
+        data: null,
+        loading: true,
+        error: null,
+    });
 
-  useEffect(() => {
-    if (!id) return;
+    useEffect(() => {
+        if (!id) return;
 
-    dispatch({ type: 'FETCH_START' });
-    const controller = new AbortController();
+        dispatch({ type: 'FETCH_START' });
+        const controller = new AbortController();
 
-    fetch(`/api/users/${id}`, { signal: controller.signal })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(data => dispatch({ type: 'FETCH_SUCCESS', payload: data }))
-      .catch(err => {
-        if (err.name !== 'AbortError') {
-          dispatch({ type: 'FETCH_ERROR', payload: err.message });
-        }
-      });
+        fetch(`/api/users/${id}`, { signal: controller.signal })
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => dispatch({ type: 'FETCH_SUCCESS', payload: data }))
+            .catch(err => {
+                if (err.name !== 'AbortError') {
+                    dispatch({ type: 'FETCH_ERROR', payload: err.message });
+                }
+            });
 
-    return () => controller.abort();
-  }, [id]);
+        return () => controller.abort();
+    }, [id]);
 
-  return state;
+    return state;
 }
 ```
 
@@ -804,48 +892,46 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // Query: fetch + cache + background refetch + stale-while-revalidate
 function UserProfile({ userId }) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['user', userId],    // cache key — refetch when this changes
-    queryFn: () => fetchUser(userId),
-    staleTime: 5 * 60 * 1000,     // data is fresh for 5 min — no refetch
-    gcTime: 10 * 60 * 1000,       // keep in cache 10 min after unmount
-    retry: 3,                      // retry failed requests 3 times
-  });
+    const { data, isLoading, error } = useQuery({
+        queryKey: ['user', userId], // cache key — refetch when this changes
+        queryFn: () => fetchUser(userId),
+        staleTime: 5 * 60 * 1000, // data is fresh for 5 min — no refetch
+        gcTime: 10 * 60 * 1000, // keep in cache 10 min after unmount
+        retry: 3, // retry failed requests 3 times
+    });
 
-  if (isLoading) return <Skeleton />;
-  if (error) return <ErrorState error={error} />;
-  return <Profile user={data} />;
+    if (isLoading) return <Skeleton />;
+    if (error) return <ErrorState error={error} />;
+    return <Profile user={data} />;
 }
 
 // Mutation: create/update/delete with optimistic updates
 function TaskItem({ task }) {
-  const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
 
-  const { mutate: toggle } = useMutation({
-    mutationFn: (id: string) => fetch(`/tasks/${id}/toggle`, { method: 'POST' }),
+    const { mutate: toggle } = useMutation({
+        mutationFn: (id: string) => fetch(`/tasks/${id}/toggle`, { method: 'POST' }),
 
-    // Optimistic update — update UI before server responds
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ['tasks'] });
-      const previous = queryClient.getQueryData(['tasks']);
+        // Optimistic update — update UI before server responds
+        onMutate: async id => {
+            await queryClient.cancelQueries({ queryKey: ['tasks'] });
+            const previous = queryClient.getQueryData(['tasks']);
 
-      queryClient.setQueryData(['tasks'], (old: Task[]) =>
-        old.map(t => t.id === id ? { ...t, done: !t.done } : t)
-      );
+            queryClient.setQueryData(['tasks'], (old: Task[]) => old.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
 
-      return { previous }; // context for rollback
-    },
+            return { previous }; // context for rollback
+        },
 
-    onError: (err, id, context) => {
-      // Rollback on error
-      queryClient.setQueryData(['tasks'], context?.previous);
-    },
+        onError: (err, id, context) => {
+            // Rollback on error
+            queryClient.setQueryData(['tasks'], context?.previous);
+        },
 
-    onSettled: () => {
-      // Refetch to sync with server
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    },
-  });
+        onSettled: () => {
+            // Refetch to sync with server
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        },
+    });
 }
 ```
 
@@ -855,47 +941,46 @@ function TaskItem({ task }) {
 
 ```tsx
 // Error Boundary — class component (no hook equivalent yet)
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode },
-  { error: Error | null }
-> {
-  state = { error: null };
+class ErrorBoundary extends React.Component<{ children: React.ReactNode; fallback: React.ReactNode }, { error: Error | null }> {
+    state = { error: null };
 
-  static getDerivedStateFromError(error: Error) {
-    return { error }; // triggers fallback UI
-  }
+    static getDerivedStateFromError(error: Error) {
+        return { error }; // triggers fallback UI
+    }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // Log to Sentry, Datadog, etc.
-    reportError(error, info.componentStack);
-  }
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        // Log to Sentry, Datadog, etc.
+        reportError(error, info.componentStack);
+    }
 
-  render() {
-    if (this.state.error) return this.props.fallback;
-    return this.props.children;
-  }
+    render() {
+        if (this.state.error) return this.props.fallback;
+        return this.props.children;
+    }
 }
 
 // Reset the boundary (e.g. after navigation)
 class ResettableErrorBoundary extends React.Component {
-  state = { error: null, key: 0 };
+    state = { error: null, key: 0 };
 
-  static getDerivedStateFromError(error) { return { error }; }
-
-  reset = () => this.setState({ error: null, key: k => k + 1 });
-
-  render() {
-    if (this.state.error) {
-      return <button onClick={this.reset}>Try again</button>;
+    static getDerivedStateFromError(error) {
+        return { error };
     }
-    return <React.Fragment key={this.state.key}>{this.props.children}</React.Fragment>;
-  }
+
+    reset = () => this.setState({ error: null, key: k => k + 1 });
+
+    render() {
+        if (this.state.error) {
+            return <button onClick={this.reset}>Try again</button>;
+        }
+        return <React.Fragment key={this.state.key}>{this.props.children}</React.Fragment>;
+    }
 }
 
 // Strategic placement — wrap each major section
 <ErrorBoundary fallback={<DashboardError />}>
-  <Dashboard />
-</ErrorBoundary>
+    <Dashboard />
+</ErrorBoundary>;
 // Errors in Dashboard don't crash the whole app
 ```
 
@@ -913,38 +998,38 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 describe('TaskForm', () => {
-  it('adds a task when submitted', async () => {
-    const onAdd = vi.fn();
-    const user = userEvent.setup(); // more realistic than fireEvent
+    it('adds a task when submitted', async () => {
+        const onAdd = vi.fn();
+        const user = userEvent.setup(); // more realistic than fireEvent
 
-    render(<TaskForm onAdd={onAdd} />);
+        render(<TaskForm onAdd={onAdd} />);
 
-    await user.type(screen.getByRole('textbox', { name: /task title/i }), 'Buy milk');
-    await user.click(screen.getByRole('button', { name: /add task/i }));
+        await user.type(screen.getByRole('textbox', { name: /task title/i }), 'Buy milk');
+        await user.click(screen.getByRole('button', { name: /add task/i }));
 
-    expect(onAdd).toHaveBeenCalledWith('Buy milk');
-    expect(screen.getByRole('textbox')).toHaveValue(''); // form reset
-  });
+        expect(onAdd).toHaveBeenCalledWith('Buy milk');
+        expect(screen.getByRole('textbox')).toHaveValue(''); // form reset
+    });
 
-  it('shows error for empty submission', async () => {
-    const user = userEvent.setup();
-    render(<TaskForm onAdd={vi.fn()} />);
+    it('shows error for empty submission', async () => {
+        const user = userEvent.setup();
+        render(<TaskForm onAdd={vi.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: /add/i }));
+        await user.click(screen.getByRole('button', { name: /add/i }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Title is required');
-  });
+        expect(screen.getByRole('alert')).toHaveTextContent('Title is required');
+    });
 });
 
 // Async state updates
 it('loads and displays tasks', async () => {
-  vi.mocked(fetchTasks).mockResolvedValue([{ id: '1', title: 'Test task' }]);
+    vi.mocked(fetchTasks).mockResolvedValue([{ id: '1', title: 'Test task' }]);
 
-  render(<TaskList />);
+    render(<TaskList />);
 
-  expect(screen.getByRole('status')).toHaveTextContent('Loading'); // skeleton/spinner
-  await screen.findByText('Test task'); // waits for async state update
-  expect(screen.queryByRole('status')).not.toBeInTheDocument(); // loading gone
+    expect(screen.getByRole('status')).toHaveTextContent('Loading'); // skeleton/spinner
+    await screen.findByText('Test task'); // waits for async state update
+    expect(screen.queryByRole('status')).not.toBeInTheDocument(); // loading gone
 });
 
 // Querying priority (use higher ones first):
@@ -963,16 +1048,16 @@ it('loads and displays tasks', async () => {
 
 // React 18 — all three setState calls cause ONE re-render
 setTimeout(() => {
-  setCount(c => c + 1);
-  setFlag(f => !f);
-  setData(d => [...d, newItem]);
-  // ONE re-render (was THREE re-renders in React 17)
+    setCount(c => c + 1);
+    setFlag(f => !f);
+    setData(d => [...d, newItem]);
+    // ONE re-render (was THREE re-renders in React 17)
 }, 0);
 
 // Opt out of batching (rare)
 import { flushSync } from 'react-dom';
 flushSync(() => setCount(c => c + 1)); // forces synchronous re-render
-flushSync(() => setFlag(f => !f));     // another synchronous re-render
+flushSync(() => setFlag(f => !f)); // another synchronous re-render
 ```
 
 ### useTransition & startTransition
@@ -985,15 +1070,17 @@ flushSync(() => setFlag(f => !f));     // another synchronous re-render
 const [isPending, startTransition] = useTransition();
 
 function handleSearch(query: string) {
-  setQuery(query); // urgent — update input immediately
+    setQuery(query); // urgent — update input immediately
 
-  startTransition(() => {
-    setResults(filterResults(query)); // non-urgent — can be interrupted
-  });
+    startTransition(() => {
+        setResults(filterResults(query)); // non-urgent — can be interrupted
+    });
 }
 
 // isPending: true while transition is running — show loading indicator
-{isPending && <Spinner />}
+{
+    isPending && <Spinner />;
+}
 ```
 
 ### useDeferredValue
@@ -1001,14 +1088,14 @@ function handleSearch(query: string) {
 ```tsx
 // Defer updating a value — similar to debounce but React-aware
 function SearchResults({ query }) {
-  const deferredQuery = useDeferredValue(query); // lags behind query
+    const deferredQuery = useDeferredValue(query); // lags behind query
 
-  const results = useMemo(
-    () => expensiveFilter(allItems, deferredQuery),
-    [deferredQuery] // only recomputes when deferred value settles
-  );
+    const results = useMemo(
+        () => expensiveFilter(allItems, deferredQuery),
+        [deferredQuery], // only recomputes when deferred value settles
+    );
 
-  return <List items={results} />;
+    return <List items={results} />;
 }
 
 // The list renders with old results while new ones compute
@@ -1095,13 +1182,19 @@ function UserProfile({ userId }) {
 const [count, setCount] = useState(0);
 
 // useReducer — better for complex state
-const [state, dispatch] = useReducer((state, action) => {
-    switch (action.type) {
-        case 'increment': return { ...state, count: state.count + 1 };
-        case 'reset':     return { count: 0, error: null };
-        default: return state;
-    }
-}, { count: 0, error: null });
+const [state, dispatch] = useReducer(
+    (state, action) => {
+        switch (action.type) {
+            case 'increment':
+                return { ...state, count: state.count + 1 };
+            case 'reset':
+                return { count: 0, error: null };
+            default:
+                return state;
+        }
+    },
+    { count: 0, error: null },
+);
 
 dispatch({ type: 'increment' });
 ```
@@ -1117,13 +1210,13 @@ dispatch({ type: 'increment' });
 ```jsx
 const Parent = ({ items }) => {
     // Without useCallback: new function reference every render → Child re-renders
-    const handleClick = useCallback((id) => {
+    const handleClick = useCallback(id => {
         setSelected(id);
     }, []); // stable reference
 
     const sorted = useMemo(
         () => [...items].sort((a, b) => a.name.localeCompare(b.name)),
-        [items] // only re-sort when items change
+        [items], // only re-sort when items change
     );
 
     return <Child items={sorted} onClick={handleClick} />;
@@ -1137,11 +1230,11 @@ const Parent = ({ items }) => {
 ```jsx
 // Controlled
 const [value, setValue] = useState('');
-<input value={value} onChange={e => setValue(e.target.value)} />
+<input value={value} onChange={e => setValue(e.target.value)} />;
 
 // Uncontrolled
 const ref = useRef();
-<input ref={ref} defaultValue="initial" />
+<input ref={ref} defaultValue='initial' />;
 // read: ref.current.value on submit
 ```
 
@@ -1170,7 +1263,7 @@ class ErrorBoundary extends React.Component {
 // Usage
 <ErrorBoundary>
     <MyWidget />
-</ErrorBoundary>
+</ErrorBoundary>;
 ```
 
 ### "What are React Portals?"
@@ -1182,8 +1275,8 @@ import { createPortal } from 'react-dom';
 
 function Modal({ children }) {
     return createPortal(
-        <div className="modal">{children}</div>,
-        document.getElementById('modal-root') // renders outside #app
+        <div className='modal'>{children}</div>,
+        document.getElementById('modal-root'), // renders outside #app
     );
 }
 ```
@@ -1196,7 +1289,7 @@ function Modal({ children }) {
 // DOM access
 const inputRef = useRef(null);
 const focusInput = () => inputRef.current.focus();
-<input ref={inputRef} />
+<input ref={inputRef} />;
 
 // Mutable value without re-render
 const timerRef = useRef(null);
@@ -1239,13 +1332,18 @@ function useLocalStorage(key, initialValue) {
     const [value, setValue] = useState(() => {
         try {
             return JSON.parse(localStorage.getItem(key)) ?? initialValue;
-        } catch { return initialValue; }
+        } catch {
+            return initialValue;
+        }
     });
 
-    const set = useCallback((newValue) => {
-        setValue(newValue);
-        localStorage.setItem(key, JSON.stringify(newValue));
-    }, [key]);
+    const set = useCallback(
+        newValue => {
+            setValue(newValue);
+            localStorage.setItem(key, JSON.stringify(newValue));
+        },
+        [key],
+    );
 
     return [value, set];
 }
@@ -1267,7 +1365,7 @@ export default async function UsersPage() {
 }
 
 // components/UserList.tsx
-'use client'; // needs interactivity
+('use client'); // needs interactivity
 export function UserList({ users }) {
     const [filter, setFilter] = useState('');
     // ...
@@ -1284,7 +1382,7 @@ const HeavyChart = React.lazy(() => import('./HeavyChart'));
 function Dashboard() {
     return (
         <Suspense fallback={<Spinner />}>
-            <HeavyChart />      {/* code-splits automatically */}
+            <HeavyChart /> {/* code-splits automatically */}
         </Suspense>
     );
 }
