@@ -1272,7 +1272,7 @@ add('a', 'b'); // now V8 must handle multiple cases
 // Pure function: same input always → same output, no side effects
 const add = (a, b) => a + b; // pure
 
-// Impure: depends on external state or has side effects
+//! Impure: depends on external state or has side effects
 let total = 0;
 const addToTotal = n => {
     total += n;
@@ -1307,11 +1307,59 @@ const grouped = users.reduce((acc, user) => {
     return { ...acc, [key]: [...(acc[key] ?? []), user] };
 }, {});
 
+// Groups a flat array of objects by a shared property (here: role)
+// Input:  [{ name: 'Alice', role: 'admin' }, { name: 'Bob', role: 'user' }, ...]
+// Output: { admin: [Alice, Carol], user: [Bob, Dave] }
+//
+// acc starts as {} — builds up one key per unique role
+//
+// Iteration 1 — Alice (admin):
+//   acc = {}
+//   acc['admin'] ?? []  →  []  (doesn't exist yet, falls back to [])
+//   return { admin: [...[], Alice] }
+//   acc = { admin: [Alice] }
+//
+// Iteration 2 — Bob (user):
+//   acc = { admin: [Alice] }
+//   acc['user'] ?? []  →  []  (doesn't exist yet)
+//   acc = { admin: [Alice], user: [Bob] }
+//
+// Iteration 3 — Carol (admin):
+//   acc['admin'] ?? []  →  [Alice]  (already exists — append to it)
+//   acc = { admin: [Alice, Carol], user: [Bob] }
+//
+// Three key tricks:
+//   1. acc[key] ?? []     — if role not seen yet, start with [] instead of crashing on undefined
+//   2. [key]: ...         — computed property key, uses a variable as the key name:
+//                           const key = 'admin'; { [key]: 'value' } → { admin: 'value' }
+//   3. { ...acc, [key] }  — spreads existing acc and overwrites just that one key (immutable update)
+
+//   why need [] for [key]:
+//   Without brackets, JS treats it as a LITERAL string, not a variable:
+//
+//   const key = 'admin';
+//   { key: 'value' }    // → { key: 'value' }    ← wrong, "key" is taken literally
+//   { [key]: 'value' }  // → { admin: 'value' }  ← correct, uses the VALUE of key
+//
+//   [] tells JS: "evaluate what's inside me, then use the result as the property name"
+//
+//   Any expression works inside []:
+//   const prefix = 'user';
+//   { [prefix + '_id']: 1 }         // → { user_id: 1 }
+//   { [prefix.toUpperCase()]: 1 }   // → { USER: 1 }
+//   { [`${prefix}_name`]: 'Alice' } // → { user_name: 'Alice' }
+//
+//   Same reason you use [] for dynamic property ACCESS vs dot notation:
+//   obj.key   // looks for property literally named "key"
+//   obj[key]  // looks for property named by the VALUE of key
+//   { [key]: value } is just the same idea applied to object creation
+
 // Compose and pipe
 const compose =
     (...fns) =>
     x =>
         fns.reduceRight((v, f) => f(v), x);
+// reduceRight is the same as reduce but iterates from right to left instead of left to right.
 const pipe =
     (...fns) =>
     x =>
@@ -1341,6 +1389,37 @@ const add = curry((a, b, c) => a + b + c);
 add(1)(2)(3); // 6
 add(1, 2)(3); // 6
 add(1)(2, 3); // 6
+
+// Currying transforms a function that takes multiple arguments into a chain of
+// functions that each take one (or more) arguments at a time:
+//   add(1, 2, 3)   — normal: all args at once
+//   add(1)(2)(3)   — curried: args one at a time, same result
+//
+// arity = fn.length = number of parameters the original fn expects
+//   e.g. (a, b, c) => a+b+c  has arity 3
+//
+// Two cases inside curried():
+//   1. args.length >= arity → got enough args → call the real fn immediately
+//   2. not enough args      → return a new function that waits for more,
+//                             remembering what's been given so far (...args)
+//
+// Step by step with add(1)(2)(3):
+//   add(1)     → args=[1],     1 < 3 → return (...more) => curried(1, ...more)
+//   add(1)(2)  → args=[1,2],   2 < 3 → return (...more) => curried(1, 2, ...more)
+//   add(1)(2)(3) → args=[1,2,3], 3 >= 3 → call fn(1,2,3) → 6
+//
+// Can also pass multiple args at once — still works:
+//   add(1, 2)(3)  → args=[1,2] → not enough → curried(1,2,3) → 6
+//   add(1)(2, 3)  → args=[1]   → not enough → curried(1,2,3) → 6
+//   add(1, 2, 3)  → args=[1,2,3] → enough   → fn(1,2,3)     → 6
+//
+// Why useful — pre-loading arguments:
+//   const multiply = curry((factor, number) => factor * number);
+//   const double = multiply(2); // pre-load factor=2
+//   const triple = multiply(3); // pre-load factor=3
+//   [1,2,3].map(double); // [2,4,6]
+//   [1,2,3].map(triple); // [3,6,9]
+// Instead of writing x => multiply(2, x), you just partially apply the first argument and get a reusable function back. Same idea as partial application but more systematic — every argument can be deferred
 
 // Partial application: fix some arguments
 const multiply = (a, b) => a * b;
@@ -1426,6 +1505,87 @@ const config = withDefaults({}, { theme: 'light', lang: 'en' });
 config.theme; // 'light' (from defaults)
 config.theme = 'dark';
 config.theme; // 'dark' (from object)
+
+// ─── Proxy & Reflect explained ───────────────────────────────────────────────
+
+// PROXY wraps an object and lets you intercept and customize operations on it:
+//   const proxy = new Proxy(target, handler);
+//   target  — the original object being wrapped
+//   handler — object with "trap" methods that intercept operations
+//
+// Common traps:
+//   get(target, key)              intercepts proxy.prop
+//   set(target, key, value)       intercepts proxy.prop = value
+//   has(target, key)              intercepts 'prop' in proxy
+//   deleteProperty(target, key)   intercepts delete proxy.prop
+//   apply(target, thisArg, args)  intercepts proxy() (when target is a function)
+//   construct(target, args)       intercepts new proxy()
+//
+// Example:
+//   const user = { name: 'Alice', age: 30 };
+//   const proxy = new Proxy(user, {
+//       get(target, key) {
+//           console.log(`reading: ${key}`);
+//           return target[key];
+//       },
+//       set(target, key, value) {
+//           if (key === 'age' && value < 0) throw new Error('Age cannot be negative');
+//           target[key] = value;
+//           return true; // must return true on success
+//       }
+//   });
+//   proxy.name;     // logs "reading: name" → 'Alice'
+//   proxy.age = -1; // throws Error
+
+// REFLECT is a built-in object with methods that mirror the Proxy traps —
+// one Reflect method for each trap. Use it inside traps to perform the default
+// operation correctly (handles inheritance, getters, receivers):
+//
+//   Reflect.get(target, key)            same as target[key]
+//   Reflect.set(target, key, value)     same as target[key] = value
+//   Reflect.has(target, key)            same as key in target
+//   Reflect.deleteProperty(target, key) same as delete target[key]
+//
+// Without Reflect — manual forwarding, misses edge cases:
+//   get(target, key) { return target[key]; }
+//
+// With Reflect — correct forwarding (handles inherited props, getters, receiver):
+//   get(target, key, receiver) { return Reflect.get(target, key, receiver); }
+//
+// The receiver matters for inherited properties and getters — Reflect handles it correctly, direct target[key] doesn't always.
+//
+// Real-world use cases:
+//
+//   1. Validation — throw if wrong type is assigned
+//   const validator = new Proxy(user, {
+//       set(target, key, value) {
+//           if (key === 'age' && typeof value !== 'number') throw new TypeError('age must be a number');
+//           return Reflect.set(target, key, value);
+//       }
+//   });
+//
+//   2. Logging / observability — log every get/set
+//   const logger = new Proxy(obj, {
+//       get(target, key) { console.log(`GET ${key}`); return Reflect.get(target, key); },
+//       set(target, key, value) { console.log(`SET ${key} = ${value}`); return Reflect.set(target, key, value); }
+//   });
+//
+//   3. Default values — return fallback if property doesn't exist
+//   const withDefaults = new Proxy({}, {
+//       get(target, key) {
+//           return key in target ? target[key] : `default_${key}`;
+//       }
+//   });
+//   withDefaults.foo; // 'default_foo'
+//
+//   4. Read-only object — trap set and throw
+//   const frozen = new Proxy(config, {
+//       set() { throw new Error('This object is read-only'); }
+//   });
+//
+//! One-line summary:
+//   Proxy  — wraps an object and intercepts operations on it
+//   Reflect — provides the correct default implementation of those same operations
 ```
 
 ---
@@ -1446,7 +1606,7 @@ config.theme; // 'dark' (from object)
 // Instead of attaching listeners to each item (expensive, doesn't work for dynamic items):
 items.forEach(item => item.addEventListener('click', handler)); // ✗
 
-// Attach ONE listener to the parent, use event.target to determine what was clicked
+//! Attach ONE listener to the parent, use event.target to determine what was clicked
 document.querySelector('.list').addEventListener('click', e => {
     const item = e.target.closest('.list-item');
     if (!item) return;
@@ -1762,6 +1922,75 @@ queue.run(() => increment()); // each call waits for the previous to finish
 queue.run(() => increment());
 ```
 
+### Mutex (Mutual Exclusion)
+
+```js
+// A mutex is a lock that ensures only ONE piece of code can access a shared
+// resource at a time — prevents two operations from corrupting shared state.
+// Name comes from MUTual EXclusion.
+//
+// The problem — race condition with async operations:
+//   let balance = 100;
+//   async function withdraw(amount) {
+//       const current = await getBalance(); // reads 100
+//       await saveBalance(current - amount); // saves 100 - amount
+//   }
+//   withdraw(30); // reads 100, saves 70
+//   withdraw(50); // reads 100 (not 70!), saves 50 ← WRONG, should be 20
+//   // Both reads happen before either write completes → final balance 50, should be 20
+//
+// Mutex solution:
+class Mutex {
+    constructor() {
+        this._queue = [];
+        this._locked = false;
+    }
+
+    lock() {
+        return new Promise(resolve => {
+            if (!this._locked) {
+                this._locked = true;
+                resolve();
+            } else {
+                this._queue.push(resolve); // wait in line
+            }
+        });
+    }
+
+    unlock() {
+        if (this._queue.length > 0) {
+            const next = this._queue.shift(); // let next in line proceed
+            next();
+        } else {
+            this._locked = false;
+        }
+    }
+}
+
+const mutex = new Mutex();
+
+async function withdraw(amount) {
+    await mutex.lock(); // wait for your turn
+    try {
+        const current = await getBalance();
+        await saveBalance(current - amount);
+    } finally {
+        mutex.unlock(); // always release, even if error is thrown
+    }
+}
+// Now withdraw(30) runs fully before withdraw(50) starts
+
+// Mental model: think of a mutex like a bathroom key at a café.
+// Only one person can have it at a time.
+// You take the key → do your thing → put it back → next person gets it.
+//
+//! JS is single-threaded so true parallel race conditions can't happen with
+// synchronous code — but with async/await, multiple async operations can
+// interleave (reads/writes to a DB, file, or shared variable can still race).
+// That's where a mutex is needed.
+// Production use: 'async-mutex' npm package
+```
+
 ### Race condition in React (useEffect)
 
 ```js
@@ -1974,7 +2203,7 @@ dog.breathe(); // 'breathing' — found on prototype
 0 === ''; // false — different types
 null == undefined; // true  — special case
 null === undefined; // false
-NaN === NaN; // false — NaN is never equal to itself; use Number.isNaN()
+NaN === NaN; //‼️ false — NaN is never equal to itself; use Number.isNaN()
 ```
 
 ### "Explain `call`, `apply`, and `bind`."
@@ -2155,5 +2384,5 @@ function process(element) {
     cache.set(element, result);
     return result;
 }
-// When element is removed from DOM and has no other refs, cache entry auto-GC'd
+//‼️ When element is removed from DOM and has no other refs, cache entry auto-GC'd
 ```
