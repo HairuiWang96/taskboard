@@ -868,12 +868,12 @@ export { add };
 //   Node.js original         Browser + modern Node.js
 
 // ESM syntax (.mjs)
-export const add = (a, b) => a + b;          // math.mjs
-import { add } from './math.mjs';             // main.mjs — extension required
+export const add = (a, b) => a + b; // math.mjs
+import { add } from './math.mjs'; // main.mjs — extension required
 
 // CJS syntax (.cjs)
-module.exports = { add: (a, b) => a + b };   // math.cjs
-const { add } = require('./math.cjs');        // main.cjs
+module.exports = { add: (a, b) => a + b }; // math.cjs
+const { add } = require('./math.cjs'); // main.cjs
 
 //! Rule of thumb:
 // - Modern projects: use .js with "type": "module" in package.json
@@ -928,6 +928,21 @@ const withNew = [...items, newItem]; // append without mutation
 const updated = { ...user, name: 'New Name' }; // shallow merge, last wins
 const { password, ...publicUser } = user; // remove a property immutably
 
+// "immutably" means: creates a new object WITHOUT that property, original is untouched
+//
+// const user = { name: 'Alice', age: 30, password: 'secret123' };
+// const { password, ...publicUser } = user;
+// password   = 'secret123'
+// publicUser = { name: 'Alice', age: 30 }           ← no password
+// user       = { name: 'Alice', age: 30, password: 'secret123' }  ← unchanged
+//
+// vs delete (mutable — modifies the original):
+//   delete user.password; // user is now { name: 'Alice', age: 30 } — original gone
+//
+// Practical use — strip sensitive fields before sending to frontend:
+// const { password, token, ...safeUser } = userFromDatabase;
+// res.json(safeUser); // password and token never sent
+
 // Function calls
 Math.max(...numbers); // spread array as arguments
 
@@ -936,7 +951,7 @@ Math.max(...numbers); // spread array as arguments
 const a = { x: { y: 1 } };
 const b = { ...a };
 b.x.y = 2; // also mutates a.x.y!
-// Use structuredClone(a) for deep copy
+//! Use structuredClone(a) for deep copy
 ```
 
 ---
@@ -959,7 +974,7 @@ const name = user.name ?? 'Anonymous';
 const count = data.count ?? 0; // correct — data.count might legitimately be 0
 const count2 = data.count || 0; // wrong if count = 0
 
-// Nullish assignment
+//! Nullish assignment
 user.name ??= 'Anonymous'; // only assigns if user.name is null/undefined
 user.count ||= 0; // assigns if user.count is falsy (0 triggers this!)
 user.list &&= user.list.filter(Boolean); // only assigns if user.list is truthy
@@ -968,7 +983,7 @@ user.list &&= user.list.filter(Boolean); // only assigns if user.list is truthy
 ### Tagged template literals
 
 ```js
-// Tag function: processes template literal before interpolation
+//! Tag function: processes template literal before interpolation
 function highlight(strings, ...values) {
     return strings.reduce((result, str, i) => result + str + (values[i] !== undefined ? `<mark>${values[i]}</mark>` : ''), '');
 }
@@ -985,18 +1000,64 @@ highlight`Name: ${name}, Age: ${age}`;
 // gql`query { users { name } }` — GraphQL queries
 ```
 
+### Tagged template literals explained
+
+```js
+// A tagged template lets you run a function over a template literal BEFORE it becomes a string.
+// Instead of calling highlight(...), place the function name directly before the backtick:
+//   highlight`Name: ${name}, Age: ${age}`
+//   — same as calling highlight() but JS splits it up for you first
+
+// What JS passes to the tag function:
+// JS automatically splits the template into static strings and interpolated values:
+//   strings = ['Name: ', ', Age: ', '']   ← static text parts (always n+1 pieces)
+//   values  = ['Alice', 30]               ← the interpolated values
+//
+// Think of it as a zipper — strings and values alternate:
+//   'Name: '   'Alice'   ', Age: '   30   ''
+//       ↑          ↑          ↑       ↑    ↑
+//    str[0]    val[0]      str[1]  val[1]  str[2]
+
+// Walking through the function step by step (name='Alice', age=30):
+//   i=0: result=''     + 'Name: '  + <mark>Alice</mark>  → 'Name: <mark>Alice</mark>'
+//   i=1: result=above  + ', Age: ' + <mark>30</mark>      → 'Name: <mark>Alice</mark>, Age: <mark>30</mark>'
+//   i=2: result=above  + ''        + (no values[2])       → same (no change)
+//
+// values[i] !== undefined handles the last strings element —
+// there's always one more string than value, so the last iteration has no corresponding value.
+
+//! Key insight: you intercept the values BEFORE they're concatenated
+// so you can sanitize, escape, or transform them:
+//
+//   sql`SELECT * FROM users WHERE id = ${userId}`
+//   → driver receives: query='SELECT * FROM users WHERE id = ?', params=[userId]
+//   → userId is never concatenated raw → prevents SQL injection
+//
+//   html`<div>${userContent}</div>`
+//   → if userContent = '<script>alert(1)</script>', it gets escaped to plain text
+//   → prevents XSS
+//
+//   css`color: ${props => props.primary ? 'blue' : 'red'};`
+//   → values can even be functions (styled-components does this)
+//
+//   GraphQL — just for syntax highlighting and tooling, values pass through as-is
+//   gql`query { users { name } }`
+//
+// Without the tag: just a plain string with values inserted as-is — no sanitization
+```
+
 ### Symbol
 
 ```js
-// Symbol: unique, non-enumerable primitive — great for meta-programming
+//! Symbol: unique, non-enumerable primitive — great for meta-programming
 
 const id = Symbol('id'); // description is just for debugging
 const id2 = Symbol('id');
-id === id2; // false — every Symbol is unique
+id === id2; //! false — every Symbol is unique
 
 const user = {
     name: 'Alice',
-    [id]: 123, // Symbol key — not visible in for..in, JSON.stringify, Object.keys
+    [id]: 123, //! Symbol key — not visible in for..in, JSON.stringify, Object.keys
 };
 
 user[id]; // 123
@@ -1017,16 +1078,16 @@ class Dog {
 }
 Object.prototype.toString.call(new Dog()); // '[object Dog]'
 
-// Symbol.for — global symbol registry (same key = same symbol)
+//! Symbol.for — global symbol registry (same key = same symbol)
 const s1 = Symbol.for('app.id');
 const s2 = Symbol.for('app.id');
-s1 === s2; // true — unlike Symbol()
+s1 === s2; //! true — unlike Symbol()
 ```
 
 ### WeakMap & WeakSet
 
 ```js
-// WeakMap: keys must be objects, doesn't prevent garbage collection
+//! WeakMap: keys must be objects, doesn't prevent garbage collection
 // vs Map: holds strong references — objects can't be GC'd while in Map
 
 // Use case: private data per object, without memory leaks
@@ -1052,7 +1113,7 @@ function compute(obj) {
     cache.set(obj, result);
     return result;
 }
-// Cache automatically freed when obj is GC'd
+//! Cache automatically freed when obj is GC'd
 
 // WeakSet: set of objects, weak references (useful for tracking "visited" objects)
 const visited = new WeakSet();
@@ -1082,7 +1143,7 @@ class ApiError extends Error {
     this.name = 'ApiError';
     this.statusCode = statusCode;
     this.code = code;
-    // Fix: ensure instanceof works correctly across bundlers
+    //! Fix: ensure instanceof works correctly across bundlers
     Object.setPrototypeOf(this, ApiError.prototype);
   }
 }
@@ -1098,12 +1159,12 @@ try {
   }
 }
 
-// Never swallow errors silently
+//! Never swallow errors silently
 try { ... } catch (err) { } // ✗ — something failed and you'll never know
 
 // Async error handling
-// Unhandled promise rejection (crashes Node.js process)
-Promise.reject(new Error('oops')); // ✗ no .catch()
+//! Unhandled promise rejection (crashes Node.js process)
+Promise.reject(new Error('oops')); //! ✗ no .catch()
 
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled rejection:', reason);
@@ -1149,7 +1210,7 @@ Common memory leak causes:
 ### Identifying leaks
 
 ```js
-// Chrome DevTools: Memory tab → Heap snapshot
+//! Chrome DevTools: Memory tab → Heap snapshot
 // Take snapshot → interact → take another → compare
 // Look for: objects that grew, detached DOM nodes
 
@@ -1158,7 +1219,7 @@ process.memoryUsage();
 // { rss, heapTotal, heapUsed, external }
 // Watch heapUsed — if it keeps growing and never drops, you have a leak
 
-// Weak references to avoid leaks
+//! Weak references to avoid leaks
 const ref = new WeakRef(heavyObject); // doesn't prevent GC
 const obj = ref.deref(); // may return undefined if GC'd
 if (obj) {
@@ -1172,7 +1233,7 @@ if (obj) {
 // V8 optimizes functions it sees as "hot" (called many times)
 // It assumes types are stable — de-optimizes if types change
 
-// ✗ V8 struggles with this — obj's shape changes
+//! ✗ V8 struggles with this — obj's shape changes
 function processItem(item) {
     if (someCondition) item.extra = true; // adds property sometimes
 }
@@ -1186,7 +1247,7 @@ class Item {
     }
 }
 
-// Avoid: delete obj.property — changes shape, de-optimizes
+//! Avoid: delete obj.property — changes shape, de-optimizes
 // Instead: set to null/undefined
 
 // Monomorphic function (one type) — V8 optimizes well
@@ -1196,7 +1257,7 @@ function add(a, b) {
 add(1, 2); // V8 assumes numbers
 add(1, 2); // confirms
 
-// Polymorphic (multiple types) — harder to optimize
+//! Polymorphic (multiple types) — harder to optimize
 add(1, 2);
 add('a', 'b'); // now V8 must handle multiple cases
 ```
