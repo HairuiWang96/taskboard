@@ -611,7 +611,7 @@ class Timer {
 
 ```js
 // Promise: a proxy for a value not yet known
-// States: pending → fulfilled OR rejected (irreversible)
+//! States: pending → fulfilled OR rejected (irreversible)
 
 const p = new Promise((resolve, reject) => {
     // executor runs synchronously
@@ -619,7 +619,7 @@ const p = new Promise((resolve, reject) => {
     // reject(new Error('failed')) — can also reject
 });
 
-// .then() returns a NEW promise — enables chaining
+//! .then() returns a NEW promise — enables chaining
 p.then(value => value.toUpperCase()) // transform the value
     .then(value => console.log(value)) // receive transformed value
     .catch(err => console.error(err)) // catches ANY rejection up the chain
@@ -627,20 +627,20 @@ p.then(value => value.toUpperCase()) // transform the value
 
 // Promise combinators
 Promise.all([p1, p2, p3]); // waits for ALL — fails fast on first rejection
-Promise.allSettled([p1, p2, p3]); // waits for ALL — never rejects, gives status of each
+Promise.allSettled([p1, p2, p3]); //! waits for ALL — never rejects, gives status of each
 Promise.race([p1, p2, p3]); // resolves/rejects with FIRST to settle
 Promise.any([p1, p2, p3]); // resolves with FIRST success, rejects if ALL fail
 
 // Promise.all example
 const [user, posts, comments] = await Promise.all([fetchUser(id), fetchPosts(id), fetchComments(id)]);
-// Runs all three in parallel — much faster than sequential awaits
+//! Runs all three in parallel — much faster than sequential awaits
 ```
 
 ### async/await deep cuts
 
 ```js
-// async function always returns a Promise
-// await unwraps a Promise (can only be used inside async function or top-level module)
+//! async function always returns a Promise
+//! await unwraps a Promise (can only be used inside async function or top-level module)
 
 async function fetchUser(id) {
     const res = await fetch(`/api/users/${id}`); // pauses here, other code runs
@@ -657,21 +657,21 @@ const posts = await fetchPosts(); // 200ms after user resolves
 // ✓ Parallel — start both, await both
 const [user, posts] = await Promise.all([fetchUser(1), fetchPosts()]); // 300ms total
 
-// await in loops — tricky
+//! await in loops — tricky
 // ✗ This runs sequentially (each await blocks the loop)
 for (const id of ids) {
     await processItem(id); // one at a time
 }
 
-// ✓ Parallel with Promise.all
+//! ✓ Parallel with Promise.all
 await Promise.all(ids.map(id => processItem(id)));
 
-// ✓ Controlled concurrency (not all at once)
+//! ✓ Controlled concurrency (not all at once)
 import pLimit from 'p-limit';
 const limit = pLimit(3); // max 3 concurrent
 await Promise.all(ids.map(id => limit(() => processItem(id))));
 
-// Top-level await (ESM modules only)
+//! Top-level await (ESM modules only)
 const config = await fetch('/config.json').then(r => r.json());
 export { config }; // other modules get resolved value
 ```
@@ -679,7 +679,7 @@ export { config }; // other modules get resolved value
 ### AbortController
 
 ```js
-// Cancel fetch requests (and other async operations)
+//! Cancel fetch requests (and other async operations)
 const controller = new AbortController();
 
 const fetchData = async () => {
@@ -713,7 +713,7 @@ useEffect(() => {
 ### Iterators
 
 ```js
-// An iterator has a .next() method returning { value, done }
+//! An iterator has a .next() method returning { value, done }
 // An iterable has [Symbol.iterator]() that returns an iterator
 
 // Custom iterable
@@ -740,8 +740,8 @@ for (const n of range) {
 ### Generators
 
 ```js
-// Generator: function that can pause and resume
-// function* returns a generator object (which is both iterator and iterable)
+//! Generator: function that can pause and resume
+//! function* returns a generator object (which is both iterator and iterable)
 
 function* count() {
     yield 1; // pause, return 1
@@ -815,11 +815,11 @@ import defaultExport from './module.js';
 import * as Math from './math.js'; // namespace import
 import { add as sum } from './math.js'; // rename
 
-// Dynamic import (lazy loading — returns a Promise)
+//! Dynamic import (lazy loading — returns a Promise)
 const module = await import('./heavy-module.js');
 // Only load when needed — great for code splitting
 
-// Conditional dynamic import
+//! Conditional dynamic import
 if (user.isAdmin) {
   const { AdminPanel } = await import('./AdminPanel.js');
 }
@@ -828,11 +828,11 @@ if (user.isAdmin) {
 ### ESM vs CommonJS
 
 ```js
-// CommonJS (Node.js original) — synchronous
+//! CommonJS (Node.js original) — synchronous
 const path = require('path');
 module.exports = { add };
 
-// ESM — asynchronous, static analysis (enables tree-shaking)
+//! ESM — asynchronous, static analysis (enables tree-shaking)
 import path from 'path';
 export { add };
 
@@ -841,8 +841,44 @@ export { add };
 // CJS: dynamic require() can be inside conditions/functions
 // ESM is the future — Node.js supports it natively with .mjs or "type": "module"
 
-// Interop: ESM can import CJS, CJS cannot require ESM
+//! Interop: ESM can import CJS, CJS cannot require ESM
 // (CJS require is sync, ESM modules may have async initialization)
+```
+
+### .mjs file explained
+
+```js
+// .mjs = JavaScript MODULE file — the 'm' stands for module
+//
+// Why it exists: .js is ambiguous — Node.js doesn't know if it's CJS or ESM
+// .mjs removes that ambiguity — always treated as ESM
+//
+// Three extensions:
+//   .mjs  → always ESM
+//   .cjs  → always CJS
+//   .js   → depends on nearest package.json:
+//             { "type": "module" }    → .js treated as ESM
+//             { "type": "commonjs" }  → .js treated as CJS (default)
+//
+// Two module systems compared:
+//   CJS (CommonJS)           ESM (ES Modules)
+//   .js / .cjs               .mjs / .js
+//   require() / module.exports    import / export
+//   Synchronous loading      Asynchronous loading
+//   Node.js original         Browser + modern Node.js
+
+// ESM syntax (.mjs)
+export const add = (a, b) => a + b;          // math.mjs
+import { add } from './math.mjs';             // main.mjs — extension required
+
+// CJS syntax (.cjs)
+module.exports = { add: (a, b) => a + b };   // math.cjs
+const { add } = require('./math.cjs');        // main.cjs
+
+//! Rule of thumb:
+// - Modern projects: use .js with "type": "module" in package.json
+// - .mjs: one ESM file inside a CJS project (no package.json change needed)
+// - .cjs: one CJS file inside an ESM project
 ```
 
 ---
