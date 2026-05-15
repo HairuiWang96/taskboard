@@ -764,7 +764,7 @@ function withAuth<P extends object>(Component: React.ComponentType<P>) {
 
 const ProtectedDashboard = withAuth(Dashboard);
 
-// HOC vs custom hook:
+// ‼️ HOC vs custom hook:
 // HOC: when you need to conditionally render, wrap JSX output
 // Custom hook: when you just need to share logic/state (usually preferred)
 ```
@@ -772,21 +772,65 @@ const ProtectedDashboard = withAuth(Dashboard);
 ### Forwarding refs
 
 ```tsx
-// When parent needs access to a child's DOM node
-const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input({ className, ...props }, ref) {
-    return <input ref={ref} className={cn('border rounded px-3 py-2', className)} {...props} />;
-});
+// ‼️ When parent needs access to a child's DOM node
+//
+// PROBLEM: normally ref doesn't work on custom components — React swallows it,
+// it never reaches the component as a prop:
+//   const inputRef = useRef(null);
+//   <Input ref={inputRef} />   ← inputRef.current stays null — ref never arrives
+//
+// forwardRef tells React: "pass the ref through to the DOM node inside."
+//
+// forwardRef wraps the component and injects ref as a SECOND argument
+// (you can't get it from props — React strips it out):
+//   function Input({ className, ...props }, ref)
+//                   ↑ normal props          ↑ ref comes here as second arg
+//
+// WHEN YOU NEED THIS:
+//   - Parent wants to .focus() an input inside a child
+//   - Parent wants to measure a child's DOM size/position
+//   - Building a reusable component library where consumers need DOM access
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+    //                             ↑ type of ref.current   ↑ type of props
+    function Input({ className, ...props }, ref) {
+        return <input ref={ref} className={cn('border rounded px-3 py-2', className)} {...props} />;
+        //            ↑ ref attached to the real DOM node
+    },
+);
 
 // Parent
 const inputRef = useRef<HTMLInputElement>(null);
 <Input ref={inputRef} />;
 // inputRef.current is the actual <input> DOM node
+// inputRef.current.focus() — works!
 ```
 
-### useImperativeHandle — expose selective API
+### ‼️ useImperativeHandle — expose selective API
 
 ```tsx
 // Don't expose the raw DOM node — expose a controlled interface
+//
+// PROBLEM with forwardRef alone:
+//   parent gets the raw DOM node → can call anything: focus, scrollIntoView, click...
+//   useImperativeHandle lets you say: "here's the exact API I allow, nothing else"
+//
+// useImperativeHandle(ref, () => ({ ... }))
+//   - ref     → the ref passed in from parent via forwardRef
+//   - factory → returns an object that becomes what ref.current IS in the parent
+//
+// So instead of parent getting the raw <input> DOM node, they get:
+//   inputRef.current.focus()          ✓ allowed — you exposed it
+//   inputRef.current.clear()          ✓ allowed — you exposed it
+//   inputRef.current.scrollIntoView() ✗ not available — you didn't expose it
+//
+// forwardRef alone:         ref.current = raw <input> DOM node  ← parent can do anything
+// forwardRef + this hook:   ref.current = { focus, clear }      ← parent can only do what you allow
+//
+// WHEN TO USE:
+//   - Building a reusable library component with a clean, stable public API
+//   - Parent only needs a few specific actions, not full DOM access
+//   - You want to hide internal implementation details
 const FancyInput = React.forwardRef((props, ref) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
