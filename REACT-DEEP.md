@@ -980,7 +980,7 @@ function useUser(id: string) {
 ```tsx
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-// Query: fetch + cache + background refetch + stale-while-revalidate
+// ‼️ Query: fetch + cache + background refetch + stale-while-revalidate
 function UserProfile({ userId }) {
     const { data, isLoading, error } = useQuery({
         queryKey: ['user', userId], // cache key — refetch when this changes
@@ -995,7 +995,7 @@ function UserProfile({ userId }) {
     return <Profile user={data} />;
 }
 
-// Mutation: create/update/delete with optimistic updates
+// ‼️ Mutation: create/update/delete with optimistic updates
 function TaskItem({ task }) {
     const queryClient = useQueryClient();
 
@@ -1031,6 +1031,32 @@ function TaskItem({ task }) {
 
 ```tsx
 // Error Boundary — class component (no hook equivalent yet)
+//
+// PURPOSE: catch JS errors anywhere in a component tree and show fallback UI
+// instead of crashing the entire app.
+//
+// Without error boundary:
+//   UserProfile throws → entire app crashes → blank white page
+//
+// With error boundary:
+//   UserProfile throws → just that section shows fallback UI → rest of app works fine
+//
+// How it works:
+//   getDerivedStateFromError — catches the error, triggers re-render with fallback UI
+//   componentDidCatch       — good place to log to Sentry/Datadog
+//
+// Strategic placement — wrap each major independent section:
+//   <ErrorBoundary fallback={<SidebarError />}>
+//       <Sidebar />       ← if this crashes...
+//   </ErrorBoundary>
+//   <ErrorBoundary fallback={<DashboardError />}>
+//       <Dashboard />     ← ...this still works
+//   </ErrorBoundary>
+//
+// ‼️ What it does NOT catch:
+//   - Errors in event handlers (use regular try/catch there)
+//   - Async errors (inside setTimeout, fetch, etc.)
+//   - Errors in the boundary itself
 class ErrorBoundary extends React.Component<{ children: React.ReactNode; fallback: React.ReactNode }, { error: Error | null }> {
     state = { error: null };
 
@@ -1080,9 +1106,9 @@ class ResettableErrorBoundary extends React.Component {
 
 ```tsx
 // React Testing Library philosophy:
-// Test BEHAVIOR, not implementation
+// ‼️ Test BEHAVIOR, not implementation
 // Query DOM the way USERS would (by role, label, text)
-// Avoid: querying by CSS class, component name, implementation details
+// ‼️ Avoid: querying by CSS class, component name, implementation details
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -1090,6 +1116,14 @@ import userEvent from '@testing-library/user-event';
 describe('TaskForm', () => {
     it('adds a task when submitted', async () => {
         const onAdd = vi.fn();
+        // vi.fn() creates a mock function from Vitest (like jest.fn() in Jest)
+        // It's a fake function that records how it was called:
+        //   onAdd.mock.calls          → [['hello']] after calling onAdd('hello')
+        //   onAdd.mock.calls.length   → 1
+        //   expect(onAdd).toHaveBeenCalledWith({ title: 'Buy milk' })
+        // Used here because onAdd is a prop — we don't want the real implementation,
+        // we just want to verify the component called it with the right arguments.
+        // Jest equivalent is jest.fn() — same idea, different library.
         const user = userEvent.setup(); // more realistic than fireEvent
 
         render(<TaskForm onAdd={onAdd} />);
@@ -1123,7 +1157,7 @@ it('loads and displays tasks', async () => {
 });
 
 // Querying priority (use higher ones first):
-// getByRole > getByLabelText > getByPlaceholderText > getByText > getByTestId
+// ‼️ getByRole > getByLabelText > getByPlaceholderText > getByText > getByTestId
 ```
 
 ---
@@ -1133,7 +1167,7 @@ it('loads and displays tasks', async () => {
 ### Automatic batching
 
 ```js
-// React 18: ALL state updates are batched, even in setTimeout/Promises
+// ‼️ React 18: ALL state updates are batched, even in setTimeout/Promises
 // React 17: only batched inside React event handlers
 
 // React 18 — all three setState calls cause ONE re-render
@@ -1153,7 +1187,7 @@ flushSync(() => setFlag(f => !f)); // another synchronous re-render
 ### useTransition & startTransition
 
 ```tsx
-// Mark state updates as non-urgent — React can interrupt them
+// ‼️ Mark state updates as non-urgent — React can interrupt them
 // Urgent: typing, clicking — must respond immediately
 // Transition: filtering 10k items — can be interrupted if user types again
 
@@ -1176,7 +1210,7 @@ function handleSearch(query: string) {
 ### useDeferredValue
 
 ```tsx
-// Defer updating a value — similar to debounce but React-aware
+// ‼️ Defer updating a value — similar to debounce but React-aware
 function SearchResults({ query }) {
     const deferredQuery = useDeferredValue(query); // lags behind query
 
@@ -1195,11 +1229,11 @@ function SearchResults({ query }) {
 ### Suspense for data fetching
 
 ```tsx
-// Suspense: show fallback while async content loads
+// ‼️ Suspense: show fallback while async content loads
 // Works with: React.lazy, use() hook, TanStack Query, SWR
 
 function UserProfile({ userId }) {
-  // use() hook throws a Promise if data not ready — Suspense catches it
+  // ‼️ use() hook throws a Promise if data not ready — Suspense catches it
   const user = use(fetchUserPromise(userId));
   return <div>{user.name}</div>;
 }
@@ -1238,14 +1272,60 @@ function UserProfile({ userId }) {
 1. React.memo — skip re-render if props shallowly equal
 2. useCallback — stable function references for memo'd children
 3. useMemo — stable object/array references for memo'd children or useEffect deps
-4. Split context — consumers only re-render when their slice changes
-5. Move state down — component that changes state has fewer children to re-render
-6. Virtualization — only render visible list items
+4. ‼️ Split context — consumers only re-render when their slice changes
+5. ‼️ Move state down — component that changes state has fewer children to re-render
+6. ‼️ Virtualization — only render visible list items
 ```
 
 ### "Explain the rules of hooks and why they exist."
 
-> React stores hook state in a linked list on the component's internal fiber. It identifies which state belongs to which `useState` call by the ORDER of hook calls. If hooks ran inside conditions or loops, the order could change between renders, and React would match the wrong state to the wrong hook. So: hooks must be called at the top level of a component, never inside conditions, loops, or nested functions.
+> React stores hook state in a linked list on the component's internal fiber. ‼️ It identifies which state belongs to which `useState` call by the ORDER of hook calls. If hooks ran inside conditions or loops, the order could change between renders, and React would match the wrong state to the wrong hook. So: hooks must be called at the top level of a component, never inside conditions, loops, or nested functions.
+
+```js
+// WHAT IS A FIBER?
+// A fiber is React's internal object representing one component instance.
+// It stores everything React needs about that component:
+//   Fiber = {
+//       type: MyComponent,
+//       stateNode: the actual DOM node,
+//       memoizedState: → hook1 → hook2 → hook3 → null,  // linked list of hooks
+//       pendingProps: ...,
+//   }
+// Every component in your tree has its own fiber.
+// React keeps a tree of fibers internally to track state, schedule work, and reconcile.
+
+// WHAT IS "ORDER OF CALLS"?
+// React doesn't store hook state by name — it stores it as a linked list by POSITION:
+//
+// function Counter() {
+//     const [count, setCount] = useState(0);   // slot 0
+//     const [name, setName]   = useState('');  // slot 1
+//     const [open, setOpen]   = useState(false);// slot 2
+// }
+//
+// Internally React sees:   slot 0 → { value: 0 }
+//                          slot 1 → { value: '' }
+//                          slot 2 → { value: false }
+//
+// No names — just positions. On every render React walks the list in order
+// and hands each useState its value by position.
+
+// WHY HOOKS CAN'T GO INSIDE CONDITIONS:
+//
+// function Counter() {
+//     const [count, setCount] = useState(0);      // slot 0
+//     if (someCondition) {
+//         const [name, setName] = useState('');   // slot 1 — only sometimes!
+//     }
+//     const [open, setOpen] = useState(false);    // slot 1 or 2 depending on condition!
+// }
+//
+// Render 1 (condition = true):  slot 0 = count, slot 1 = name, slot 2 = open
+// Render 2 (condition = false): slot 0 = count, slot 1 = open  ← open reads name's value!
+//
+// React handed open's useState the value stored for name — wrong value, wrong state, bugs.
+// The order must stay the same every render so each hook always reads from its own slot.
+```
 
 ### "What is reconciliation and what role does key play?"
 
@@ -1356,7 +1436,7 @@ class ErrorBoundary extends React.Component {
 </ErrorBoundary>;
 ```
 
-### "What are React Portals?"
+### ‼️ "What are React Portals?"
 
 > Portals let you render a component's output into a different DOM node than its parent — typically used for modals, tooltips, and dropdowns that need to escape overflow/z-index constraints of their parent container. The component still lives in the React tree (events bubble normally), just the DOM placement changes.
 
@@ -1442,7 +1522,7 @@ function useLocalStorage(key, initialValue) {
 const [theme, setTheme] = useLocalStorage('theme', 'light');
 ```
 
-### "What are React Server Components?"
+### ‼️ "What are React Server Components?"
 
 > Server Components (RSC) run only on the server — they can directly access databases, file systems, and secrets. They send rendered HTML (or a serialized component tree) to the client — zero JavaScript bundle cost for the component. They cannot use `useState`, `useEffect`, or browser APIs. Client Components (`'use client'`) are the traditional React components. The key win: data fetching happens on the server, co-located with the component, without waterfalls.
 
