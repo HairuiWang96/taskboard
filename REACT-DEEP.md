@@ -322,7 +322,7 @@ useEffect(() => {
 
 ```js
 // useReducer: useState for complex state with multiple sub-values
-// or when next state depends on previous state in complex ways
+// ‼️ or when next state depends on previous state in complex ways
 
 type State = { items: Item[]; loading: boolean; error: string | null };
 type Action =
@@ -350,7 +350,7 @@ const initialState: State = { items: [], loading: false, error: null };
 const [state, dispatch] = useReducer(reducer, initialState);
 
 // Benefits:
-// - Reducer is a pure function — easy to test in isolation
+// - ‼️ Reducer is a pure function — easy to test in isolation
 // - All state transitions in one place — easier to reason about
 // - dispatch is stable (never changes) — safe in dep arrays
 ```
@@ -420,7 +420,7 @@ Local state (useState in component):
 
 Lifted state (in common ancestor):
   Use when: two sibling components need the same data
-  Pattern: parent owns state, passes down as props + setter callbacks
+  Pattern: parent owns state, passes down as props + ‼️ setter callbacks
 
 Global state:
   Use when: many components at different levels need the same data
@@ -463,7 +463,7 @@ const useTaskStore = create<TaskStore>()(
 
 // Usage — no Provider needed
 function TaskList() {
-  const tasks = useTaskStore(state => state.tasks); // selector — only re-renders when tasks changes
+  const tasks = useTaskStore(state => state.tasks); // ‼️ selector — only re-renders when tasks changes
   const deleteTask = useTaskStore(state => state.deleteTask);
   ...
 }
