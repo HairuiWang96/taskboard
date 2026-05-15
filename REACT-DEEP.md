@@ -509,7 +509,7 @@ export function useTheme() {
 const UserContext = createContext({ user: null, theme: 'light', sidebar: false });
 // If sidebar changes, everything re-renders — even components that only use user
 
-// ✓ Split contexts by update frequency
+// ‼️ ✓ Split contexts by update frequency
 const UserContext = createContext<User | null>(null);
 const ThemeContext = createContext<Theme>('light');
 const SidebarContext = createContext<boolean>(false);
@@ -532,14 +532,14 @@ const TaskItem = React.memo(function TaskItem({ task, onDelete }) {
     return <div>{task.title}</div>;
 });
 
-// ✗ This defeats memo — new function reference every parent render
+// ‼️ ✗ This defeats memo — new function reference every parent render
 <TaskItem task={task} onDelete={id => deleteTask(id)} />;
 
-// ✓ Stable function reference with useCallback
+// ‼️ ✓ Stable function reference with useCallback
 const handleDelete = useCallback(id => deleteTask(id), [deleteTask]);
 <TaskItem task={task} onDelete={handleDelete} />;
 
-// Custom comparison function
+// ‼️ Custom comparison function
 const TaskItem = React.memo(TaskItemBase, (prevProps, nextProps) => {
     // Return true if props are equal (skip re-render)
     return prevProps.task.id === nextProps.task.id && prevProps.task.done === nextProps.task.done;
@@ -612,7 +612,7 @@ const preloadDashboard = () => import('./Dashboard');
 </Link>;
 ```
 
-### Profiling
+### ‼️ Profiling
 
 ```tsx
 import { Profiler } from 'react';
@@ -634,11 +634,35 @@ function onRenderCallback(id, phase, actualDuration) {
 
 ## 6. Patterns & Component Architecture
 
-### Compound components
+### ‼️ Compound components
 
 ```tsx
-// Components that share implicit state — like HTML <select>/<option>
+// ‼️ Components that share implicit state — like HTML <select>/<option>
 // Works via Context without prop drilling
+//
+// DEFINITION:
+// A group of components that work together and share state implicitly.
+// They communicate through Context behind the scenes — no prop passing needed.
+//
+// HTML analogy:
+//   <select>           ← owns state (which option is selected)
+//     <option>A</option>  ← child, doesn't receive state as prop
+//     <option>B</option>  ← just works because it's inside <select>
+//   </select>
+//
+// React version: <Tabs> owns the `active` state, <Tabs.Tab> and <Tabs.Panel>
+// read it from Context — no props needed between them.
+//
+// USE CASES:
+//   - Tabs / Accordion   — parent tracks which is open, children just render
+//   - Dropdown / Select  — parent tracks open/selected, items just respond
+//   - Form               — parent tracks values/errors, fields just connect
+//   - Modal              — <Modal>, <Modal.Header>, <Modal.Body> share close state
+//
+// WHEN TO USE:
+//   - Multiple sub-components need to share state
+//   - You want clean readable usage at the call site (no prop drilling)
+//   - The components only make sense together (Tab without Tabs is meaningless)
 
 const TabContext = createContext<{ active: string; setActive: (id: string) => void } | null>(null);
 
@@ -684,7 +708,7 @@ Tabs.Panel = TabPanel;
 ### Render props & children as function
 
 ```tsx
-// Pass render logic as a prop — inversion of control
+// ‼️ Pass render logic as a prop — inversion of control
 function DataProvider({ userId, render }) {
     const [data, setData] = useState(null);
     useEffect(() => {
@@ -693,14 +717,36 @@ function DataProvider({ userId, render }) {
     return render(data);
 }
 
+// It's shorthand. These two are identical:
+fetchUser(userId).then(data => setData(data)); // explicit
+fetchUser(userId).then(setData); // shorthand
+// ‼️ When you write .then(setData), you're passing setData as the callback function directly. .then() calls it with the resolved value as the first argument — which is exactly what data => setData(data) does manually.
+
+// Works because setData is already a function that takes one argument. So you can just hand it over without wrapping it.
+
 <DataProvider userId='123' render={user => <UserCard user={user} />} />;
 
-// children as function
+// ‼️ children as function
+// children here is NOT JSX — it's a function. That's the whole trick.
+// Toggle calls children(...) and passes { on, toggle } into it.
+// The function receives those values, unpacks them, and returns the button JSX.
+//
+// Toggle owns the state, but YOU decide what to render.
+// Toggle doesn't render a button — you do. It just hands you `on` and `toggle` to use however you want.
 function Toggle({ children }) {
     const [on, setOn] = useState(false);
-    return children({ on, toggle: () => setOn(o => !o) });
+    return children({ on, toggle: () => setOn(o => !o) }); // calls children as a function
 }
 
+// Breaking down the usage line by line:
+// <Toggle>
+//     {                                        ← children = this whole function
+//         ({ on, toggle }) =>                  ← Toggle calls it with { on, toggle }
+//             <button onClick={toggle}>        ← toggle comes from Toggle's state
+//                 {on ? 'ON' : 'OFF'}          ← on comes from Toggle's state
+//             </button>
+//     }
+// </Toggle>
 <Toggle>{({ on, toggle }) => <button onClick={toggle}>{on ? 'ON' : 'OFF'}</button>}</Toggle>;
 ```
 
