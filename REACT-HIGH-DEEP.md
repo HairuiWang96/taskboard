@@ -1,4 +1,5 @@
 # React — Senior Developer Deep Reference
+
 **Priority: HIGH**
 
 > Covers React internals, Fiber, reconciliation, concurrent features, Suspense, Server Components, hooks internals, and performance patterns.
@@ -28,23 +29,23 @@
 Before React 16: the "Stack Reconciler" — synchronous, could not be interrupted.
   Once started, it ran to completion. Long trees = dropped frames = janky UI.
 
-React 16+: Fiber — a complete rewrite of the reconciler.
+React 16+: ‼️ Fiber — a complete rewrite of the reconciler.
   Key idea: reconciliation is now INTERRUPTIBLE and INCREMENTAL.
 
-A Fiber is a JavaScript object — one per component instance — that represents:
+‼️ A Fiber is a JavaScript object — one per component instance — that represents:
   - What type of component it is (function, class, host element)
   - Its props and state
   - Pointers to parent, child, and sibling fibers (linked list, not a tree)
   - Work that needs to happen (effect flags)
   - Priority of the work
 
-The fiber tree is the virtual DOM — it exists entirely in JS memory.
+‼️ The fiber tree is the virtual DOM — it exists entirely in JS memory.
 ```
 
 ### The fiber linked list
 
 ```text
-Each fiber has three pointers:
+Each fiber has three pointers:‼️
   child   → first child fiber
   sibling → next sibling fiber
   return  → parent fiber
@@ -64,7 +65,7 @@ Fiber tree:
 Why linked list (not tree)?
   A linked list can be traversed iteratively (with a pointer + loop).
   A tree requires recursion (fills the call stack).
-  Iterative traversal can be paused at any point — recursive cannot.
+  ‼️ Iterative traversal can be paused at any point — recursive cannot.
   This is what makes Fiber interruptible.
 ```
 
@@ -114,7 +115,7 @@ React's heuristics (makes it O(n) instead of O(n³)):
 ```jsx
 // ✗ No keys — inserting at start causes all items to re-render
 const list = items.map((item, index) => (
-  <li key={index}>{item.name}</li> // ✗ index as key — same problem
+    <li key={index}>{item.name}</li> // ✗ index as key — same problem
 ));
 
 // What happens when you insert at index 0:
@@ -124,9 +125,7 @@ const list = items.map((item, index) => (
 // Result: full list re-render, potential state bugs in form inputs
 
 // ✓ Use stable, unique IDs
-const list = items.map(item => (
-  <li key={item.id}>{item.name}</li>
-));
+const list = items.map(item => <li key={item.id}>{item.name}</li>);
 // React correctly identifies which item is new, which moved — minimal DOM updates
 
 // When index keys ARE okay:
@@ -140,28 +139,28 @@ const list = items.map(item => (
 ```jsx
 // Conditional rendering — component type matters
 function Parent({ isLoggedIn }) {
-  return isLoggedIn ? <UserDashboard /> : <LoginForm />;
-  // When isLoggedIn toggles: React UNMOUNTS one and MOUNTS the other
-  // State of each is reset — intentional behavior
+    return isLoggedIn ? <UserDashboard /> : <LoginForm />;
+    // When isLoggedIn toggles: React UNMOUNTS one and MOUNTS the other
+    // State of each is reset — intentional behavior
 }
 
 // Preserve state across conditional renders:
 function Parent({ isLoggedIn }) {
-  return (
-    <>
-      {isLoggedIn && <UserDashboard />}
-      {!isLoggedIn && <LoginForm />}
-    </>
-  );
-  // Same result — they unmount/mount
+    return (
+        <>
+            {isLoggedIn && <UserDashboard />}
+            {!isLoggedIn && <LoginForm />}
+        </>
+    );
+    // Same result — they unmount/mount
 
-  // To PRESERVE state: always render, use CSS to hide
-  return (
-    <>
-      <UserDashboard style={{ display: isLoggedIn ? 'block' : 'none' }} />
-      <LoginForm style={{ display: isLoggedIn ? 'none' : 'block' }} />
-    </>
-  );
+    // To PRESERVE state: always render, use CSS to hide
+    return (
+        <>
+            <UserDashboard style={{ display: isLoggedIn ? 'block' : 'none' }} />
+            <LoginForm style={{ display: isLoggedIn ? 'none' : 'block' }} />
+        </>
+    );
 }
 ```
 
@@ -200,21 +199,21 @@ This is why:
 ```jsx
 // ✗ Side effect in render — dangerous in concurrent mode
 function Component() {
-  // This runs during render phase — may run multiple times
-  fetch('/api/data'); // fires multiple times! network requests pile up
-  document.title = 'Loading...'; // flickers
+    // This runs during render phase — may run multiple times
+    fetch('/api/data'); // fires multiple times! network requests pile up
+    document.title = 'Loading...'; // flickers
 
-  return <div>...</div>;
+    return <div>...</div>;
 }
 
 // ✓ Side effects go in useEffect (commit phase, runs once after paint)
 function Component() {
-  useEffect(() => {
-    fetch('/api/data').then(setData);
-    document.title = 'Loaded';
-  }, []);
+    useEffect(() => {
+        fetch('/api/data').then(setData);
+        document.title = 'Loaded';
+    }, []);
 
-  return <div>...</div>;
+    return <div>...</div>;
 }
 ```
 
@@ -230,16 +229,16 @@ function Component() {
 //   → Use for: reading DOM measurements, avoiding visual flicker
 //   → Blocks the browser — keep it fast
 useLayoutEffect(() => {
-  const height = ref.current.getBoundingClientRect().height;
-  setHeight(height); // set state before paint — no flash of wrong layout
+    const height = ref.current.getBoundingClientRect().height;
+    setHeight(height); // set state before paint — no flash of wrong layout
 }, []);
 
 // useEffect
 //   → Runs asynchronously after paint
 //   → Use for: data fetching, subscriptions, non-visual side effects
 useEffect(() => {
-  const subscription = store.subscribe(handleChange);
-  return () => subscription.unsubscribe();
+    const subscription = store.subscribe(handleChange);
+    return () => subscription.unsubscribe();
 }, []);
 ```
 
@@ -268,27 +267,27 @@ Your components don't need to know about it — React handles it internally.
 import { useTransition } from 'react';
 
 function SearchPage() {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
-  const [isPending, startTransition] = useTransition();
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [isPending, startTransition] = useTransition();
 
-  function handleSearch(e) {
-    // Urgent: update the input value immediately
-    setQuery(e.target.value);
+    function handleSearch(e) {
+        // Urgent: update the input value immediately
+        setQuery(e.target.value);
 
-    // Non-urgent: filter results can wait
-    startTransition(() => {
-      setResults(filterResults(e.target.value)); // expensive computation
-    });
-  }
+        // Non-urgent: filter results can wait
+        startTransition(() => {
+            setResults(filterResults(e.target.value)); // expensive computation
+        });
+    }
 
-  return (
-    <>
-      <input value={query} onChange={handleSearch} />
-      {isPending && <Spinner />} {/* show while transition is pending */}
-      <ResultList results={results} />
-    </>
-  );
+    return (
+        <>
+            <input value={query} onChange={handleSearch} />
+            {isPending && <Spinner />} {/* show while transition is pending */}
+            <ResultList results={results} />
+        </>
+    );
 }
 // Input stays responsive while results update.
 // If user types faster, React cancels the previous transition and starts a new one.
@@ -326,20 +325,20 @@ function Parent({ query }) {
 
 // React 17:
 setTimeout(() => {
-  setCount(c => c + 1); // triggers re-render
-  setFlag(f => !f);     // triggers another re-render — 2 total
+    setCount(c => c + 1); // triggers re-render
+    setFlag(f => !f); // triggers another re-render — 2 total
 }, 1000);
 
 // React 18: automatic batching everywhere
 setTimeout(() => {
-  setCount(c => c + 1);
-  setFlag(f => !f);     // batched — only 1 re-render
+    setCount(c => c + 1);
+    setFlag(f => !f); // batched — only 1 re-render
 }, 1000);
 
 // To opt out of batching (rare):
 import { flushSync } from 'react-dom';
 flushSync(() => setCount(c => c + 1)); // forces immediate re-render
-flushSync(() => setFlag(f => !f));     // forces immediate re-render
+flushSync(() => setFlag(f => !f)); // forces immediate re-render
 ```
 
 ---
@@ -358,26 +357,26 @@ import { Suspense, lazy } from 'react';
 const HeavyChart = lazy(() => import('./HeavyChart'));
 
 function Dashboard() {
-  return (
-    <Suspense fallback={<Spinner />}>
-      <HeavyChart /> {/* loaded lazily — shows Spinner until ready */}
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<Spinner />}>
+            <HeavyChart /> {/* loaded lazily — shows Spinner until ready */}
+        </Suspense>
+    );
 }
 
 // Nested Suspense boundaries — each can have its own fallback
 function App() {
-  return (
-    <Suspense fallback={<PageSkeleton />}>
-      <Header />
-      <Suspense fallback={<ChartSkeleton />}>
-        <HeavyChart />
-      </Suspense>
-      <Suspense fallback={<TableSkeleton />}>
-        <DataTable />
-      </Suspense>
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<PageSkeleton />}>
+            <Header />
+            <Suspense fallback={<ChartSkeleton />}>
+                <HeavyChart />
+            </Suspense>
+            <Suspense fallback={<TableSkeleton />}>
+                <DataTable />
+            </Suspense>
+        </Suspense>
+    );
 }
 // If HeavyChart suspends, only ChartSkeleton shows — Header and DataTable unaffected
 ```
@@ -391,28 +390,28 @@ function App() {
 
 // Framework-level example (Next.js):
 async function UserProfile({ id }) {
-  const user = await fetchUser(id); // Server Component — can await directly
-  return <div>{user.name}</div>;
+    const user = await fetchUser(id); // Server Component — can await directly
+    return <div>{user.name}</div>;
 }
 
 function Page() {
-  return (
-    <Suspense fallback={<ProfileSkeleton />}>
-      <UserProfile id={userId} />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<ProfileSkeleton />}>
+            <UserProfile id={userId} />
+        </Suspense>
+    );
 }
 
 // In client components: use TanStack Query or SWR — they integrate with Suspense
 import { useSuspenseQuery } from '@tanstack/react-query';
 
 function UserProfile({ id }) {
-  const { data: user } = useSuspenseQuery({
-    queryKey: ['user', id],
-    queryFn: () => fetchUser(id),
-  });
-  // No loading state needed — Suspense handles it above
-  return <div>{user.name}</div>;
+    const { data: user } = useSuspenseQuery({
+        queryKey: ['user', id],
+        queryFn: () => fetchUser(id),
+    });
+    // No loading state needed — Suspense handles it above
+    return <div>{user.name}</div>;
 }
 ```
 
@@ -445,32 +444,34 @@ Hybrid: RSC + Client Components
 // Server Component (default in Next.js App Router — no 'use client' directive)
 // app/users/page.tsx
 async function UsersPage() {
-  // ✓ Can await directly — no useEffect needed
-  const users = await db.select().from(usersTable);
+    // ✓ Can await directly — no useEffect needed
+    const users = await db.select().from(usersTable);
 
-  // ✓ Access env vars — never exposed to browser
-  console.log(process.env.DATABASE_URL); // safe on server
+    // ✓ Access env vars — never exposed to browser
+    console.log(process.env.DATABASE_URL); // safe on server
 
-  // ✓ Heavy library — doesn't ship to browser bundle
-  import { parseMarkdown } from 'heavy-markdown-library'; // ~100KB saved
+    // ✓ Heavy library — doesn't ship to browser bundle
+    import { parseMarkdown } from 'heavy-markdown-library'; // ~100KB saved
 
-  return <UserList users={users} />;
+    return <UserList users={users} />;
 }
 
 // Client Component — must add 'use client' at the top
-'use client';
+('use client');
 // app/components/UserList.tsx
 function UserList({ users }) {
-  const [filter, setFilter] = useState(''); // ✓ state allowed here
+    const [filter, setFilter] = useState(''); // ✓ state allowed here
 
-  return (
-    <div>
-      <input value={filter} onChange={e => setFilter(e.target.value)} />
-      {users.filter(u => u.name.includes(filter)).map(u => (
-        <UserCard key={u.id} user={u} />
-      ))}
-    </div>
-  );
+    return (
+        <div>
+            <input value={filter} onChange={e => setFilter(e.target.value)} />
+            {users
+                .filter(u => u.name.includes(filter))
+                .map(u => (
+                    <UserCard key={u.id} user={u} />
+                ))}
+        </div>
+    );
 }
 
 // Rule: push 'use client' as far down the tree as possible
@@ -486,15 +487,15 @@ function UserList({ users }) {
 
 // ✗ Can't pass a function from Server to Client Component as prop
 function ServerComponent() {
-  const handleClick = () => console.log('click'); // function
-  return <ClientButton onClick={handleClick} />; // ✗ can't serialize
+    const handleClick = () => console.log('click'); // function
+    return <ClientButton onClick={handleClick} />; // ✗ can't serialize
 }
 
 // ✓ Event handlers are defined in Client Components
-'use client';
+('use client');
 function ClientButton() {
-  const handleClick = () => console.log('click'); // defined in client
-  return <button onClick={handleClick}>Click</button>; // ✓
+    const handleClick = () => console.log('click'); // defined in client
+    return <button onClick={handleClick}>Click</button>; // ✓
 }
 ```
 
@@ -530,18 +531,18 @@ This is why hooks cannot be inside conditions or loops:
 ```jsx
 // setState calls during React event handlers are batched
 function handleClick() {
-  setCount(c => c + 1);
-  setName('Alice');
-  // React batches both — ONE re-render, not two
+    setCount(c => c + 1);
+    setName('Alice');
+    // React batches both — ONE re-render, not two
 }
 
 // Why functional updates matter
 function handleClick() {
-  setCount(count + 1); // ✗ closes over stale count
-  setCount(count + 1); // ✗ both use the same old count — result: count + 1, not count + 2
+    setCount(count + 1); // ✗ closes over stale count
+    setCount(count + 1); // ✗ both use the same old count — result: count + 1, not count + 2
 
-  setCount(c => c + 1); // ✓ receives latest state
-  setCount(c => c + 1); // ✓ receives the result of first update — result: count + 2
+    setCount(c => c + 1); // ✓ receives latest state
+    setCount(c => c + 1); // ✓ receives the result of first update — result: count + 2
 }
 ```
 
@@ -554,8 +555,8 @@ function handleClick() {
 
 // Under the hood, useRef is basically:
 function useRef(initialValue) {
-  const [ref] = useState({ current: initialValue });
-  return ref;
+    const [ref] = useState({ current: initialValue });
+    return ref;
 }
 // (simplified — actual implementation avoids useState overhead)
 
@@ -571,10 +572,12 @@ renderCount.current++; // track renders without causing re-render
 
 // 3. Storing the latest value of a prop/state for use inside callbacks
 const latestCallback = useRef(onSomeEvent);
-useEffect(() => { latestCallback.current = onSomeEvent; }); // always up to date
 useEffect(() => {
-  const id = setInterval(() => latestCallback.current(), 1000); // always fresh
-  return () => clearInterval(id);
+    latestCallback.current = onSomeEvent;
+}); // always up to date
+useEffect(() => {
+    const id = setInterval(() => latestCallback.current(), 1000); // always fresh
+    return () => clearInterval(id);
 }, []); // interval created once, never stale
 ```
 
@@ -583,13 +586,13 @@ useEffect(() => {
 ```jsx
 // useMemo: memoize an expensive computed value
 const sortedUsers = useMemo(
-  () => [...users].sort((a, b) => a.name.localeCompare(b.name)),
-  [users] // only re-sort when users array changes
+    () => [...users].sort((a, b) => a.name.localeCompare(b.name)),
+    [users], // only re-sort when users array changes
 );
 
 // useCallback: memoize a function reference (for stable deps / React.memo children)
-const handleDelete = useCallback((id) => {
-  setUsers(prev => prev.filter(u => u.id !== id));
+const handleDelete = useCallback(id => {
+    setUsers(prev => prev.filter(u => u.id !== id));
 }, []); // stable reference — safe to pass to React.memo child
 
 // When NOT to use them (most of the time):
@@ -612,25 +615,25 @@ const handleDelete = useCallback((id) => {
 ```jsx
 // React.memo: skip re-render if props haven't changed (shallow comparison)
 const UserCard = React.memo(function UserCard({ user, onDelete }) {
-  return (
-    <div>
-      {user.name}
-      <button onClick={() => onDelete(user.id)}>Delete</button>
-    </div>
-  );
+    return (
+        <div>
+            {user.name}
+            <button onClick={() => onDelete(user.id)}>Delete</button>
+        </div>
+    );
 });
 
 // For this to work, the parent must pass stable references:
 // ✗ New function on every render — memo is useless
-<UserCard onDelete={(id) => deleteUser(id)} />
+<UserCard onDelete={id => deleteUser(id)} />;
 
 // ✓ useCallback — stable reference
-const handleDelete = useCallback((id) => deleteUser(id), []);
-<UserCard onDelete={handleDelete} />
+const handleDelete = useCallback(id => deleteUser(id), []);
+<UserCard onDelete={handleDelete} />;
 
 // Custom comparison (for complex props):
 const UserCard = React.memo(UserCardFn, (prevProps, nextProps) => {
-  return prevProps.user.id === nextProps.user.id; // return true = skip render
+    return prevProps.user.id === nextProps.user.id; // return true = skip render
 });
 ```
 
@@ -642,19 +645,19 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Settings  = lazy(() => import('./pages/Settings'));
-const Reports   = lazy(() => import('./pages/Reports'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Reports = lazy(() => import('./pages/Reports'));
 
 function App() {
-  return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/settings"  element={<Settings />} />
-        <Route path="/reports"   element={<Reports />} />
-      </Routes>
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<PageLoader />}>
+            <Routes>
+                <Route path='/dashboard' element={<Dashboard />} />
+                <Route path='/settings' element={<Settings />} />
+                <Route path='/reports' element={<Reports />} />
+            </Routes>
+        </Suspense>
+    );
 }
 // Each page is a separate JS chunk — only downloaded when that route is visited
 ```
@@ -668,32 +671,32 @@ function App() {
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 function LongList({ items }) {
-  const parentRef = useRef(null);
-  const virtualizer = useVirtualizer({
-    count: items.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 50, // estimated row height in px
-  });
+    const parentRef = useRef(null);
+    const virtualizer = useVirtualizer({
+        count: items.length,
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 50, // estimated row height in px
+    });
 
-  return (
-    <div ref={parentRef} style={{ height: '400px', overflow: 'auto' }}>
-      <div style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
-        {virtualizer.getVirtualItems().map(virtualItem => (
-          <div
-            key={virtualItem.key}
-            style={{
-              position: 'absolute',
-              top: 0,
-              transform: `translateY(${virtualItem.start}px)`,
-              height: `${virtualItem.size}px`,
-            }}
-          >
-            {items[virtualItem.index].name}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+    return (
+        <div ref={parentRef} style={{ height: '400px', overflow: 'auto' }}>
+            <div style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
+                {virtualizer.getVirtualItems().map(virtualItem => (
+                    <div
+                        key={virtualItem.key}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            transform: `translateY(${virtualItem.start}px)`,
+                            height: `${virtualItem.size}px`,
+                        }}
+                    >
+                        {items[virtualItem.index].name}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 }
 // Only renders ~10-15 rows at a time regardless of list length
 ```
@@ -711,45 +714,45 @@ function LongList({ items }) {
 const TabContext = createContext(null);
 
 function Tabs({ children, defaultTab }) {
-  const [activeTab, setActiveTab] = useState(defaultTab);
-  return (
-    <TabContext.Provider value={{ activeTab, setActiveTab }}>
-      <div className="tabs">{children}</div>
-    </TabContext.Provider>
-  );
+    const [activeTab, setActiveTab] = useState(defaultTab);
+    return (
+        <TabContext.Provider value={{ activeTab, setActiveTab }}>
+            <div className='tabs'>{children}</div>
+        </TabContext.Provider>
+    );
 }
 
 function TabList({ children }) {
-  return <div role="tablist">{children}</div>;
+    return <div role='tablist'>{children}</div>;
 }
 
 function Tab({ id, children }) {
-  const { activeTab, setActiveTab } = useContext(TabContext);
-  return (
-    <button
-      role="tab"
-      aria-selected={activeTab === id}
-      onClick={() => setActiveTab(id)}
-    >
-      {children}
-    </button>
-  );
+    const { activeTab, setActiveTab } = useContext(TabContext);
+    return (
+        <button role='tab' aria-selected={activeTab === id} onClick={() => setActiveTab(id)}>
+            {children}
+        </button>
+    );
 }
 
 function TabPanel({ id, children }) {
-  const { activeTab } = useContext(TabContext);
-  return activeTab === id ? <div role="tabpanel">{children}</div> : null;
+    const { activeTab } = useContext(TabContext);
+    return activeTab === id ? <div role='tabpanel'>{children}</div> : null;
 }
 
 // Usage — flexible layout, no prop drilling
-<Tabs defaultTab="profile">
-  <TabList>
-    <Tab id="profile">Profile</Tab>
-    <Tab id="settings">Settings</Tab>
-  </TabList>
-  <TabPanel id="profile"><ProfileForm /></TabPanel>
-  <TabPanel id="settings"><SettingsForm /></TabPanel>
-</Tabs>
+<Tabs defaultTab='profile'>
+    <TabList>
+        <Tab id='profile'>Profile</Tab>
+        <Tab id='settings'>Settings</Tab>
+    </TabList>
+    <TabPanel id='profile'>
+        <ProfileForm />
+    </TabPanel>
+    <TabPanel id='settings'>
+        <SettingsForm />
+    </TabPanel>
+</Tabs>;
 ```
 
 ### Render props / function as child
@@ -757,17 +760,21 @@ function TabPanel({ id, children }) {
 ```jsx
 // Pass a function as children — parent controls rendering, child controls data
 function MouseTracker({ children }) {
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  return (
-    <div onMouseMove={e => setPos({ x: e.clientX, y: e.clientY })}>
-      {children(pos)} {/* call the function with data */}
-    </div>
-  );
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    return (
+        <div onMouseMove={e => setPos({ x: e.clientX, y: e.clientY })}>
+            {children(pos)} {/* call the function with data */}
+        </div>
+    );
 }
 
 <MouseTracker>
-  {({ x, y }) => <p>Mouse at {x}, {y}</p>}
-</MouseTracker>
+    {({ x, y }) => (
+        <p>
+            Mouse at {x}, {y}
+        </p>
+    )}
+</MouseTracker>;
 
 // Today: custom hooks replaced most render prop use cases
 // Render props still useful when you need to control WHERE in JSX data is rendered
@@ -840,10 +847,14 @@ function SearchPage() {
 
 ```jsx
 // ✗ Index as key — breaks when items reorder
-{items.map((item, i) => <Item key={i} {...item} />)}
+{
+    items.map((item, i) => <Item key={i} {...item} />);
+}
 
 // ✓ Stable ID
-{items.map(item => <Item key={item.id} {...item} />)}
+{
+    items.map(item => <Item key={item.id} {...item} />);
+}
 ```
 
 ### "What are Higher-Order Components (HOCs) and their drawbacks?"
@@ -855,7 +866,7 @@ function SearchPage() {
 function withAuth(Component) {
     return function WrappedComponent(props) {
         const { user } = useAuth();
-        if (!user) return <Redirect to="/login" />;
+        if (!user) return <Redirect to='/login' />;
         return <Component {...props} user={user} />;
     };
 }
@@ -872,14 +883,16 @@ const ProtectedPage = withAuth(DashboardPage);
 // Render prop — passes mouse position to children
 function MouseTracker({ render }) {
     const [pos, setPos] = useState({ x: 0, y: 0 });
-    return (
-        <div onMouseMove={e => setPos({ x: e.clientX, y: e.clientY })}>
-            {render(pos)}
-        </div>
-    );
+    return <div onMouseMove={e => setPos({ x: e.clientX, y: e.clientY })}>{render(pos)}</div>;
 }
 
-<MouseTracker render={({ x, y }) => <p>Mouse: {x}, {y}</p>} />
+<MouseTracker
+    render={({ x, y }) => (
+        <p>
+            Mouse: {x}, {y}
+        </p>
+    )}
+/>;
 
 // Equivalent custom hook — cleaner
 function useMouse() {
@@ -947,7 +960,7 @@ function App() {
     return (
         <Suspense fallback={<Loading />}>
             <Routes>
-                <Route path="/dashboard" element={<HeavyDashboard />} />
+                <Route path='/dashboard' element={<HeavyDashboard />} />
             </Routes>
         </Suspense>
     );
