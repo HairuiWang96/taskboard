@@ -1,15 +1,15 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-79 reference files organised by priority, plus a study plan and mock Q&A.
+84 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    19 files — study these first, highest interview ROI
-2-medium-priority/  24 files — once high-priority is solid
+1-high-priority/    21 files — study these first, highest interview ROI
+2-medium-priority/  26 files — once high-priority is solid
 3-low-priority/     36 files — situational / role-specific
 ```
 
@@ -17,6 +17,7 @@ Root files (start here):
 - `README.md` — this file
 - `STUDY-PLAN.md` — week-by-week schedule
 - `INTERVIEW-DAY-CHECKLIST.md` — day-before / day-of checklist
+- `INTERVIEW-DEBRIEF-TEMPLATE.md` — fill out after every practice session or real interview
 
 ---
 
@@ -46,6 +47,8 @@ Root files (start here):
 | [MOCK-INTERVIEW-QA.md](1-high-priority/MOCK-INTERVIEW-QA.md) | Top 50 Q&A — drill the actual interview moment |
 | [NEGOTIATION-OFFER-DEEP.md](1-high-priority/NEGOTIATION-OFFER-DEEP.md) | Salary negotiation, equity evaluation, offer strategy |
 | [INTERVIEW-PREP.md](1-high-priority/INTERVIEW-PREP.md) | General preparation framework |
+| [TAKE-HOME-PROJECT-GUIDE.md](1-high-priority/TAKE-HOME-PROJECT-GUIDE.md) | How to approach, prioritise, and present take-home assignments |
+| [JOB-SEARCH-STRATEGY.md](1-high-priority/JOB-SEARCH-STRATEGY.md) | Referrals, LinkedIn, recruiter outreach, job boards, pipeline tracking |
 
 ---
 
@@ -68,6 +71,8 @@ Root files (start here):
 | [DESIGN-PATTERNS-LOW-DEEP.md](2-medium-priority/DESIGN-PATTERNS-LOW-DEEP.md) | GoF patterns in JS/TS |
 | [WEBSOCKETS-REALTIME-DEEP.md](2-medium-priority/WEBSOCKETS-REALTIME-DEEP.md) | WebSocket, SSE, real-time patterns |
 | [DOCKER-KUBERNETES-DEEP.md](2-medium-priority/DOCKER-KUBERNETES-DEEP.md) | Containers, pods, deployments, services |
+| [CSS-HTML-LIVE-CODING.md](2-medium-priority/CSS-HTML-LIVE-CODING.md) | CSS live coding: flexbox, grid, components from scratch, responsive design |
+| [ANXIETY-MINDSET-MANAGEMENT.md](2-medium-priority/ANXIETY-MINDSET-MANAGEMENT.md) | Managing nerves, second-language tactics, reframing rejection |
 
 ---
 
