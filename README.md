@@ -1,14 +1,14 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-84 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+85 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    21 files — study these first, highest interview ROI
+1-high-priority/    22 files — study these first, highest interview ROI
 2-medium-priority/  26 files — once high-priority is solid
 3-low-priority/     36 files — situational / role-specific
 ```
@@ -49,6 +49,7 @@ Root files (start here):
 | [INTERVIEW-PREP.md](1-high-priority/INTERVIEW-PREP.md) | General preparation framework |
 | [TAKE-HOME-PROJECT-GUIDE.md](1-high-priority/TAKE-HOME-PROJECT-GUIDE.md) | How to approach, prioritise, and present take-home assignments |
 | [JOB-SEARCH-STRATEGY.md](1-high-priority/JOB-SEARCH-STRATEGY.md) | Referrals, LinkedIn, recruiter outreach, job boards, pipeline tracking |
+| [AI-ENGINEERING-AGENTS-DEEP.md](1-high-priority/AI-ENGINEERING-AGENTS-DEEP.md) | AI agents, tool use, RAG, LangChain, MCP, evals, the modern AI stack |
 
 ---
 
