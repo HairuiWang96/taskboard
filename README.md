@@ -1,16 +1,16 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-93 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+97 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    26 files — study these first, highest interview ROI
-2-medium-priority/  29 files — once high-priority is solid
-3-low-priority/     37 files — situational / role-specific
+1-high-priority/    27 files — study these first, highest interview ROI
+2-medium-priority/  31 files — once high-priority is solid
+3-low-priority/     38 files — situational / role-specific
 ```
 
 Root files (start here):
@@ -54,6 +54,7 @@ Root files (start here):
 | [AI-AGENT-MEMORY-DEEP.md](1-high-priority/AI-AGENT-MEMORY-DEEP.md) | Short/long-term memory, vector memory, Mem0, cross-session persistence |
 | [AI-SYSTEM-DESIGN-DEEP.md](1-high-priority/AI-SYSTEM-DESIGN-DEEP.md) | Design: RAG system, chatbot, coding assistant, data analyst, doc processing |
 | [FRONTEND-ARCHITECTURE-DEEP.md](1-high-priority/FRONTEND-ARCHITECTURE-DEEP.md) | Feature structure, state architecture, rendering strategies, monorepo, module boundaries |
+| [FRONTEND-SYSTEM-DESIGN-DEEP.md](1-high-priority/FRONTEND-SYSTEM-DESIGN-DEEP.md) | Design autocomplete, infinite scroll, collaborative editor, file uploader, drag-and-drop |
 
 ---
 
@@ -81,6 +82,8 @@ Root files (start here):
 | [AI-MULTIMODAL-VISION-DEEP.md](2-medium-priority/AI-MULTIMODAL-VISION-DEEP.md) | Vision AI, sending images to Claude/GPT-4o, PDF processing, document extraction |
 | [AI-FINE-TUNING-DEEP.md](2-medium-priority/AI-FINE-TUNING-DEEP.md) | LoRA, QLoRA, when to fine-tune, data prep, OpenAI and Together fine-tuning APIs |
 | [AI-OBSERVABILITY-DEEP.md](2-medium-priority/AI-OBSERVABILITY-DEEP.md) | LangSmith, Helicone, Braintrust, tracing agents, prompt versioning, alerting |
+| [BUILD-TOOLS-DEEP.md](2-medium-priority/BUILD-TOOLS-DEEP.md) | Vite, Webpack, esbuild, tree shaking, code splitting, bundle analysis, Module Federation |
+| [WEB-APIS-DEEP.md](2-medium-priority/WEB-APIS-DEEP.md) | Web Workers, Service Workers, IntersectionObserver, IndexedDB, Clipboard, BroadcastChannel |
 
 ---
 
