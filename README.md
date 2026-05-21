@@ -1,16 +1,16 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-85 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+92 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    22 files — study these first, highest interview ROI
-2-medium-priority/  26 files — once high-priority is solid
-3-low-priority/     36 files — situational / role-specific
+1-high-priority/    25 files — study these first, highest interview ROI
+2-medium-priority/  29 files — once high-priority is solid
+3-low-priority/     37 files — situational / role-specific
 ```
 
 Root files (start here):
@@ -50,6 +50,9 @@ Root files (start here):
 | [TAKE-HOME-PROJECT-GUIDE.md](1-high-priority/TAKE-HOME-PROJECT-GUIDE.md) | How to approach, prioritise, and present take-home assignments |
 | [JOB-SEARCH-STRATEGY.md](1-high-priority/JOB-SEARCH-STRATEGY.md) | Referrals, LinkedIn, recruiter outreach, job boards, pipeline tracking |
 | [AI-ENGINEERING-AGENTS-DEEP.md](1-high-priority/AI-ENGINEERING-AGENTS-DEEP.md) | AI agents, tool use, RAG, LangChain, MCP, evals, the modern AI stack |
+| [AI-OPEN-SOURCE-MODELS-DEEP.md](1-high-priority/AI-OPEN-SOURCE-MODELS-DEEP.md) | Ollama, vLLM, Llama/Mistral, quantisation, self-hosted model serving |
+| [AI-AGENT-MEMORY-DEEP.md](1-high-priority/AI-AGENT-MEMORY-DEEP.md) | Short/long-term memory, vector memory, Mem0, cross-session persistence |
+| [AI-SYSTEM-DESIGN-DEEP.md](1-high-priority/AI-SYSTEM-DESIGN-DEEP.md) | Design: RAG system, chatbot, coding assistant, data analyst, doc processing |
 
 ---
 
@@ -74,6 +77,9 @@ Root files (start here):
 | [DOCKER-KUBERNETES-DEEP.md](2-medium-priority/DOCKER-KUBERNETES-DEEP.md) | Containers, pods, deployments, services |
 | [CSS-HTML-LIVE-CODING.md](2-medium-priority/CSS-HTML-LIVE-CODING.md) | CSS live coding: flexbox, grid, components from scratch, responsive design |
 | [ANXIETY-MINDSET-MANAGEMENT.md](2-medium-priority/ANXIETY-MINDSET-MANAGEMENT.md) | Managing nerves, second-language tactics, reframing rejection |
+| [AI-MULTIMODAL-VISION-DEEP.md](2-medium-priority/AI-MULTIMODAL-VISION-DEEP.md) | Vision AI, sending images to Claude/GPT-4o, PDF processing, document extraction |
+| [AI-FINE-TUNING-DEEP.md](2-medium-priority/AI-FINE-TUNING-DEEP.md) | LoRA, QLoRA, when to fine-tune, data prep, OpenAI and Together fine-tuning APIs |
+| [AI-OBSERVABILITY-DEEP.md](2-medium-priority/AI-OBSERVABILITY-DEEP.md) | LangSmith, Helicone, Braintrust, tracing agents, prompt versioning, alerting |
 
 ---
 
