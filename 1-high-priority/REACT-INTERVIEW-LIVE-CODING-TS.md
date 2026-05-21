@@ -386,8 +386,13 @@ function Accordion({ items }: AccordionProps): JSX.Element {
 }
 
 // Multiple open variant:
-// const [openSet, setOpenSet] = useState<Set<number>>(new Set());
-// const toggle = (i: number) => setOpenSet(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s; });
+const [openSet, setOpenSet] = useState<Set<number>>(new Set());
+const toggle = (i: number) =>
+    setOpenSet(prev => {
+        const s = new Set(prev);
+        s.has(i) ? s.delete(i) : s.add(i);
+        return s;
+    });
 ```
 
 ---
@@ -398,12 +403,28 @@ function Accordion({ items }: AccordionProps): JSX.Element {
 interface Tab {
     label: string;
     content: React.ReactNode;
+    // React.ReactNode = anything React can render:
+    //   string ("hello"), number (42), boolean, null, undefined,
+    //   JSX elements (<div/>), fragments (<>...</>), arrays of any of the above
+    // Most permissive type for "stuff to render" — use it when a prop accepts any renderable content
+    // Examples: content="just text" | content={<p>JSX</p>} | content={42}
 }
 
 interface TabsProps {
     tabs: Tab[];
 }
 
+// JSX.Element vs React.ReactNode:
+//   JSX.Element   → only JSX tags: <div/>, <MyComponent/>
+//   React.ReactNode → anything renderable: JSX, "string", 42, null, arrays, fragments
+//
+//   const a: JSX.Element = <div />;    // ✓
+//   const b: JSX.Element = "hello";    // ✗ error — not a JSX tag
+//   const c: React.ReactNode = "hello";// ✓ — accepts anything
+//
+// When to use which:
+//   React.ReactNode → for props like children/content (accept anything renderable)
+//   JSX.Element     → for function return types (a component always returns JSX)
 function Tabs({ tabs }: TabsProps): JSX.Element {
     const [active, setActive] = useState<number>(0);
 

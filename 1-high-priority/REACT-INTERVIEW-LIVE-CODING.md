@@ -338,6 +338,20 @@ function InfiniteList() {
             { threshold: 1 },
         );
         if (sentinelRef.current) observer.observe(sentinelRef.current);
+        // sentinelRef.current → the tiny 1px div at the bottom of the list (the "tripwire")
+        // observer.observe()  → tells IntersectionObserver to watch it
+        // When user scrolls down and the sentinel enters the viewport → loadMore() fires
+        //
+        // ┌─────────────┐
+        // │  Item 1      │
+        // │  Item 2      │  ← visible viewport
+        // │  Item 3      │
+        // └─────────────┘
+        //    Item 4
+        //    Item 5
+        //    <div sentinel/>  ← when user scrolls here into view, loadMore() fires
+        //
+        // if (sentinelRef.current) is a safety check — make sure DOM node exists before observing
         return () => observer.disconnect();
     }, [loadMore]);
 
@@ -347,7 +361,7 @@ function InfiniteList() {
                 <div key={item.id}>{item.name}</div>
             ))}
             {loading && <p>Loading...</p>}
-            <div ref={sentinelRef} style={{ height: 1 }} /> {/* sentinel */}
+            <div ref={sentinelRef} style={{ height: 1 }} /> {/* invisible sentinel — the tripwire at the bottom */}
         </div>
     );
 }
@@ -379,8 +393,13 @@ function Accordion({ items }) {
 }
 
 // Multiple open variant: use a Set or array of open indices
-// const [openSet, setOpenSet] = useState(new Set());
-// const toggle = (i) => setOpenSet(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s; });
+const [openSet, setOpenSet] = useState(new Set());
+const toggle = i =>
+    setOpenSet(prev => {
+        const s = new Set(prev);
+        s.has(i) ? s.delete(i) : s.add(i);
+        return s;
+    });
 ```
 
 ---
@@ -426,7 +445,7 @@ function Tabs({ tabs }) {
 
 ```jsx
 // Overlay dialog with backdrop click and Escape key to close
-// Key: render via portal so it escapes parent stacking context
+// ‼️ Key: render via portal so it escapes parent stacking context
 function Modal({ isOpen, onClose, children }) {
     useEffect(() => {
         const handler = e => {
@@ -438,14 +457,32 @@ function Modal({ isOpen, onClose, children }) {
 
     if (!isOpen) return null;
 
+    // BACKDROP CLICK FEATURE — uses event bubbling + stopPropagation:
+    //
+    // ┌──────────────────────────────┐
+    // │  dark backdrop (onClose)     │
+    // │                              │
+    // │    ┌──────────────────┐      │
+    // │    │ white content     │      │
+    // │    │ (stopPropagation) │      │
+    // │    └──────────────────┘      │
+    // │                              │
+    // └──────────────────────────────┘
+    //   click here → closes           click here → stays open
+    //
+    // Click on backdrop (dark area):
+    //   → onMouseDown fires on backdrop → onClose() → modal closes ✓
+    // Click on content (white box):
+    //   → onMouseDown fires on content → e.stopPropagation() → event STOPS here
+    //   → never reaches backdrop → onClose() never called → modal stays open ✓
     return ReactDOM.createPortal(
         <div
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-            onMouseDown={onClose} // click backdrop to close
+            onMouseDown={onClose} // ‼️ click backdrop (dark overlay) to close
         >
             <div
                 style={{ background: 'white', borderRadius: 8, padding: 24, minWidth: 320 }}
-                onMouseDown={e => e.stopPropagation()} // don't close when clicking content
+                onMouseDown={e => e.stopPropagation()} // ‼️ stops click from bubbling up to backdrop
             >
                 <button onClick={onClose} style={{ float: 'right' }}>
                     ✕
@@ -458,9 +495,9 @@ function Modal({ isOpen, onClose, children }) {
 }
 
 // Usage:
-// const [open, setOpen] = useState(false);
-// <button onClick={() => setOpen(true)}>Open</button>
-// <Modal isOpen={open} onClose={() => setOpen(false)}><p>Content</p></Modal>
+const [open, setOpen] = useState(false);
+<button onClick={() => setOpen(true)}>Open</button>
+<Modal isOpen={open} onClose={() => setOpen(false)}><p>Content</p></Modal>
 ```
 
 ---
@@ -486,6 +523,12 @@ function TodoApp() {
 
     return (
         <div>
+            {/* onKeyDown shorthand using && (logical AND):
+                e.key === 'Enter' && add()
+                Same as: if (e.key === 'Enter') { add(); }
+                If left side is false → JS short-circuits, add() never runs
+                If left side is true  → JS evaluates right side → add() runs
+                So pressing Enter triggers add(), any other key does nothing */}
             <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} placeholder='Add todo...' />
             <button onClick={add}>Add</button>
             <ul>
