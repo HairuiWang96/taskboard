@@ -34,13 +34,13 @@ JavaScript is single-threaded: one call stack, one thing at a time.
 Yet it handles async (network, timers, I/O) without blocking.
 This is the event loop's job.
 
-The runtime has:
+‼️ The runtime has:
   Call stack:      where function calls execute (LIFO)
-  Heap:            unstructured memory where objects live
-  Web APIs:        browser/Node APIs (setTimeout, fetch, fs)
-  Micro-task queue: Promises, queueMicrotask, MutationObserver
+  Heap:            unstructured memory where objects live ‼️
+  Web APIs:        browser/Node APIs (setTimeout, fetch, fs) ‼️
+  Micro-task queue: Promises, queueMicrotask, MutationObserver ‼️
   Macro-task queue: setTimeout, setInterval, I/O callbacks, MessageChannel
-  Event loop:      watches the stack, drains queues when stack is empty
+  Event loop:      watches the stack, drains queues when stack is empty ‼️
 ```
 
 ### Execution order — critical to know
@@ -62,7 +62,7 @@ console.log('5'); // synchronous
 
 ### Event loop execution order (detailed)
 
-**Three queues:**
+**Three queues:** ‼️
 
 | Queue             | Examples                                                           |
 | ----------------- | ------------------------------------------------------------------ |
@@ -92,7 +92,7 @@ console.log('5 - sync');
 // Output: 1 - sync, 5 - sync, 3 - micro, 4 - micro (chained), 2 - macro
 ```
 
-**Microtasks are greedy** — any microtask added while draining the microtask queue runs _before_ any macrotask gets a turn:
+**Microtasks are greedy** — ‼️ any microtask added while draining the microtask queue runs _before_ any macrotask gets a turn:
 
 ```js
 // This starves the macrotask queue — setTimeout never fires
@@ -107,7 +107,7 @@ setTimeout(() => console.log('never runs'), 0);
 
 - `Promise.then` always runs before `setTimeout`, even `setTimeout(..., 0)`
 - `async/await` resumes as a microtask (it's sugar over Promises)
-- In browsers, UI renders happen between macrotasks — heavy microtask chains can block rendering
+- In browsers, ‼️ UI renders happen between macrotasks — heavy microtask chains can block rendering
 
 ### Why micro-tasks run before macro-tasks
 
@@ -123,7 +123,7 @@ setTimeout(() => {
 // Output: macro, micro inside macro
 // The micro-task created inside the macro runs before any OTHER macro-task
 
-// Real implication: long chains of .then() can starve I/O callbacks
+// ‼️ Real implication: long chains of .then() can starve I/O callbacks
 Promise.resolve()
     .then(() => Promise.resolve())
     .then(() => Promise.resolve());
@@ -134,7 +134,7 @@ Promise.resolve()
 ### Node.js event loop phases
 
 ```text
-Node.js has more phases than browser:
+‼️ Node.js has more phases than browser:
 
 1. timers:        setTimeout, setInterval callbacks due
 2. pending I/O:   I/O callbacks deferred to next iteration
@@ -143,12 +143,12 @@ Node.js has more phases than browser:
 5. check:         setImmediate callbacks
 6. close:         socket.on('close') callbacks
 
-!Between each phase: process.nextTick() and Promise micro-tasks drain
-!process.nextTick() runs before Promise micro-tasks
+‼️ Between each phase: process.nextTick() and Promise micro-tasks drain
+‼️ process.nextTick() runs before Promise micro-tasks
 
-!setImmediate vs setTimeout(fn, 0):
-  In main module: order is non-deterministic
-  Inside I/O callback: setImmediate always runs first
+‼️ setImmediate vs setTimeout(fn, 0):
+  ‼️ In main module: order is non-deterministic
+  ‼️ Inside I/O callback: setImmediate always runs first
 ```
 
 ---

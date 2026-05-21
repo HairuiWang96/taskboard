@@ -252,17 +252,17 @@ useEffect(() => {
 //   2. React paints the DOM
 //   3. useEffect runs →  ref.current is WRITTEN (updated to new value)
 //
-// So the return statement always executes BEFORE the effect updates the ref.
+// ‼️ So the return statement always executes BEFORE the effect updates the ref.
 //
 // Example walkthrough:
 //   Render 1: value="A" → returns undefined (ref not set yet), then effect sets ref.current="A"
 //   Render 2: value="B" → returns "A" (previous!),            then effect sets ref.current="B"
 //   Render 3: value="C" → returns "B" (previous!),            then effect sets ref.current="C"
 //
-// useRef persists across renders without triggering re-renders, and useEffect always
+// ‼️ useRef persists across renders without triggering re-renders, and useEffect always
 // runs after return — so the read and write are always exactly one render apart.
 //
-// IMPORTANT: useEffect() does NOT run its callback immediately — it just schedules it.
+// ‼️ IMPORTANT: useEffect() does NOT run its callback immediately — it just schedules it.
 // React collects all effects during render and runs them later after painting.
 // So even though useEffect appears before return in the code, the callback hasn't
 // executed yet when return ref.current runs.
@@ -272,7 +272,7 @@ useEffect(() => {
 //   return ref.current        → runs immediately, reads the still-old value
 //   [after paint]             → React finally fires the scheduled callback
 //
-// Code order ≠ execution order. useEffect is registration, not immediate execution.
+// ‼️ Code order ≠ execution order. useEffect is registration, not immediate execution.
 function usePrevious(value) {
     const ref = useRef();
     useEffect(() => {
