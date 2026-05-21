@@ -1,14 +1,14 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-92 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+93 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    25 files — study these first, highest interview ROI
+1-high-priority/    26 files — study these first, highest interview ROI
 2-medium-priority/  29 files — once high-priority is solid
 3-low-priority/     37 files — situational / role-specific
 ```
@@ -53,6 +53,7 @@ Root files (start here):
 | [AI-OPEN-SOURCE-MODELS-DEEP.md](1-high-priority/AI-OPEN-SOURCE-MODELS-DEEP.md) | Ollama, vLLM, Llama/Mistral, quantisation, self-hosted model serving |
 | [AI-AGENT-MEMORY-DEEP.md](1-high-priority/AI-AGENT-MEMORY-DEEP.md) | Short/long-term memory, vector memory, Mem0, cross-session persistence |
 | [AI-SYSTEM-DESIGN-DEEP.md](1-high-priority/AI-SYSTEM-DESIGN-DEEP.md) | Design: RAG system, chatbot, coding assistant, data analyst, doc processing |
+| [FRONTEND-ARCHITECTURE-DEEP.md](1-high-priority/FRONTEND-ARCHITECTURE-DEEP.md) | Feature structure, state architecture, rendering strategies, monorepo, module boundaries |
 
 ---
 
