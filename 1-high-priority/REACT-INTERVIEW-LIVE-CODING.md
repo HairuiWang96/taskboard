@@ -551,7 +551,7 @@ function TodoApp() {
 
 ```jsx
 // Interactive 1–5 star selector with hover preview
-// Key: two states — hovered (preview) and selected (committed); display hover over selected
+// Key: two states — hovered (preview) and selected (committed); ‼️ display hover over selected
 function StarRating({ max = 5, onChange }) {
     const [rating, setRating] = useState(0);
     const [hovered, setHovered] = useState(0);
@@ -578,6 +578,14 @@ function StarRating({ max = 5, onChange }) {
     );
 }
 ```
+
+<!-- cursor: 'pointer' changes the mouse cursor to a hand icon (👆) when hovering over the element — the same cursor you see when hovering over a link. It signals to the user that the element is clickable.
+
+cursor: 'default'  → normal arrow cursor
+cursor: 'pointer'  → hand/finger cursor (clickable)
+cursor: 'text'     → I-beam cursor (text input)
+cursor: 'grab'     → open hand (draggable)
+cursor: 'not-allowed' → circle with line (disabled) -->
 
 ---
 
@@ -648,7 +656,9 @@ function SignupForm() {
     };
 
     const handleSubmit = e => {
-        e.preventDefault();
+        e.preventDefault(); // stops browser's default: reload page on form submit
+        // Without this: user clicks Submit → browser reloads page → all React state lost
+        // With this: page stays put → React handles submission in JavaScript
         const errs = validate();
         if (Object.keys(errs).length) {
             setErrors(errs);
@@ -688,6 +698,8 @@ function Countdown({ initialSeconds = 60 }) {
     const start = () => {
         if (running) return;
         setRunning(true);
+        // setInterval fires EVERY 1000ms (every second) until clearInterval()
+        // vs setTimeout which fires only ONCE. That's why the countdown ticks every second.
         intervalRef.current = setInterval(() => {
             setSeconds(s => {
                 if (s <= 1) {
@@ -713,6 +725,11 @@ function Countdown({ initialSeconds = 60 }) {
 
     useEffect(() => () => clearInterval(intervalRef.current), []); // cleanup on unmount
 
+    // padStart(2, '0') pads a string to minimum length 2 with '0':
+    //   String(5).padStart(2, '0')   → "05"   ← pads to reach 2 chars
+    //   String(12).padStart(2, '0')  → "12"   ← already 2 chars, no padding
+    //   Without padStart: "3:5"  ← looks wrong
+    //   With padStart:    "03:05" ← proper timer format
     const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
     const secs = String(seconds % 60).padStart(2, '0');
 
@@ -753,8 +770,11 @@ function DragList({ initialItems }) {
         if (from === null || from === targetIndex) return;
         setItems(prev => {
             const next = [...prev];
-            const [moved] = next.splice(from, 1);
-            next.splice(targetIndex, 0, moved);
+            // splice returns an ARRAY of removed items, MUTATES the original array
+            //   arr.splice(index, deleteCount) → removes items, returns them as array
+            //   arr.splice(index, 0, item)     → inserts item, removes nothing, returns []
+            const [moved] = next.splice(from, 1); // remove 1 item at `from`, destructure to get it
+            next.splice(targetIndex, 0, moved); // insert it at new position, remove nothing
             return next;
         });
         dragIndex.current = null;
@@ -777,21 +797,90 @@ function DragList({ initialItems }) {
 ## 14. Virtual List (windowing)
 
 ```jsx
-// Render only visible rows to handle 10,000+ items without lag
-// Key: total height = itemHeight * total; translate visible window by scrollTop
+// HOW A VIRTUAL LIST WORKS:
+//
+// PROBLEM: rendering 10,000 DOM nodes is slow.
+// SOLUTION: only render what's visible (~10-15 items), fake the rest with empty space.
+//
+// Full list (10,000 items):          Virtual list (only ~10 rendered):
+//
+// ┌──────────────┐                   ┌──────────────┐
+// │ Item 1        │                   │              │ ← empty space (height fakes
+// │ Item 2        │                   │              │   all items above viewport)
+// │ Item 3        │                   │              │
+// │ ...           │                   ├──────────────┤
+// │ Item 50       │ ← viewport       │ Item 50       │ ← only these are real DOM nodes
+// │ Item 51       │                   │ Item 51       │
+// │ Item 52       │                   │ Item 52       │
+// │ ...           │                   ├──────────────┤
+// │ Item 10000    │                   │              │ ← empty space (height fakes
+// └──────────────┘                   └──────────────┘   all items below viewport)
+//
+// scrollTop = how many pixels the user has scrolled down from the top.
+// It's the key to figuring out which items are visible:
+//
+//   scrollTop = 2000                          // user scrolled 2000px down
+//   itemHeight = 40                           // each item is 40px tall
+//   startIndex = Math.floor(2000 / 40) = 50   // first visible item is #50
+//   visibleCount = Math.ceil(400 / 40) = 10    // container shows 10 items
+//   endIndex = 50 + 10 + 1 = 61               // render items 50–60
+//
+// WHY THREE LAYERS?
+//
+// LAYER 1 (outer div) — Creates the scrollable window.
+//   Without it, there's no scroll. It's a fixed-height frame (400px).
+//   Content overflows, so you can scroll. It listens to onScroll to know
+//   how far the user has scrolled (scrollTop).
+//
+// LAYER 2 (spacer div) — Tricks the browser into showing a correct scrollbar.
+//   10,000 items × 40px = 400,000px total height.
+//   Without this fake height, the scrollbar would look tiny (like only 10 items).
+//   The browser sees 400,000px and creates a proportional scrollbar — even though
+//   most of that space is empty.
+//
+//   Without layer 2:                   With layer 2:
+//   ┌──────────────┐ ▓ scrollbar       ┌──────────────┐ ░ scrollbar
+//   │ Item 50       │ ▓ looks like     │ Item 50       │ ░ looks like
+//   │ Item 51       │ ▓ only 10 items  │ Item 51       │ ▓ 10,000 items
+//   │ Item 52       │ ▓                │ Item 52       │ ░ (correct!)
+//   └──────────────┘                   └──────────────┘
+//
+// LAYER 3 (positioned div) — Moves the rendered items to the right spot.
+//   Without it, items 50-60 would always appear at the top of the spacer.
+//   With top: startIndex * itemHeight, they sit exactly where the user scrolled to.
+//
+// POSITION RELATIVE vs ABSOLUTE here:
+//   relative → "I'm positioned normally, but my children can use me as their anchor"
+//   absolute → "I'm taken out of normal flow, positioned relative to my nearest relative parent"
+//
+//   Layer 2: position: relative   ← becomes the anchor point
+//     Layer 3: position: absolute ← positions itself inside layer 2
+//              top: 2000px        ← 2000px from the top of layer 2 (not the page)
+//
+//   Without relative on layer 2, the absolute layer 3 would position itself
+//   relative to the page — completely wrong position.
+//
+// OVERFLOW-Y AUTO:
+//   overflowY: 'visible' → content spills out (default)
+//   overflowY: 'hidden'  → content is clipped, no scrollbar
+//   overflowY: 'scroll'  → always shows scrollbar (even if not needed)
+//   overflowY: 'auto'    → shows scrollbar ONLY when content overflows
+//   Here the container is 400px but spacer is 400,000px. 'auto' means
+//   "show a scrollbar because the content doesn't fit."
 function VirtualList({ items, itemHeight = 40, containerHeight = 400 }) {
-    const [scrollTop, setScrollTop] = useState(0);
+    const [scrollTop, setScrollTop] = useState(0); // tracks how far user has scrolled
 
-    const startIndex = Math.floor(scrollTop / itemHeight);
-    const visibleCount = Math.ceil(containerHeight / itemHeight);
-    const endIndex = Math.min(startIndex + visibleCount + 1, items.length);
-    const visibleItems = items.slice(startIndex, endIndex);
+    const startIndex = Math.floor(scrollTop / itemHeight); // first visible item index
+    const visibleCount = Math.ceil(containerHeight / itemHeight); // how many items fit in viewport
+    const endIndex = Math.min(startIndex + visibleCount + 1, items.length); // last visible + 1 buffer
+    const visibleItems = items.slice(startIndex, endIndex); // only these get rendered as DOM nodes
 
     return (
+        // LAYER 1: scrollable container — fixed height, captures scrollTop, overflowY auto shows scrollbar
         <div style={{ height: containerHeight, overflowY: 'auto', position: 'relative' }} onScroll={e => setScrollTop(e.currentTarget.scrollTop)}>
-            {/* total height spacer so scrollbar is correct */}
-            <div style={{ height: items.length * itemHeight, position: 'relative' }}>
-                {/* offset visible rows to their real position */}
+            {/* LAYER 2: spacer — fakes total height (400,000px) so scrollbar is proportionally correct */}
+            <div style={{ height: items.length * itemHeight, position: 'relative' /* anchor for absolute child */ }}>
+                {/* LAYER 3: absolute positioned — moves rendered items to correct scroll position */}
                 <div style={{ position: 'absolute', top: startIndex * itemHeight, width: '100%' }}>
                     {visibleItems.map((item, i) => (
                         <div key={startIndex + i} style={{ height: itemHeight, display: 'flex', alignItems: 'center', borderBottom: '1px solid #eee', padding: '0 12px' }}>
@@ -805,8 +894,11 @@ function VirtualList({ items, itemHeight = 40, containerHeight = 400 }) {
 }
 
 // Usage:
-// const items = Array.from({ length: 10000 }, (_, i) => `Item ${i + 1}`);
-// <VirtualList items={items} itemHeight={40} containerHeight={400} />
+// Array.from({ length: N }, callback) creates an array of N items using the callback
+// callback receives (element, index) — element is undefined here so we use _ to ignore it
+// i + 1 because index starts at 0 but we want "Item 1", "Item 2", etc.
+const items = Array.from({ length: 10000 }, (_, i) => `Item ${i + 1}`);
+<VirtualList items={items} itemHeight={40} containerHeight={400} />;
 ```
 
 ---

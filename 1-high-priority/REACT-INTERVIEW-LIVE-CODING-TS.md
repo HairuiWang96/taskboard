@@ -690,7 +690,7 @@ interface CountdownProps {
 function Countdown({ initialSeconds = 60 }: CountdownProps): JSX.Element {
     const [seconds, setSeconds] = useState<number>(initialSeconds);
     const [running, setRunning] = useState<boolean>(false);
-    // ReturnType<typeof setInterval> is `number` in browsers, `NodeJS.Timeout` in Node — use ReturnType to avoid the conflict
+    // ‼️ ReturnType<typeof setInterval> is `number` in browsers, `NodeJS.Timeout` in Node — use ReturnType to avoid the conflict
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const start = (): void => {
@@ -699,7 +699,9 @@ function Countdown({ initialSeconds = 60 }: CountdownProps): JSX.Element {
         intervalRef.current = setInterval(() => {
             setSeconds(s => {
                 if (s <= 1) {
-                    clearInterval(intervalRef.current!);
+                    clearInterval(intervalRef.current!); // ! = non-null assertion — tells TS "this is not null, trust me"
+                    // Without !: TS complains because intervalRef was typed as | null
+                    // Compile-time only — no runtime code generated
                     setRunning(false);
                     return 0;
                 }
