@@ -866,8 +866,11 @@ function useFetch<T>(url: string | null): FetchState<T> {
 }
 
 // Usage:
-// interface User { id: number; name: string; }
-// const { data, loading, error } = useFetch<User[]>('/api/users');
+interface User {
+    id: number;
+    name: string;
+}
+const { data, loading, error } = useFetch<User[]>('/api/users');
 ```
 
 ---
@@ -888,6 +891,19 @@ interface CartItem extends Product {
 // Discriminated union — TS narrows action.item / action.id based on type
 type CartAction = { type: 'ADD'; item: Product } | { type: 'REMOVE'; id: number } | { type: 'CLEAR' };
 
+// NO DEFAULT NEEDED — TypeScript's discriminated union covers every possible case:
+//   CartAction = 'ADD' | 'REMOVE' | 'CLEAR' — all three handled in the switch.
+//   TS knows at compile time that action.type can ONLY be these three values.
+//   If you tried dispatch({ type: 'SOMETHING_ELSE' }), TS would error before code even runs.
+//
+// In plain JS you'd add default as a safety net (no type checking).
+// In TS with a discriminated union, it's unnecessary — the compiler enforces exhaustiveness.
+//
+// You can add an explicit exhaustiveness check if you want:
+//   default: {
+//       const _exhaustive: never = action; // TS errors if you forgot a case
+//       return state;
+//   }
 const cartReducer = (state: CartItem[], action: CartAction): CartItem[] => {
     switch (action.type) {
         case 'ADD': {
@@ -978,8 +994,8 @@ function useTheme(): ThemeContextValue {
 }
 
 // Usage:
-// const { theme, dispatch } = useTheme();
-// dispatch({ type: 'SET', mode: 'dark' }); // TS enforces mode is 'light' | 'dark'
+const { theme, dispatch } = useTheme();
+dispatch({ type: 'SET', mode: 'dark' }); // TS enforces mode is 'light' | 'dark'
 ```
 
 ---
@@ -1021,9 +1037,9 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 }
 
 // Usage:
-// <ErrorBoundary fallback={<p>Oops!</p>}>
-//   <MyComponent />
-// </ErrorBoundary>
+<ErrorBoundary fallback={<p>Oops!</p>}>
+    <MyComponent />
+</ErrorBoundary>;
 ```
 
 ---

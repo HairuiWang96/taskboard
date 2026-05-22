@@ -934,10 +934,16 @@ function useFetch(url) {
 }
 
 // Usage:
-// const { data, loading, error } = useFetch('/api/users');
-// if (loading) return <p>Loading...</p>;
-// if (error) return <p>Error: {error}</p>;
-// return <ul>{data.map(u => <li key={u.id}>{u.name}</li>)}</ul>;
+const { data, loading, error } = useFetch('/api/users');
+if (loading) return <p>Loading...</p>;
+if (error) return <p>Error: {error}</p>;
+return (
+    <ul>
+        {data.map(u => (
+            <li key={u.id}>{u.name}</li>
+        ))}
+    </ul>
+);
 ```
 
 ---
@@ -945,7 +951,7 @@ function useFetch(url) {
 ## 16. useReducer — Shopping Cart
 
 ```jsx
-// useReducer shines when next state depends on the previous AND action type
+// ‼️ useReducer shines when next state depends on the previous AND action type
 // Classic example: cart with add/remove/clear actions
 const cartReducer = (state, action) => {
     switch (action.type) {
@@ -967,6 +973,19 @@ const cartReducer = (state, action) => {
 
 function Cart({ products }) {
     const [cart, dispatch] = useReducer(cartReducer, []);
+    // dispatch({ type: 'ADD', item: p }) → reducer returns new cart array → re-render triggered
+    // On re-render, const total = cart.reduce(...) runs again with the new cart
+    // New total is displayed
+
+    // total is NOT state — it's a DERIVED VALUE computed fresh on every render from cart.
+    // Every time cart changes (add/remove/clear), the component re-renders,
+    // and total is recalculated automatically:
+    //
+    //   dispatch('ADD')    → cart changes → re-render → total recalculated
+    //   dispatch('REMOVE') → cart changes → re-render → total recalculated
+    //   dispatch('CLEAR')  → cart = []    → re-render → total = 0
+    //
+    // No need for a separate useState for total — just derive it from cart on each render.
     const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
 
     return (
@@ -990,6 +1009,38 @@ function Cart({ products }) {
         </div>
     );
 }
+
+// HOW dispatch AND action WORK TOGETHER:
+//
+// useReducer gives you:  const [cart, dispatch] = useReducer(cartReducer, []);
+//   - cart     → current state (the array of cart items)
+//   - dispatch → a function that sends an "action" object to the reducer
+//
+// An action is just a PLAIN OBJECT you pass to dispatch. You decide its shape.
+// Convention: { type: '...', ...extraData }
+//
+// When you call:  dispatch({ type: 'ADD', item: p })
+//
+//   Step 1: React calls  cartReducer(currentCart, { type: 'ADD', item: p })
+//                                     ↑ state        ↑ action (the object you passed)
+//   Step 2: Reducer reads action.type → hits case 'ADD'
+//   Step 3: Reducer reads action.item → knows WHICH product to add
+//   Step 4: Reducer returns a NEW cart array
+//   Step 5: React re-renders with the new cart
+//
+// dispatch itself doesn't know anything about "ADD" or "item" —
+// it just passes WHATEVER OBJECT you give it straight to the reducer as the `action` parameter.
+// The reducer is where all the logic lives.
+//
+// Each action type needs different extra data:
+//
+//   dispatch({ type: 'ADD', item: p })     → reducer reads action.item (the product to add)
+//   dispatch({ type: 'REMOVE', id: i.id }) → reducer reads action.id  (which item to remove)
+//   dispatch({ type: 'CLEAR' })            → reducer needs nothing    (just returns [])
+//
+// The field names (item, id) are NOT special syntax — they're just object properties.
+// You could name them anything (e.g. { type: 'ADD', product: p }) as long as
+// the reducer reads the same field name (action.product instead of action.item).
 ```
 
 ---
@@ -1027,10 +1078,8 @@ function useTheme() {
 }
 
 // Usage in any child:
-// const { theme, dispatch } = useTheme();
-// <button onClick={() => dispatch({ type: 'TOGGLE' })}>
-//   Current: {theme.mode}
-// </button>
+const { theme, dispatch } = useTheme();
+<button onClick={() => dispatch({ type: 'TOGGLE' })}>Current: {theme.mode}</button>;
 ```
 
 ---
@@ -1040,7 +1089,7 @@ function useTheme() {
 ```jsx
 // Error Boundaries MUST be class components — hooks cannot catch render errors
 // Catches errors in: render, lifecycle methods, constructors of children
-// Does NOT catch: event handlers (use try/catch there), async code, itself
+// ‼️ Does NOT catch: event handlers (use try/catch there), async code, itself
 class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
@@ -1048,7 +1097,7 @@ class ErrorBoundary extends React.Component {
     }
 
     static getDerivedStateFromError(error) {
-        // Update state so next render shows fallback UI
+        // ‼️ Update state so next render shows fallback UI
         return { hasError: true, error };
     }
 
@@ -1066,11 +1115,11 @@ class ErrorBoundary extends React.Component {
 }
 
 // Usage:
-// <ErrorBoundary fallback={<p>Oops! Try refreshing.</p>}>
-//   <MyComponent />
-// </ErrorBoundary>
+<ErrorBoundary fallback={<p>Oops! Try refreshing.</p>}>
+    <MyComponent />
+</ErrorBoundary>;
 
-// React 19+ also has: use(promise) + Suspense for async errors, but class boundary still needed for render errors
+// ‼️ React 19+ also has: use(promise) + Suspense for async errors, but class boundary still needed for render errors
 ```
 
 ---
@@ -1090,6 +1139,18 @@ function OTPInput({ length = 6, onComplete }) {
         next[i] = char;
         setValues(next);
         if (char && i < length - 1) refs.current[i + 1].focus(); // advance focus
+        // next.every(Boolean) → checks if EVERY slot is filled (no empty strings left)
+        //   Boolean('')   → false (empty slot)
+        //   Boolean('7')  → true  (filled slot)
+        //   ['3','7','','','',''].every(Boolean)      → false (still typing)
+        //   ['3','7','1','4','9','2'].every(Boolean)  → true  (all filled!)
+        //
+        // onComplete?.(next.join('')) → optional chaining ?.() calls onComplete ONLY if
+        //   the parent passed that prop. If onComplete is undefined, does nothing instead of crashing.
+        //   next.join('') combines the array into one string: ['3','7','1','4','9','2'] → '371492'
+        //
+        // Full meaning: "If all 6 digits are filled, and the parent gave us an onComplete
+        //   callback, call it with the combined PIN string."
         if (next.every(Boolean)) onComplete?.(next.join(''));
     };
 
@@ -1108,6 +1169,13 @@ function OTPInput({ length = 6, onComplete }) {
         setValues(next);
         refs.current[Math.min(pasted.length, length - 1)].focus();
         e.preventDefault();
+        // e.preventDefault() stops the browser's DEFAULT paste behavior.
+        // Without it, TWO things happen:
+        //   1. Your custom paste logic fills in the OTP boxes (what you want)
+        //   2. The browser ALSO pastes the text into the focused input (double paste, breaks UI)
+        // With it: "I'm handling this myself — browser, don't do your normal paste."
+        // Same concept as e.preventDefault() in form submit (stops page reload) —
+        // here it stops the browser from pasting on top of your custom logic.
     };
 
     return (
