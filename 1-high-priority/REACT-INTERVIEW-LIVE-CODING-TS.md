@@ -1119,6 +1119,33 @@ interface SortState<T> {
     direction: SortDirection;
 }
 
+// T extends Record<string, unknown> means "T must be some kind of object"
+//   Record<string, unknown> ≈ { [key: string]: unknown } ≈ "any object"
+//   Rejects primitives like string, number, boolean — only objects allowed.
+//
+// data: T[] — an array of row objects
+//   If T = { name: string; age: number; city: string }, then:
+//   data = [
+//     { name: 'Alice', age: 30, city: 'London' },
+//     { name: 'Bob',   age: 25, city: 'Paris' },
+//   ]
+//
+// columns: Column<T>[] — T is the row object type, but Column<T> doesn't store a T.
+//   It uses keyof T to ensure column keys match the data fields:
+//
+//   interface Column<T> {
+//       key: keyof T;   → 'name' | 'age' | 'city'  (only valid field names!)
+//       label: string;
+//   }
+//
+//   So columns: Column<T>[] means:
+//     { key: 'name', label: 'Name' }  → ✓ 'name' is a key of T
+//     { key: 'age',  label: 'Age' }   → ✓ 'age' is a key of T
+//     { key: 'foo',  label: 'Foo' }   → ✗ TypeScript ERROR — 'foo' doesn't exist in T
+//
+//   ‼️ keyof T extracts just the KEY NAMES as a union of strings.
+//   That's the whole point — TypeScript prevents you from referencing
+//   a column key that doesn't exist in your data.
 interface SortableTableProps<T extends Record<string, unknown>> {
     data: T[];
     columns: Column<T>[];

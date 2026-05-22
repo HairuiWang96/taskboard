@@ -1205,7 +1205,37 @@ function OTPInput({ length = 6, onComplete }) {
 // Click column header to sort; click again to reverse direction
 // Key: store { key, direction } sort state; useMemo to avoid re-sorting on every render
 function SortableTable({ data, columns }) {
-    // columns = [{ key: 'name', label: 'Name' }, { key: 'age', label: 'Age' }, ...]
+    // data: an array of row objects (each row is one object)
+    //   data = [
+    //     { name: 'Alice', age: 30, city: 'London' },
+    //     { name: 'Bob',   age: 25, city: 'Paris' },
+    //     { name: 'Carol', age: 35, city: 'Tokyo' },
+    //   ]
+    //
+    // columns: tells the table WHICH keys to display and what header label to show
+    //   columns = [
+    //     { key: 'name', label: 'Name' },
+    //     { key: 'age',  label: 'Age' },
+    //     { key: 'city', label: 'City' },
+    //   ]
+    //
+    // data (rows):                          columns (which fields to show):
+    // ┌──────────────────────────────┐      ┌──────────────────────────┐
+    // │ { name, age, city }  ← row 1│      │ { key: 'name', label }   │
+    // │ { name, age, city }  ← row 2│      │ { key: 'age',  label }   │
+    // │ { name, age, city }  ← row 3│      │ { key: 'city', label }   │
+    // └──────────────────────────────┘      └──────────────────────────┘
+    //
+    // Renders as:
+    // | Name  | Age | City   |   ← column labels
+    // |-------|-----|--------|
+    // | Alice | 30  | London |   ← data[0]
+    // | Bob   | 25  | Paris  |   ← data[1]
+    // | Carol | 35  | Tokyo  |   ← data[2]
+    //
+    // columns exists separately so you can choose NOT to display every field —
+    // e.g. if data has `id` but you don't want to show it, just don't include
+    // { key: 'id', label: '...' } in columns.
     const [sort, setSort] = useState({ key: null, direction: 'asc' });
 
     const sorted = useMemo(() => {
@@ -1349,7 +1379,7 @@ function WizardForm() {
 
 ```jsx
 // Show a tooltip on hover; position above/below based on available space
-// Key: useRef for the trigger, show/hide with state, portal to avoid overflow clipping
+// ‼️ Key: useRef for the trigger, show/hide with state, portal to avoid overflow clipping
 function Tooltip({ text, children }) {
     const [visible, setVisible] = useState(false);
     const [coords, setCoords] = useState({ top: 0, left: 0 });
@@ -1357,8 +1387,31 @@ function Tooltip({ text, children }) {
 
     const show = () => {
         const rect = triggerRef.current.getBoundingClientRect();
+        // rect.top  → distance from element to the TOP of the viewport (what you see on screen)
+        // window.scrollY → how far the page is scrolled down
+        // Adding them converts viewport position → PAGE position
+        // ‼️ (because the tooltip is position: absolute relative to document.body, not the viewport)
+        // - 8 → nudges it 8px above the element so there's a small gap
+        //
+        //   Without scrollY:                 With scrollY:
+        //   ┌─ viewport ─────┐              Page is 500px scrolled down
+        //   │                 │              rect.top says 200 (from viewport top)
+        //   │   element       │              But real page position = 200 + 500 = 700
+        //   └─────────────────┘
+        //
+        // rect.left + window.scrollX → same idea, converts to page position horizontally
+        // + rect.width / 2 → moves to the HORIZONTAL CENTER of the trigger element
+        //
+        //   ┌── trigger button ──┐
+        //   |←── rect.width ────→|
+        //   |      ↑ center       |
+        //          rect.left + rect.width / 2
+        //
+        // This is paired with transform: 'translate(-50%, -100%)' on the tooltip itself,
+        // which shifts it left by half its own width (centering it) and up by its full
+        // height (placing it above the anchor point).
         setCoords({
-            top: rect.top + window.scrollY - 8, // position above trigger
+            top: rect.top + window.scrollY - 8,
             left: rect.left + window.scrollX + rect.width / 2,
         });
         setVisible(true);
@@ -1369,6 +1422,27 @@ function Tooltip({ text, children }) {
             <span ref={triggerRef} onMouseEnter={show} onMouseLeave={() => setVisible(false)} style={{ display: 'inline-block' }}>
                 {children}
             </span>
+            {/* createPortal renders a React component into a DIFFERENT DOM node than its parent —
+                here it renders the tooltip into document.body instead of inside the trigger's DOM tree.
+
+                WHY? Without it, the tooltip is a child of the trigger element.
+                If any parent has overflow: hidden or a z-index stacking context,
+                the tooltip gets CLIPPED or HIDDEN:
+
+                Without portal:                    With portal:
+
+                <div style="overflow: hidden">     <div style="overflow: hidden">
+                  <span>Trigger</span>               <span>Trigger</span>
+                  ┌──────────┐                     </div>
+                  │ tooltip  │  ← CLIPPED!
+                  └──────────┘                     <body>
+                </div>                               ┌──────────┐
+                                                     │ tooltip  │  ← renders here, escapes overflow
+                                                     └──────────┘
+                                                   </body>
+
+                The tooltip is still a React child (gets same context, events bubble normally),
+                but in the DOM it lives directly under <body>, so nothing can clip it. */}
             {visible &&
                 ReactDOM.createPortal(
                     <div
@@ -1376,6 +1450,18 @@ function Tooltip({ text, children }) {
                             position: 'absolute',
                             top: coords.top,
                             left: coords.left,
+                            // translate(-50%, -100%) shifts the tooltip relative to ITS OWN SIZE:
+                            //   -50% horizontally → moves left by half its own width (centers it over anchor)
+                            //   -100% vertically  → moves up by its full height (places it above anchor)
+                            //
+                            //   Without translate:              With translate(-50%, -100%):
+                            //
+                            //   anchor point (coords)                    anchor point (coords)
+                            //   ↓                                        ↓
+                            //   ┌──────────────┐                ┌──────────────┐
+                            //   │   tooltip     │               │   tooltip     │
+                            //   └──────────────┘                └──────────────┘
+                            //   ^ top-left corner at anchor     ^ centered above anchor
                             transform: 'translate(-50%, -100%)',
                             background: '#333',
                             color: 'white',
@@ -1396,7 +1482,9 @@ function Tooltip({ text, children }) {
 }
 
 // Usage:
-// <Tooltip text="This is a tooltip"><button>Hover me</button></Tooltip>
+<Tooltip text='This is a tooltip'>
+    <button>Hover me</button>
+</Tooltip>;
 ```
 
 ---
@@ -1422,6 +1510,35 @@ function DropdownMenu({ label, items }) {
             <button onClick={() => setOpen(o => !o)} aria-haspopup='true' aria-expanded={open}>
                 {label} {open ? '▲' : '▼'}
             </button>
+            {/* position: 'absolute' → positions relative to nearest position: 'relative' parent
+                The PARENT here is the outer <div> above (line with position: 'relative'),
+                NOT the <button>. The button is just content inside the div.
+
+                top: '100%' → 100% of the PARENT DIV's height down from the div's top edge.
+                Since the button is the only content inside the div, the div's height = button's height.
+                So top: 100% = bottom of the div = visually right below the button.
+
+                left: 0 → align to the left edge of the parent div
+
+                <div> (position: relative) ← THIS is the parent, the positioning anchor
+                ┌──────────────────┐  ← top: 0% of the div
+                │                  │
+                │  <button>        │  ← button is inside the div, stretches it
+                │                  │
+                └──────────────────┘  ← top: 100% of the div (= bottom edge)
+                ┌──────────────────┐
+                │  <ul> dropdown   │  ← absolute, top: 100% = starts at div's bottom
+                │  Edit            │
+                │  Delete          │
+                └──────────────────┘
+
+                It's NOT 100% of the button — it's 100% of the position: relative div.
+                They just happen to be the same height because the button is the only
+                thing inside the div.
+
+                Unlike the Tooltip which uses createPortal, the dropdown doesn't need a portal
+                because it's positioned directly under the button, so overflow: hidden on
+                ancestors is less likely to be an issue. */}
             {open && (
                 <ul role='menu' style={{ position: 'absolute', top: '100%', left: 0, background: 'white', border: '1px solid #ccc', borderRadius: 4, listStyle: 'none', margin: 0, padding: 4, minWidth: 140, zIndex: 100 }}>
                     {items.map((item, i) => (
