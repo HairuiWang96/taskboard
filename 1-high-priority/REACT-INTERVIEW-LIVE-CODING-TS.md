@@ -1468,11 +1468,11 @@ function useInterval(callback: () => void, delay: number | null): void {
 }
 
 // Usage — self-updating clock:
-// function Clock(): JSX.Element {
-//   const [time, setTime] = useState<Date>(new Date());
-//   useInterval(() => setTime(new Date()), 1000);
-//   return <p>{time.toLocaleTimeString()}</p>;
-// }
+function Clock(): JSX.Element {
+    const [time, setTime] = useState<Date>(new Date());
+    useInterval(() => setTime(new Date()), 1000);
+    return <p>{time.toLocaleTimeString()}</p>;
+}
 ```
 
 ---
@@ -1494,8 +1494,8 @@ function useMediaQuery(query: string): boolean {
 }
 
 // Usage:
-// const isMobile = useMediaQuery('(max-width: 768px)');
-// const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+const isMobile = useMediaQuery('(max-width: 768px)');
+const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
 ```
 
 ---
@@ -1650,6 +1650,19 @@ function ResizablePanels({ left, right, initialSplit = 50 }: ResizablePanelsProp
 
     useEffect(() => {
         const onMouseMove = (e: MouseEvent): void => {
+            // !dragging.current → "if NOT dragging, ignore this mouse move"
+            //   dragging is useRef(false) — set to true on mousedown, false on mouseup
+            //   So mouse movements only resize panels while the divider is held down.
+            //
+            // !containerRef.current → TypeScript requires this extra null check.
+            //   containerRef is typed as useRef<HTMLDivElement>(null), so
+            //   containerRef.current is HTMLDivElement | null.
+            //   Without this check, TypeScript throws:
+            //     containerRef.current.getBoundingClientRect()
+            //     //           ^^^^^^^ Object is possibly 'null' — TS error!
+            //   With this check, TS knows it's not null after the return ✓
+            //   The plain JS version doesn't need this because JS has no type system
+            //   enforcing null checks — it just crashes at runtime if null.
             if (!dragging.current || !containerRef.current) return;
             const rect = containerRef.current.getBoundingClientRect();
             const newSplit = ((e.clientX - rect.left) / rect.width) * 100;

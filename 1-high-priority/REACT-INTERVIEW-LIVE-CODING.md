@@ -1604,33 +1604,133 @@ function LikeButton({ postId, initialLikes }) {
 ## 25. useInterval
 
 ```jsx
-// Like setInterval but React-safe: updates callback without restarting the interval
+// ‼️ Like setInterval but React-safe: updates callback without restarting the interval
 // Key: store callback in a ref so the interval always calls the latest version
 // Classic Dan Abramov pattern — prevents stale closure issues
-function useInterval(callback, delay) {
-    const savedCallback = useRef(callback);
 
-    // Always keep ref current without restarting the interval
+// THE PROBLEM: how do you update what the interval does without restarting it?
+//
+// Without ref (broken):
+//   useEffect(() => {
+//       const id = setInterval(callback, delay);
+//       return () => clearInterval(id);
+//   }, [callback, delay]);  ← restarts interval every time callback changes!
+//   Every render recreates the callback function, so the interval is CLEARED and RESTARTED.
+//   Your 1-second timer keeps resetting to 0.
+
+// With ref (the fix):
+//   function useInterval(callback, delay) {
+//       const savedCallback = useRef(callback);  // box that holds the latest callback
+//
+//       // Step 1: update the box on every render (no interval restart)
+//       useEffect(() => {
+//           savedCallback.current = callback;
+//       }, [callback]);
+//
+//       // Step 2: interval runs forever, reads from the box each tick
+//       useEffect(() => {
+//           const id = setInterval(() => savedCallback.current(), delay);
+//           //                        ↑ doesn't call callback directly!
+//           //                          calls whatever is CURRENTLY in the box
+//           return () => clearInterval(id);
+//       }, [delay]);  // ← only restarts if delay changes, NOT when callback changes
+//   }
+
+// THE FIX: use a ref as a "mailbox" — update what's inside without restarting the interval.
+//
+//   Render 1:  callback = () => setCount(1)
+//              savedCallback.current = () => setCount(1)   ← put in mailbox
+//
+//   Render 2:  callback = () => setCount(2)
+//              savedCallback.current = () => setCount(2)   ← update mailbox
+//
+//   Render 3:  callback = () => setCount(3)
+//              savedCallback.current = () => setCount(3)   ← update mailbox
+//
+//   Meanwhile, the setInterval NEVER restarted. It just keeps running,
+//   and each tick it opens the mailbox: savedCallback.current()
+//   → always gets the LATEST callback without restarting the timer.
+
+//
+// ‼️ Key insight: updating a ref does NOT cause a re-render or restart the effect.
+// So the interval keeps ticking uninterrupted, but always calls the freshest callback.
+function useInterval(callback, delay) {
+    const savedCallback = useRef(callback); // the "mailbox" that holds the latest callback
+
+    // Step 1: update the mailbox on every render (no interval restart)
     useEffect(() => {
         savedCallback.current = callback;
     }, [callback]);
 
+    // Step 2: interval runs forever, reads from the mailbox each tick
     useEffect(() => {
         if (delay === null) return; // null delay = paused
         const id = setInterval(() => savedCallback.current(), delay);
+        //                        ↑ doesn't call callback directly!
+        //                          calls whatever is CURRENTLY in the mailbox
         return () => clearInterval(id);
-    }, [delay]);
+    }, [delay]); // ← only restarts if delay changes, NOT when callback changes
 }
 
 // Usage — self-updating clock:
-// function Clock() {
-//   const [time, setTime] = useState(new Date());
-//   useInterval(() => setTime(new Date()), 1000);
-//   return <p>{time.toLocaleTimeString()}</p>;
-// }
+function Clock() {
+    const [time, setTime] = useState(new Date());
+    useInterval(() => setTime(new Date()), 1000);
+    return <p>{time.toLocaleTimeString()}</p>;
+}
 
 // Pause by passing null:
-// useInterval(tick, running ? 1000 : null);
+useInterval(tick, running ? 1000 : null);
+
+// HOW does the callback change and WHY does it change?
+//
+// ‼️ JavaScript creates a NEW FUNCTION OBJECT on every render,
+// even if the code inside looks identical:
+//
+//   function Clock() {
+//       const [time, setTime] = useState(new Date());
+//
+//       // This line runs on EVERY render.
+//       // Each render creates a BRAND NEW function object in memory.
+//       useInterval(() => setTime(new Date()), 1000);
+//   }
+//
+//   Render 1: () => setTime(new Date())  → function at memory address 0x001
+//   Render 2: () => setTime(new Date())  → function at memory address 0x002
+//   Render 3: () => setTime(new Date())  → function at memory address 0x003
+//
+//   Same code inside, but JavaScript sees them as DIFFERENT objects:
+//   0x001 === 0x002  → false  (different reference!)
+//
+// ‼️ WHY does this matter? Because useEffect compares dependencies by reference (===).
+// A new function object = different reference = effect re-runs = interval restarts.
+//
+// A more obvious example where the callback TRULY changes (closures):
+//
+//   function Counter() {
+//       const [count, setCount] = useState(0);
+//
+//       // This callback CLOSES OVER count — each render captures a different count value
+//       useInterval(() => {
+//           console.log(`Count is ${count}`);  // count is different each render!
+//           setCount(count + 1);
+//       }, 1000);
+//   }
+//
+//   Render 1: count = 0 → callback logs "Count is 0"
+//   Render 2: count = 1 → callback logs "Count is 1"
+//   Render 3: count = 2 → callback logs "Count is 2"
+//
+//   Without the ref trick, useEffect would see a new callback each time,
+//   clear the old interval, start a new one — timer keeps resetting.
+//   With the ref, interval keeps ticking, but savedCallback.current
+//   always points to the LATEST callback that sees the latest count.
+//
+// So callbacks change for TWO reasons:
+//   1. JavaScript creates a new function object every render — even if the code
+//      is identical, the reference is different
+//   2. Closures capture different state values — the callback from render 1
+//      sees count = 0, render 2 sees count = 1, etc.
 ```
 
 ---
@@ -1654,9 +1754,9 @@ function useMediaQuery(query) {
 }
 
 // Usage:
-// const isMobile = useMediaQuery('(max-width: 768px)');
-// const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
-// const isLandscape = useMediaQuery('(orientation: landscape)');
+const isMobile = useMediaQuery('(max-width: 768px)');
+const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+const isLandscape = useMediaQuery('(orientation: landscape)');
 ```
 
 ---
@@ -1664,7 +1764,7 @@ function useMediaQuery(query) {
 ## 27. Lazy Image (IntersectionObserver)
 
 ```jsx
-// Only load image src when it enters the viewport — saves bandwidth on long pages
+// ‼️ Only load image src when it enters the viewport — saves bandwidth on long pages
 // Key: swap data-src → src on intersection; disconnect observer after load
 function LazyImage({ src, alt, ...props }) {
     const imgRef = useRef();
@@ -1689,7 +1789,7 @@ function LazyImage({ src, alt, ...props }) {
 }
 
 // Usage:
-// <LazyImage src="/photos/large.jpg" alt="landscape" width={800} height={600} />
+<LazyImage src='/photos/large.jpg' alt='landscape' width={800} height={600} />;
 ```
 
 ---
@@ -1724,7 +1824,7 @@ function CopyButton({ text }) {
 }
 
 // Usage:
-// <CopyButton text="npm install react" />
+<CopyButton text='npm install react' />;
 ```
 
 ---
@@ -1733,7 +1833,7 @@ function CopyButton({ text }) {
 
 ```jsx
 // "Select all" header checkbox; individual checkboxes; indeterminate state when partially selected
-// Key: indeterminate is a DOM property (not an HTML attribute) — must set via ref
+// ‼️ Key: indeterminate is a DOM property (not an HTML attribute) — must set via ref
 function CheckboxList({ items }) {
     const [selected, setSelected] = useState(new Set());
     const headerRef = useRef();
@@ -1741,7 +1841,7 @@ function CheckboxList({ items }) {
     const allSelected = selected.size === items.length;
     const someSelected = selected.size > 0 && !allSelected;
 
-    // indeterminate cannot be set via JSX — must use the DOM property directly
+    // indeterminate cannot be set via JSX — ‼️ must use the DOM property directly
     useEffect(() => {
         if (headerRef.current) headerRef.current.indeterminate = someSelected;
     }, [someSelected]);
@@ -1823,7 +1923,7 @@ function ResizablePanels({ left, right, initialSplit = 50 }) {
 }
 
 // Usage:
-// <ResizablePanels left={<FileTree />} right={<Editor />} initialSplit={30} />
+<ResizablePanels left={<FileTree />} right={<Editor />} initialSplit={30} />;
 ```
 
 ---
