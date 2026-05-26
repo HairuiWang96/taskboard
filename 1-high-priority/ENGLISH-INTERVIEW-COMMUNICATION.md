@@ -1,7 +1,7 @@
 # English Interview Communication — Non-Native Speaker Guide
 
 This file is specifically for non-native English speakers preparing for tech interviews in English.
-Focus: sounding clear and confident, not perfect. Interviewers care about communication, not accent.
+Focus: ‼️ sounding clear and confident, not perfect. Interviewers care about communication, not accent.
 
 ---
 
@@ -23,7 +23,7 @@ who can't explain their reasoning. Every time.
 
 ## Buying Time — What to Say When You Need a Moment to Think
 
-The most important skill: never go silent for more than 3 seconds without saying something.
+The most important skill: never go silent for more than 3 seconds without saying something.‼️
 Silence feels worse than an accent. These phrases fill the gap while your brain works.
 
 ```text
@@ -162,7 +162,7 @@ async               AY-sink (not ah-SING-k)
 cache               KASH (rhymes with "cash", not "ca-SHAY")
 queue               KYOO (same as "Q" the letter)
 schema              SKEE-muh (not SHEH-muh)
-facade              fuh-SAHD (the pattern, not FAH-kade)
+facade‼️            fuh-SAHD (the pattern, not FAH-kade)
 mutex               MYOO-teks
 daemon              DAY-mun (not dye-MUN)
 tuple               TOO-pul or TUP-ul (both accepted)
@@ -223,7 +223,7 @@ Describing technical work:
 This happens to everyone. Native speakers too. How you handle it matters.
 
 ```text
-Be honest, then show what you DO know:
+Be honest, then show what you DO know:‼️
   "I haven't worked with [X] directly, but I'm familiar with the concepts —
    from what I understand, [what you do know]..."
 
@@ -236,7 +236,7 @@ Be honest, then show what you DO know:
 
   "Could you give me a hint? I want to reason through it rather than guess."
 
-Never:
+Never:‼️
   ❌ "I have no idea." (and stop there)
   ❌ Make something up confidently — they will know
   ❌ Stay silent for a long time
@@ -261,7 +261,7 @@ Always:
 ❌ Saying "I don't understand" and stopping
    Fix: "Could you rephrase that?" or "Just to confirm, you mean [X]?"
 
-❌ Apologising for your English
+❌ Apologising for your English‼️
    Fix: never apologise. It draws attention and makes the interviewer uncomfortable.
    Just communicate. They are evaluating your thinking, not your English exam score.
 
@@ -278,7 +278,7 @@ Always:
    "The time complexity of this particular solution is O of n because we are
    utilising a hashmap data structure for our lookups."
 
-❌ Not checking if they understood you
+❌ Not checking if they understood you‼️
    Fix: at key moments, check in: "Does that make sense?" "Does that answer your question?"
 ```
 
