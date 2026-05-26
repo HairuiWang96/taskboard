@@ -40,14 +40,14 @@ Storage:
 
   10M photos/day × 200KB = 2TB/day = 730TB/year
 
-Bandwidth:
-  read QPS × response size = bandwidth
+Bandwidth:‼️
+  read QPS × response size = bandwidth  (QPS: Queries Per Second)
 
 Latency targets:
   L1 cache: 1ns    L2: 4ns     L3: 40ns
   RAM: 100ns       SSD: 100µs  HDD: 10ms
   Network (same DC): 500µs     Cross-region: 150ms
-  Rule of thumb: cache = fast, DB = slow, network = variable
+  Rule of thumb: cache = fast, DB = slow, network = variable‼️
 ```
 
 ---
@@ -63,7 +63,7 @@ Layer 7 (Application): routes by URL/header/cookie — smarter, SSL termination
 Algorithms:
   Round-robin       — equal distribution
   Least connections — send to least busy server
-  IP hash           — same client → same server (sticky sessions)
+  IP hash           — same client → same server (sticky sessions)‼️
   Weighted          — proportional to server capacity
 
 Health checks: heartbeat every N seconds; remove unhealthy servers from pool
@@ -75,39 +75,39 @@ Active-active: multiple LBs in parallel (avoid SPOF)
 ```
 Vertical scaling:     bigger machine (limited, expensive)
 Read replicas:        primary handles writes, replicas handle reads
-                      replication lag is a concern (read-your-writes problem)
+                      replication lag is a concern (read-your-writes problem)‼️
 Sharding (horizontal):split data across multiple DBs by shard key
 
   Range sharding:    shard by user ID range (0-1M, 1M-2M)
                      Risk: hot shards if range is popular
   Hash sharding:     shard by hash(user_id) % N
-                     Even distribution, but range queries across shards are hard
-  Directory-based:   lookup service maps key → shard
+                     Even distribution, but range queries across shards are hard‼️
+  Directory-based:   lookup service maps key → shard‼️
                      Flexible, but lookup service is a bottleneck/SPOF
 
 Consistent hashing:  nodes on a ring; data goes to nearest node clockwise
                      Adding/removing nodes only remaps ~1/N of keys
                      Used by: Cassandra, DynamoDB, load balancers
 
-Cross-shard problems: joins, transactions, foreign keys — push these to app layer
+Cross-shard problems: joins, transactions, foreign keys — push these to app layer‼️
 ```
 
 ### Caching
 
 ```
-Cache-aside (lazy loading): app checks cache, on miss reads DB and populates cache
+Cache-aside (lazy loading): app checks cache, on miss reads DB and populates cache‼️
 Write-through:              write to cache and DB together (always consistent)
 Write-behind (write-back):  write to cache, async flush to DB (fast writes, risk of loss)
 Read-through:               cache sits in front, app talks only to cache
 
 Eviction: LRU (most common), LFU, FIFO, TTL-based
 
-Cache invalidation strategies:
+Cache invalidation strategies:‼️
   TTL: simple, eventually consistent
   Event-driven: write to DB → publish event → invalidate cache
   Versioned keys: cache_key_v2 — never invalidate, just rotate
 
-Cache stampede (thundering herd):
+Cache stampede (thundering herd):‼️
   Many requests hit empty cache simultaneously → all hit DB
   Fix: lock (one request populates, rest wait) or probabilistic early expiry
 ```
@@ -130,15 +130,15 @@ Dead-letter queue: failed messages after N retries → DLQ for investigation
 
 ```
 Edge servers cache static assets close to users.
-Origin: your servers. Edge: CDN servers globally.
+Origin: your servers. Edge: CDN servers globally.‼️
 
-Push CDN: you upload files to CDN (good for small, infrequently changing assets)
-Pull CDN: CDN fetches from origin on first miss, caches (good for large sites)
+Push CDN: you upload files to CDN (good for small, infrequently changing assets)‼️
+Pull CDN: CDN fetches from origin on first miss, caches (good for large sites)‼️
 
-Cache-Control headers: max-age, s-maxage, no-cache, no-store
-CDN purge: invalidate files after deploy (by URL or tag)
+Cache-Control headers: max-age, s-maxage, no-cache, no-store‼️
+CDN purge: invalidate files after deploy (by URL or tag)‼️
 
-Dynamic content: CDN can forward to origin + cache with vary headers
+Dynamic content: CDN can forward to origin + cache with vary headers‼️
 ```
 
 ---
@@ -161,7 +161,7 @@ CAP theorem: distributed system can guarantee 2 of 3:
   CP: Zookeeper, HBase (sacrifices availability on partition)
   AP: Cassandra, DynamoDB (sacrifices consistency on partition — eventual)
 
-PACELC extension: also considers latency tradeoff even without partition:
+PACELC extension: also considers latency tradeoff even without partition:‼️
   e.g., Cassandra: AP during partition, EL (low latency) during normal ops
 ```
 
