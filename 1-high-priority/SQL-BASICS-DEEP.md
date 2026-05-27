@@ -8,26 +8,55 @@
 
 ## Table of Contents
 
-1. [What is SQL and PostgreSQL?](#1-what-is-sql-and-postgresql)
-2. [Tables, Columns & Data Types](#2-tables-columns--data-types)
-3. [CREATE TABLE & Constraints](#3-create-table--constraints)
-4. [INSERT — Adding Data](#4-insert--adding-data)
-5. [SELECT — Reading Data](#5-select--reading-data)
-6. [WHERE — Filtering Rows](#6-where--filtering-rows)
-7. [UPDATE & DELETE — Modifying Data](#7-update--delete--modifying-data)
-8. [ORDER BY & LIMIT](#8-order-by--limit)
-9. [Aggregate Functions & GROUP BY](#9-aggregate-functions--group-by)
-10. [JOINs — Combining Tables](#10-joins--combining-tables)
-11. [Table Relationships & Foreign Keys](#11-table-relationships--foreign-keys)
-12. [Subqueries — Queries Inside Queries](#12-subqueries--queries-inside-queries)
-13. [String, Date & Utility Functions](#13-string-date--utility-functions)
-14. [CASE — Conditional Logic in SQL](#14-case--conditional-logic-in-sql)
-15. [DISTINCT, UNION, INTERSECT, EXCEPT](#15-distinct-union-intersect-except)
-16. [NULL Handling](#16-null-handling)
-17. [Views — Saved Queries](#17-views--saved-queries)
-18. [Basic Indexes](#18-basic-indexes)
-19. [Practice Mental Model Summary](#19-practice-mental-model-summary)
-20. [Beginner Interview Questions](#20-beginner-interview-questions)
+- [SQL \& PostgreSQL — Beginner to Intermediate Foundation](#sql--postgresql--beginner-to-intermediate-foundation)
+    - [Table of Contents](#table-of-contents)
+    - [1. What is SQL and PostgreSQL?](#1-what-is-sql-and-postgresql)
+    - [2. Tables, Columns \& Data Types](#2-tables-columns--data-types)
+        - [Common PostgreSQL data types](#common-postgresql-data-types)
+    - [3. CREATE TABLE \& Constraints](#3-create-table--constraints)
+        - [Constraints explained](#constraints-explained)
+    - [4. INSERT — Adding Data](#4-insert--adding-data)
+    - [5. SELECT — Reading Data](#5-select--reading-data)
+    - [6. WHERE — Filtering Rows](#6-where--filtering-rows)
+    - [7. UPDATE \& DELETE — Modifying Data](#7-update--delete--modifying-data)
+    - [8. ORDER BY \& LIMIT](#8-order-by--limit)
+    - [9. Aggregate Functions \& GROUP BY](#9-aggregate-functions--group-by)
+        - [Aggregate functions](#aggregate-functions)
+        - [GROUP BY](#group-by)
+        - [HAVING](#having)
+    - [10. JOINs — Combining Tables](#10-joins--combining-tables)
+        - [INNER JOIN](#inner-join)
+        - [LEFT JOIN](#left-join)
+        - [RIGHT JOIN and FULL OUTER JOIN](#right-join-and-full-outer-join)
+        - [CROSS JOIN](#cross-join)
+        - [Self JOIN](#self-join)
+        - [Joining multiple tables](#joining-multiple-tables)
+    - [11. Table Relationships \& Foreign Keys](#11-table-relationships--foreign-keys)
+        - [ON DELETE behavior](#on-delete-behavior)
+    - [12. Subqueries — Queries Inside Queries](#12-subqueries--queries-inside-queries)
+    - [13. String, Date \& Utility Functions](#13-string-date--utility-functions)
+        - [String functions](#string-functions)
+        - [Date functions](#date-functions)
+        - [Utility functions](#utility-functions)
+    - [14. CASE — Conditional Logic in SQL](#14-case--conditional-logic-in-sql)
+    - [15. DISTINCT, UNION, INTERSECT, EXCEPT](#15-distinct-union-intersect-except)
+        - [DISTINCT](#distinct)
+        - [Set operations](#set-operations)
+    - [16. NULL Handling](#16-null-handling)
+    - [17. Views — Saved Queries](#17-views--saved-queries)
+    - [18. Basic Indexes](#18-basic-indexes)
+    - [19. Practice Mental Model Summary](#19-practice-mental-model-summary)
+    - [20. Beginner Interview Questions](#20-beginner-interview-questions)
+        - ["What is a primary key?"](#what-is-a-primary-key)
+        - ["What is a foreign key?"](#what-is-a-foreign-key)
+        - ["What is the difference between WHERE and HAVING?"](#what-is-the-difference-between-where-and-having)
+        - ["What is the difference between INNER JOIN and LEFT JOIN?"](#what-is-the-difference-between-inner-join-and-left-join)
+        - ["What is NULL in SQL?"](#what-is-null-in-sql)
+        - ["What is normalization?"](#what-is-normalization)
+        - ["How do you find duplicate rows?"](#how-do-you-find-duplicate-rows)
+        - ["How do you get the second highest salary?"](#how-do-you-get-the-second-highest-salary)
+        - ["What is the difference between DELETE and TRUNCATE?"](#what-is-the-difference-between-delete-and-truncate)
+    - [What to Study Next](#what-to-study-next)
 
 ---
 
@@ -37,7 +66,7 @@
 SQL (Structured Query Language):
   A language for talking to databases.
   You write SQL statements to create tables, insert data, query data, update data, delete data.
-  
+
   Think of it like this:
     A database is a spreadsheet on steroids.
     Tables = sheets. Columns = headers. Rows = data entries.
@@ -48,7 +77,7 @@ PostgreSQL (Postgres):
   PostgreSQL is open-source, powerful, and widely used in production.
   It follows standard SQL closely, plus adds its own features (JSONB, arrays, etc.).
 
-  When you see "psql" — that's the command-line tool to interact with PostgreSQL.
+  ‼️ When you see "psql" — that's the command-line tool to interact with PostgreSQL.
 
 Why learn SQL?
   - Every backend application stores data in a database.
@@ -64,7 +93,7 @@ Why learn SQL?
 ```text
 A table is a structured collection of rows and columns.
   Think of it like a spreadsheet:
-  
+
   users table:
   ┌────┬─────────┬───────────────────┬────────────┐
   │ id │  name   │      email        │ created_at │
@@ -84,16 +113,16 @@ A table is a structured collection of rows and columns.
 ```sql
 -- Numbers
 INTEGER (or INT)     -- whole numbers: 1, 42, -7
-BIGINT               -- larger whole numbers (for IDs that might exceed 2 billion)
+BIGINT               -- larger whole numbers (for IDs that might exceed 2 billion)‼️
 SERIAL               -- auto-incrementing integer (1, 2, 3, ...) — used for IDs
 BIGSERIAL            -- auto-incrementing big integer
-NUMERIC(10, 2)       -- exact decimal: 12345678.99 (10 digits total, 2 after decimal)
+NUMERIC(10, 2)       -- exact decimal: 12345678.99 (‼️ 10 digits total, 2 after decimal)
                      -- Use for money! FLOAT/DOUBLE are approximate and can have rounding errors.
-REAL / DOUBLE PRECISION -- floating point numbers (approximate — don't use for money!)
+REAL / DOUBLE PRECISION -- floating point numbers (approximate — don't use for money!)‼️
 
 -- Text
 VARCHAR(255)         -- variable-length string, max 255 characters
-TEXT                 -- unlimited-length string (PostgreSQL treats VARCHAR and TEXT almost the same)
+TEXT                 -- unlimited-length string (PostgreSQL treats VARCHAR and TEXT almost the same)‼️
 CHAR(10)             -- fixed-length string, padded with spaces (rarely used)
 
 -- Boolean
@@ -102,13 +131,13 @@ BOOLEAN              -- true or false
 -- Date & Time
 DATE                 -- just the date: '2024-01-15'
 TIMESTAMP            -- date + time: '2024-01-15 14:30:00'
-TIMESTAMPTZ          -- date + time + timezone (ALWAYS use this for real apps!)
+TIMESTAMPTZ          -- date + time + timezone (ALWAYS use this for real apps!)‼️
                      -- Stores in UTC internally, converts to your timezone on display.
                      -- If you only remember one rule: ALWAYS use TIMESTAMPTZ, never TIMESTAMP.
 
 -- Other
 UUID                 -- universally unique identifier: '550e8400-e29b-41d4-a716-446655440000'
-JSONB                -- JSON data stored in binary (fast, indexable) — covered in SQL-HIGH-DEEP
+JSONB                -- JSON data stored in binary ‼️ (fast, indexable) — covered in SQL-HIGH-DEEP
 ```
 
 ---
@@ -136,7 +165,7 @@ CREATE TABLE users (
 ```text
 PRIMARY KEY:
   Uniquely identifies each row. Every table should have one.
-  Automatically: NOT NULL + UNIQUE.
+  Automatically: NOT NULL + UNIQUE.‼️
   Usually an auto-incrementing integer (SERIAL) or UUID.
   A table can only have ONE primary key.
 
@@ -153,7 +182,7 @@ DEFAULT:
   Example: is_active defaults to true, created_at defaults to NOW().
 
 CHECK:
-  Custom validation rule.
+  Custom validation rule.‼️
   Example: CHECK (age >= 0) — age cannot be negative.
 
 FOREIGN KEY:
@@ -165,7 +194,7 @@ FOREIGN KEY:
 CREATE TABLE products (
   id          SERIAL PRIMARY KEY,
   name        TEXT NOT NULL,
-  price       NUMERIC(10, 2) NOT NULL CHECK (price >= 0),  -- price can't be negative
+  price       NUMERIC(10, 2) NOT NULL CHECK (price >= 0), ‼️ -- price can't be negative
   quantity    INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
   category    VARCHAR(50),
   created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -180,7 +209,7 @@ ALTER TABLE users ADD CONSTRAINT unique_email UNIQUE (email); -- add UNIQUE cons
 -- Delete a table (DANGER — deletes all data permanently!):
 DROP TABLE users;
 
--- Delete a table only if it exists (avoids error):
+-- Delete a table only if it exists (avoids error):‼️
 DROP TABLE IF EXISTS users;
 ```
 
@@ -199,8 +228,8 @@ VALUES ('Alice', 'alice@example.com', 28);
 -- Insert one row and get back the generated ID:
 INSERT INTO users (name, email)
 VALUES ('Bob', 'bob@example.com')
-RETURNING id;
--- RETURNING is PostgreSQL-specific — very useful!
+RETURNING id;‼️
+-- RETURNING is PostgreSQL-specific — very useful!‼️
 -- Returns: id = 2 (or whatever the auto-generated value is)
 
 -- RETURNING can return any columns:
@@ -213,11 +242,11 @@ INSERT INTO users (name, email, age) VALUES
   ('David', 'david@example.com', 30),
   ('Eve', 'eve@example.com', 25),
   ('Frank', 'frank@example.com', 35);
--- This is ONE statement — much faster than 3 separate INSERTs
+-- This is ONE statement — much faster than 3 separate INSERTs‼️
 
 -- Insert with DEFAULT values explicitly:
 INSERT INTO users (name, email, is_active)
-VALUES ('Grace', 'grace@example.com', DEFAULT);
+VALUES ('Grace', 'grace@example.com', DEFAULT);‼️
 -- is_active will be true (the default)
 ```
 
@@ -230,8 +259,8 @@ VALUES ('Grace', 'grace@example.com', DEFAULT);
 
 -- Select ALL columns, ALL rows:
 SELECT * FROM users;
--- * means "all columns" — convenient but avoid in production code
--- (if you add a column later, SELECT * returns it too — may break your app)
+-- * means "all columns" — convenient but avoid in production code‼️
+-- (if you add a column later, SELECT * returns it too — may break your app)‼️
 
 -- Select specific columns:
 SELECT name, email FROM users;
@@ -243,12 +272,24 @@ SELECT name AS user_name, email AS user_email FROM users;
 -- Select with a calculated column:
 SELECT name, age, age * 12 AS age_in_months FROM users;
 
--- Select a constant value for every row:
+-- Select a constant value (literal string) for every row:‼️
 SELECT name, 'active' AS status FROM users;
+-- 'active' is a HARDCODED string — it does NOT read from any column.‼️
+-- Every row gets the same value 'active' regardless of actual data.
+-- Result:
+--   name    | status
+--   Alice   | active    ← hardcoded, not from a column
+--   Bob     | active    ← same — every row says 'active'
+--   Charlie | active
+--
+-- This is NOT the same as filtering:
+--   WHERE status = 'active'  ← this reads the REAL status column and filters rows
+-- 'active' in quotes = literal string you invented.
+-- status without quotes = actual column name from the table.‼️
 ```
 
 ```text
-Execution order of a SELECT query (this is IMPORTANT to understand!):
+Execution order of a SELECT query (this is IMPORTANT to understand!):‼️
 
   The order you WRITE SQL:    The order the database EXECUTES it:
   ┌───────────────────┐       ┌───────────────────────────────────┐
@@ -262,7 +303,7 @@ Execution order of a SELECT query (this is IMPORTANT to understand!):
   └───────────────────┘       │ 8. LIMIT    — cut off results    │
                                └───────────────────────────────────┘
 
-  Why does this matter?
+  Why does this matter?‼️
   - You CAN'T use a column alias from SELECT in WHERE (because WHERE runs first!)
   - You CAN use a column alias in ORDER BY (because ORDER BY runs after SELECT)
   - You CAN'T use aggregate functions in WHERE (because WHERE runs before GROUP BY)
@@ -288,9 +329,9 @@ SELECT * FROM users WHERE age != 25;  -- or: age <> 25
 -- Multiple conditions:
 SELECT * FROM users WHERE age > 25 AND is_active = true;
 SELECT * FROM users WHERE age < 20 OR age > 60;
-SELECT * FROM users WHERE NOT is_active;  -- same as: is_active = false
+SELECT * FROM users WHERE NOT is_active; ‼️ -- same as: is_active = false
 
--- BETWEEN (inclusive on both ends):
+-- BETWEEN (inclusive on both ends):‼️
 SELECT * FROM users WHERE age BETWEEN 25 AND 35;
 -- Same as: WHERE age >= 25 AND age <= 35
 
@@ -301,20 +342,20 @@ SELECT * FROM users WHERE age IN (25, 30, 35);
 -- NOT IN:
 SELECT * FROM users WHERE age NOT IN (25, 30, 35);
 
--- LIKE (pattern matching on strings):
-SELECT * FROM users WHERE name LIKE 'A%';     -- starts with 'A'
-SELECT * FROM users WHERE name LIKE '%son';    -- ends with 'son'
-SELECT * FROM users WHERE name LIKE '%ali%';   -- contains 'ali' (case-sensitive!)
-SELECT * FROM users WHERE name ILIKE '%ali%';  -- contains 'ali' (case-INsensitive, PostgreSQL only)
--- % = any number of characters
--- _ = exactly one character
+-- LIKE (pattern matching on strings):‼️
+SELECT * FROM users WHERE name LIKE 'A%';     -- starts with 'A'‼️
+SELECT * FROM users WHERE name LIKE '%son';    -- ends with 'son'‼️
+SELECT * FROM users WHERE name LIKE '%ali%';   -- contains 'ali' (case-sensitive!)‼️
+SELECT * FROM users WHERE name ILIKE '%ali%';  -- contains 'ali' (case-INsensitive, PostgreSQL only)‼️
+-- % = any number of characters‼️
+-- _ = exactly one character‼️
 -- LIKE 'A_e' matches 'Ace', 'Abe', but not 'Alice'
 
 -- NULL checks (IMPORTANT: you CANNOT use = or != with NULL!):
 SELECT * FROM users WHERE age IS NULL;       -- correct
 SELECT * FROM users WHERE age IS NOT NULL;   -- correct
 -- SELECT * FROM users WHERE age = NULL;     -- WRONG! Always returns no rows.
--- NULL is not a value — it's the ABSENCE of a value. You can't compare it with =.
+-- NULL is not a value — it's the ABSENCE of a value. You can't compare it with =.‼️
 
 -- Date filtering:
 SELECT * FROM users WHERE created_at > '2024-01-01';
@@ -330,7 +371,7 @@ SELECT * FROM users WHERE created_at BETWEEN '2024-01-01' AND '2024-06-30';
 
 -- Update one column for one row:
 UPDATE users SET name = 'Alicia' WHERE id = 1;
--- ALWAYS include a WHERE clause! Without it, you update EVERY row in the table.
+-- ALWAYS include a WHERE clause! Without it, you update EVERY row in the table.‼️
 
 -- Update multiple columns:
 UPDATE users SET name = 'Alicia', age = 29 WHERE id = 1;
@@ -357,16 +398,16 @@ DELETE FROM users WHERE id = 5;
 DELETE FROM users WHERE is_active = false AND created_at < '2023-01-01';
 
 -- Delete and get back what was deleted:
-DELETE FROM users WHERE id = 5 RETURNING *;
+DELETE FROM users WHERE id = 5 RETURNING *;‼️
 
--- Delete ALL rows (but keep the table structure):
+-- Delete ALL rows (but keep the table structure):‼️
 DELETE FROM users;
--- DANGER: removes every row! Use TRUNCATE instead for better performance on large tables.
+-- DANGER: removes every row! Use TRUNCATE instead for better performance on large tables.‼️
 
--- TRUNCATE: faster way to delete all rows (resets auto-increment too)
+-- TRUNCATE: faster way to delete all rows (resets auto-increment too)‼️
 TRUNCATE TABLE users;
 
--- CRITICAL SAFETY RULE:
+-- CRITICAL SAFETY RULE:‼️
 -- ALWAYS write the WHERE clause FIRST when writing UPDATE or DELETE.
 -- Or better: write the SELECT first to preview which rows will be affected.
 
@@ -383,7 +424,7 @@ DELETE FROM users WHERE last_login < '2023-01-01';
 ```sql
 -- ORDER BY: sort the results
 
--- Sort ascending (default — smallest first):
+-- Sort ascending (default — smallest first):‼️
 SELECT * FROM users ORDER BY name;         -- alphabetical A-Z
 SELECT * FROM users ORDER BY age ASC;      -- youngest first (ASC is optional, it's the default)
 
@@ -393,14 +434,14 @@ SELECT * FROM users ORDER BY created_at DESC; -- newest first (most common for l
 
 -- Sort by multiple columns:
 SELECT * FROM users ORDER BY age DESC, name ASC;
--- First sort by age (oldest first), then within same age, alphabetical by name
+-- First sort by age (oldest first), then within same age,‼️ alphabetical by name
 
 -- LIMIT: return only the first N rows
 SELECT * FROM users ORDER BY created_at DESC LIMIT 10;
 -- The 10 most recently created users
 
 -- OFFSET: skip the first N rows (used for pagination)
-SELECT * FROM users ORDER BY created_at DESC LIMIT 10 OFFSET 20;
+SELECT * FROM users ORDER BY created_at DESC LIMIT 10 OFFSET 20;‼️
 -- Skip the first 20, then return the next 10 (page 3 if page size = 10)
 
 -- LIMIT 1: useful when you want exactly one result
@@ -411,7 +452,7 @@ SELECT * FROM users WHERE email = 'alice@example.com' LIMIT 1;
 -- Page 2: LIMIT 20 OFFSET 20  (rows 21-40)
 -- Page 3: LIMIT 20 OFFSET 40  (rows 41-60)
 -- Formula: OFFSET = (page_number - 1) * page_size
--- Note: OFFSET pagination gets slow on large tables — SQL-HIGH-DEEP covers keyset pagination.
+-- Note: OFFSET pagination gets slow on large tables — SQL-HIGH-DEEP covers keyset pagination.‼️
 ```
 
 ---
@@ -421,13 +462,13 @@ SELECT * FROM users WHERE email = 'alice@example.com' LIMIT 1;
 ### Aggregate functions
 
 ```sql
--- Aggregate functions: take multiple rows and return ONE value
+-- Aggregate functions: take multiple rows and return ONE value‼️
 
 -- COUNT: how many rows?
 SELECT COUNT(*) FROM users;                    -- total number of users
 SELECT COUNT(*) FROM users WHERE is_active = true; -- active users
-SELECT COUNT(age) FROM users;                  -- rows where age is NOT NULL
--- COUNT(*) counts ALL rows, COUNT(column) counts only non-NULL values!
+SELECT COUNT(age) FROM users;                  -- rows where age is NOT NULL‼️
+-- COUNT(*) counts ALL rows, COUNT(column) counts only non-NULL values!‼️
 
 -- SUM: add up values
 SELECT SUM(price) FROM products;               -- total price of all products
@@ -451,7 +492,7 @@ FROM users;
 ### GROUP BY
 
 ```sql
--- GROUP BY: split rows into groups, then apply aggregate functions to each group
+-- GROUP BY: split rows into groups, then apply aggregate functions to each group‼️
 
 -- How many users per age?
 SELECT age, COUNT(*) AS user_count
@@ -468,7 +509,7 @@ SELECT user_id, SUM(amount) AS total_spent
 FROM orders
 GROUP BY user_id;
 
--- RULE: every column in SELECT must either:
+-- RULE: every column in SELECT must either:‼️
 --   1. Be in the GROUP BY clause, OR
 --   2. Be inside an aggregate function (COUNT, SUM, AVG, etc.)
 -- This is WRONG:
@@ -484,7 +525,7 @@ GROUP BY department, job_title;
 ### HAVING
 
 ```sql
--- HAVING: filter AFTER grouping (WHERE filters BEFORE grouping)
+-- HAVING: filter AFTER grouping (WHERE filters BEFORE grouping)‼️
 
 -- Users who have placed more than 5 orders:
 SELECT user_id, COUNT(*) AS order_count
@@ -498,7 +539,7 @@ FROM employees
 GROUP BY department
 HAVING AVG(salary) > 80000;
 
--- WHERE vs HAVING — when to use which:
+-- WHERE vs HAVING — when to use which:‼️
 -- WHERE:  filters individual ROWS before grouping.   Cannot use aggregate functions.
 -- HAVING: filters GROUPS after grouping.              Can use aggregate functions.
 
@@ -521,11 +562,11 @@ JOINs combine rows from two (or more) tables based on a related column.
   Why do we need JOINs?
   Instead of putting everything in one giant table (which causes data duplication),
   we split data into separate tables and link them with IDs.
-  
+
   Example:
     users table: id, name, email
     orders table: id, user_id, product, amount
-    
+
     user_id in orders points to id in users — this is a FOREIGN KEY.
     To get "which user placed which order", you JOIN the two tables.
 ```
@@ -533,11 +574,14 @@ JOINs combine rows from two (or more) tables based on a related column.
 ### INNER JOIN
 
 ```sql
--- INNER JOIN: only returns rows that have matches in BOTH tables
+-- INNER JOIN: only returns rows that have matches in BOTH tables‼️
+-- "JOIN" by itself (without INNER/LEFT/RIGHT/FULL) = INNER JOIN.‼️
+-- They are exactly the same — "INNER" is optional.
 
 SELECT users.name, orders.product, orders.amount
 FROM users
 INNER JOIN orders ON orders.user_id = users.id;
+-- Same as: FROM users JOIN orders ON orders.user_id = users.id;
 -- Only users who HAVE orders will appear.
 -- Users with no orders? Gone. Orders with no valid user_id? Gone.
 
@@ -561,13 +605,13 @@ Visualize INNER JOIN:
   id=1 Alice             order_id=10 user_id=1 $50
   id=2 Bob               order_id=11 user_id=1 $30
   id=3 Charlie           order_id=12 user_id=2 $75
-                          order_id=13 user_id=99 $20  ← no user with id=99
-  
-  INNER JOIN result:
+                         order_id=13 user_id=99 $20  ← no user with id=99
+
+  INNER JOIN result:‼️
   Alice  | $50      ← user_id=1 matched
   Alice  | $30      ← user_id=1 matched again (Alice has 2 orders)
   Bob    | $75      ← user_id=2 matched
-  
+
   Charlie is MISSING (no orders).
   order_id=13 is MISSING (user_id=99 doesn't exist).
 ```
@@ -613,7 +657,7 @@ SELECT u.name, COUNT(o.id) AS order_count
 FROM users u
 LEFT JOIN orders o ON o.user_id = u.id
 GROUP BY u.id, u.name;
--- Use COUNT(o.id) not COUNT(*) — COUNT(*) counts the NULL row as 1!
+-- Use COUNT(o.id) not COUNT(*) — COUNT(*) counts the NULL row as 1!‼️
 -- COUNT(column) only counts non-NULL values.
 ```
 
@@ -711,13 +755,13 @@ There are three types of relationships between tables:
 1. One-to-Many (most common):
    One user has many orders. One order belongs to one user.
    The "many" side has a foreign key pointing to the "one" side.
-   
+
    users: id, name
    orders: id, user_id (FK → users.id), product, amount
 
 2. One-to-One:
    One user has one profile. One profile belongs to one user.
-   
+
    users: id, name
    profiles: id, user_id (FK → users.id, UNIQUE), bio, avatar_url
    The UNIQUE constraint on user_id ensures one profile per user.
@@ -725,7 +769,7 @@ There are three types of relationships between tables:
 3. Many-to-Many:
    One student can enroll in many courses. One course has many students.
    Requires a "junction table" (also called "join table" or "bridge table").
-   
+
    students: id, name
    courses: id, title
    enrollments: student_id (FK → students.id), course_id (FK → courses.id)
@@ -764,7 +808,7 @@ CREATE TABLE enrollments (
   student_id INTEGER REFERENCES students(id),
   course_id  INTEGER REFERENCES courses(id),
   enrolled_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (student_id, course_id)  -- composite primary key (prevents duplicate enrollments)
+  PRIMARY KEY (student_id, course_id)  -- composite primary key (prevents duplicate enrollments)‼️
 );
 
 -- Query: which courses is student "Alice" enrolled in?
@@ -785,8 +829,8 @@ WHERE s.name = 'Alice';
 CREATE TABLE orders (
   id      SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  -- CASCADE: delete the user → automatically delete all their orders too
-  
+  -- CASCADE: delete the user → automatically delete all their orders too‼️
+
   -- Other options:
   -- ON DELETE SET NULL    → set user_id to NULL (order stays, but unlinked)
   -- ON DELETE RESTRICT    → block the delete (default behavior)
@@ -815,16 +859,16 @@ SELECT name, price FROM products
 WHERE price > (SELECT AVG(price) FROM products);
 -- Inner query returns ONE value (the average), outer query uses it
 
--- Subquery in SELECT (scalar subquery):
+-- Subquery in SELECT (scalar subquery):‼️
 -- For each user, count their orders:
 SELECT
   u.name,
   (SELECT COUNT(*) FROM orders WHERE user_id = u.id) AS order_count
 FROM users u;
--- This runs the inner query ONCE per user — can be slow for many users!
--- Better approach: use a JOIN + GROUP BY (covered in JOINs section)
+-- This runs the inner query ONCE per user — can be slow for many users!‼️
+-- Better approach: use a JOIN + GROUP BY (covered in JOINs section)‼️
 
--- Subquery in FROM (derived table):
+-- Subquery in FROM (derived table):‼️
 -- Find the top spender:
 SELECT user_name, total_spent
 FROM (
@@ -844,7 +888,7 @@ FROM users u
 WHERE EXISTS (
   SELECT 1 FROM orders o WHERE o.user_id = u.id
 );
--- EXISTS is often faster than IN because it stops as soon as it finds one match.
+-- EXISTS is often faster than IN because it stops as soon as it finds one match.‼️
 ```
 
 ---
@@ -863,7 +907,7 @@ SELECT LENGTH('hello');   -- 5
 
 -- CONCAT: combine strings
 SELECT CONCAT(first_name, ' ', last_name) AS full_name FROM users;
--- Or use || operator (PostgreSQL):
+-- Or use || operator (PostgreSQL):‼️
 SELECT first_name || ' ' || last_name AS full_name FROM users;
 
 -- TRIM: remove whitespace from start/end
@@ -907,14 +951,14 @@ SELECT NOW() - INTERVAL '2 hours';   -- 2 hours ago
 -- Find users created in the last 30 days:
 SELECT * FROM users WHERE created_at > NOW() - INTERVAL '30 days';
 
--- DATE_TRUNC: truncate to a precision (useful for grouping by day/month/year)
+-- DATE_TRUNC: truncate to a precision (useful for grouping by day/month/year)‼️
 SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*)
 FROM users
 GROUP BY DATE_TRUNC('month', created_at)
 ORDER BY month;
 -- Groups users by the month they were created
 
--- AGE: difference between two dates
+-- AGE: difference between two dates‼️
 SELECT AGE(NOW(), created_at) FROM users;  -- e.g., '1 year 3 mons 5 days'
 
 -- TO_CHAR: format a date as a string
@@ -926,9 +970,9 @@ SELECT TO_CHAR(created_at, 'HH24:MI:SS') FROM users;        -- '14:30:00'
 ### Utility functions
 
 ```sql
--- COALESCE: return the first non-NULL value (extremely useful!)
+-- COALESCE: return the first non-NULL value (extremely useful!)‼️
 SELECT COALESCE(nickname, name, 'Unknown') AS display_name FROM users;
--- If nickname is NULL, use name. If name is also NULL, use 'Unknown'.
+-- If nickname is NULL, use name. If name is also NULL, use 'Unknown'.‼️
 -- Common use: provide a default for NULL values.
 
 SELECT u.name, COALESCE(SUM(o.amount), 0) AS total_spent
@@ -940,7 +984,7 @@ GROUP BY u.id, u.name;
 
 -- NULLIF: return NULL if two values are equal (prevents division by zero)
 SELECT total / NULLIF(count, 0) AS average FROM stats;
--- If count = 0, NULLIF returns NULL → division gives NULL instead of error
+-- If count = 0, NULLIF returns NULL → division gives NULL instead of error‼️
 
 -- CAST: convert between types
 SELECT CAST('42' AS INTEGER);          -- string to number
@@ -1005,7 +1049,7 @@ FROM users;
 -- CASE returns NULL when no condition matches (and ELSE is missing)
 -- COUNT ignores NULLs — so this only counts matching rows
 
--- Shorter: use FILTER (PostgreSQL-specific, cleaner syntax):
+-- Shorter: use FILTER (PostgreSQL-specific, cleaner syntax):‼️
 SELECT
   COUNT(*) AS total,
   COUNT(*) FILTER (WHERE status = 'active') AS active_count,
@@ -1025,7 +1069,7 @@ FROM users;
 -- Get unique cities:
 SELECT DISTINCT city FROM users;
 
--- Distinct on multiple columns (unique combinations):
+-- Distinct on multiple columns (unique combinations):‼️
 SELECT DISTINCT city, country FROM users;
 -- Returns each unique (city, country) pair
 
@@ -1036,7 +1080,7 @@ SELECT COUNT(DISTINCT city) FROM users;  -- how many unique cities
 ### Set operations
 
 ```sql
--- UNION: combine results of two queries (removes duplicates)
+-- UNION: combine results of two queries (removes duplicates)‼️
 SELECT name FROM employees
 UNION
 SELECT name FROM contractors;
@@ -1060,7 +1104,7 @@ EXCEPT
 SELECT email FROM unsubscribed;
 -- Subscribers who have NOT unsubscribed
 
--- Rules for set operations:
+-- Rules for set operations:‼️
 -- 1. Both queries must have the SAME number of columns
 -- 2. Corresponding columns must have compatible types
 -- 3. Column names come from the FIRST query
@@ -1073,27 +1117,27 @@ SELECT email FROM unsubscribed;
 ```text
 NULL is one of the most misunderstood concepts in SQL.
 
-  NULL means "unknown" or "no value" — NOT zero, NOT empty string, NOT false.
+  NULL means "unknown" or "no value" — NOT zero, NOT empty string, NOT false.‼️
 
   Key rules:
-  1. NULL = NULL  → NULL (not true!)
-     You CANNOT compare NULL with = or !=
+  1. NULL = NULL  → NULL (not true!)‼️
+     You CANNOT compare NULL with = or !=‼️
      Use IS NULL and IS NOT NULL instead.
 
-  2. Any arithmetic with NULL → NULL
+  2. Any arithmetic with NULL → NULL‼️
      5 + NULL = NULL
      NULL * 10 = NULL
-     
-  3. Any comparison with NULL → NULL (which is treated as false in WHERE)
+
+  3. Any comparison with NULL → NULL (which is treated as false in WHERE)‼️
      NULL > 5  → NULL (filtered out by WHERE)
      NULL != 5 → NULL (filtered out by WHERE)
 
   4. Aggregate functions IGNORE NULLs (except COUNT(*))
      AVG(column) ignores NULL rows
      COUNT(column) counts non-NULL only
-     COUNT(*) counts ALL rows including NULL
+     COUNT(*) counts ALL rows including NULL‼️
 
-  5. NULL in boolean logic:
+  5. NULL in boolean logic:‼️
      true AND NULL  → NULL
      false AND NULL → false
      true OR NULL   → true
@@ -1110,21 +1154,21 @@ SELECT * FROM users WHERE age IS NULL;
 
 -- WRONG: NOT IN with NULLs in the subquery
 SELECT * FROM users WHERE id NOT IN (1, 2, NULL);
--- Returns NOTHING — because "id != NULL" is unknown for every row!
--- CORRECT: use NOT EXISTS or filter out NULLs
+-- Returns NOTHING — because "id != NULL" is unknown for every row!‼️
+-- CORRECT: use NOT EXISTS or filter out NULLs‼️
 SELECT * FROM users u
 WHERE NOT EXISTS (SELECT 1 FROM blocked WHERE blocked.user_id = u.id);
 
 -- Handling NULL in ORDER BY:
 SELECT * FROM users ORDER BY age NULLS FIRST;   -- NULLs at the top
 SELECT * FROM users ORDER BY age NULLS LAST;    -- NULLs at the bottom
--- Default: NULLS LAST for ASC, NULLS FIRST for DESC
+-- Default: NULLS LAST for ASC, NULLS FIRST for DESC‼️
 
 -- IS DISTINCT FROM: NULL-safe comparison
 -- Regular:  NULL = NULL   → NULL (treated as false)
--- Distinct: NULL IS NOT DISTINCT FROM NULL → true
+-- Distinct: NULL IS NOT DISTINCT FROM NULL → true‼️
 SELECT * FROM users WHERE age IS DISTINCT FROM 25;
--- Returns rows where age is not 25 AND rows where age is NULL
+-- Returns rows where age is not 25 AND rows where age is NULL‼️
 -- (unlike age != 25 which would exclude NULLs)
 ```
 
@@ -1146,7 +1190,7 @@ CREATE VIEW active_users AS
 SELECT * FROM active_users;
 SELECT name FROM active_users WHERE name LIKE 'A%';
 
--- Why use views?
+-- Why use views?‼️
 -- 1. Simplify complex queries (write once, use everywhere)
 -- 2. Security: give users access to a view instead of the full table
 -- 3. Abstraction: hide complex JOINs behind a simple name
@@ -1203,10 +1247,10 @@ An index is a shortcut that helps the database find rows faster.
 
   When to add an index:
     - Columns used in WHERE clauses frequently
-    - Columns used in JOIN conditions (foreign keys!)
+    - Columns used in JOIN conditions (foreign keys!)‼️
     - Columns used in ORDER BY
-    - Columns with high cardinality (many unique values — like email)
-    
+    - Columns with high cardinality (many unique values — like email)‼️
+
   When NOT to index:
     - Small tables (< 1000 rows) — Seq Scan is fast enough
     - Columns with low cardinality (like boolean is_active — only true/false)
@@ -1221,7 +1265,7 @@ CREATE INDEX idx_users_email ON users(email);
 -- Create a unique index (also enforces uniqueness):
 CREATE UNIQUE INDEX idx_users_email ON users(email);
 
--- Index on a foreign key (you should ALWAYS index foreign keys!):
+-- Index on a foreign key (you should ALWAYS index foreign keys!):‼️
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 -- Without this: every JOIN on user_id requires a full table scan of orders
 
@@ -1232,8 +1276,8 @@ CREATE INDEX idx_orders_user_status ON orders(user_id, status);
 -- Does NOT help: WHERE status = 'pending' alone (not the leftmost column)
 
 -- Check if your query uses an index:
-EXPLAIN SELECT * FROM users WHERE email = 'alice@example.com';
--- Look for "Index Scan" (good) vs "Seq Scan" (no index used)
+EXPLAIN SELECT * FROM users WHERE email = 'alice@example.com';‼️
+-- Look for "Index Scan" (good) vs "Seq Scan" (no index used)‼️
 -- Deep dive on EXPLAIN: see SQL-HIGH-DEEP.md
 
 -- Remove an index:
@@ -1250,7 +1294,7 @@ Think of SQL operations as a pipeline. Data flows through each step:
   FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT
 
   Each step transforms the data:
-  
+
   ┌─────────────────────────────────────────────────────────────┐
   │ FROM users u                                                │
   │   → start with all rows from the users table                │
@@ -1285,9 +1329,9 @@ Think of SQL operations as a pipeline. Data flows through each step:
     Need to sort?                     → ORDER BY
     Need to limit results?            → LIMIT
     Need conditional output?          → CASE
-    Need a default for NULL?          → COALESCE
-    Need to check existence?          → EXISTS (faster than IN for large sets)
-    Query is complex and hard to read? → Break into CTEs (WITH clause) → SQL-HIGH-DEEP
+    Need a default for NULL?          → COALESCE‼️
+    Need to check existence?          → EXISTS (faster than IN for large sets)‼️
+    Query is complex and hard to read? → Break into CTEs (WITH clause) → SQL-HIGH-DEEP‼️
     Query is slow?                    → EXPLAIN ANALYZE → SQL-HIGH-DEEP
 ```
 
@@ -1297,7 +1341,7 @@ Think of SQL operations as a pipeline. Data flows through each step:
 
 ### "What is a primary key?"
 
-> A primary key uniquely identifies each row in a table. It must be unique and cannot be NULL. Every table should have one. Usually an auto-incrementing integer (SERIAL) or UUID. A table can only have one primary key, but it can span multiple columns (composite primary key).
+> A primary key uniquely identifies each row in a table. It must be unique and cannot be NULL. Every table should have one. Usually an auto-incrementing integer (SERIAL) or UUID. A table can only have one primary key, but it can span multiple columns (‼️ composite primary key).
 
 ### "What is a foreign key?"
 
@@ -1313,7 +1357,7 @@ Think of SQL operations as a pipeline. Data flows through each step:
 
 ### "What is NULL in SQL?"
 
-> NULL means "unknown" or "no value." It is not zero, not an empty string, not false. You cannot compare NULL with = or != — use IS NULL and IS NOT NULL. Any arithmetic or comparison with NULL produces NULL. Aggregate functions ignore NULL values (except COUNT(*)).
+> NULL means "unknown" or "no value." It is not zero, not an empty string, not false. You cannot compare NULL with = or != — use IS NULL and IS NOT NULL. Any arithmetic or comparison with NULL produces NULL. Aggregate functions ignore NULL values (except COUNT(\*)).
 
 ### "What is normalization?"
 
@@ -1355,7 +1399,7 @@ WHERE salary < (SELECT MAX(salary) FROM employees);
 
 ### "What is the difference between DELETE and TRUNCATE?"
 
-> DELETE removes rows one by one, can have a WHERE clause, fires triggers, and can be rolled back. TRUNCATE removes all rows at once — faster, resets auto-increment, no WHERE clause, can be rolled back in PostgreSQL. Use DELETE for selective removal, TRUNCATE for clearing an entire table.
+> DELETE removes rows one by one, can have a WHERE clause, fires triggers, and can be rolled back. TRUNCATE removes all rows at once — faster, resets auto-increment, no WHERE clause, can be rolled back in PostgreSQL. Use DELETE for selective removal, TRUNCATE for clearing an entire table.‼️
 
 ---
 

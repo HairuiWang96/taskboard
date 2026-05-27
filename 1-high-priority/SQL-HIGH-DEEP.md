@@ -34,7 +34,7 @@
 
 The planner uses STATISTICS — stored estimates about data distribution.‼️
 If stats are stale (table changed a lot since last ANALYZE), the planner
-picks bad plans.‼️ ANALYZE updates the stats; AUTOVACUUM runs it automatically.
+picks bad plans.‼️ ANALYZE updates the stats; ‼️ AUTOVACUUM runs it automatically.
 ```
 
 ### The cost model
@@ -75,7 +75,7 @@ Think of it like this:
 
   Why do you care?
     Your query is slow. You don't know WHY. Is it the JOIN? The sort? A missing index?
-    EXPLAIN ANALYZE shows you exactly where the time is spent, step by step.
+    EXPLAIN ANALYZE shows you exactly where the time is spent, step by step.‼️
 
   It's like a performance profiler for SQL.
 ```
@@ -83,7 +83,7 @@ Think of it like this:
 ### How to read the output (step by step)
 
 ```text
-The output is a TREE — read it from the INSIDE OUT, BOTTOM UP.
+The output is a TREE — read it from the INSIDE OUT, BOTTOM UP.‼️
 The innermost/bottom-most step runs first. Each step feeds into the one above it.
 
 Think of it like an assembly line:
@@ -280,9 +280,9 @@ EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) SELECT ...;
 -- JSON format for tooling
 EXPLAIN (ANALYZE, FORMAT JSON) SELECT ...;
 
--- Just the plan without executing (safe on writes)
-EXPLAIN SELECT ...;           -- no ANALYZE = no execution
-EXPLAIN UPDATE tasks SET ...; -- safe, doesn't actually run the UPDATE
+-- Just the plan without executing (safe on writes)‼️
+EXPLAIN SELECT ...;           -- no ANALYZE = no execution‼️
+EXPLAIN UPDATE tasks SET ...; -- safe, doesn't actually run the UPDATE‼️
 ```
 
 ---
@@ -324,9 +324,18 @@ SELECT * FROM tasks WHERE status = 'open'; -- full scan needed
 -- Exception: if you always filter on both, put the equality column first‼️
 
 -- Covering index: include non-key columns to avoid a "heap fetch"‼️
-CREATE INDEX idx_tasks_user_covering ON tasks(user_id) INCLUDE (title, status);
+CREATE INDEX idx_tasks_user_covering ON tasks(user_id) INCLUDE (title, status);‼️
 -- Query: SELECT title, status FROM tasks WHERE user_id = $1
 -- With covering index: satisfied entirely from index, no heap access (index-only scan)
+
+-- $1 is a parameter placeholder in PostgreSQL — it means "the first value passed in."‼️
+-- $1 = first parameter, $2 = second, $3 = third, etc.
+-- In app code: db.query('SELECT ... WHERE user_id = $1', [42]) → $1 becomes 42.
+-- Why not just write the value directly?
+--   1. Security: prevents SQL injection ($1 is always treated as data, never as SQL code).‼️
+--   2. Performance: the database can cache and reuse the query plan.
+-- In Drizzle ORM, you never write $1 — Drizzle generates it for you:
+--   db.select().from(tasks).where(eq(tasks.userId, userId))
 ```
 
 ### Partial index
@@ -347,7 +356,7 @@ SELECT * FROM tasks WHERE status = 'closed' AND created_at > '2024-01-01';
 CREATE INDEX idx_users_active ON users(email) WHERE deleted_at IS NULL;
 ```
 
-### GIN index (Generalized Inverted Index)
+### GIN index (Generalized Inverted Index)‼️
 
 ```sql
 -- Good for: arrays, JSONB, full-text search‼️
@@ -356,7 +365,7 @@ CREATE INDEX idx_users_active ON users(email) WHERE deleted_at IS NULL;
 -- Array containment
 CREATE INDEX idx_posts_tags ON posts USING GIN(tags);
 SELECT * FROM posts WHERE tags @> ARRAY['javascript']; -- uses GIN index
--- @> means "contains"
+-- @> means "contains"‼️
 
 -- JSONB
 CREATE INDEX idx_events_data ON events USING GIN(data);
@@ -373,7 +382,7 @@ WHERE to_tsvector('english', title || ' ' || body) @@ to_tsquery('javascript');
 ### Index maintenance
 
 ```sql
--- Check index usage (low scans + large size = useless index)
+-- Check index usage (low scans + large size = useless index)‼️
 SELECT
   indexrelname,
   idx_scan,        -- how many times the index was used
@@ -576,6 +585,13 @@ SELECT * FROM thread ORDER BY level;
 -- CTE: better readability, can be referenced multiple times, always materialized in PG < 12
 -- Subquery: sometimes optimized better by planner (inlined into main query)
 
+-- What does "materialized" mean?‼️
+-- Materialized = the database runs the query ONCE and STORES the result (like a cache/snapshot).‼️
+-- Not materialized (inlined) = the CTE is treated like a subquery — the planner can optimize
+--   it together with the outer query, but it might run multiple times.
+-- Think of it like: "materialized" = "make it real/physical" — instead of a virtual query
+--   that runs on demand, it becomes a stored temporary result.‼️
+
 -- PG 12+: CTEs are inlined by default (can be optimized by planner)
 -- Force materialization (evaluate once):
 WITH expensive AS MATERIALIZED (
@@ -584,7 +600,8 @@ WITH expensive AS MATERIALIZED (
 SELECT * FROM expensive WHERE x = 1
 UNION ALL
 SELECT * FROM expensive WHERE y = 2;
--- Without MATERIALIZED: expensive might run twice
+-- Without MATERIALIZED: expensive might run TWICE (once per reference).
+-- With MATERIALIZED: runs ONCE, result is cached, both references read the cached result.‼️
 ```
 
 ---
@@ -596,7 +613,7 @@ SELECT * FROM expensive WHERE y = 2;
 SELECT u.name,
   (SELECT COUNT(*) FROM tasks WHERE tasks.user_id = u.id) AS task_count
 FROM users u;
--- For 1000 users: 1001 queries (1 for users, 1 per user for count)
+-- For 1000 users: 1001 queries (1 for users, 1 per user for count)‼️
 
 -- ✓ Rewrite as JOIN + GROUP BY: one query
 SELECT u.name, COUNT(t.id) AS task_count
@@ -606,7 +623,7 @@ GROUP BY u.id, u.name;
 
 -- EXISTS vs IN:
 -- IN: evaluates the subquery, builds a list, checks membership
--- EXISTS: stops as soon as it finds one match — often faster
+-- EXISTS: stops as soon as it finds one match — often faster‼️
 
 -- ✗ IN can be slow for large subquery results
 SELECT * FROM users
@@ -619,7 +636,7 @@ WHERE EXISTS (
   WHERE t.user_id = u.id AND t.status = 'open'
 );
 
--- Modern Postgres: optimizer often rewrites IN as EXISTS anyway
+-- Modern Postgres: optimizer often rewrites IN as EXISTS anyway‼️
 -- Use EXPLAIN to verify which plan it chose
 ```
 
@@ -630,7 +647,7 @@ WHERE EXISTS (
 ### Isolation levels
 
 ```sql
--- PostgreSQL isolation levels (weakest to strongest):
+-- PostgreSQL isolation levels (weakest to strongest):‼️
 
 READ COMMITTED (default):
   Each statement sees data committed before THAT statement started.
@@ -679,6 +696,17 @@ COMMIT;
 SELECT pg_try_advisory_lock(12345); -- returns true if lock acquired, false if taken
 SELECT pg_advisory_unlock(12345);
 -- Use for: distributed mutex, preventing concurrent cron jobs
+-- What is a mutex? (mutual exclusion)‼️
+-- A mutex is a lock that ensures ONLY ONE process/thread can access a resource at a time.‼️
+-- Think of it like a bathroom with one key — only one person can use it, everyone else waits.
+-- Without mutex:
+--   Worker A reads balance=$100, Worker B reads balance=$100 (before A writes),
+--   A writes $50, B writes $70 → WRONG! Lost A's update.
+-- With mutex:
+--   Worker A acquires lock → reads $100 → writes $50 → releases lock
+--   Worker B waits → acquires lock → reads $50 → writes $20 → correct ✓
+-- pg_try_advisory_lock acts as a mutex here — if one cron job grabs the lock,
+-- other instances see "false" (lock taken) and skip, preventing duplicate runs.‼️
 ```
 
 ### Deadlocks
@@ -689,7 +717,7 @@ SELECT pg_advisory_unlock(12345);
 
 -- Prevention: always acquire locks in the same ORDER across all transactions
 -- ✗ Tx1: locks account 1, then 2 | Tx2: locks account 2, then 1 → deadlock
--- ✓ Tx1 and Tx2: always lock lower ID first → no deadlock
+-- ✓ Tx1 and Tx2: always lock lower ID first → no deadlock‼️
 
 -- In application code with Drizzle:
 await db.transaction(async (tx) => {
@@ -709,16 +737,16 @@ await db.transaction(async (tx) => {
 ### Why VACUUM exists
 
 ```text
-PostgreSQL uses MVCC (Multi-Version Concurrency Control):
+PostgreSQL uses MVCC (Multi-Version Concurrency Control):‼️
   Updates don't overwrite rows — they mark old rows as "dead" and insert new ones.
   Deletes mark rows as "dead" — they stay on disk.
 
-Dead rows ("dead tuples") accumulate over time → table bloat.
-Old transaction IDs accumulate → transaction ID wraparound (catastrophic).
+Dead rows ("dead tuples") accumulate over time → table bloat.‼️
+Old transaction IDs accumulate → transaction ID wraparound (catastrophic).‼️
 
-VACUUM: reclaims dead tuples, updates visibility map, prevents XID wraparound.
+VACUUM: reclaims dead tuples, updates visibility map, prevents XID wraparound.‼️
 VACUUM FULL: reclaims disk space (requires table lock, rarely needed).
-AUTOVACUUM: background process that runs VACUUM automatically.
+AUTOVACUUM: background process that runs VACUUM automatically.‼️
 ```
 
 ```sql
@@ -733,16 +761,16 @@ SELECT
 FROM pg_stat_user_tables
 ORDER BY n_dead_tup DESC;
 
--- Manual vacuum (non-blocking):
+-- Manual vacuum (non-blocking):‼️
 VACUUM tasks;
 
--- Update statistics only:
+-- Update statistics only:‼️
 ANALYZE tasks;
 
 -- Both:
-VACUUM ANALYZE tasks;
+VACUUM ANALYZE tasks;‼️
 
--- Reclaim disk space (locks table — avoid in production during peak hours):
+-- Reclaim disk space (locks table — avoid in production during peak hours):‼️
 VACUUM FULL tasks;
 ```
 
@@ -796,7 +824,7 @@ await db.insert(tasks).values([
   { title: 'Task 3', userId: 2 },
 ]);
 
--- COPY: fastest for bulk imports (CSV → table)
+-- COPY: fastest for bulk imports (CSV → table)‼️
 COPY tasks (title, user_id) FROM '/path/to/data.csv' CSV HEADER;
 ```
 
@@ -823,18 +851,18 @@ UPDATE events
 SET data = jsonb_set(data, '{status}', '"processed"')
 WHERE id = $1;
 
--- Expand JSONB array to rows
+-- Expand JSONB array to rows‼️
 SELECT jsonb_array_elements(data->'tags') AS tag FROM posts;
 ```
 
 ### Pagination patterns
 
 ```sql
--- Offset pagination (simple, gets slower as offset grows)
+-- Offset pagination (simple, gets slower as offset grows)‼️
 SELECT * FROM tasks ORDER BY created_at DESC LIMIT 20 OFFSET 200;
 -- Problem: DB must scan and skip 200 rows — slow on large tables
 
--- Keyset / cursor pagination (fast regardless of page number)
+-- Keyset / cursor pagination (fast regardless of page number)‼️
 -- First page:
 SELECT * FROM tasks ORDER BY created_at DESC, id DESC LIMIT 20;
 -- Next page: pass last row's values as cursor
@@ -842,7 +870,7 @@ SELECT * FROM tasks
 WHERE (created_at, id) < ($lastCreatedAt, $lastId) -- use the composite key
 ORDER BY created_at DESC, id DESC
 LIMIT 20;
--- DB seeks directly to cursor position — O(log n) regardless of depth
+-- DB seeks directly to cursor position — O(log n) regardless of depth‼️
 ```
 
 ---
@@ -853,7 +881,7 @@ LIMIT 20;
 
 > INNER JOIN returns only rows that have matches in BOTH tables. LEFT JOIN returns ALL rows from the left table, with NULL values for right-table columns when there's no match. Use LEFT JOIN when you want to keep rows from the left table even if they have no related data (e.g., users with no tasks).
 
-### "How do you optimize a slow query?"
+### "How do you optimize a slow query?"‼️
 
 > 1. Run `EXPLAIN ANALYZE` to see the execution plan. 2. Check for Seq Scan on large tables — usually needs an index. 3. Check estimated vs actual row counts — huge mismatch means stale stats, run `ANALYZE`. 4. Check for N+1 patterns — nested loops with many iterations. 5. Check if `work_mem` is causing disk sorts. 6. Add a missing index. 7. Rewrite correlated subqueries as JOINs. 8. Use a covering index to avoid heap fetches.
 
@@ -909,7 +937,7 @@ HAVING AVG(salary) > 70000;  -- then filter groups
 
 ### "What are indexes and how do they work?"
 
-> An index is a separate data structure (usually a B-tree) that stores column values sorted, with pointers to rows. Queries on indexed columns skip full table scans. Trade-off: faster reads, slower writes (index must be updated on INSERT/UPDATE/DELETE), extra storage. Always index: foreign keys, columns in WHERE/JOIN/ORDER BY, high-cardinality columns. Avoid indexing every column — over-indexing hurts write performance.
+> An index is a separate data structure (usually a B-tree) ‼️ that stores column values sorted, with pointers to rows. Queries on indexed columns skip full table scans. Trade-off: faster reads, slower writes (index must be updated on INSERT/UPDATE/DELETE), extra storage. Always index: foreign keys, columns in WHERE/JOIN/ORDER BY, high-cardinality columns. Avoid indexing every column — over-indexing hurts write performance.
 
 ```sql
 -- Single column index
@@ -926,7 +954,7 @@ EXPLAIN ANALYZE SELECT * FROM users WHERE email = 'alice@example.com';
 
 ### "What are window functions?"
 
-> Window functions perform calculations across a set of rows related to the current row without collapsing them into a group (unlike `GROUP BY`). The `OVER()` clause defines the window. Key functions: `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`, `LAG()`/`LEAD()` (access previous/next row), `SUM()`/`AVG()` as running totals.
+> Window functions perform calculations across a set of rows related to the current row without collapsing them into a group (unlike `GROUP BY`). ‼️ The `OVER()` clause defines the window. Key functions: `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`, `LAG()`/`LEAD()` (access previous/next row), `SUM()`/`AVG()` as running totals.
 
 ```sql
 -- Rank employees by salary within each department
@@ -994,7 +1022,7 @@ COMMIT;
 
 ### "What are the SQL isolation levels?"
 
-> Isolation levels control what concurrent transactions can see. From least to most strict: **READ UNCOMMITTED** (can read uncommitted changes — dirty reads). **READ COMMITTED** (only reads committed data — default in most DBs). **REPEATABLE READ** (same query returns same rows within transaction). **SERIALIZABLE** (transactions execute as if serial — no phantom reads). Higher isolation = fewer anomalies but more locking/contention.
+> Isolation levels control what concurrent transactions can see. From least to most strict: **READ UNCOMMITTED** (can read uncommitted changes — dirty reads). **READ COMMITTED** (only reads committed data — default in most DBs‼️). **REPEATABLE READ** (same query returns same rows within transaction). **SERIALIZABLE** (transactions execute as if serial — no phantom reads). Higher isolation = fewer anomalies but more locking/contention.
 
 ### "What is normalization? Explain 1NF, 2NF, 3NF."
 
