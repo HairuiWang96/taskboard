@@ -100,6 +100,30 @@ type StatusCode = 200 | 201 | 400 | 404 | 500;
 let x = 'hello'; // inferred as string (widened from 'hello')‼️
 const y = 'hello'; // inferred as 'hello' (const can't change → literal)‼️
 
+// The `as` keyword has 4 different meanings in TypeScript:‼️
+//
+// 1. Type assertion — "trust me, I know the type"
+//    const input = document.getElementById('name') as HTMLInputElement;
+//    const value = someUnknown as string;
+//    You're telling TypeScript: "I know more than you — treat this as this type."
+//
+// 2. `as const` — prevent type widening, make everything readonly and literal
+//    const roles = ['admin', 'user'] as const;  // readonly ['admin', 'user'], not string[]
+//    const config = { port: 3000 } as const;    // { readonly port: 3000 }, not { port: number }
+//    Tells TypeScript: "don't widen this, keep the exact literal types."
+//
+// 3. Key remapping in mapped types — rename or filter keys‼️
+//    [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];  // rename keys
+//    [K in keyof T as T[K] extends string ? K : never]: T[K];       // filter keys
+//    The `as` here means: "transform the key into something else."
+//
+// 4. Import alias — rename an import
+//    import { useState as useStateHook } from 'react';
+//    import * as React from 'react';
+//    Just renaming for convenience.
+//
+// Same keyword, 4 completely different uses — context determines the meaning.‼️
+
 // Prevent widening with as const
 const config = {
     endpoint: '/api',
@@ -469,10 +493,16 @@ type IsString<T> = T extends string ? true : false;
 type A = IsString<string>; // true
 type B = IsString<number>; // false
 
-// Unwrap array
-type Unwrap<T> = T extends Array<infer U> ? U : T;
+// Unwrap array‼️
+type Unwrap<T> = T extends Array<infer U> ? U : T;‼️
 type C = Unwrap<string[]>; // string
 type D = Unwrap<number>; // number (not array, returns T)
+
+// infer tells TypeScript: "I don't know this type yet — figure it out from the pattern."
+// infer is like pattern matching — it's a "hole" that TypeScript fills in:
+//   Array<infer U>    → extract element type from an array
+//   Promise<infer U>  → extract resolved type from a promise
+//   (infer A) => infer B → extract parameter and return type from a function
 
 // infer: extract a type from a position
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -482,13 +512,13 @@ type F = UnwrapPromise<number>; // number
 // Get return type of async function
 type AsyncReturn<T extends (...args: any[]) => Promise<any>> = T extends (...args: any[]) => Promise<infer R> ? R : never;
 
-// Distribution over unions
+// Distribution over unions‼️
 // When T is a union, the conditional is applied to each member separately
 type ToArray<T> = T extends any ? T[] : never;
 type G = ToArray<string | number>; // string[] | number[]
 // (not (string | number)[] — it distributes!)
 
-// Prevent distribution with wrapping in tuple
+// Prevent distribution with wrapping in tuple‼️
 type ToArrayNonDist<T> = [T] extends [any] ? T[] : never;
 type H = ToArrayNonDist<string | number>; // (string | number)[]
 
@@ -515,7 +545,7 @@ const bad: Greeting = 'Hi there!'; // ✗
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 type Endpoint = '/users' | '/tasks' | '/auth';
 type ApiRoute = `${Method} ${Endpoint}`;
-// 'GET /users' | 'GET /tasks' | ... all combinations
+// 'GET /users' | 'GET /tasks' | ... all combinations‼️
 
 // CSS class builder
 type Side = 'top' | 'right' | 'bottom' | 'left';
@@ -530,13 +560,13 @@ type ClickEvent = EventNames<'click' | 'focus' | 'blur'>;
 type Accessors<T extends string> = `get${Capitalize<T>}` | `set${Capitalize<T>}`;
 type NameAccessors = Accessors<'name'>; // 'getName' | 'setName'
 
-// Path types for nested objects
+// Path types for nested objects‼️
 type Paths<T, Prefix extends string = ''> = {
     [K in keyof T & string]: T[K] extends object ? Paths<T[K], `${Prefix}${K}.`> | `${Prefix}${K}` : `${Prefix}${K}`;
 }[keyof T & string];
 
 type UserPaths = Paths<{ name: string; address: { city: string; zip: string } }>;
-// 'name' | 'address' | 'address.city' | 'address.zip'
+// 'name' | 'address' | 'address.city' | 'address.zip'‼️
 ```
 
 ---
@@ -603,7 +633,7 @@ function area(shape: Shape): number {
     }
 }
 
-// Exhaustiveness check — TypeScript catches missing cases
+// Exhaustiveness check — TypeScript catches missing cases‼️
 function assertNever(x: never): never {
     throw new Error(`Unexpected value: ${x}`);
 }
@@ -667,7 +697,7 @@ interface Request {
     user?: { id: string; role: string };
 }
 
-// Namespace merging with functions (add properties to a function)
+// Namespace merging with functions (add properties to a function)‼️
 function log(message: string) {
     console.log(message);
 }
@@ -684,7 +714,7 @@ log.error('oops'); // namespace property
 ### Module augmentation
 
 ```ts
-// Extend types from external libraries — very common in frameworks
+// Extend types from external libraries — very common in frameworks‼️
 
 // Fastify: add user to request type
 import 'fastify';
@@ -702,7 +732,7 @@ declare module 'express-serve-static-core' {
     }
 }
 
-// Augmenting a third-party module's types
+// Augmenting a third-party module's types‼️
 declare module 'some-library' {
     interface ExistingInterface {
         newMethod(): void; // add methods to existing interface
@@ -722,7 +752,7 @@ class BankAccount {
     protected accountType: string; // within this class and subclasses
     readonly id: string; // can't be reassigned after construction
 
-    // Private class fields (ES2022) — truly private, even at runtime
+    // Private class fields (ES2022) — truly private, even at runtime‼️
     #secret: string;
 
     // Parameter properties shorthand
@@ -792,28 +822,28 @@ class User implements Serializable, Loggable {
         // Output
         "target": "ES2022", // compile to this JS version
         "module": "ESNext", // module system
-        "moduleResolution": "Bundler", // how imports are resolved (Bundler for Vite)
+        "moduleResolution": "Bundler", // how imports are resolved (Bundler for Vite)‼️
         "outDir": "./dist",
 
         // Developer experience
-        "sourceMap": true, // enable source maps for debugging
-        "declaration": true, // emit .d.ts files (for libraries)
-        "declarationMap": true, // source maps for .d.ts files
+        "sourceMap": true, // enable source maps for debugging‼️
+        "declaration": true, // emit .d.ts files (for libraries)‼️
+        "declarationMap": true, // source maps for .d.ts files‼️
 
         // Paths
         "baseUrl": ".",
         "paths": {
-            "@/*": ["./src/*"] // alias: import from '@/components/Button'
+            "@/*": ["./src/*"] // alias: import from '@/components/Button'‼️
         },
 
         // JSX (React)
         "jsx": "react-jsx", // automatic JSX transform (no import React needed)
 
         // Important flags
-        "esModuleInterop": true, // allows default import from CommonJS modules
+        "esModuleInterop": true, // allows default import from CommonJS modules‼️
         "skipLibCheck": true, // skip type-checking .d.ts files (faster)
         "forceConsistentCasingInFileNames": true,
-        "noUnusedLocals": true, // error on unused variables
+        "noUnusedLocals": true, // error on unused variables‼️
         "noUnusedParameters": true, // error on unused function parameters
         "noImplicitReturns": true // error if not all code paths return a value
     }
@@ -835,7 +865,7 @@ class QueryBuilder<T> {
 
     where(condition: string): this {
         this.conditions.push(condition);
-        return this; // return this for chaining
+        return this; // return this for chaining‼️
     }
 
     limit(n: number): this {
@@ -915,7 +945,7 @@ function getTask(id: string) { ... }
 const userId = '123';
 getTask(userId); // ✓ TypeScript allows — both are string!
 
-// Branded types: add a phantom type to create nominal distinction
+// Branded types: add a phantom type to create nominal distinction‼️
 type Brand<T, B> = T & { __brand: B };
 
 type UserId = Brand<string, 'UserId'>;
@@ -957,7 +987,7 @@ async function validatedFetch<T>(url: string, schema: z.ZodType<T>, options?: Re
 }
 
 const user = await validatedFetch('/api/users/123', UserSchema);
-// Both compile-time typed AND runtime validated
+// Both compile-time typed AND runtime validated‼️
 ```
 
 ### Recursive types
@@ -1000,16 +1030,16 @@ const a: any = 'hello';
 a.notAMethod(); // ✓ TypeScript doesn't check anything on 'any'
 a.toFixed(2); // ✓ no error even though string doesn't have toFixed
 
-// unknown: type-safe any — you must narrow before using
+// unknown: type-safe any — you must narrow before using‼️
 const b: unknown = 'hello';
-b.toUpperCase(); // ✗ Error: can't use unknown without narrowing first
+b.toUpperCase(); // ✗ Error: can't use unknown without narrowing first‼️
 
 if (typeof b === 'string') {
     b.toUpperCase(); // ✓ narrowed to string inside the if
 }
 
 // Rule: use unknown when you don't know the type.
-// Use any only when migrating JS to TS or as a last resort.
+// Use any only when migrating JS to TS or as a last resort.‼️
 ```
 
 ### "Explain type narrowing."
@@ -1037,13 +1067,13 @@ x !== null; // truthiness check
 'name' in x; // in guard
 Array.isArray(x); // Array check
 
-// Type predicates — custom type guard
+// Type predicates — custom type guard‼️
 function isUser(obj: unknown): obj is User {
     return typeof obj === 'object' && obj !== null && 'id' in obj && 'name' in obj;
 }
 
 if (isUser(data)) {
-    data.name; // ✓ TypeScript narrows to User
+    data.name; // ✓ TypeScript narrows to User‼️
 }
 
 // Assertion functions
@@ -1053,32 +1083,32 @@ function assertIsString(val: unknown): asserts val is string {
 assertIsString(value); // after this, value is string
 ```
 
-### "What is declaration merging and when would you use it?"
+### "What is declaration merging and when would you use it?"‼️
 
 > Declaration merging is when TypeScript merges multiple declarations with the same name into a single definition. The most practical use is module augmentation: adding properties to types from external libraries. For example, after adding JWT verification middleware to Fastify, you augment `FastifyRequest` to include a `user` property so TypeScript knows it exists in route handlers. Without augmentation, you'd get type errors or need to cast to `any`.
 
 ### "Explain the difference between Readonly and as const."
 
 ```ts
-// Readonly<T>: shallow immutability — properties can't be reassigned
-// But nested objects CAN be mutated
+// Readonly<T>: shallow immutability — properties can't be reassigned‼️
+// But nested objects CAN be mutated‼️
 const user: Readonly<User> = { name: 'Alice', address: { city: 'NY' } };
 user.name = 'Bob'; // ✗ Error
-user.address.city = 'LA'; // ✓ — address itself is readonly, but city inside is not
+user.address.city = 'LA'; // ✓ — address itself is readonly, but city inside is not‼️
 
-// as const: deep immutability of a literal value
-// All properties become readonly, all values become literal types
+// as const: deep immutability of a literal value‼️
+// All properties become readonly, all values become literal types‼️
 const config = { theme: 'dark', fontSize: 16 } as const;
 config.theme = 'light'; // ✗ Error
 config.theme; // type is 'dark' (literal, not string)
 
-// as const is for values; Readonly<T> is for types
+// as const is for values; Readonly<T> is for types‼️
 ```
 
 ### "When would you use never?"
 
 ```ts
-// never: a type with no values — represents the impossible
+// never: a type with no values — represents the impossible‼️
 
 // 1. Function that never returns
 function fail(message: string): never {
@@ -1104,7 +1134,7 @@ type StringOrNumber = string | number;
 type OnlyString = StringOrNumber extends number ? never : StringOrNumber;
 // never filters out of unions: string | never = string
 
-// 4. Bottom type — nothing is assignable to never (except never itself)
+// 4. Bottom type — nothing is assignable to never (except never itself)‼️
 ```
 
 ---
@@ -1138,7 +1168,7 @@ type AdminUser = User & { adminLevel: number };
 
 ### "What are generics and how do you constrain them?"
 
-> Generics let you write reusable code that works with any type while maintaining type safety. The type is a parameter — specified at call/instantiation time. Use `extends` to constrain what types are accepted.
+> Generics let you write reusable code that works with any type while maintaining type safety. The type is a parameter — specified at call/instantiation time. ‼️ Use `extends` to constrain what types are accepted.
 
 ```ts
 // Without constraint — T could be anything
@@ -1177,9 +1207,9 @@ Omit<User, 'age'>; // everything except age
 Record<string, User>; // { [key: string]: User }
 Exclude<'a' | 'b' | 'c', 'a'>; // 'b' | 'c'
 Extract<'a' | 'b' | 'c', 'a' | 'b'>; // 'a' | 'b'
-NonNullable<string | null | undefined>; // string
+NonNullable<string | null | undefined>; // string‼️
 ReturnType<typeof someFunction>; // return type of the function
-Parameters<typeof someFunction>; // tuple of param types
+Parameters<typeof someFunction>; // tuple of param types‼️
 ```
 
 ### "What are discriminated unions?"
@@ -1227,7 +1257,7 @@ function isUser(obj: unknown): obj is User {
 
 ### "What are mapped types?"
 
-> Mapped types transform every property in an existing type using a for-in style loop over the keys. They're how utility types like `Partial`, `Readonly`, and `Record` are implemented.
+> Mapped types transform every property in an existing type using a ‼️ for-in style loop over the keys. They're how utility types like `Partial`, `Readonly`, and `Record` are implemented.
 
 ```ts
 // Reimplementing Partial from scratch
@@ -1267,7 +1297,7 @@ type Arr = ToArray<string | number>; // string[] | number[]
 
 ### "What is `unknown` vs `any`?"
 
-> `any` disables all type checking — you can do anything with it, and it spreads (assigning `any` to a typed variable makes that typed too). `unknown` is type-safe: you can assign anything TO `unknown`, but to use it, you must first narrow the type. Always prefer `unknown` over `any` for values you truly don't know the type of (API responses, `catch` clause errors).
+> `any` disables all type checking — you can do anything with it, and it spreads (assigning `any` to a typed variable makes that typed too). `unknown` is type-safe: you can assign anything TO `unknown`, but to use it, ‼️ you must first narrow the type. Always prefer `unknown` over `any` for values you truly don't know the type of (API responses, `catch` clause errors).
 
 ```ts
 function processAny(val: any) {
@@ -1312,7 +1342,7 @@ function move(dir: Direction) {
 }
 ```
 
-### "What is `as const` and when do you use it?"
+### "What is `as const` and when do you use it?"‼️
 
 > `as const` tells TypeScript to infer the narrowest possible literal types and make everything `readonly`. Without it, TypeScript widens string literals to `string`, numbers to `number`, etc.
 
@@ -1342,4 +1372,36 @@ type Data = Awaited<Promise<User[]>>; // User[]
 
 // Extract first argument type
 type FirstArg<T> = T extends (first: infer F, ...rest: any[]) => any ? F : never;
+// Read it as: "If T is a function, extract the type of its FIRST argument and call it F.‼️
+//  Otherwise return never."
+//
+// Breaking down the pattern:
+//   (first: infer F, ...rest: any[]) => any
+//    ↑               ↑                  ↑
+//    first param:    remaining params:  return type:
+//    capture as F    don't care         don't care
+//
+// Walk through:
+//   type Fn1 = (name: string, age: number) => void;
+//   type Result1 = FirstArg<Fn1>;
+//   T = (name: string, age: number) => void
+//   Does it match (first: infer F, ...rest: any[]) => any?
+//   YES — first param is string, so infer F = string
+//   ...rest captures [number] but we don't use it (any[])
+//   => any matches => void (void is assignable to any)‼️
+//   Return F → string ✓
+//
+//   type Fn2 = (id: number) => boolean;
+//   type Result2 = FirstArg<Fn2>;
+//   first param is number → infer F = number
+//   ...rest = [] (no more params, still matches any[])‼️
+//   Return F → number ✓
+//
+//   type Result3 = FirstArg<string>;
+//   string is NOT a function
+//   Doesn't match the pattern → return never
+//
+// So `infer F` captures the first parameter's type, `...rest: any[]` swallows
+// all remaining parameters (we don't care about them), and `=> any` matches
+// any return type.‼️
 ```
