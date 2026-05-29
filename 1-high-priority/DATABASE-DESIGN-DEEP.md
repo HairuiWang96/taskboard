@@ -255,24 +255,463 @@ CREATE TABLE events_2026_02 PARTITION OF events
 
 ### Connection Pooling Deep Dive
 
-```
-Direct connections model:
-App (100 instances) → 100 connections → Postgres (max_connections: 100)
-Problem: 100 app instances × 20 connections each = 2000 → Postgres can't handle this
+#### Connection pooling is NOT just a database concept
 
-Connection pooler (PgBouncer) model:
-App (100 instances) → PgBouncer → Postgres (20 real connections)
-PgBouncer multiplexes thousands of app connections onto a small pool
+```
+Connection pooling is a GENERAL pattern that applies to any resource that is:
+  1. Expensive to create (TCP handshake, TLS, auth, process fork, etc.)
+  2. Frequently needed (every request, every query, every call)
+  3. Reusable (the connection can serve multiple requests over its lifetime)
+
+The idea is always the same:
+  Expensive to create + frequently needed = pool it
+  Create N upfront → borrow when needed → return when done → reuse
+
+Database connections get the most attention because they are the MOST
+expensive (TCP + TLS + auth + Postgres forks a whole OS process per
+connection), and apps hit the DB on nearly every request. But the same
+pattern appears everywhere:
+```
+
+```
+Where pooling is used beyond databases:
+
+Resource        Pool                          Why pool it?
+──────────────  ────────────────────────────  ─────────────────────────────────
+Database        PgBouncer, HikariCP,          TCP + TLS + auth + process fork
+                Sequelize pool, Prisma        = 30-100ms per connection
+
+HTTP            http.Agent (Node.js),         TCP + TLS handshake = 20-50ms
+                requests.Session (Python),    per request without keep-alive
+                OkHttp pool (Java)
+
+Threads         Java ExecutorService,         OS thread creation = ~1MB stack
+                Nginx worker pool,            allocation + kernel scheduling
+                Python ThreadPoolExecutor     overhead per thread
+
+Redis           ioredis pool, Jedis pool,     Same as DB — TCP + auth overhead
+                redis-py ConnectionPool       per connection
+
+gRPC            gRPC channel pool             HTTP/2 channel setup is expensive,
+                                              multiplexing helps but channels
+                                              still have limits
+
+WebSocket       Socket pool                   Handshake + HTTP upgrade = expensive
+                                              per connection
+
+DNS             OS DNS cache, Node.js         DNS lookup = network round-trip
+                dns.resolve cache             (~5-50ms) for every request
+```
+
+```
+Node.js HTTP Agent — a non-database pool you use every day:
+
+  // WITHOUT pooling (keepAlive: false — the old default)
+  fetch('https://api.stripe.com/charges')   // → TCP handshake (20ms)
+                                             // → TLS handshake (30ms)
+                                             // → request (5ms)
+                                             // → connection CLOSED
+  fetch('https://api.stripe.com/charges')   // → TCP again (20ms)
+                                             // → TLS again (30ms)
+                                             // → same request (5ms)
+  // Total: 110ms for 2 requests
+
+  // WITH pooling (keepAlive: true — default in Node 19+)
+  const agent = new http.Agent({
+    keepAlive: true,      // reuse connections (pool them)
+    maxSockets: 50,       // max connections per host
+    maxFreeSockets: 10,   // max idle connections kept open
+  });
+  fetch('https://api.stripe.com/charges', { agent })  // → TCP+TLS (50ms) + request (5ms)
+  fetch('https://api.stripe.com/charges', { agent })  // → reuse connection (0ms) + request (5ms)
+  // Total: 60ms for 2 requests — almost 2x faster
+
+  // axios, got, undici all pool HTTP connections by default in modern versions.
+
+
+Python requests.Session — same idea:
+
+  # WITHOUT pooling
+  requests.get('https://api.stripe.com/charges')  # new TCP+TLS every time
+  requests.get('https://api.stripe.com/charges')  # new TCP+TLS again
+
+  # WITH pooling
+  session = requests.Session()                     # creates a connection pool
+  session.get('https://api.stripe.com/charges')    # first call: TCP+TLS
+  session.get('https://api.stripe.com/charges')    # reuses the connection
+
+
+Java OkHttp — built-in pool:
+
+  // OkHttp pools connections automatically
+  // Default: max 5 idle connections, 5 min keep-alive
+  OkHttpClient client = new OkHttpClient();  // one client = one pool
+  // Every request through this client reuses connections
+
+
+Thread pool — same pattern, different resource:
+
+  // Java
+  ExecutorService pool = Executors.newFixedThreadPool(10);
+  pool.submit(() -> handleRequest());  // borrows a thread
+  // thread returned to pool when task completes
+
+  // Without pool: creating a new OS thread per request
+  //   = ~1MB stack allocation + kernel scheduling each time
+  // With pool: 10 threads created once, reused thousands of times
+```
+
+```
+Interview-ready summary:
+
+"Connection pooling is a general pattern for any resource that's expensive
+to create but frequently needed — you create a fixed set upfront and
+reuse them. It's most commonly associated with databases because DB
+connections are the most expensive to establish — TCP, TLS, auth, and
+Postgres even forks a new OS process per connection. But the same pattern
+applies to HTTP connections, threads, Redis connections, and gRPC channels.
+For example, Node.js's HTTP agent pools TCP connections with keep-alive,
+and Java's ExecutorService pools OS threads. The principle is always the
+same: create once, borrow, return, reuse."
+```
+
+---
+
+#### What is a connection pool? (database-specific)
+
+```
+A connection pool is a cache of reusable database connections.
+
+Without a pool:
+  1. App needs data → opens a NEW TCP connection to the database
+  2. TCP handshake (3 packets) + TLS handshake (if encrypted) + Postgres auth
+  3. Query runs (maybe 5ms)
+  4. Connection is closed
+  5. Next request → repeat from step 1
+
+  Problem: steps 1-2 take 20-50ms. The actual query takes 5ms.
+           You spend MORE time connecting than querying.
+           And each connection uses ~5-10MB of database RAM.
+
+With a pool:
+  1. App starts → pool opens N connections to the database and holds them open
+  2. App needs data → borrows a connection from the pool (instant, <1ms)
+  3. Query runs (5ms)
+  4. Connection is returned to the pool (NOT closed)
+  5. Next request → borrows the same connection again
+
+  Result: zero connection overhead per request. Database sees a fixed,
+          small number of connections instead of thousands.
+```
+
+#### Why it matters — the numbers
+
+```
+Creating a new Postgres connection:
+  - TCP handshake:       ~1-3ms (local), ~20-50ms (cross-region)
+  - TLS handshake:       ~5-30ms (if SSL required)
+  - Postgres auth:       ~5-10ms (password + role lookup)
+  - Process fork:        Postgres forks a new backend process per connection
+  - Memory per conn:     ~5-10MB of Postgres RAM
+  Total overhead:        ~30-100ms PER CONNECTION
+
+  If your app handles 1000 req/sec without pooling:
+    1000 × 50ms = 50 seconds of connection overhead per second
+    → impossible. The database would collapse.
+
+With a pool of 20 connections:
+  - 20 connections created ONCE at startup
+  - 1000 req/sec share those 20 connections
+  - Each request waits <1ms to borrow a connection
+  - Database is happy with 20 processes, ~100-200MB RAM
+```
+
+#### How a connection pool works internally
+
+```
+Pool lifecycle:
+
+  STARTUP
+  ┌───────────────────────────────────────────┐
+  │ Pool creates `min` connections             │
+  │ e.g., min: 5 → 5 connections ready         │
+  └───────────────────────────────────────────┘
+
+  REQUEST COMES IN
+  ┌───────────────────────────────────────────┐
+  │ Is there an idle connection in the pool?   │
+  │                                            │
+  │ YES → borrow it, mark as "in use"          │
+  │ NO  → is pool at max size?                 │
+  │       NO  → create new connection, use it  │
+  │       YES → WAIT in queue until one frees  │
+  │             (or timeout → error)           │
+  └───────────────────────────────────────────┘
+
+  REQUEST DONE
+  ┌───────────────────────────────────────────┐
+  │ Return connection to pool                  │
+  │ Mark as "idle"                             │
+  │ If pool > min and idle too long → close it │
+  └───────────────────────────────────────────┘
+
+Key pool settings:
+  min (minimum connections): kept open even when idle. Avoids cold start.
+  max (maximum connections): hard ceiling. Prevents database overload.
+  idleTimeout: how long an idle connection lives before being closed.
+  acquireTimeout: how long a request waits for a connection before erroring.
+```
+
+#### Direct connections vs pooling — visual
+
+```
+WITHOUT POOL (direct connections):
+
+  Request 1  ──open──┤ query ├──close──
+  Request 2     ──open──┤ query ├──close──
+  Request 3        ──open──┤ query ├──close──
+  Request 4           ──open──┤ query ├──close──
+  
+  DB sees: connections constantly opening/closing
+  DB forks: new process for every single request
+  Under load: max_connections hit → new requests REFUSED
+
+
+WITH POOL:
+
+  Pool        ═══════════════════════════════════  (connections stay open)
+  Request 1   ─borrow─┤ query ├─return─
+  Request 2      ─borrow─┤ query ├─return─
+  Request 3         ─borrow─┤ query ├─return─
+  Request 4            ─borrow─┤ query ├─return─
+  
+  DB sees: stable, fixed number of connections
+  DB forks: done once at startup
+  Under load: requests queue briefly, but DB stays healthy
+```
+
+#### Two levels of pooling
+
+```
+There are TWO places you can pool connections — and they solve different problems:
+
+1. APPLICATION-LEVEL POOL (inside your app)
+   ─────────────────────────────────────────
+   Built into your ORM or database driver.
+   Each app instance manages its own pool.
+
+   App Instance 1  →  [pool: 10 connections]  →  Database
+   App Instance 2  →  [pool: 10 connections]  →  Database
+   App Instance 3  →  [pool: 10 connections]  →  Database
+                                                  = 30 total connections
+
+   Problem: when you scale to 50 app instances, that's 500 connections.
+            Postgres typically handles 100-500 max.
+
+2. EXTERNAL POOLER (between your apps and the database)
+   ─────────────────────────────────────────────────────
+   A separate process (PgBouncer, PgCat, RDS Proxy) that sits
+   between ALL your app instances and the database.
+
+   App Instance 1  ─┐
+   App Instance 2  ─┤→  PgBouncer  →  [20 real connections]  →  Database
+   App Instance 3  ─┘    (1000s of       (only 20 actual
+   ...                    app conns)       DB connections)
+   App Instance 50 ─┘
+
+   PgBouncer multiplexes thousands of incoming connections
+   onto a small number of real Postgres connections.
+
+In production you often use BOTH:
+   App pool (5 per instance) → PgBouncer (50 total) → Postgres (50 real connections)
+```
+
+#### External poolers compared
+
+```
+Tool         Who runs it        Best for                   Notes
+──────────── ────────────────── ────────────────────────── ──────────────────────
+PgBouncer    You (self-hosted)  Most common Postgres       Single-threaded, very
+                                pooler. Battle-tested.     lightweight. Used by
+                                                           most companies.
+
+PgCat        You (self-hosted)  Multi-threaded PgBouncer   Newer, supports
+                                alternative. Sharding.     load balancing + sharding.
+
+RDS Proxy    AWS (managed)      AWS RDS / Aurora           Fully managed, no ops.
+                                serverless apps            Higher latency (~1ms).
+                                                           Good for Lambda.
+
+Supabase     Supabase           Supabase projects          Built-in PgBouncer.
+Pooler       (managed)                                     Uses transaction mode
+                                                           by default.
 
 PgBouncer modes:
-- Session pooling: connection held for the lifetime of client session (least multiplexing)
-- Transaction pooling: connection held for one transaction (most common, good for most apps)
-- Statement pooling: most aggressive, but breaks transactions
+  Session mode:     connection held until client disconnects (least sharing)
+  Transaction mode: connection held for one transaction only (most common, best default)
+  Statement mode:   connection returned after each statement (breaks multi-statement txns)
+```
 
-Config rules of thumb:
-- Postgres max_connections: 100-500 (depends on RAM — each connection uses ~5MB)
-- PgBouncer pool size: (CPU cores × 2) + disk spindles (e.g. 10 cores → 25)
-- App connection pool: (pool_size / num_instances)
+#### How different frameworks/ORMs handle pooling
+
+```
+─── Node.js ───────────────────────────────────────────────────────
+
+pg (node-postgres) — built-in pool:
+  const { Pool } = require('pg');
+  const pool = new Pool({
+    host: 'localhost',
+    database: 'mydb',
+    max: 20,              // max connections in pool
+    idleTimeoutMillis: 30000,  // close idle connections after 30s
+    connectionTimeoutMillis: 2000  // error if can't connect in 2s
+  });
+  const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+  // connection is automatically returned to pool after query
+
+Sequelize — built-in pool (uses pg underneath):
+  const sequelize = new Sequelize('mydb', 'user', 'pass', {
+    dialect: 'postgres',
+    pool: {
+      max: 10,       // maximum connections
+      min: 2,        // minimum connections (kept warm)
+      acquire: 30000, // max time (ms) to get a connection
+      idle: 10000     // close idle connections after 10s
+    }
+  });
+
+Prisma — built-in pool:
+  // Set in DATABASE_URL:
+  // postgresql://user:pass@host/db?connection_limit=10&pool_timeout=10
+  // Prisma manages the pool automatically — fewer knobs to turn.
+
+  // For serverless (Lambda, Vercel), use Prisma Accelerate or an external pooler
+  // because each Lambda invocation would create its own pool otherwise.
+
+
+─── Python ────────────────────────────────────────────────────────
+
+SQLAlchemy — built-in pool:
+  from sqlalchemy import create_engine
+  engine = create_engine(
+      'postgresql://user:pass@host/db',
+      pool_size=10,          # maintained connections
+      max_overflow=20,       # extra connections allowed under load
+      pool_timeout=30,       # wait time before error
+      pool_recycle=1800      # recycle connections after 30 min
+  )
+
+Django — built-in pool (Django 4.1+):
+  DATABASES = {
+      'default': {
+          'CONN_MAX_AGE': 600,      # reuse connections for 10 min
+          'CONN_HEALTH_CHECKS': True # check connection before reuse
+      }
+  }
+  # Before Django 4.1: each request opened/closed a connection (slow).
+
+
+─── Java / Spring ─────────────────────────────────────────────────
+
+HikariCP — the standard Java pool (Spring Boot default):
+  spring.datasource.hikari.maximum-pool-size=10
+  spring.datasource.hikari.minimum-idle=5
+  spring.datasource.hikari.idle-timeout=300000
+  spring.datasource.hikari.connection-timeout=20000
+
+  # HikariCP is considered the fastest Java pool.
+  # Previously: C3P0, DBCP — both slower, less reliable.
+
+
+─── Go ────────────────────────────────────────────────────────────
+
+database/sql — built-in pool:
+  db, _ := sql.Open("postgres", connStr)
+  db.SetMaxOpenConns(25)       // max open connections
+  db.SetMaxIdleConns(10)       // max idle connections
+  db.SetConnMaxLifetime(5 * time.Minute)
+
+  // Go's database/sql has pooling built into the standard library.
+  // Every sql.Open returns a pool, not a single connection.
+```
+
+#### Serverless and connection pooling — the special problem
+
+```
+Serverless functions (AWS Lambda, Vercel, Cloudflare Workers) break
+traditional pooling because:
+
+  Traditional app:    1 process → 1 pool → N connections → shared across requests
+  Serverless:         1000 invocations → 1000 pools → 1000 connections → DB dies
+
+  Each Lambda invocation creates its own pool. Under load, you get
+  thousands of pools × min connections each = connection explosion.
+
+Solutions:
+  1. External pooler: RDS Proxy, PgBouncer, Supabase Pooler
+     Lambda → RDS Proxy → Database (Proxy manages the real connections)
+
+  2. HTTP-based database access: Neon, PlanetScale, Supabase
+     Instead of TCP connections, use HTTP/WebSocket — no pooling needed
+     Lambda → HTTP → Database edge proxy → Database
+
+  3. Prisma Accelerate / Prisma Data Proxy
+     Lambda → HTTP → Prisma Proxy (with pool) → Database
+
+Rule of thumb: if you're serverless, you NEED an external pooler or
+               an HTTP-based database driver. App-level pools alone won't work.
+```
+
+#### Pool sizing — rules of thumb
+
+```
+Formula (from PostgreSQL wiki):
+  pool_size = (CPU cores × 2) + number_of_disks
+  Example:   8 cores, 1 SSD → (8 × 2) + 1 = 17 connections
+
+  This is for the DATABASE side. For the APP side:
+  app_pool_per_instance = total_db_pool / number_of_app_instances
+  Example: 20 DB connections / 4 app instances = 5 per instance
+
+Common mistakes:
+  ✗ Setting pool too large (100+)
+    → Postgres forks a process per connection, context switching kills performance
+    → More connections ≠ more throughput. After ~20-50, performance DECREASES.
+
+  ✗ Setting pool too small (1-2)
+    → Requests queue up waiting for a connection
+    → Latency spikes under any load
+
+  ✗ No idleTimeout
+    → Connections sit idle forever, wasting database memory
+
+  ✗ Using connection pool with serverless without external pooler
+    → Each function instance creates its own pool → connection explosion
+
+Sweet spot for most apps:
+  Small app (1-2 instances):     max: 10-20
+  Medium app (5-10 instances):   max: 5-10 per instance + PgBouncer
+  Large app (50+ instances):     max: 2-5 per instance + PgBouncer (required)
+```
+
+#### Interview — how to talk about connection pooling
+
+```
+"Connection pooling is maintaining a cache of reusable database connections
+instead of opening and closing one for every request. Opening a Postgres
+connection involves a TCP handshake, optional TLS, and authentication —
+that's 30-100ms of overhead. With a pool, connections are created once at
+startup and borrowed/returned per request, which reduces that to under 1ms.
+
+At the app level, most ORMs have built-in pools — Sequelize, Prisma,
+SQLAlchemy all do this. But when you scale horizontally to many app
+instances, you need an external pooler like PgBouncer or RDS Proxy that
+sits between all your instances and the database, multiplexing thousands
+of app connections onto a small number of real database connections.
+
+At Gophr, with multiple microservices each running their own pools,
+managing total connection count across services was important to keep
+Postgres healthy."
 ```
 
 ---

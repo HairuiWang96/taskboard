@@ -17,46 +17,46 @@ purchase items that are already sold out.
 **How to diagnose:**
 
 ```
-Step 1: Identify the read path
+Step 1: Identify the read path‼️
   - Where is the inventory count being read from?
   - Is it hitting the DB directly, or a cache (Redis), or a read replica?
 
 Step 2: Check for stale reads
-  - If using read replicas: replication lag under high load
+  - If using read replicas: replication lag under high load‼️
     → Replicas can fall behind the primary by seconds or even minutes
     → During low traffic, lag is negligible so you never notice
-  - If using cache: cache TTL is masking stale data
+  - If using cache: cache TTL is masking stale data‼️
     → During low traffic, writes are infrequent so cache is usually fresh
     → During high traffic, hundreds of purchases happen within a cache TTL window
 
 Step 3: Check for race conditions
-  - Are you doing "read stock → check > 0 → decrement" without a lock?
+  - Are you doing "read stock → check > 0 → decrement" without a lock?‼️
   - Under low traffic: requests are sequential, no collision
   - Under high traffic: 100 requests read stock=1 simultaneously, all proceed
 
-Step 4: Metrics to look at
+Step 4: Metrics to look at‼️
   - Replication lag (seconds behind master)
   - Cache hit rate vs. cache staleness
-  - DB lock wait time / deadlock count
-  - Request latency p99 (are some requests queuing?)
+  - DB lock wait time / deadlock count‼️
+  - Request latency p99 (are some requests queuing?)‼️
 ```
 
-**Solutions (pick based on constraints):**
+**Solutions (pick based on constraints):**‼️
 
 ```
-Option A: Strong consistency for writes (simplest)
+Option A: Strong consistency for writes (simplest)‼️
   - Route all inventory reads AND writes to the primary DB
   - Use SELECT ... FOR UPDATE (pessimistic lock)
   - Tradeoff: higher latency, primary becomes bottleneck under load
 
-Option B: Optimistic locking with versioning
+Option B: Optimistic locking with versioning‼️
   - Add a "version" column to inventory table
   - UPDATE inventory SET stock = stock - 1, version = version + 1
     WHERE item_id = X AND version = Y AND stock > 0
   - If affected_rows = 0 → conflict, retry or reject
   - Tradeoff: retries under contention, but no blocking locks
 
-Option C: Redis atomic decrement (best for flash sales)
+Option C: Redis atomic decrement (best for flash sales)‼️
   - Pre-load stock into Redis: SET item:123:stock 500
   - On purchase: DECR item:123:stock → if result >= 0, proceed
   - Redis is single-threaded, DECR is atomic — no race condition
@@ -80,12 +80,12 @@ p99 jumps from 200ms to 3 seconds. Users complain about timeouts.
 
 ```
 Step 1: Where is the time being spent?
-  - Add distributed tracing (Jaeger/Datadog APM) if not already in place
+  - Add distributed tracing (Jaeger/Datadog APM) if not already in place‼️
   - Break down: network → app processing → DB query → external API call
   - Is it one specific endpoint or all endpoints?
 
 Step 2: Check the database
-  - Slow query log: are certain queries degrading under load?
+  - Slow query log: are certain queries degrading under load?‼️
   - Connection pool exhaustion: all connections in use → requests queue
     → Check active connections vs pool size
   - Lock contention: writes blocking reads (or vice versa)
@@ -111,15 +111,15 @@ Immediate (fire-fighting):
   - Scale horizontally (add instances)
   - Increase connection pool sizes
   - Add/tune caching for hot queries
-  - Enable circuit breakers for slow downstream services
+  - Enable circuit breakers for slow downstream services‼️
 
 Medium-term:
   - Add read replicas for read-heavy queries
   - Optimise slow queries (indexes, query rewriting)
-  - Implement request queuing with backpressure
+  - Implement request queuing with backpressure‼️
   - Pre-compute expensive aggregations
 
-Long-term:
+Long-term:‼️
   - Separate read and write paths (CQRS)
   - Move hot data to a cache layer (Redis)
   - Shard the database
@@ -149,7 +149,7 @@ Why it didn't happen before:
 
 ```
 Prevention:
-  1. Cache warming: pre-populate cache on startup before taking traffic
+  1. Cache warming: pre-populate cache on startup before taking traffic‼️
      - Read top 10K hot keys from DB, populate cache
      - Only then mark the service as "ready" in health check
 
@@ -159,11 +159,11 @@ Prevention:
      - Libraries: Go's singleflight, custom lock-per-key in Redis
 
   3. Staggered TTL:
-     - Don't expire all keys at the same time
+     - Don't expire all keys at the same time‼️
      - TTL = base_ttl + random(0, jitter_seconds)
      - Prevents synchronized mass expiry
 
-  4. Circuit breaker on DB:
+  4. Circuit breaker on DB:‼️
      - If DB error rate > threshold → return degraded response (stale cache,
        default values, "try again later")
      - Prevents DB from being hammered when it's already overloaded
@@ -201,7 +201,7 @@ Example:
   → That partition hits its limit even though total is under 10,000
 
 How to confirm:
-  - CloudWatch metric: ConsumedWriteCapacityUnits per partition
+  - CloudWatch metric: ConsumedWriteCapacityUnits per partition‼️
   - Check for "ProvisionedThroughputExceededException" in logs
   - Analyse partition key distribution — is it skewed?
 ```
@@ -219,7 +219,7 @@ Option B: Write sharding (scatter-gather)
   - Append a random suffix to partition key: "2024-01-15#3"
   - Use N shards (e.g., 0-9), so writes spread across 10 partitions
   - Reads need to query all N shards and merge
-  - Tradeoff: read complexity increases
+  - Tradeoff: read complexity increases‼️
 
 Option C: DynamoDB On-Demand mode
   - No provisioned capacity — auto-scales per request
@@ -268,13 +268,13 @@ Day 3: Reduce unnecessary load
     → Reduce frequency
   - Are there unused indexes consuming write overhead?
     → Drop them
-  - Connection pooling: use PgBouncer to reduce connection overhead
+  - Connection pooling: use PgBouncer to reduce connection overhead‼️
 
 Day 4-5: Architectural changes if needed
   - Move analytics/reporting queries to a separate read replica
     (even if it takes time, start the process)
   - Denormalise frequently joined tables
-  - Pre-compute aggregations (materialised views)
+  - Pre-compute aggregations (materialised views)‼️
   - Archive old data to cold storage (move orders > 1 year old to archive table)
 ```
 
@@ -288,20 +288,20 @@ ALTER TABLE will lock the table for hours. You can't have downtime.
 **Strategy:**
 
 ```
-Option A: Online schema change (pt-online-schema-change / gh-ost)
+Option A: Online schema change (pt-online-schema-change / gh-ost)‼️
   - Creates a shadow copy of the table with new schema
   - Copies data in chunks while keeping a trigger/binlog for new writes
   - Swaps tables atomically at the end
   - Used by: GitHub (gh-ost), Percona (pt-osc)
 
-Option B: Expand-contract pattern (manual but safe)
+Option B: Expand-contract pattern (manual but safe)‼️
   Step 1: Create new column with default (Postgres 11+ is instant for defaults)
   Step 2: Deploy code that writes to BOTH old and new columns
   Step 3: Backfill existing rows in batches (1000 rows at a time, with sleep)
   Step 4: Deploy code that reads from new column
   Step 5: Drop old column (if needed) — also in non-locking way
 
-Option C: Dual-write to new table
+Option C: Dual-write to new table‼️
   Step 1: Create new table with desired schema
   Step 2: Deploy code that writes to both tables
   Step 3: Backfill old data to new table
@@ -325,11 +325,11 @@ until it hits the container limit and gets OOM-killed.
 
 ```
 Step 1: Confirm the pattern
-  - Check container metrics: RSS memory over time → linear growth = leak
+  - Check container metrics: RSS memory over time → linear growth = leak‼️
   - Check restart count and OOM kill logs (dmesg or container orchestrator logs)
 
 Step 2: Identify the leak source
-  - Take heap snapshots at intervals (--inspect flag + Chrome DevTools)
+  - Take heap snapshots at intervals (--inspect flag + Chrome DevTools)‼️
   - Compare snapshot at 1h vs 4h → which objects are growing?
   - Common causes:
     a) Event listeners not cleaned up (addEventListener without removeEventListener)
@@ -397,7 +397,7 @@ Step 4: Reproduce with production conditions
 
 ```
 1. Race condition under concurrent access (works alone, fails together)
-2. External service timeout (third-party API has SLA of 99.5% → you get 0.5% errors)
+2. External service timeout (third-party API has SLA of 99.5% → you get 0.5% errors) ‼️ SLA (Service Level Agreement)
 3. Data edge case (user with 10,000 items, string with emoji, null field)
 4. Resource exhaustion (connection pool, file descriptors, thread pool)
 5. DNS resolution failure (intermittent, auto-recovers)
@@ -476,7 +476,7 @@ Step 2: Identify extraction candidates — the Strangler Fig pattern
     b) Have different scaling requirements (e.g., image processing)
     c) Have clear bounded contexts (e.g., payments, notifications)
     d) Are causing the most pain (blocking other teams, slow tests)
-  - Start with the EASIEST extraction, not the most important one
+  - Start with the EASIEST extraction, not the most important one‼️
     → Build the infrastructure (CI/CD, service mesh, observability) on a safe target
 
 Step 3: Extract incrementally
@@ -486,7 +486,7 @@ Step 3: Extract incrementally
   4. Deploy as a separate service
   5. Repeat
 
-Step 4: What you need BEFORE you extract
+Step 4: What you need BEFORE you extract‼️
   - Service discovery (Consul, K8s DNS)
   - Centralised logging (ELK, Datadog)
   - Distributed tracing (Jaeger, X-Ray)
@@ -512,7 +512,7 @@ the nearest region. How do you handle data that needs to be consistent?
 Classify your data:
 
 Tier 1: Must be globally consistent (payments, account balance, inventory)
-  → Single-leader replication
+  → Single-leader replication‼️
   → All writes go to primary region (e.g., US-East)
   → Reads can be local if you accept slight staleness
   → Cross-region write latency: 150-300ms (acceptable for transactions)
@@ -2465,11 +2465,11 @@ Exactly-once delivery:
 
 1. Clarify the constraints (2 min)
    "Before I dive in — is this a cloud environment or on-prem?
-    What's the current monitoring setup? How large is the team?"
+   What's the current monitoring setup? How large is the team?"
 
 2. State your hypothesis (1 min)
    "Based on the symptoms — consistency issues only under high traffic —
-    my first hypothesis is replication lag or race conditions."
+   my first hypothesis is replication lag or race conditions."
 
 3. Describe your diagnostic approach (3-5 min)
    "Here's how I'd systematically narrow it down..."
@@ -2484,8 +2484,12 @@ Exactly-once delivery:
    This shows you think beyond the immediate fix.
 
 Key: interviewers want to see HOW you think, not just the right answer.
-  - Ask clarifying questions (shows you don't jump to conclusions)
-  - Think out loud (share your reasoning process)
-  - Consider trade-offs (nothing is free)
-  - Mention monitoring/alerting (shows operational maturity)
+
+- Ask clarifying questions (shows you don't jump to conclusions)
+- Think out loud (share your reasoning process)
+- Consider trade-offs (nothing is free)
+- Mention monitoring/alerting (shows operational maturity)
+
+```
+
 ```
