@@ -696,7 +696,7 @@ Step 5: Check if timeouts are configured and actually being enforced
 **Solutions:**
 
 ```
-1. Bulkhead pattern: isolate thread pools per dependency
+1. Bulkhead pattern: isolate thread pools per dependency‼️
    - One slow service can't starve others
    - Tradeoff: adds resource overhead
 
@@ -1046,6 +1046,11 @@ Step 6: Determine what data the server has access to (customer PII, payment data
    - Stops exfiltration but reduces capacity
 
 2. Full forensic analysis: snapshot disk, memory dump, analyse the malware
+   - Memory dump = snapshot of everything in RAM saved to a file.
+     Malware often lives ONLY in RAM (never touches disk), and encryption keys,
+     passwords, active connections, and attacker processes are all visible in
+     memory while running — but gone forever after a reboot.
+     Tools: LiME (Linux), WinDbg (Windows). Dump size = server's RAM size.
    - Thorough but takes time while attacker may have access to other systems
 
 3. Rebuild from known-good image: destroy compromised server, rebuild
@@ -1143,6 +1148,23 @@ to the database.
 
 ```
 Step 1: Check inode usage with df -i — you may have exhausted inodes, not bytes
+        Inode = "index node". Every file and directory on a Linux filesystem gets
+        one inode — it stores the file's metadata (size, permissions, owner,
+        timestamps, pointers to the actual data blocks on disk). The inode does
+        NOT store the filename or the file content itself.
+
+        Think of it like a library card catalog:
+          Filename     = the title on the book spine (stored in the directory)
+          Inode        = the catalog card (metadata: author, location, size)
+          Data blocks  = the actual pages of the book (stored on disk)
+
+        When you run `ls -l`, everything you see (permissions, owner, size, date)
+        comes from the inode — not from the file itself.
+
+        Why it matters: a filesystem has a FIXED number of inodes (set at format time).
+        If you create millions of tiny files (1-byte each), you can exhaust all inodes
+        while the disk still shows plenty of free space. Result: "No space left on
+        device" even though `df` shows 80% free — because `df -i` shows 100% inode usage.
 Step 2: Look for millions of tiny files (session files, temp files, log fragments)
 Step 3: Check if a process has deleted files that are still held open (lsof +L1)
 Step 4: Verify if the filesystem is mounted read-only
@@ -1699,7 +1721,7 @@ Follow-up: what if two people push at the same time?
   - First push succeeds
   - Second push is rejected (not a fast-forward)
   - Second person must pull (fetch + merge/rebase), then push again
-  - This is how Git prevents lost updates without locking
+  - This is how Git prevents lost updates without locking‼️
 ```
 
 ---
@@ -1819,7 +1841,7 @@ The trap answer to avoid:
   ✓ "It depends on team size, domain maturity, and operational capability"
 
 What interviewers really want to hear:
-  "Microservices are a solution to an organisational problem, not a technical one.
+  "Microservices are a solution to an organisational problem, not a technical one.‼️
    If one team owns the whole thing, a monolith is almost always simpler and faster.
    The moment you have 3+ teams stepping on each other's deploys, that's when you
    start extracting services — and you start with the one causing the most pain."
@@ -1832,7 +1854,7 @@ What interviewers really want to hear:
 ```
 REST:
   - Best for: public APIs, simple CRUD, broad client compatibility
-  - Pros: universally understood, cacheable (HTTP caching), simple tooling
+  - Pros: universally understood, ‼️ cacheable (HTTP caching), simple tooling
   - Cons: over-fetching (get 50 fields when you need 3), under-fetching (N+1 requests)
   - Use when: building a public API, or the resource model maps cleanly to endpoints
 
@@ -1853,7 +1875,7 @@ gRPC:
 
 The real-world answer:
   "Most companies use all three:
-   - gRPC between backend services (fast, typed)
+   - gRPC between backend services (fast, typed)‼️
    - GraphQL as a BFF (Backend For Frontend) aggregation layer
    - REST for public APIs and webhooks"
 ```
@@ -1914,7 +1936,7 @@ But wait — YouTube transcodes to multiple resolutions:
 Per year: 1.7 PB × 365 = ~620 PB/year
 
 Key insight: the real bottleneck isn't storage cost (S3 is cheap) — it's
-the transcoding compute and CDN bandwidth for serving.
+the transcoding compute and CDN bandwidth for serving.‼️
 ```
 
 ---
@@ -2010,7 +2032,7 @@ Step 2: Common quick wins
 
   b) Optimise the search index
      - Are all searchable fields properly indexed?
-     - Is the index up to date? (stale index = full scan)
+     - Is the index up to date? (stale index = full scan)‼️
      - Index size vs available RAM (index should fit in memory)
 
   c) Limit the search scope
@@ -2477,7 +2499,7 @@ Exactly-once delivery:
 
 4. Propose solutions with trade-offs (5 min)
    "There are three approaches, each with different trade-offs..."
-   Always present options, not a single answer.
+   Always present options, not a single answer.‼️
 
 5. Discuss prevention (2 min)
    "To prevent this from happening again, I'd add..."
