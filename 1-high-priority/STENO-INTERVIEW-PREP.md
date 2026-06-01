@@ -63,9 +63,9 @@ feature:               C' --- D'
 ```
 
 **When to use which:**
-- `merge`: on shared branches (main, develop) — safe because it doesn't rewrite history
-- `rebase`: on your own feature branches before merging — keeps history clean
-- Golden rule: NEVER rebase commits that have been pushed and shared with others, because rebase rewrites commit hashes and will cause conflicts for everyone else -->
+- `merge`: on shared branches (main, develop) — safe because it doesn't rewrite history‼️
+- `rebase`: on your own feature branches before merging — keeps history clean‼️
+- Golden rule: NEVER rebase commits that have been pushed and shared with others, because rebase rewrites commit hashes and will cause conflicts for everyone else -->‼️
 
 ---
 
@@ -85,7 +85,7 @@ const d = [...a, ...b];     // merge: [1, 2, 3, 1, 2, 3]
 ```js
 const user = { name: 'Alice', age: 30 };
 const updated = { ...user, age: 31 };  // { name: 'Alice', age: 31 }
-// Later properties overwrite earlier ones
+Later properties overwrite earlier ones
 ```
 
 **Function arguments:**
@@ -101,13 +101,13 @@ function sum(...numbers) {   // collects arguments into an array
 }
 ```
 
-Key detail: spread creates SHALLOW copies — nested objects/arrays are still references to the originals. If you modify a nested object in the copy, the original changes too. -->
+Key detail: spread creates SHALLOW copies — ‼️ nested objects/arrays are still references to the originals. If you modify a nested object in the copy, the original changes too. -->
 
 ---
 
 ### Q4. What is an interface (in TypeScript)?
 
-<!-- An interface defines the shape/contract of an object — what properties and methods it must have, and their types. It's a compile-time construct that disappears after compilation to JavaScript (zero runtime cost).
+<!-- An interface defines the shape/contract of an object — what properties and methods it must have, and their types. It's a compile-time construct that disappears after compilation to JavaScript (‼️zero runtime cost).
 
 ```ts
 interface User {
@@ -141,7 +141,7 @@ interface Admin extends User {
 
 **Why interfaces matter:**
 - They enforce contracts at compile time — catch bugs before runtime
-- They enable dependency injection and make code testable (program to an interface, not an implementation)
+- They enable dependency injection and make code testable (program to an interface, not an implementation)‼️
 - They serve as documentation for what a function expects or returns -->
 
 ---
@@ -178,11 +178,11 @@ async function getUser(id) {
 2. **Error handling** — use standard try/catch instead of .catch() chains; one try/catch can wrap multiple async operations
 3. **Debugging** — stack traces are meaningful; you can step through async code in a debugger line by line
 4. **Conditionals** — easy to branch based on async results (with .then() chains, conditional logic gets messy fast)
-5. **Loops** — you can use for loops, while loops, for...of with await; Promise chains can't do this cleanly
+5. **Loops** — you can use for loops, while loops, for...of with await; Promise chains can't do this cleanly‼️
 
 **Important to remember:**
-- async functions ALWAYS return a Promise
-- await only works inside an async function (or at top level in ES modules)
+- async functions ALWAYS return a Promise‼️
+- await only works inside an async function (or at top level in ES modules‼️)
 - await pauses execution of that function but does NOT block the event loop — other code continues running
 - For parallel operations, use `Promise.all([...])` instead of sequential awaits -->
 
@@ -193,17 +193,17 @@ async function getUser(id) {
 <!-- An unhandled promise rejection occurs when a Promise is rejected (throws an error) and there is no .catch() handler or try/catch block to handle it.
 
 ```js
-// This creates an unhandled promise rejection:
+This creates an unhandled promise rejection:
 async function fetchData() {
   const res = await fetch('https://bad-url.invalid');  // throws
   return res.json();
 }
 fetchData();  // no .catch(), no try/catch — rejection is unhandled
 
-// Fixed — Option 1: .catch()
+Fixed — Option 1: .catch()
 fetchData().catch(err => console.error('Failed:', err));
 
-// Fixed — Option 2: try/catch inside the function
+Fixed — Option 2: try/catch inside the function
 async function fetchData() {
   try {
     const res = await fetch('https://bad-url.invalid');
@@ -215,19 +215,19 @@ async function fetchData() {
 ```
 
 **Why it matters:**
-- In Node.js (v15+), unhandled promise rejections CRASH the process by default (`--unhandled-rejections=throw`)
-- In older Node.js versions, they just logged a warning — bugs would silently fail and cause mysterious downstream issues
-- In browsers, they show up in the console but don't crash the page
+- In Node.js (v15+), unhandled promise rejections CRASH the process by default (`--unhandled-rejections=throw`)‼️
+- In older Node.js versions, they just logged a warning — bugs would silently fail and cause mysterious downstream issues‼️
+- In browsers, they show up in the console but don't crash the page‼️
 
-**Global safety net (doesn't replace proper error handling):**
+**Global safety net (doesn't replace proper error handling):**‼️
 ```js
-// Node.js
+Node.js
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled rejection:', reason);
-  // Log it, alert monitoring, etc.
+  * Log it, alert monitoring, etc.
 });
 
-// Browser
+* Browser
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled rejection:', event.reason);
 });
@@ -254,15 +254,15 @@ const counter = createCounter();
 counter(); // 1
 counter(); // 2
 counter(); // 3
-// count is not accessible from outside, but the inner function still has access to it
+* count is not accessible from outside, but the inner function still has access to it
 ```
 
 **How it works:**
-When a function is created, it gets a hidden reference to its surrounding scope (the "lexical environment"). Even after the outer function finishes executing, the inner function holds onto that reference — the variables don't get garbage collected because something still points to them.
+When a function is created, ‼️it gets a hidden reference to its surrounding scope (the "lexical environment"). Even after the outer function finishes executing, the inner function holds onto that reference — ‼️the variables don't get garbage collected because something still points to them.
 
 **Common use cases:**
-1. **Data privacy / encapsulation** — create private variables that can't be accessed directly
-2. **Factory functions** — functions that create customized functions
+1. **Data privacy / encapsulation** — create private variables that can't be accessed directly‼️
+2. **Factory functions** — functions that create customized functions‼️
 ```js
 function multiply(x) {
   return function(y) {
@@ -296,11 +296,11 @@ for (let i = 0; i < 3; i++) {
 <!-- A callback is a function passed as an argument to another function, to be called (invoked) at a later time — when some operation completes or some event occurs.
 
 ```js
-// Synchronous callback:
+* Synchronous callback:
 const numbers = [3, 1, 2];
 numbers.sort((a, b) => a - b);  // the comparator is a callback
 
-// Asynchronous callback:
+* Asynchronous callback:
 fs.readFile('data.txt', 'utf8', (err, data) => {
   if (err) {
     console.error(err);
@@ -402,7 +402,7 @@ app.use((err, req, res, next) => {
 // WITHOUT DI — tightly coupled:
 class UserService {
   private db = new PostgresDatabase();  // creates its own dependency
-  
+
   async getUser(id: string) {
     return this.db.query('SELECT * FROM users WHERE id = $1', [id]);
   }
@@ -411,7 +411,7 @@ class UserService {
 // WITH DI — loosely coupled:
 class UserService {
   constructor(private db: Database) {}  // dependency injected from outside
-  
+
   async getUser(id: string) {
     return this.db.query('SELECT * FROM users WHERE id = $1', [id]);
   }
@@ -564,7 +564,7 @@ ORDER BY order_count DESC;
 
 **Multiple CTEs:**
 ```sql
-WITH 
+WITH
   active_users AS (
     SELECT * FROM users WHERE status = 'active'
   ),
@@ -630,9 +630,9 @@ WITH RECURSIVE org_tree AS (
     SELECT id, name, manager_id, 1 AS depth
     FROM employees
     WHERE id = 1  -- CEO
-    
+
     UNION ALL
-    
+
     -- Recursive case: find employees who report to people already in the result
     SELECT e.id, e.name, e.manager_id, ot.depth + 1
     FROM employees e
@@ -658,7 +658,7 @@ SELECT * FROM org_tree;
 Recursive queries can run forever if there's a cycle. Most databases let you set a limit:
 ```sql
 -- PostgreSQL: limit recursion depth
-WITH RECURSIVE ... 
+WITH RECURSIVE ...
 SELECT * FROM tree WHERE depth <= 10;
 ```
 
@@ -841,13 +841,13 @@ async function getUser(id) {
   if (cached) {
     return JSON.parse(cached);  // cache HIT — fast path
   }
-  
+
   // 2. Cache MISS — query database
   const user = await db.query('SELECT * FROM users WHERE id = $1', [id]);
-  
+
   // 3. Store in cache with TTL (time-to-live)
   await redis.set(`user:${id}`, JSON.stringify(user), 'EX', 3600);  // expires in 1 hour
-  
+
   return user;
 }
 ```
@@ -1066,30 +1066,1534 @@ These are synchronous or event-based callbacks — not the async-flow-control ca
 
 ---
 
+---
+
+## Part 3: Additional Questions Based on Steno Job Requirements
+
+> The JD calls for: Node.js + TypeScript, React.js, PostgreSQL, unit/integration testing,
+> n-tier/monolithic/distributed architectures, cloud infra, CI/CD, and full-stack web fundamentals.
+> These questions fill the gaps not covered in Parts 1–2.
+
+---
+
+### Q24. What is the difference between unit testing and integration testing?
+
+<!-- **Unit testing** tests a single function, method, or component in ISOLATION. All external dependencies (database, APIs, other modules) are mocked or stubbed.
+
+**Integration testing** tests how multiple components work TOGETHER — hitting real databases, real APIs, real middleware chains.
+
+```ts
+// UNIT TEST — isolated, fast, mocked dependencies:
+describe('calculateTotal', () => {
+  it('applies discount correctly', () => {
+    const items = [{ price: 100, qty: 2 }, { price: 50, qty: 1 }];
+    expect(calculateTotal(items, 0.1)).toBe(225);  // 250 - 10%
+  });
+});
+
+// INTEGRATION TEST — real database, real HTTP:
+describe('POST /api/orders', () => {
+  it('creates an order and stores it in the database', async () => {
+    const res = await request(app)
+      .post('/api/orders')
+      .send({ items: [{ productId: 1, qty: 2 }] });
+
+    expect(res.status).toBe(201);
+
+    // Verify it actually hit the database:
+    const order = await db.query('SELECT * FROM orders WHERE id = $1', [res.body.id]);
+    expect(order.rows).toHaveLength(1);
+  });
+});
+```
+
+**Key differences:**
+
+| | Unit Test | Integration Test |
+|---|---|---|
+| **Scope** | Single function/class | Multiple components together |
+| **Dependencies** | Mocked/stubbed | Real (DB, APIs, file system) |
+| **Speed** | Very fast (milliseconds) | Slower (seconds — DB setup, network) |
+| **What it catches** | Logic bugs within a function | Wiring bugs, query errors, API contract mismatches |
+| **When it breaks** | The function's logic changed | A dependency changed (schema, API response, config) |
+
+**Testing pyramid:**
+```
+        /  E2E  \        ← few, slow, expensive (Cypress, Playwright)
+       /----------\
+      / Integration \    ← moderate number, test boundaries
+     /----------------\
+    /   Unit Tests     \  ← many, fast, cheap (Jest, Vitest)
+```
+
+**In practice at a Node.js + PostgreSQL stack:**
+- Unit tests: pure business logic, utility functions, data transformations
+- Integration tests: API endpoints end-to-end, database queries, middleware chains
+- Use a test database (docker-compose with Postgres) for integration tests, reset between runs
+
+**Common tools:** Jest or Vitest for both, Supertest for HTTP integration tests, testcontainers for spinning up real Postgres in CI. -->
+
+---
+
+### Q25. What is n-tier architecture?
+
+<!-- N-tier (or multi-tier) architecture separates an application into logical layers (tiers), each with a specific responsibility. The most common is 3-tier architecture.
+
+**3-Tier Architecture:**
+```
+┌─────────────────────┐
+│  Presentation Tier   │  ← UI (React, browser, mobile app)
+│  (Client / Frontend) │
+└─────────┬───────────┘
+          │ HTTP/API calls
+┌─────────┴───────────┐
+│  Application Tier    │  ← Business logic (Node.js/Express API)
+│  (Server / Backend)  │
+└─────────┬───────────┘
+          │ SQL queries
+┌─────────┴───────────┐
+│  Data Tier           │  ← Database (PostgreSQL)
+│  (Database / Storage)│
+└─────────────────────┘
+```
+
+**Each tier has a clear responsibility:**
+1. **Presentation tier** — what the user sees and interacts with. Sends requests to the application tier. (React frontend)
+2. **Application tier** — receives requests, applies business logic, validates data, orchestrates operations. (Node.js API server)
+3. **Data tier** — stores and retrieves data. (PostgreSQL, Redis, S3)
+
+**Rules:**
+- Each tier only communicates with the tier directly above or below it
+- The presentation tier NEVER talks directly to the database
+- Tiers can be deployed independently on different servers/infrastructure
+
+**Benefits:**
+1. **Separation of concerns** — each layer has one job; easier to reason about and maintain
+2. **Independent scaling** — scale the API tier without touching the database tier
+3. **Team specialization** — frontend team works on presentation, backend on application tier
+4. **Swappable** — replace React with a mobile app without touching the API; switch from PostgreSQL to MySQL without touching the frontend
+5. **Security** — the database is never exposed to the client; all access goes through the API layer
+
+**How it compares to monolith vs microservices:**
+- N-tier describes how you LAYER your code (vertical separation)
+- Monolith vs microservices describes how you DEPLOY your code (horizontal separation)
+- You can have a monolith with n-tier architecture (most common for small-to-mid apps)
+- Microservices often have their own internal n-tier structure per service -->
+
+---
+
+### Q26. What is CI/CD? How would you set up a pipeline?
+
+<!-- **CI (Continuous Integration):** Automatically build and test code every time someone pushes to the repository. Catches bugs early.
+
+**CD (Continuous Delivery / Deployment):**
+- Continuous Delivery: code is always in a deployable state; deployment is a manual approval
+- Continuous Deployment: every change that passes tests is automatically deployed to production
+
+**A typical CI/CD pipeline:**
+```
+Push code → Build → Lint → Unit Tests → Integration Tests → Deploy to Staging → Deploy to Prod
+```
+
+**Example GitHub Actions pipeline for a Node.js + TypeScript app:**
+```yaml
+name: CI/CD
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:                          # real DB for integration tests
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_PASSWORD: test
+        ports: ['5432:5432']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci                      # install deps (uses lockfile)
+      - run: npm run lint                # ESLint
+      - run: npm run typecheck           # tsc --noEmit
+      - run: npm run test:unit           # Jest unit tests
+      - run: npm run test:integration    # tests against real Postgres
+        env:
+          DATABASE_URL: postgres://postgres:test@localhost:5432/test_db
+
+  deploy:
+    needs: test                          # only runs if tests pass
+    if: github.ref == 'refs/heads/main'  # only on main branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci && npm run build
+      - run: ./deploy.sh                 # deploy to cloud (AWS, GCP, etc.)
+```
+
+**Key CI/CD practices:**
+1. **Run on every PR** — catch problems before merge
+2. **Fast feedback** — parallelize tests, cache dependencies
+3. **Test against real dependencies** — use service containers (Postgres, Redis) in CI
+4. **Environment parity** — CI should mirror production as closely as possible
+5. **Automated deployments** — remove human error from the deploy process
+6. **Rollback strategy** — blue/green deployment or feature flags for safe rollbacks
+
+**Common CI/CD tools:** GitHub Actions, GitLab CI, CircleCI, Jenkins, AWS CodePipeline -->
+
+---
+
+### Q27. What are TypeScript generics, and why are they useful?
+
+<!-- Generics let you write functions, classes, and interfaces that work with ANY type while still being type-safe. They're like function parameters, but for types.
+
+**Without generics — you lose type information:**
+```ts
+function first(arr: any[]): any {
+  return arr[0];
+}
+const val = first([1, 2, 3]);  // val is `any` — TypeScript can't help you
+```
+
+**With generics — type-safe AND flexible:**
+```ts
+function first<T>(arr: T[]): T {
+  return arr[0];
+}
+const val = first([1, 2, 3]);      // val is `number` — TypeScript infers it
+const str = first(['a', 'b']);      // str is `string`
+```
+
+**Common use cases:**
+
+```ts
+// Generic interface:
+interface ApiResponse<T> {
+  data: T;
+  status: number;
+  message: string;
+}
+
+const userRes: ApiResponse<User> = await fetchUser(1);
+// userRes.data is typed as User
+
+// Generic with constraints:
+function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key];
+}
+getProperty({ name: 'Alice', age: 30 }, 'name');  // returns string
+getProperty({ name: 'Alice', age: 30 }, 'foo');   // ERROR: 'foo' is not a key
+
+// Generic class:
+class Stack<T> {
+  private items: T[] = [];
+  push(item: T) { this.items.push(item); }
+  pop(): T | undefined { return this.items.pop(); }
+}
+const numStack = new Stack<number>();
+numStack.push(1);    // OK
+numStack.push('a');  // ERROR: string is not assignable to number
+```
+
+**Why generics matter:**
+1. **Reusability** — write once, use with any type
+2. **Type safety** — catch errors at compile time, not runtime
+3. **No `any`** — avoid losing type information
+4. **Better DX** — autocomplete works because TypeScript knows the exact type
+
+**Real-world examples:** Array<T>, Promise<T>, Map<K, V>, React's useState<T>, Express Request<Params, ResBody, ReqBody> -->
+
+---
+
+### Q28. What is the React virtual DOM, and how does React rendering work?
+
+<!-- The virtual DOM is a lightweight JavaScript representation of the actual DOM. React uses it to minimize expensive real DOM operations.
+
+**How it works:**
+```
+1. State changes (setState, useState setter)
+        ↓
+2. React re-renders the component → creates a NEW virtual DOM tree
+        ↓
+3. React DIFFS the new virtual DOM against the previous one ("reconciliation")
+        ↓
+4. React calculates the MINIMUM set of real DOM changes needed
+        ↓
+5. React applies only those changes to the real DOM ("commit phase")
+```
+
+**Why not just update the real DOM directly?**
+- Real DOM operations are SLOW (layout recalculation, repaint, reflow)
+- JavaScript object comparison (virtual DOM diff) is FAST
+- Batching multiple changes into one DOM update is much cheaper than doing them individually
+
+**React rendering phases:**
+1. **Render phase** — React calls your component function, generates virtual DOM. Pure, no side effects. Can be interrupted (concurrent mode).
+2. **Commit phase** — React applies the diff to the real DOM. Runs useEffect/useLayoutEffect. Cannot be interrupted.
+
+**Key concepts:**
+- **Re-render ≠ DOM update** — a component re-rendering means React calls the function again, but the DOM only updates if the output actually changed
+- **Reconciliation** — React's diffing algorithm. Compares elements by type and key. Same type = update props; different type = unmount and remount.
+- **Keys** — help React identify which items in a list changed, were added, or removed. Using array index as key is an anti-pattern when list order changes.
+
+```jsx
+// React re-renders when:
+// 1. State changes
+const [count, setCount] = useState(0);
+setCount(1);  // triggers re-render
+
+// 2. Parent re-renders (even if props didn't change)
+// Fix: wrap child in React.memo()
+const Child = React.memo(({ name }) => <div>{name}</div>);
+
+// 3. Context value changes
+const theme = useContext(ThemeContext);  // re-renders when theme changes
+```
+
+**Performance optimization tools:**
+- `React.memo()` — skip re-render if props haven't changed
+- `useMemo()` — memoize expensive computed values
+- `useCallback()` — memoize function references (prevent child re-renders)
+- React DevTools Profiler — visualize what's re-rendering and why -->
+
+---
+
+### Q29. What are React hooks? Name the most important ones.
+
+<!-- Hooks are functions that let you use state and other React features in function components (previously only available in class components). Introduced in React 16.8.
+
+**Core hooks:**
+
+```jsx
+// useState — local state
+const [count, setCount] = useState(0);
+
+// useEffect — side effects (data fetching, subscriptions, DOM manipulation)
+useEffect(() => {
+  fetchData();
+  return () => cleanup();  // cleanup on unmount or before next effect
+}, [dependency]);  // re-runs when dependency changes; [] = mount only
+
+// useContext — access context without nesting Consumer components
+const theme = useContext(ThemeContext);
+
+// useRef — mutable value that persists across re-renders without causing re-render
+const inputRef = useRef(null);
+inputRef.current.focus();
+
+// useMemo — memoize expensive computation, recompute only when deps change
+const sorted = useMemo(() => expensiveSort(items), [items]);
+
+// useCallback — memoize a function reference (useful to prevent child re-renders)
+const handleClick = useCallback(() => {
+  doSomething(id);
+}, [id]);
+
+// useReducer — complex state logic (like Redux, but local)
+const [state, dispatch] = useReducer(reducer, initialState);
+dispatch({ type: 'INCREMENT' });
+```
+
+**Rules of hooks (enforced by ESLint plugin):**
+1. Only call hooks at the TOP LEVEL — never inside conditions, loops, or nested functions
+2. Only call hooks from React function components or custom hooks
+
+**Why these rules exist:**
+React relies on the ORDER hooks are called to match state to the right hook. If you put a hook inside an `if` statement, the order could change between renders, and React would mix up which state belongs to which hook.
+
+**Custom hooks — reusable logic:**
+```tsx
+function useFetch<T>(url: string) {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    fetch(url)
+      .then(res => res.json())
+      .then(setData)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, [url]);
+
+  return { data, loading, error };
+}
+
+// Usage:
+const { data: users, loading } = useFetch<User[]>('/api/users');
+``` -->
+
+---
+
+### Q30. What are PostgreSQL transactions, and what is ACID?
+
+<!-- A transaction is a group of SQL operations that execute as a single unit — either ALL succeed or ALL are rolled back. No partial changes.
+
+```sql
+BEGIN;
+  UPDATE accounts SET balance = balance - 100 WHERE id = 1;  -- debit
+  UPDATE accounts SET balance = balance + 100 WHERE id = 2;  -- credit
+COMMIT;  -- both happen, or neither happens
+
+-- If something fails:
+ROLLBACK;  -- undo everything since BEGIN
+```
+
+**ACID properties — the guarantees a transaction provides:**
+
+**A — Atomicity:**
+All operations in a transaction succeed or all fail. No partial updates. If the server crashes between the debit and credit, the entire transaction is rolled back.
+
+**C — Consistency:**
+A transaction brings the database from one valid state to another. Constraints (foreign keys, unique, check) are enforced. You can't end up with negative balances if you have a CHECK constraint.
+
+**I — Isolation:**
+Concurrent transactions don't interfere with each other. Each transaction sees a consistent snapshot of the data, as if it were the only one running. (The level of isolation is configurable — see isolation levels below.)
+
+**D — Durability:**
+Once a transaction is committed, it's permanent — even if the server crashes immediately after. The data is written to disk (WAL — Write-Ahead Log).
+
+**PostgreSQL isolation levels (from least to most strict):**
+1. **Read Uncommitted** — can see uncommitted changes from other transactions (PostgreSQL treats this as Read Committed)
+2. **Read Committed** (default) — only sees data committed before each statement
+3. **Repeatable Read** — sees a snapshot from the start of the transaction; prevents non-repeatable reads
+4. **Serializable** — strictest; transactions behave as if they ran one after another
+
+```sql
+-- Set isolation level:
+BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+  -- your queries here
+COMMIT;
+```
+
+**In Node.js with a connection pool:**
+```ts
+const client = await pool.connect();
+try {
+  await client.query('BEGIN');
+  await client.query('UPDATE accounts SET balance = balance - $1 WHERE id = $2', [100, 1]);
+  await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2', [100, 2]);
+  await client.query('COMMIT');
+} catch (err) {
+  await client.query('ROLLBACK');
+  throw err;
+} finally {
+  client.release();
+}
+``` -->
+
+---
+
+### Q31. What is the difference between SQL JOINs?
+
+<!-- JOINs combine rows from two or more tables based on a related column.
+
+```
+Table: users                Table: orders
+| id | name   |            | id | user_id | total |
+|----|--------|            |----|---------|-------|
+| 1  | Alice  |            | 1  | 1       | 50    |
+| 2  | Bob    |            | 2  | 1       | 30    |
+| 3  | Carol  |            | 3  | 4       | 20    |
+```
+
+**INNER JOIN** — only rows that match in BOTH tables:
+```sql
+SELECT u.name, o.total
+FROM users u INNER JOIN orders o ON u.id = o.user_id;
+-- Result: Alice|50, Alice|30  (Bob has no orders → excluded. Order 3 has no user → excluded)
+```
+
+**LEFT JOIN (LEFT OUTER JOIN)** — all rows from the LEFT table, matched rows from right (NULL if no match):
+```sql
+SELECT u.name, o.total
+FROM users u LEFT JOIN orders o ON u.id = o.user_id;
+-- Result: Alice|50, Alice|30, Bob|NULL, Carol|NULL
+```
+
+**RIGHT JOIN** — all rows from the RIGHT table, matched rows from left:
+```sql
+SELECT u.name, o.total
+FROM users u RIGHT JOIN orders o ON u.id = o.user_id;
+-- Result: Alice|50, Alice|30, NULL|20  (order 3 has user_id 4 which doesn't exist)
+```
+
+**FULL OUTER JOIN** — all rows from BOTH tables, NULLs where no match:
+```sql
+SELECT u.name, o.total
+FROM users u FULL OUTER JOIN orders o ON u.id = o.user_id;
+-- Result: Alice|50, Alice|30, Bob|NULL, Carol|NULL, NULL|20
+```
+
+**CROSS JOIN** — every row from left × every row from right (Cartesian product):
+```sql
+SELECT u.name, o.total FROM users u CROSS JOIN orders o;
+-- Result: 3 users × 3 orders = 9 rows
+```
+
+**Quick decision guide:**
+- "Get all users WITH their orders" → LEFT JOIN (includes users with no orders)
+- "Get only users who HAVE orders" → INNER JOIN
+- "Find users WITHOUT orders" → LEFT JOIN ... WHERE o.id IS NULL
+- "Combine everything from both sides" → FULL OUTER JOIN
+
+**Performance tip:** JOINs on indexed columns are fast. Always ensure your JOIN columns (foreign keys) are indexed. -->
+
+---
+
+### Q32. What is a RESTful API? What are best practices for API design?
+
+<!-- REST (Representational State Transfer) is an architectural style for designing APIs that uses HTTP methods and URLs to model resources.
+
+**Core principles:**
+1. **Resources** are nouns, identified by URLs: `/users`, `/orders/123`
+2. **HTTP methods** map to CRUD operations:
+   - GET = Read (idempotent, safe)
+   - POST = Create
+   - PUT = Replace entirely (idempotent)
+   - PATCH = Partial update
+   - DELETE = Remove (idempotent)
+3. **Stateless** — each request contains all info needed; server stores no session state
+4. **Uniform interface** — consistent URL patterns and response formats
+
+**REST API design best practices:**
+
+```
+# Use plural nouns for resources:
+GET    /users          ← list all users
+GET    /users/123      ← get specific user
+POST   /users          ← create a user
+PUT    /users/123      ← replace user 123
+PATCH  /users/123      ← update specific fields on user 123
+DELETE /users/123      ← delete user 123
+
+# Nested resources for relationships:
+GET    /users/123/orders       ← orders for user 123
+POST   /users/123/orders       ← create order for user 123
+
+# Filtering, sorting, pagination via query params:
+GET    /users?status=active&sort=name&page=2&limit=20
+
+# Versioning:
+GET    /api/v1/users
+```
+
+**Response design:**
+```json
+// Success:
+{ "data": { "id": 123, "name": "Alice" } }
+
+// Error:
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Email is required",
+    "details": [{ "field": "email", "message": "must not be empty" }]
+  }
+}
+
+// List with pagination:
+{
+  "data": [...],
+  "meta": { "page": 2, "limit": 20, "total": 145 }
+}
+```
+
+**Best practices:**
+1. Use proper HTTP status codes (201 for created, 404 for not found, etc.)
+2. Use JSON for request/response bodies
+3. Version your API from day one (`/api/v1/`)
+4. Use pagination for list endpoints (never return unbounded results)
+5. Return consistent error format across all endpoints
+6. Use HTTPS always
+7. Validate input at the API boundary; sanitize before database queries
+8. Rate limit public endpoints
+9. Document with OpenAPI/Swagger -->
+
+---
+
+### Q33. What is cloud infrastructure? Explain key AWS/cloud concepts.
+
+<!-- Cloud infrastructure means running your application on servers managed by a cloud provider (AWS, GCP, Azure) instead of owning physical hardware.
+
+**Key concepts and services (using AWS terms, which are most common):**
+
+**Compute:**
+- **EC2** — virtual machines (servers) you can SSH into and run anything
+- **ECS/EKS** — run Docker containers (ECS = AWS-managed, EKS = Kubernetes)
+- **Lambda** — serverless functions, pay per execution, auto-scales to zero
+- **Fargate** — serverless containers (no server management)
+
+**Storage:**
+- **S3** — object storage (files, images, backups). Virtually unlimited, cheap.
+- **EBS** — block storage attached to EC2 (like a hard drive)
+
+**Database:**
+- **RDS** — managed relational databases (PostgreSQL, MySQL). Handles backups, patching, replication.
+- **ElastiCache** — managed Redis/Memcached
+
+**Networking:**
+- **VPC** — your private network in the cloud. Isolates your resources.
+- **Load Balancer (ALB)** — distributes traffic across multiple instances
+- **Route 53** — DNS management
+- **CloudFront** — CDN for static assets
+
+**Key concepts for interviews:**
+
+**Horizontal vs Vertical scaling:**
+- Vertical: bigger server (more CPU/RAM) — has a ceiling
+- Horizontal: more servers behind a load balancer — scales infinitely
+
+**Infrastructure as Code (IaC):**
+- Define your infrastructure in code (Terraform, CloudFormation, Pulumi)
+- Version controlled, reproducible, reviewable in PRs
+
+**Environment parity:**
+- Dev, staging, and production should be as similar as possible
+- Use Docker to guarantee "works on my machine" = "works in production"
+
+**12-Factor App principles (most relevant):**
+- Store config in environment variables (not in code)
+- Treat backing services (DB, cache, queue) as attached resources
+- Logs are event streams (write to stdout, let the platform collect them)
+- Processes are stateless (store session data in Redis, not in memory) -->
+
+---
+
+### Q34. What is connection pooling and why does it matter?
+
+<!-- Connection pooling maintains a pool of reusable database connections instead of opening a new connection for every query. Opening a database connection is expensive (TCP handshake, SSL negotiation, authentication) — pooling amortizes this cost.
+
+**Without pooling:**
+```
+Request 1 → Open connection → Query → Close connection  (200ms overhead)
+Request 2 → Open connection → Query → Close connection  (200ms overhead)
+Request 3 → Open connection → Query → Close connection  (200ms overhead)
+```
+
+**With pooling:**
+```
+Startup → Create pool of 10 connections
+
+Request 1 → Borrow connection → Query → Return to pool  (0ms overhead)
+Request 2 → Borrow connection → Query → Return to pool  (0ms overhead)
+Request 3 → Borrow connection → Query → Return to pool  (0ms overhead)
+```
+
+**In Node.js with PostgreSQL (pg library):**
+```ts
+import { Pool } from 'pg';
+
+const pool = new Pool({
+  host: 'localhost',
+  database: 'myapp',
+  user: 'myuser',
+  password: 'secret',
+  max: 20,               // max connections in pool
+  idleTimeoutMillis: 30000,  // close idle connections after 30s
+  connectionTimeoutMillis: 2000,  // fail if can't connect within 2s
+});
+
+// Simple query (auto-borrows and returns connection):
+const result = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+
+// For transactions (manually manage the connection):
+const client = await pool.connect();
+try {
+  await client.query('BEGIN');
+  // ... multiple queries ...
+  await client.query('COMMIT');
+} catch {
+  await client.query('ROLLBACK');
+} finally {
+  client.release();  // ALWAYS release back to pool
+}
+```
+
+**Why it matters:**
+1. **Performance** — eliminates connection overhead per request
+2. **Resource management** — PostgreSQL has a max connections limit (default 100). Without pooling, 100 concurrent requests = 100 connections = limit hit.
+3. **Reliability** — pool handles reconnection, health checks, and connection lifecycle
+4. **Concurrency** — pool queues requests when all connections are busy, preventing database overload
+
+**Common pitfall:** forgetting to release connections back to the pool (connection leak). Eventually the pool is exhausted and new queries hang forever. Always use try/finally or use the pool.query() shorthand. -->
+
+---
+
+### Q35. What is Docker, and why is it used in development and deployment?
+
+<!-- Docker packages your application and ALL its dependencies into a container — a lightweight, standalone, executable unit that runs the same everywhere.
+
+**The problem Docker solves:**
+- "It works on my machine" — different Node versions, different OS, different Postgres versions
+- Setting up a new developer takes hours of installing dependencies
+- Production environment differs from development
+
+**Key concepts:**
+
+```dockerfile
+# Dockerfile — recipe for building a container image:
+FROM node:20-alpine              # base image
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production           # install deps
+COPY . .
+RUN npm run build                 # compile TypeScript
+EXPOSE 3000
+CMD ["node", "dist/index.js"]     # start command
+```
+
+**Image vs Container:**
+- **Image** — a blueprint (like a class). Built from a Dockerfile. Immutable.
+- **Container** — a running instance of an image (like an object). Has its own filesystem, network, process space.
+
+**docker-compose — run multiple services together:**
+```yaml
+# docker-compose.yml
+services:
+  app:
+    build: .
+    ports: ['3000:3000']
+    environment:
+      DATABASE_URL: postgres://user:pass@db:5432/myapp
+    depends_on: [db, redis]
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_PASSWORD: pass
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # persist data
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  pgdata:
+```
+
+```bash
+docker-compose up    # starts app + postgres + redis
+docker-compose down  # stops everything
+```
+
+**Why Docker matters for Steno's stack:**
+1. **Development** — `docker-compose up` gives every developer identical Postgres, Redis, Node.js
+2. **CI/CD** — tests run in containers, same environment as production
+3. **Deployment** — build image once, deploy the same image to staging and production
+4. **Isolation** — each service runs independently; a crash in one doesn't affect others
+5. **Scaling** — container orchestration (ECS, Kubernetes) can spin up more copies as traffic grows -->
+
+---
+
+### Q36. What are environment variables, and how do you manage configuration?
+
+<!-- Environment variables are key-value pairs set OUTSIDE your code that configure your application's behavior. They keep secrets and environment-specific settings out of the codebase.
+
+```bash
+# Set in the shell:
+DATABASE_URL=postgres://user:pass@localhost:5432/myapp
+JWT_SECRET=super-secret-key
+NODE_ENV=production
+PORT=3000
+```
+
+```ts
+// Access in Node.js:
+const dbUrl = process.env.DATABASE_URL;
+const port = process.env.PORT || 3000;
+
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET is required');  // fail fast if missing
+}
+```
+
+**Why not hardcode config?**
+1. **Security** — secrets (DB passwords, API keys) should NEVER be in code or git history
+2. **Environment differences** — dev uses localhost DB, staging uses staging DB, prod uses prod DB — same code, different config
+3. **12-Factor App principle** — strict separation of config from code
+
+**Common patterns in Node.js:**
+
+**.env files (development only):**
+```bash
+# .env (NEVER commit this — add to .gitignore)
+DATABASE_URL=postgres://localhost:5432/myapp_dev
+JWT_SECRET=dev-secret
+REDIS_URL=redis://localhost:6379
+```
+
+```ts
+// Load with dotenv (dev only):
+import 'dotenv/config';  // loads .env into process.env
+```
+
+**Validation with a library (e.g., zod, envalid):**
+```ts
+import { z } from 'zod';
+
+const envSchema = z.object({
+  DATABASE_URL: z.string().url(),
+  JWT_SECRET: z.string().min(32),
+  NODE_ENV: z.enum(['development', 'production', 'test']),
+  PORT: z.coerce.number().default(3000),
+});
+
+export const env = envSchema.parse(process.env);
+// Throws a clear error if any required var is missing or invalid
+```
+
+**In production:**
+- Set env vars through your cloud provider (AWS Parameter Store, ECS task definitions, Kubernetes secrets)
+- Use a secrets manager (AWS Secrets Manager, HashiCorp Vault) for sensitive values
+- NEVER use .env files in production — they're a development convenience only -->
+
+---
+
+### Q37. What is the difference between authentication and authorization?
+
+<!-- **Authentication (AuthN)** — WHO are you? Verifying identity.
+**Authorization (AuthZ)** — WHAT can you do? Verifying permissions.
+
+Authentication always comes first. You can't check permissions until you know who the user is.
+
+```
+Request → [Authentication] → [Authorization] → [Route Handler]
+            "Who is this?"     "Can they do this?"   "Do the thing"
+```
+
+**Authentication example (JWT-based):**
+```ts
+// Login — create a token:
+app.post('/login', async (req, res) => {
+  const user = await db.findByEmail(req.body.email);
+  const valid = await bcrypt.compare(req.body.password, user.passwordHash);
+  if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+
+  const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+  res.json({ token });
+});
+
+// Authentication middleware — verify the token:
+function authenticate(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);  // { userId, role }
+    next();
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+}
+```
+
+**Authorization example (role-based):**
+```ts
+// Authorization middleware — check permissions:
+function authorize(...allowedRoles) {
+  return (req, res, next) => {
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Forbidden' });  // 403, not 401
+    }
+    next();
+  };
+}
+
+// Usage:
+app.delete('/users/:id', authenticate, authorize('admin'), deleteUser);
+// Must be authenticated AND must have admin role
+```
+
+**Key distinction in HTTP status codes:**
+- **401 Unauthorized** — actually means UNAUTHENTICATED (no valid token)
+- **403 Forbidden** — authenticated but NOT AUTHORIZED (valid token, wrong permissions)
+
+**Common auth strategies:**
+- **Session-based** — server stores session, client sends cookie. Stateful.
+- **JWT-based** — token contains user info, server doesn't store state. Stateless. Must handle token expiry and refresh.
+- **OAuth2/OpenID Connect** — delegated auth ("Login with Google"). Used for third-party access.
+- **API keys** — for service-to-service communication. Simple but limited. -->
+
+---
+
+---
+
+## Part 4: Engineering Leaders Deep Dive & Take-Home Prep
+
+> The 60-min engineering leaders round goes deeper into your resume and Steno's tech ecosystem.
+> The take-home is followed by a 90-min deep dive: code review discussion, live coding, and more technical Qs.
+> These questions prepare you for scenario-based, experience-driven, and design-level conversations.
+
+---
+
+### Q38. Walk me through how you would design a database schema for a court reporting platform.
+
+<!-- This is a Steno-specific question — they're in the court reporting/legal tech space. Think about what entities exist.
+
+**Core entities:**
+```sql
+-- Users of the platform (attorneys, court reporters, admins)
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL,  -- 'attorney', 'reporter', 'admin'
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- A legal case
+CREATE TABLE cases (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_number VARCHAR(100) UNIQUE NOT NULL,
+    title VARCHAR(500) NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',  -- 'active', 'closed', 'archived'
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- A deposition/hearing event
+CREATE TABLE proceedings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID REFERENCES cases(id),
+    scheduled_at TIMESTAMPTZ NOT NULL,
+    location TEXT,
+    status VARCHAR(50) DEFAULT 'scheduled',  -- 'scheduled', 'in_progress', 'completed', 'cancelled'
+    reporter_id UUID REFERENCES users(id),  -- assigned court reporter
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Transcripts produced by court reporters
+CREATE TABLE transcripts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    proceeding_id UUID REFERENCES proceedings(id),
+    file_url TEXT NOT NULL,           -- S3 URL
+    format VARCHAR(20) NOT NULL,     -- 'pdf', 'txt', 'ascii'
+    status VARCHAR(50) DEFAULT 'draft',  -- 'draft', 'final', 'certified'
+    page_count INTEGER,
+    uploaded_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Many-to-many: which attorneys are on which cases
+CREATE TABLE case_participants (
+    case_id UUID REFERENCES cases(id),
+    user_id UUID REFERENCES users(id),
+    role VARCHAR(50) NOT NULL,  -- 'lead_attorney', 'co_counsel', 'witness'
+    PRIMARY KEY (case_id, user_id)
+);
+
+-- Indexes for common queries:
+CREATE INDEX idx_proceedings_case_id ON proceedings(case_id);
+CREATE INDEX idx_proceedings_reporter_id ON proceedings(reporter_id);
+CREATE INDEX idx_proceedings_scheduled_at ON proceedings(scheduled_at);
+CREATE INDEX idx_transcripts_proceeding_id ON transcripts(proceeding_id);
+```
+
+**Design decisions to discuss:**
+1. **UUIDs vs auto-increment** — UUIDs are better for distributed systems, avoid ID enumeration attacks, and work well for APIs
+2. **Status as VARCHAR vs enum** — VARCHAR is easier to extend; PostgreSQL enums require ALTER TYPE to add values
+3. **Soft delete vs hard delete** — legal data likely requires soft delete (add `deleted_at` column) for audit trails
+4. **Timestamps with timezone** — always use TIMESTAMPTZ in PostgreSQL for legal records across time zones
+5. **File storage** — store files in S3, store the URL in the database (never store binary blobs in PostgreSQL)
+6. **Audit trail** — for a legal platform, you'd likely want an audit log table tracking all changes (who changed what, when) -->
+
+---
+
+### Q39. Tell me about a time you had to debug a production issue. What was your process?
+
+<!-- Structure your answer with STAR (Situation, Task, Action, Result). Here's a framework:
+
+**Framework for answering:**
+
+1. **Detection** — how did you find out? (monitoring alert, user report, error spike in logs)
+2. **Triage** — how severe? (P0 all users affected? P1 some users? P2 minor degradation?)
+3. **Investigation** — what tools and steps?
+   - Check error logs (CloudWatch, Datadog, Sentry)
+   - Check recent deployments (was anything just deployed? → check git log)
+   - Check infrastructure (is the database overloaded? is a service down?)
+   - Reproduce the issue (can you trigger it locally or in staging?)
+4. **Root cause** — what was actually wrong?
+5. **Fix** — what did you do? (hotfix, rollback, config change)
+6. **Prevention** — what did you do to prevent it from happening again? (added monitoring, added tests, improved the deploy process)
+
+**Example answer structure:**
+"We had an incident where API response times spiked to 30 seconds during peak hours. I checked our monitoring dashboard and saw the database connection pool was saturated — all 20 connections were in use and requests were queuing. I traced it to a new endpoint that was doing a complex query without a timeout, and some queries were taking 15+ seconds due to a missing index. I added the index (response times dropped to 50ms), added a query timeout of 5 seconds, and increased the pool size to 30 as a safety buffer. Then I added a Datadog monitor for connection pool usage so we'd catch this earlier."
+
+**Key things interviewers look for:**
+- Systematic approach (not just guessing)
+- Use of observability tools (logs, metrics, traces)
+- Speed of mitigation vs. speed of root cause fix
+- What you learned and how you prevented recurrence -->
+
+---
+
+### Q40. How do you approach code reviews? What do you look for?
+
+<!-- **What to look for in a code review:**
+
+1. **Correctness** — does it actually solve the problem? Edge cases handled?
+2. **Readability** — can another engineer understand this in 6 months? Clear variable names? Not too clever?
+3. **Architecture** — is it in the right place? Does it follow existing patterns? Is the abstraction level appropriate?
+4. **Performance** — any N+1 queries? Missing indexes? Unnecessary re-renders in React?
+5. **Security** — SQL injection? XSS? Sensitive data exposure? Input validation?
+6. **Testing** — are the important paths tested? Are tests actually testing the right thing (not just asserting true === true)?
+7. **Error handling** — what happens when things fail? Are errors meaningful to the caller?
+
+**How to give feedback:**
+- Lead with questions, not commands ("What do you think about..." vs "Change this to...")
+- Distinguish between blocking issues and suggestions ("Must fix: SQL injection" vs "Nit: prefer const over let here")
+- Acknowledge good code — call out things done well, not just problems
+- Be specific — link to docs, show an example, explain WHY not just WHAT
+
+**How to RECEIVE feedback:**
+- Don't take it personally — the code is being reviewed, not you
+- Ask clarifying questions if you disagree
+- If you push back, provide reasoning (not just "I prefer it this way")
+
+**As a senior engineer:**
+- Mentor through code reviews — explain the "why" behind suggestions
+- Focus on patterns and architecture, not just style (that's what linters are for)
+- Consider the PR author's experience level — adjust depth of feedback accordingly -->
+
+---
+
+### Q41. How would you structure a Node.js + TypeScript project?
+
+<!-- **A clean project structure for a Node.js API (what Steno likely uses):**
+
+```
+project-root/
+├── src/
+│   ├── index.ts              # entry point — starts the server
+│   ├── app.ts                # Express app setup, middleware registration
+│   ├── config/
+│   │   └── index.ts          # env var validation (zod), DB config, etc.
+│   ├── routes/
+│   │   ├── users.ts          # route definitions: app.get('/users', ...)
+│   │   └── orders.ts
+│   ├── controllers/
+│   │   ├── users.ts          # request handling: parse input, call service, send response
+│   │   └── orders.ts
+│   ├── services/
+│   │   ├── users.ts          # business logic: validation rules, orchestration
+│   │   └── orders.ts
+│   ├── repositories/         # (or models/)
+│   │   ├── users.ts          # database queries: SQL, ORM calls
+│   │   └── orders.ts
+│   ├── middleware/
+│   │   ├── auth.ts           # authentication middleware
+│   │   ├── errorHandler.ts   # global error handler
+│   │   └── validate.ts       # request validation middleware (zod)
+│   ├── types/
+│   │   └── index.ts          # shared TypeScript interfaces/types
+│   └── utils/
+│       └── logger.ts         # logging utility
+├── tests/
+│   ├── unit/
+│   └── integration/
+├── package.json
+├── tsconfig.json
+├── .env.example              # template for env vars (committed)
+├── .env                      # actual env vars (gitignored)
+├── Dockerfile
+└── docker-compose.yml
+```
+
+**The layered flow:**
+```
+Route → Controller → Service → Repository → Database
+```
+
+- **Route**: defines URL patterns and HTTP methods
+- **Controller**: handles the HTTP request/response — parses params, calls the service, sends the response
+- **Service**: contains business logic — validation, authorization checks, orchestrating multiple repository calls
+- **Repository**: raw data access — SQL queries or ORM calls. Only layer that talks to the database.
+
+**Why this structure matters:**
+1. **Testability** — you can unit test services by mocking repositories; integration test controllers by mocking services
+2. **Separation of concerns** — changing the database (PostgreSQL → MySQL) only affects the repository layer
+3. **Onboarding** — new developers know exactly where to find things
+4. **Scalability** — easy to extract a module into its own service later
+
+**TypeScript configuration (tsconfig.json key settings):**
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,           // enables all strict checks
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"]
+}
+``` -->
+
+---
+
+### Q42. What is database migration, and how do you manage schema changes?
+
+<!-- Database migration is a version-controlled way to evolve your database schema over time. Instead of manually running ALTER TABLE commands, you write migration files that can be applied (and rolled back) in order.
+
+**Why migrations?**
+- Every developer and environment (dev, staging, prod) needs the same schema
+- You need a history of what changed and when
+- You need to be able to roll back if a migration breaks something
+- Schema changes should be reviewed in PRs just like code changes
+
+**Example with a migration tool (e.g., node-pg-migrate, Knex, Prisma):**
+
+```ts
+// migrations/20240115_001_create_users.ts
+export async function up(db) {
+  await db.query(`
+    CREATE TABLE users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email VARCHAR(255) UNIQUE NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX idx_users_email ON users(email);
+  `);
+}
+
+export async function down(db) {
+  await db.query('DROP TABLE IF EXISTS users;');
+}
+
+// migrations/20240120_002_add_role_to_users.ts
+export async function up(db) {
+  await db.query(`
+    ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user';
+  `);
+}
+
+export async function down(db) {
+  await db.query('ALTER TABLE users DROP COLUMN role;');
+}
+```
+
+**How it works:**
+1. Migrations are numbered/timestamped and run in order
+2. A `migrations` table in the database tracks which migrations have been applied
+3. `migrate up` runs all pending migrations
+4. `migrate down` rolls back the last migration
+5. In CI/CD, migrations run automatically before the new code deploys
+
+**Best practices:**
+1. **Never edit a migration that's been run in production** — create a new migration instead
+2. **Make migrations backward-compatible** — the old code should still work while the migration is being applied (important for zero-downtime deploys)
+3. **Small, focused migrations** — one change per migration file
+4. **Always write a down migration** — you need to be able to rollback
+5. **Test migrations on a copy of production data** before running in production -->
+
+---
+
+### Q43. How do you handle error handling in a Node.js API?
+
+<!-- **Layered error handling strategy:**
+
+```ts
+// 1. Define custom error classes:
+class AppError extends Error {
+  constructor(
+    public statusCode: number,
+    public code: string,
+    message: string
+  ) {
+    super(message);
+  }
+}
+
+class NotFoundError extends AppError {
+  constructor(resource: string) {
+    super(404, 'NOT_FOUND', `${resource} not found`);
+  }
+}
+
+class ValidationError extends AppError {
+  constructor(message: string) {
+    super(422, 'VALIDATION_ERROR', message);
+  }
+}
+
+// 2. Throw errors in your service/repository layer:
+async function getUser(id: string) {
+  const user = await db.query('SELECT * FROM users WHERE id = $1', [id]);
+  if (!user.rows[0]) throw new NotFoundError('User');
+  return user.rows[0];
+}
+
+// 3. Controller doesn't need try/catch if you use an async wrapper:
+const asyncHandler = (fn: RequestHandler) => (req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(fn(req, res, next)).catch(next);  // forwards errors to error middleware
+};
+
+app.get('/users/:id', asyncHandler(async (req, res) => {
+  const user = await getUser(req.params.id);
+  res.json({ data: user });
+}));
+
+// 4. Global error handling middleware (registered LAST):
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof AppError) {
+    // Known error — send structured response:
+    return res.status(err.statusCode).json({
+      error: { code: err.code, message: err.message }
+    });
+  }
+
+  // Unknown error — log it, send generic response:
+  console.error('Unexpected error:', err);
+  res.status(500).json({
+    error: { code: 'INTERNAL_ERROR', message: 'Something went wrong' }
+  });
+});
+```
+
+**Key principles:**
+1. **Fail fast** — validate inputs at the boundary (middleware); throw early if something is wrong
+2. **Custom error classes** — categorize errors (not found, validation, auth, internal) so the error handler can respond appropriately
+3. **Never expose stack traces** to the client in production — log them server-side
+4. **Centralized error handler** — one place handles all errors consistently
+5. **Async wrapper** — avoids try/catch boilerplate in every route handler
+6. **Log meaningfully** — include request ID, user ID, and context so you can trace issues in production
+7. **Return consistent error format** — every error response has the same shape so clients can handle them uniformly -->
+
+---
+
+### Q44. Explain how you would implement pagination for a large dataset.
+
+<!-- **Two common approaches:**
+
+**1. Offset-based pagination (simpler, most common):**
+```ts
+// GET /api/users?page=2&limit=20
+app.get('/api/users', async (req, res) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);  // cap at 100
+  const offset = (page - 1) * limit;
+
+  const [users, countResult] = await Promise.all([
+    db.query('SELECT * FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2', [limit, offset]),
+    db.query('SELECT COUNT(*) FROM users'),
+  ]);
+
+  const total = parseInt(countResult.rows[0].count);
+
+  res.json({
+    data: users.rows,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    }
+  });
+});
+```
+
+**Problem with offset:** OFFSET scans and discards rows. OFFSET 10000 means the DB reads 10,000 rows and throws them away. Gets slower as pages increase.
+
+**2. Cursor-based pagination (better for large datasets):**
+```ts
+// GET /api/users?cursor=2024-01-15T10:30:00Z&limit=20
+app.get('/api/users', async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+  const cursor = req.query.cursor as string;
+
+  let query = 'SELECT * FROM users';
+  const params: any[] = [limit + 1];  // fetch one extra to know if there's a next page
+
+  if (cursor) {
+    query += ' WHERE created_at < $2';
+    params.push(cursor);
+  }
+
+  query += ' ORDER BY created_at DESC LIMIT $1';
+
+  const result = await db.query(query, params);
+  const hasMore = result.rows.length > limit;
+  const users = hasMore ? result.rows.slice(0, limit) : result.rows;
+
+  res.json({
+    data: users,
+    meta: {
+      nextCursor: hasMore ? users[users.length - 1].created_at : null,
+      hasMore,
+    }
+  });
+});
+```
+
+**When to use which:**
+- **Offset**: simple UIs with page numbers (page 1, 2, 3...). Fine for small-to-medium datasets.
+- **Cursor**: infinite scroll, real-time feeds, large datasets (100k+ rows). More performant but can't jump to page 47.
+
+**Performance tips:**
+- Always have an index on the ORDER BY column
+- Use `LIMIT + 1` trick to check if there's a next page without a separate COUNT query
+- COUNT(*) on large tables is slow in PostgreSQL — consider approximate counts or caching the total -->
+
+---
+
+### Q45. What are some common security vulnerabilities in web applications, and how do you prevent them?
+
+<!-- **OWASP Top vulnerabilities relevant to a Node.js + PostgreSQL stack:**
+
+**1. SQL Injection:**
+```ts
+// BAD — string concatenation:
+db.query(`SELECT * FROM users WHERE email = '${email}'`);  // attacker: ' OR 1=1 --
+
+// GOOD — parameterized queries:
+db.query('SELECT * FROM users WHERE email = $1', [email]);
+```
+Always use parameterized queries. ORMs (Prisma, TypeORM) do this automatically.
+
+**2. Cross-Site Scripting (XSS):**
+```jsx
+// BAD — rendering raw HTML:
+<div dangerouslySetInnerHTML={{ __html: userInput }} />
+
+// GOOD — React auto-escapes by default:
+<div>{userInput}</div>
+```
+React escapes output by default. Never use dangerouslySetInnerHTML with user input. Sanitize with DOMPurify if you must render HTML.
+
+**3. Cross-Site Request Forgery (CSRF):**
+- Use anti-CSRF tokens for cookie-based auth
+- JWT in Authorization header is inherently CSRF-safe (cookies are the vulnerability)
+- SameSite cookie attribute helps
+
+**4. Broken Authentication:**
+- Hash passwords with bcrypt (cost factor 10+)
+- Use constant-time comparison for tokens
+- Implement rate limiting on login endpoints
+- JWT: use short expiry + refresh tokens, never store in localStorage (XSS vulnerable), use httpOnly cookies
+
+**5. Sensitive Data Exposure:**
+- Never log passwords, tokens, or PII
+- Use HTTPS everywhere
+- Don't return sensitive fields in API responses (filter at the query or serialization layer)
+- Store secrets in env vars / secrets manager, never in code
+
+**Security middleware for Express:**
+```ts
+import helmet from 'helmet';       // sets security headers
+import cors from 'cors';           // configure allowed origins
+import rateLimit from 'express-rate-limit';
+
+app.use(helmet());
+app.use(cors({ origin: 'https://app.steno.com' }));
+app.use('/api/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }));
+``` -->
+
+---
+
+### Q46. What is your approach to mentoring junior engineers?
+
+<!-- This matters for a senior role — the JD mentions "mentor less experienced engineers."
+
+**Framework for answering:**
+
+1. **Code reviews as teaching moments** — don't just say "change this"; explain WHY and link to resources. Turn a review into a mini-lesson.
+
+2. **Pair programming** — sit with them on complex problems. Let them drive while you guide. They learn decision-making, not just solutions.
+
+3. **Progressive responsibility** — start with small, well-defined tasks with good test coverage (safe to fail). Gradually increase scope and ambiguity.
+
+4. **Design discussions** — involve them in architecture conversations. Ask them to propose solutions before you share yours. Even if their approach isn't optimal, discussing tradeoffs builds judgment.
+
+5. **Documentation culture** — encourage them to write down what they learn (ADRs, wiki, PR descriptions). Teaching others is how you solidify understanding.
+
+6. **Psychological safety** — make it clear that asking questions is expected and valued. Share your own past mistakes. Normalize not knowing things.
+
+**Example answer:**
+"When I onboard a junior engineer, I start by pairing with them on a small feature end-to-end — from database migration to API endpoint to frontend component. This gives them a mental model of the whole stack. For code reviews, I try to explain the reasoning, not just the fix — if I suggest adding an index, I'll explain query plans and show them EXPLAIN ANALYZE. I also set up regular 1:1s to check in on blockers and learning goals, separate from standup. The goal is to make them independently productive within a few months, not dependent on me." -->
+
+---
+
+### Q47. How would you approach a take-home assignment for a full-stack Node.js + React app?
+
+<!-- **What they're evaluating in a take-home:**
+
+1. **Code quality** — clean, readable, well-organized code. Not over-engineered, not hacked together.
+2. **Architecture decisions** — sensible project structure, separation of concerns
+3. **TypeScript usage** — proper typing, no excessive `any`, good use of interfaces
+4. **Error handling** — graceful failure, not just happy path
+5. **Testing** — at least some tests that demonstrate you know how to test
+6. **Documentation** — README with setup instructions, design decisions
+
+**Checklist before submitting:**
+
+```markdown
+## Code
+- [ ] TypeScript strict mode, no `any` types
+- [ ] Consistent code style (run ESLint + Prettier)
+- [ ] Meaningful variable/function names
+- [ ] No commented-out code or console.logs
+
+## Backend
+- [ ] Parameterized SQL queries (no SQL injection)
+- [ ] Input validation (zod or joi)
+- [ ] Proper error handling with meaningful error responses
+- [ ] Database migrations (not raw CREATE TABLE in code)
+- [ ] Environment variables for config (not hardcoded)
+
+## Frontend
+- [ ] Components are focused and reusable
+- [ ] Loading and error states handled
+- [ ] TypeScript props interfaces defined
+- [ ] No unnecessary re-renders
+
+## Testing
+- [ ] At least unit tests for business logic
+- [ ] At least one integration test for a key API endpoint
+- [ ] Tests actually test behavior, not implementation
+
+## Documentation
+- [ ] README with: setup instructions, design decisions, tradeoffs, what you'd improve with more time
+- [ ] Clear git history (meaningful commits, not one giant commit)
+```
+
+**The "what I'd improve" section is crucial** — it shows you know what corners you cut and what production-quality code looks like. Interviewers read this carefully. -->
+
+---
+
+### Q48. Describe how you would handle database performance issues.
+
+<!-- **Systematic approach to diagnosing and fixing slow queries:**
+
+**Step 1: Identify the slow query**
+```sql
+-- PostgreSQL: find slow queries
+SELECT query, calls, mean_exec_time, total_exec_time
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
+LIMIT 10;
+
+-- Or enable slow query logging:
+-- SET log_min_duration_statement = 500;  -- log queries taking > 500ms
+```
+
+**Step 2: Analyze with EXPLAIN**
+```sql
+EXPLAIN ANALYZE SELECT u.name, COUNT(o.id)
+FROM users u
+JOIN orders o ON o.user_id = u.id
+WHERE u.status = 'active'
+GROUP BY u.name;
+
+-- Look for:
+-- Seq Scan (full table scan — may need an index)
+-- Nested Loop with high row counts (may need a different join strategy)
+-- Sort with high cost (may need an index for ORDER BY)
+```
+
+**Step 3: Common fixes**
+
+1. **Add missing indexes:**
+```sql
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_users_status ON users(status);
+-- Composite index for multi-column WHERE:
+CREATE INDEX idx_orders_user_status ON orders(user_id, status);
+```
+
+2. **Fix N+1 queries:**
+```ts
+// BAD — N+1 (1 query for users + N queries for orders):
+const users = await db.query('SELECT * FROM users');
+for (const user of users.rows) {
+  user.orders = await db.query('SELECT * FROM orders WHERE user_id = $1', [user.id]);
+}
+
+// GOOD — single query with JOIN:
+const result = await db.query(`
+  SELECT u.*, json_agg(o.*) as orders
+  FROM users u
+  LEFT JOIN orders o ON o.user_id = u.id
+  GROUP BY u.id
+`);
+```
+
+3. **Optimize query structure:**
+   - Use `SELECT` only the columns you need (not `SELECT *`)
+   - Use `EXISTS` instead of `COUNT(*) > 0`
+   - Use `LIMIT` for pagination (never fetch all rows)
+   - Consider materialized views for expensive aggregations
+
+4. **Connection and configuration:**
+   - Tune connection pool size (`max` in pg Pool)
+   - Increase `shared_buffers` and `work_mem` in postgresql.conf
+   - Use connection pooler like PgBouncer for high-concurrency apps
+
+5. **Caching layer:**
+   - Cache frequently-read, rarely-changed data in Redis
+   - Cache computed results (dashboards, reports) with TTL -->
+
+---
+
 ## Quick Reference — One-Line Answers
 
-| # | Question | One-Liner |
-|---|----------|-----------|
-| 1 | Git fast-forward merge | Moves the branch pointer forward when there are no divergent commits — no merge commit created |
-| 2 | Merge vs rebase | Merge creates a merge commit preserving history; rebase replays commits for a linear history |
-| 3 | Spread operator | `...` expands iterables into individual elements for copying, merging, and argument passing |
-| 4 | Interface (TS) | A compile-time contract that defines the shape of an object — properties, methods, and their types |
-| 5 | async/await benefits | Reads like sync code, standard try/catch, better stack traces, works with loops and conditionals |
-| 6 | Unhandled promise rejection | A rejected Promise with no .catch() or try/catch — crashes Node.js v15+ |
-| 7 | Closure | A function that retains access to its outer scope's variables even after the outer function returns |
-| 8 | Callback | A function passed as an argument to another function, called when an operation completes |
-| 9 | Middleware (Node.js) | A function in the request pipeline with access to req, res, and next() |
-| 10 | Dependency injection | Passing dependencies in from outside instead of creating them internally — enables testing and loose coupling |
-| 11 | HTTP status codes | 2xx success, 3xx redirect, 4xx client error, 5xx server error |
-| 12 | HTTP stateful/stateless | Stateless — each request is independent; state is added via cookies/tokens |
-| 13 | SQL declarative/imperative | Declarative — you say WHAT you want, the optimizer decides HOW |
-| 14 | CTE | Common Table Expression — a named temporary result set using the `WITH` keyword |
-| 15 | Table vs view | Table stores data on disk; a view is a saved query that runs against tables on access |
-| 16 | Recursive query | A CTE that references itself to traverse hierarchical data (WITH RECURSIVE) |
-| 17 | SQL index | A B-tree data structure that speeds up reads at the cost of slower writes and extra storage |
-| 18 | Monolith vs microservice | Monolith: one deployable unit, simple; Microservices: independent services, scalable but complex |
-| 19 | Message queue problems | Ordering, duplicates, message loss, poison pills, eventual consistency, consumer lag |
-| 20 | Caching | Store frequently accessed data in faster storage (Redis); invalidate via TTL or events |
-| 21 | Event loop | Single-threaded loop that processes async callbacks from queues, enabling non-blocking I/O |
-| 22 | Index data structure | B+ tree — O(log n) lookups, disk-optimized, supports range queries and sorting |
-| 23 | Promise vs callback | Callbacks nest and have no guarantees; Promises chain, settle once, and have single .catch() error handling |
+| #   | Question                    | One-Liner                                                                                                     |
+| --- | --------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 1   | Git fast-forward merge      | Moves the branch pointer forward when there are no divergent commits — no merge commit created                |
+| 2   | Merge vs rebase             | Merge creates a merge commit preserving history; rebase replays commits for a linear history                  |
+| 3   | Spread operator             | `...` expands iterables into individual elements for copying, merging, and argument passing                   |
+| 4   | Interface (TS)              | A compile-time contract that defines the shape of an object — properties, methods, and their types            |
+| 5   | async/await benefits        | Reads like sync code, standard try/catch, better stack traces, works with loops and conditionals              |
+| 6   | Unhandled promise rejection | A rejected Promise with no .catch() or try/catch — crashes Node.js v15+                                       |
+| 7   | Closure                     | A function that retains access to its outer scope's variables even after the outer function returns           |
+| 8   | Callback                    | A function passed as an argument to another function, called when an operation completes                      |
+| 9   | Middleware (Node.js)        | A function in the request pipeline with access to req, res, and next()                                        |
+| 10  | Dependency injection        | Passing dependencies in from outside instead of creating them internally — enables testing and loose coupling |
+| 11  | HTTP status codes           | 2xx success, 3xx redirect, 4xx client error, 5xx server error                                                 |
+| 12  | HTTP stateful/stateless     | Stateless — each request is independent; state is added via cookies/tokens                                    |
+| 13  | SQL declarative/imperative  | Declarative — you say WHAT you want, the optimizer decides HOW                                                |
+| 14  | CTE                         | Common Table Expression — a named temporary result set using the `WITH` keyword                               |
+| 15  | Table vs view               | Table stores data on disk; a view is a saved query that runs against tables on access                         |
+| 16  | Recursive query             | A CTE that references itself to traverse hierarchical data (WITH RECURSIVE)                                   |
+| 17  | SQL index                   | A B-tree data structure that speeds up reads at the cost of slower writes and extra storage                   |
+| 18  | Monolith vs microservice    | Monolith: one deployable unit, simple; Microservices: independent services, scalable but complex              |
+| 19  | Message queue problems      | Ordering, duplicates, message loss, poison pills, eventual consistency, consumer lag                          |
+| 20  | Caching                     | Store frequently accessed data in faster storage (Redis); invalidate via TTL or events                        |
+| 21  | Event loop                  | Single-threaded loop that processes async callbacks from queues, enabling non-blocking I/O                    |
+| 22  | Index data structure        | B+ tree — O(log n) lookups, disk-optimized, supports range queries and sorting                                |
+| 23  | Promise vs callback         | Callbacks nest and have no guarantees; Promises chain, settle once, and have single .catch() error handling   |
+| 24  | Unit vs integration testing | Unit: isolated single function with mocks; Integration: multiple components with real DB and APIs             |
+| 25  | N-tier architecture         | Layered architecture (presentation → application → data) with separation of concerns per tier                 |
+| 26  | CI/CD                       | Automate build/test on every push (CI) and deploy to production automatically or on approval (CD)             |
+| 27  | TypeScript generics         | Type parameters (`<T>`) that let you write reusable, type-safe functions without `any`                        |
+| 28  | React virtual DOM           | Lightweight JS copy of real DOM; React diffs old vs new and applies minimal real DOM updates                  |
+| 29  | React hooks                 | Functions (useState, useEffect, etc.) that add state and lifecycle to function components                     |
+| 30  | Transactions & ACID         | Group of SQL ops that all succeed or all rollback; Atomic, Consistent, Isolated, Durable                      |
+| 31  | SQL JOINs                   | INNER: both match; LEFT: all left + matched right; RIGHT: all right; FULL: everything; CROSS: cartesian       |
+| 32  | RESTful API design          | Resources as URLs, HTTP methods as CRUD, stateless, consistent error format, pagination                       |
+| 33  | Cloud infrastructure        | Managed compute (EC2/ECS), storage (S3), DB (RDS), networking (VPC/ALB) from AWS/GCP/Azure                    |
+| 34  | Connection pooling          | Reuse DB connections instead of open/close per query — saves overhead, manages limited connections            |
+| 35  | Docker                      | Packages app + dependencies into containers that run identically everywhere (dev, CI, prod)                   |
+| 36  | Environment variables       | External key-value config (secrets, DB URLs) — never hardcode; validate with zod; use secrets manager in prod |
+| 37  | Auth vs authorization       | Authentication = WHO are you (401 if fail); Authorization = WHAT can you do (403 if fail)                     |
+| 38  | DB schema design            | Design entities, relationships, indexes; discuss UUIDs, soft deletes, audit trails for legal data             |
+| 39  | Production debugging        | Detect → triage → investigate (logs, metrics) → root cause → fix → prevent recurrence                        |
+| 40  | Code review approach        | Check correctness, readability, architecture, performance, security, tests; lead with questions not commands  |
+| 41  | Project structure           | Route → Controller → Service → Repository layers; separation of concerns for testability                     |
+| 42  | Database migrations         | Version-controlled schema changes (up/down); never edit applied migrations; backward-compatible               |
+| 43  | Error handling (Node.js)    | Custom error classes + async wrapper + centralized error middleware; consistent error response format          |
+| 44  | Pagination                  | Offset-based (simple, page numbers) vs cursor-based (performant, infinite scroll); index the ORDER BY column |
+| 45  | Security vulnerabilities    | SQL injection (parameterize), XSS (React escapes), CSRF (tokens), bcrypt passwords, helmet + CORS            |
+| 46  | Mentoring engineers         | Code reviews as teaching, pair programming, progressive responsibility, design discussions                    |
+| 47  | Take-home approach          | Clean TS, proper error handling, tests, migrations, README with design decisions and tradeoffs                |
+| 48  | DB performance              | EXPLAIN ANALYZE, add indexes, fix N+1 queries, optimize SELECT, cache with Redis, tune connection pool       |
