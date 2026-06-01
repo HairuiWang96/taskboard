@@ -29,11 +29,11 @@
 ### Architecture overview
 
 ```text
-Node.js = V8 (JS engine) + libuv (async I/O) + Node.js APIs
+Node.js = V8 (JS engine) + libuv (async I/O) + Node.js APIs‼️
 
-libuv provides:
+libuv provides:‼️
   - Event loop
-  - Thread pool (default 4 threads) for CPU or blocking I/O:
+  - Thread pool (default 4 threads) for CPU or blocking I/O:‼️
     fs.readFile, crypto, dns.lookup, some zlib operations
   - Non-blocking I/O for network (epoll/kqueue/IOCP)
 
@@ -62,9 +62,9 @@ Promise.resolve().then(() => console.log('promise'));
 
 // Inside an I/O callback:
 fs.readFile('file', () => {
-  setTimeout(() => console.log('setTimeout'));   // next timers phase
-  setImmediate(() => console.log('setImmediate')); // current check phase — ALWAYS first
-  process.nextTick(() => console.log('nextTick')); // before next phase — FIRST
+    setTimeout(() => console.log('setTimeout')); // next timers phase
+    setImmediate(() => console.log('setImmediate')); // current check phase — ALWAYS first
+    process.nextTick(() => console.log('nextTick')); // before next phase — FIRST
 });
 // Order: nextTick, setImmediate, setTimeout
 ```
@@ -80,7 +80,7 @@ const hash = crypto.createHash('sha256').update(data).digest('hex');
 
 // Async (uses thread pool):
 crypto.pbkdf2(password, salt, 100000, 64, 'sha512', (err, key) => {
-  // runs in thread pool, callback fires when done
+    // runs in thread pool, callback fires when done
 });
 
 // Increase thread pool size for CPU-heavy apps:
@@ -140,38 +140,35 @@ const { Readable, Writable, Transform, Duplex, pipeline } = require('stream');
 
 // Readable — produces data
 const readable = new Readable({
-  read(size) { // called when consumer wants data
-    this.push('chunk of data');
-    this.push(null); // signal end of stream
-  }
+    read(size) {
+        // called when consumer wants data
+        this.push('chunk of data');
+        this.push(null); // signal end of stream
+    },
 });
 
 // Writable — consumes data
 const writable = new Writable({
-  write(chunk, encoding, callback) {
-    console.log('received:', chunk.toString());
-    callback(); // call when done — signals ready for more
-    // callback(error) — to propagate errors
-  }
+    write(chunk, encoding, callback) {
+        console.log('received:', chunk.toString());
+        callback(); // call when done — signals ready for more
+        // callback(error) — to propagate errors
+    },
 });
 
 // Transform — transforms data (both readable and writable)
 const upperCase = new Transform({
-  transform(chunk, encoding, callback) {
-    this.push(chunk.toString().toUpperCase());
-    callback();
-  }
+    transform(chunk, encoding, callback) {
+        this.push(chunk.toString().toUpperCase());
+        callback();
+    },
 });
 
 // Pipeline — safe pipe with error propagation (use instead of .pipe())
 const { promisify } = require('util');
 const pipelineAsync = promisify(pipeline);
 
-await pipelineAsync(
-  fs.createReadStream('input.csv'),
-  upperCase,
-  fs.createWriteStream('output.csv')
-);
+await pipelineAsync(fs.createReadStream('input.csv'), upperCase, fs.createWriteStream('output.csv'));
 // Any error in any stage propagates, all streams cleaned up
 ```
 
@@ -185,17 +182,17 @@ await pipelineAsync(
 // writable.write() returns false when buffer is full — stop reading
 // writable emits 'drain' when buffer is empty — resume reading
 
-readable.on('data', (chunk) => {
-  const canContinue = writable.write(chunk);
-  if (!canContinue) {
-    readable.pause(); // stop reading — writable is full
-    writable.once('drain', () => readable.resume()); // resume when drained
-  }
+readable.on('data', chunk => {
+    const canContinue = writable.write(chunk);
+    if (!canContinue) {
+        readable.pause(); // stop reading — writable is full
+        writable.once('drain', () => readable.resume()); // resume when drained
+    }
 });
 
 // Async iteration handles backpressure naturally
 for await (const chunk of readable) {
-  await processChunk(chunk); // backpressure: loop waits for processing
+    await processChunk(chunk); // backpressure: loop waits for processing
 }
 ```
 
@@ -211,19 +208,19 @@ import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
 
 // In main thread:
 if (isMainThread) {
-  const worker = new Worker('./worker.js', {
-    workerData: { items: hugeArray }
-  });
+    const worker = new Worker('./worker.js', {
+        workerData: { items: hugeArray },
+    });
 
-  worker.on('message', (result) => console.log('done:', result));
-  worker.on('error', (err) => console.error(err));
-  worker.on('exit', (code) => console.log(`Worker exited: ${code}`));
+    worker.on('message', result => console.log('done:', result));
+    worker.on('error', err => console.error(err));
+    worker.on('exit', code => console.log(`Worker exited: ${code}`));
 }
 
 // In worker.js:
 if (!isMainThread) {
-  const result = expensiveComputation(workerData.items);
-  parentPort.postMessage(result);
+    const result = expensiveComputation(workerData.items);
+    parentPort.postMessage(result);
 }
 
 // Worker pool pattern (for repeated CPU work):
@@ -240,8 +237,8 @@ import { exec, execFile, spawn, fork } from 'child_process';
 
 // exec: run shell command, buffer output (small outputs)
 exec('ls -la', (err, stdout, stderr) => {
-  if (err) throw err;
-  console.log(stdout);
+    if (err) throw err;
+    console.log(stdout);
 });
 
 // spawn: streaming output (large outputs, long-running)
@@ -252,7 +249,7 @@ ls.stderr.pipe(process.stderr);
 // fork: special spawn for Node.js scripts — built-in IPC channel
 const child = fork('./worker.js');
 child.send({ task: 'compute', data: payload }); // IPC message
-child.on('message', (result) => console.log(result));
+child.on('message', result => console.log(result));
 
 // Use cases:
 // exec/execFile: run external tools (git, ffmpeg, pdflatex)
@@ -275,17 +272,17 @@ import Fastify, { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 
 // This plugin is ENCAPSULATED — its decorators only visible to children
-const encapsulated: FastifyPluginAsync = async (fastify) => {
-  fastify.decorate('myUtil', () => 'hello'); // only visible within this scope
+const encapsulated: FastifyPluginAsync = async fastify => {
+    fastify.decorate('myUtil', () => 'hello'); // only visible within this scope
 };
 
 // This plugin BREAKS encapsulation — decorators visible to all
-const shared = fp(async (fastify) => {
-  fastify.decorate('db', databaseConnection); // visible everywhere after registration
+const shared = fp(async fastify => {
+    fastify.decorate('db', databaseConnection); // visible everywhere after registration
 });
 
 const app = Fastify();
-await app.register(shared);    // db available everywhere
+await app.register(shared); // db available everywhere
 await app.register(encapsulated); // myUtil only inside encapsulated scope
 ```
 
@@ -297,33 +294,33 @@ await app.register(encapsulated); // myUtil only inside encapsulated scope
 
 // onRequest: runs before body parsing — good for rate limiting, auth header check
 fastify.addHook('onRequest', async (request, reply) => {
-  if (!request.headers.authorization) {
-    return reply.code(401).send({ error: 'Unauthorized' });
-  }
+    if (!request.headers.authorization) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+    }
 });
 
 // preValidation: runs before schema validation — good for transforming input
 fastify.addHook('preValidation', async (request, reply) => {
-  if (request.body && typeof request.body === 'string') {
-    request.body = JSON.parse(request.body);
-  }
+    if (request.body && typeof request.body === 'string') {
+        request.body = JSON.parse(request.body);
+    }
 });
 
 // preHandler: runs after validation — good for auth/permission checks
 fastify.addHook('preHandler', async (request, reply) => {
-  const user = await verifyToken(request.headers.authorization);
-  request.user = user; // attach to request for handler to use
+    const user = await verifyToken(request.headers.authorization);
+    request.user = user; // attach to request for handler to use
 });
 
 // onSend: runs before response is sent — good for modifying response headers
 fastify.addHook('onSend', async (request, reply, payload) => {
-  reply.header('X-Request-Id', request.id);
-  return payload; // must return payload (can transform it)
+    reply.header('X-Request-Id', request.id);
+    return payload; // must return payload (can transform it)
 });
 
 // onResponse: runs after response is sent — good for logging, metrics
 fastify.addHook('onResponse', async (request, reply) => {
-  metrics.recordDuration(reply.elapsedTime);
+    metrics.recordDuration(reply.elapsedTime);
 });
 ```
 
@@ -339,21 +336,21 @@ fastify.decorate('config', appConfig);
 
 // Type augmentation so TypeScript knows about decorators
 declare module 'fastify' {
-  interface FastifyInstance {
-    db: DrizzleClient;
-    redis: RedisClient;
-    config: AppConfig;
-  }
-  interface FastifyRequest {
-    user: { id: string; role: string };
-    correlationId: string;
-  }
+    interface FastifyInstance {
+        db: DrizzleClient;
+        redis: RedisClient;
+        config: AppConfig;
+    }
+    interface FastifyRequest {
+        user: { id: string; role: string };
+        correlationId: string;
+    }
 }
 
 // Use in routes
-fastify.get('/users', async (request) => {
-  const users = await request.server.db.select().from(usersTable);
-  return users;
+fastify.get('/users', async request => {
+    const users = await request.server.db.select().from(usersTable);
+    return users;
 });
 ```
 
@@ -363,36 +360,36 @@ fastify.get('/users', async (request) => {
 import { Type, Static } from '@sinclair/typebox'; // Fastify's recommended schema library
 
 const CreateUserBody = Type.Object({
-  name: Type.String({ minLength: 1, maxLength: 100 }),
-  email: Type.String({ format: 'email' }),
-  role: Type.Union([Type.Literal('admin'), Type.Literal('user')]),
+    name: Type.String({ minLength: 1, maxLength: 100 }),
+    email: Type.String({ format: 'email' }),
+    role: Type.Union([Type.Literal('admin'), Type.Literal('user')]),
 });
 
 const UserResponse = Type.Object({
-  id: Type.String({ format: 'uuid' }),
-  name: Type.String(),
-  email: Type.String(),
-  role: Type.String(),
-  createdAt: Type.String({ format: 'date-time' }),
+    id: Type.String({ format: 'uuid' }),
+    name: Type.String(),
+    email: Type.String(),
+    role: Type.String(),
+    createdAt: Type.String({ format: 'date-time' }),
 });
 
 type CreateUserBody = Static<typeof CreateUserBody>;
 
 fastify.post<{ Body: CreateUserBody }>('/users', {
-  schema: {
-    body: CreateUserBody,
-    response: {
-      201: UserResponse, // validates AND fast-serializes the response
+    schema: {
+        body: CreateUserBody,
+        response: {
+            201: UserResponse, // validates AND fast-serializes the response
+        },
+        tags: ['users'],
+        summary: 'Create a new user',
+        security: [{ bearerAuth: [] }],
     },
-    tags: ['users'],
-    summary: 'Create a new user',
-    security: [{ bearerAuth: [] }],
-  },
-  preHandler: [requireRole('admin')],
-  handler: async (request, reply) => {
-    const user = await createUser(request.body);
-    return reply.code(201).send(user);
-  },
+    preHandler: [requireRole('admin')],
+    handler: async (request, reply) => {
+        const user = await createUser(request.body);
+        return reply.code(201).send(user);
+    },
 });
 ```
 
@@ -404,22 +401,22 @@ fastify.post<{ Body: CreateUserBody }>('/users', {
 
 ```ts
 // Group related routes with shared prefix, hooks, and config
-const userRoutes: FastifyPluginAsync = async (fastify) => {
-  // Hook only applies to routes registered in this plugin
-  fastify.addHook('preHandler', requireAuth);
+const userRoutes: FastifyPluginAsync = async fastify => {
+    // Hook only applies to routes registered in this plugin
+    fastify.addHook('preHandler', requireAuth);
 
-  fastify.get('/', listUsers);
-  fastify.get('/:id', getUser);
-  fastify.post('/', createUser);
-  fastify.patch('/:id', updateUser);
-  fastify.delete('/:id', deleteUser);
+    fastify.get('/', listUsers);
+    fastify.get('/:id', getUser);
+    fastify.post('/', createUser);
+    fastify.patch('/:id', updateUser);
+    fastify.delete('/:id', deleteUser);
 };
 
 // Route grouping with different auth requirements
 const app = Fastify();
 app.register(userRoutes, { prefix: '/api/users' });
 app.register(publicRoutes, { prefix: '/api/public' }); // no auth hook
-app.register(adminRoutes, { prefix: '/api/admin' });   // admin auth hook
+app.register(adminRoutes, { prefix: '/api/admin' }); // admin auth hook
 ```
 
 ### Rate limiting plugin
@@ -429,21 +426,21 @@ import rateLimit from '@fastify/rate-limit';
 import Redis from 'ioredis';
 
 await app.register(rateLimit, {
-  global: false, // don't apply to all routes by default
-  redis: new Redis(), // Redis-backed for multi-server consistency
-  max: 100,
-  timeWindow: '1 minute',
-  keyGenerator: (request) => request.user?.id ?? request.ip, // rate limit per user
-  errorResponseBuilder: (request, context) => ({
-    error: 'Too Many Requests',
-    retryAfter: Math.ceil(context.ttl / 1000),
-  }),
+    global: false, // don't apply to all routes by default
+    redis: new Redis(), // Redis-backed for multi-server consistency
+    max: 100,
+    timeWindow: '1 minute',
+    keyGenerator: request => request.user?.id ?? request.ip, // rate limit per user
+    errorResponseBuilder: (request, context) => ({
+        error: 'Too Many Requests',
+        retryAfter: Math.ceil(context.ttl / 1000),
+    }),
 });
 
 // Apply per route
 fastify.post('/auth/login', {
-  config: { rateLimit: { max: 5, timeWindow: '15 minutes' } }, // strict for login
-  handler: loginHandler,
+    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } }, // strict for login
+    handler: loginHandler,
 });
 ```
 
@@ -474,8 +471,8 @@ addFormats(ajv); // adds email, uri, date, uuid formats
 
 // Add custom format
 ajv.addFormat('phone', {
-  type: 'string',
-  validate: (value) => /^\+?[\d\s-()]+$/.test(value),
+    type: 'string',
+    validate: value => /^\+?[\d\s-()]+$/.test(value),
 });
 
 // Register with Fastify
@@ -485,19 +482,21 @@ fastify.setValidatorCompiler(({ schema }) => ajv.compile(schema));
 import { z } from 'zod';
 
 fastify.post('/users', async (request, reply) => {
-  const result = z.object({
-    name: z.string().min(1),
-    email: z.string().email(),
-  }).safeParse(request.body);
+    const result = z
+        .object({
+            name: z.string().min(1),
+            email: z.string().email(),
+        })
+        .safeParse(request.body);
 
-  if (!result.success) {
-    return reply.code(400).send({
-      error: 'Validation failed',
-      details: result.error.flatten(),
-    });
-  }
+    if (!result.success) {
+        return reply.code(400).send({
+            error: 'Validation failed',
+            details: result.error.flatten(),
+        });
+    }
 
-  return createUser(result.data);
+    return createUser(result.data);
 });
 ```
 
@@ -512,68 +511,68 @@ import jwt from '@fastify/jwt';
 
 // Register JWT plugin
 await app.register(jwt, {
-  secret: process.env.JWT_SECRET,
-  sign: { expiresIn: '15m' },   // access token: short-lived
-  verify: { maxAge: '15m' },
+    secret: process.env.JWT_SECRET,
+    sign: { expiresIn: '15m' }, // access token: short-lived
+    verify: { maxAge: '15m' },
 });
 
 // Login endpoint
 fastify.post<{ Body: { email: string; password: string } }>('/auth/login', async (request, reply) => {
-  const { email, password } = request.body;
-  const user = await findUserByEmail(email);
+    const { email, password } = request.body;
+    const user = await findUserByEmail(email);
 
-  if (!user || !await bcrypt.compare(password, user.passwordHash)) {
-    return reply.code(401).send({ error: 'Invalid credentials' });
-  }
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+        return reply.code(401).send({ error: 'Invalid credentials' });
+    }
 
-  const accessToken = app.jwt.sign({ sub: user.id, role: user.role });
-  const refreshToken = crypto.randomBytes(64).toString('hex');
+    const accessToken = app.jwt.sign({ sub: user.id, role: user.role });
+    const refreshToken = crypto.randomBytes(64).toString('hex');
 
-  // Store refresh token hash in DB
-  await storeRefreshToken(user.id, await bcrypt.hash(refreshToken, 10));
+    // Store refresh token hash in DB
+    await storeRefreshToken(user.id, await bcrypt.hash(refreshToken, 10));
 
-  // Set refresh token in httpOnly cookie (not localStorage)
-  reply.setCookie('refreshToken', refreshToken, {
-    httpOnly: true,    // no JS access
-    secure: true,      // HTTPS only
-    sameSite: 'strict', // CSRF protection
-    path: '/auth',     // only sent to /auth routes
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  });
+    // Set refresh token in httpOnly cookie (not localStorage)
+    reply.setCookie('refreshToken', refreshToken, {
+        httpOnly: true, // no JS access
+        secure: true, // HTTPS only
+        sameSite: 'strict', // CSRF protection
+        path: '/auth', // only sent to /auth routes
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
 
-  return { accessToken };
+    return { accessToken };
 });
 
 // Token refresh
 fastify.post('/auth/refresh', async (request, reply) => {
-  const refreshToken = request.cookies.refreshToken;
-  if (!refreshToken) return reply.code(401).send({ error: 'No refresh token' });
+    const refreshToken = request.cookies.refreshToken;
+    if (!refreshToken) return reply.code(401).send({ error: 'No refresh token' });
 
-  const tokenRecord = await findRefreshToken(refreshToken);
-  if (!tokenRecord || tokenRecord.revokedAt) {
-    return reply.code(401).send({ error: 'Invalid refresh token' });
-  }
+    const tokenRecord = await findRefreshToken(refreshToken);
+    if (!tokenRecord || tokenRecord.revokedAt) {
+        return reply.code(401).send({ error: 'Invalid refresh token' });
+    }
 
-  // Rotate: invalidate old, issue new
-  await revokeRefreshToken(refreshToken);
-  const newRefreshToken = crypto.randomBytes(64).toString('hex');
-  await storeRefreshToken(tokenRecord.userId, newRefreshToken);
+    // Rotate: invalidate old, issue new
+    await revokeRefreshToken(refreshToken);
+    const newRefreshToken = crypto.randomBytes(64).toString('hex');
+    await storeRefreshToken(tokenRecord.userId, newRefreshToken);
 
-  const accessToken = app.jwt.sign({ sub: tokenRecord.userId });
+    const accessToken = app.jwt.sign({ sub: tokenRecord.userId });
 
-  reply.setCookie('refreshToken', newRefreshToken, { httpOnly: true, secure: true });
-  return { accessToken };
+    reply.setCookie('refreshToken', newRefreshToken, { httpOnly: true, secure: true });
+    return { accessToken };
 });
 
 // Auth hook
-const authenticate: FastifyPluginAsync = fp(async (fastify) => {
-  fastify.addHook('preHandler', async (request, reply) => {
-    try {
-      await request.jwtVerify(); // verifies Bearer token, sets request.user
-    } catch {
-      reply.code(401).send({ error: 'Unauthorized' });
-    }
-  });
+const authenticate: FastifyPluginAsync = fp(async fastify => {
+    fastify.addHook('preHandler', async (request, reply) => {
+        try {
+            await request.jwtVerify(); // verifies Bearer token, sets request.user
+        } catch {
+            reply.code(401).send({ error: 'Unauthorized' });
+        }
+    });
 });
 ```
 
@@ -582,29 +581,29 @@ const authenticate: FastifyPluginAsync = fp(async (fastify) => {
 ```ts
 // Middleware factory for role checking
 function requireRole(...roles: string[]): preHandlerHookHandler {
-  return async (request, reply) => {
-    if (!roles.includes(request.user.role)) {
-      return reply.code(403).send({
-        error: 'Forbidden',
-        message: `Requires one of: ${roles.join(', ')}`,
-      });
-    }
-  };
+    return async (request, reply) => {
+        if (!roles.includes(request.user.role)) {
+            return reply.code(403).send({
+                error: 'Forbidden',
+                message: `Requires one of: ${roles.join(', ')}`,
+            });
+        }
+    };
 }
 
 // Route-level: applied to specific routes
 fastify.delete('/users/:id', {
-  preHandler: [authenticate, requireRole('admin')],
-  handler: deleteUser,
+    preHandler: [authenticate, requireRole('admin')],
+    handler: deleteUser,
 });
 
 // Resource ownership: users can only modify their own data
 async function requireOwnerOrAdmin(request: FastifyRequest<{ Params: { id: string } }>, reply) {
-  const { id } = request.params;
-  if (request.user.role === 'admin') return; // admins bypass
-  if (request.user.sub !== id) {
-    return reply.code(403).send({ error: 'Forbidden' });
-  }
+    const { id } = request.params;
+    if (request.user.role === 'admin') return; // admins bypass
+    if (request.user.sub !== id) {
+        return reply.code(403).send({ error: 'Forbidden' });
+    }
 }
 ```
 
@@ -616,41 +615,42 @@ async function requireOwnerOrAdmin(request: FastifyRequest<{ Params: { id: strin
 
 ```ts
 fastify.setErrorHandler((error, request, reply) => {
-  const { log } = request;
+    const { log } = request;
 
-  // Validation errors (from schema)
-  if (error.validation) {
-    return reply.code(400).send({
-      error: 'Validation Error',
-      details: error.validation,
-    });
-  }
+    // Validation errors (from schema)
+    if (error.validation) {
+        return reply.code(400).send({
+            error: 'Validation Error',
+            details: error.validation,
+        });
+    }
 
-  // Known HTTP errors
-  if (error.statusCode) {
-    return reply.code(error.statusCode).send({
-      error: error.message,
-    });
-  }
+    // Known HTTP errors
+    if (error.statusCode) {
+        return reply.code(error.statusCode).send({
+            error: error.message,
+        });
+    }
 
-  // Database errors
-  if (error.code === '23505') { // Postgres unique constraint violation
-    return reply.code(409).send({
-      error: 'Resource already exists',
-    });
-  }
+    // Database errors
+    if (error.code === '23505') {
+        // Postgres unique constraint violation
+        return reply.code(409).send({
+            error: 'Resource already exists',
+        });
+    }
 
-  // Unexpected errors — don't leak internals
-  log.error({ err: error }, 'Unhandled error');
-  return reply.code(500).send({ error: 'Internal Server Error' });
+    // Unexpected errors — don't leak internals
+    log.error({ err: error }, 'Unhandled error');
+    return reply.code(500).send({ error: 'Internal Server Error' });
 });
 
 // 404 handler
 fastify.setNotFoundHandler((request, reply) => {
-  reply.code(404).send({
-    error: 'Not Found',
-    message: `Route ${request.method}:${request.url} not found`,
-  });
+    reply.code(404).send({
+        error: 'Not Found',
+        message: `Route ${request.method}:${request.url} not found`,
+    });
 });
 ```
 
@@ -666,10 +666,10 @@ const Conflict = createError('CONFLICT', '%s', 409); // %s = format string
 
 // Throw from handlers — caught by setErrorHandler
 async function getUser(request) {
-  const user = await db.findUser(request.params.id);
-  if (!user) throw new NotFound();
-  if (user.id !== request.user.sub) throw new Forbidden();
-  return user;
+    const user = await db.findUser(request.params.id);
+    if (!user) throw new NotFound();
+    if (user.id !== request.user.sub) throw new Forbidden();
+    return user;
 }
 
 // With message formatting
@@ -685,32 +685,30 @@ throw new Conflict('Email %s already registered', email);
 ```ts
 // Fastify uses Pino — structured JSON logging, very fast
 const app = Fastify({
-  logger: {
-    level: process.env.LOG_LEVEL ?? 'info',
-    // Pretty print in dev only:
-    transport: process.env.NODE_ENV === 'development'
-      ? { target: 'pino-pretty', options: { colorize: true } }
-      : undefined,
-    serializers: {
-      req(request) {
-        return {
-          method: request.method,
-          url: request.url,
-          // Never log Authorization header or body (may contain PII/secrets)
-        };
-      },
+    logger: {
+        level: process.env.LOG_LEVEL ?? 'info',
+        // Pretty print in dev only:
+        transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty', options: { colorize: true } } : undefined,
+        serializers: {
+            req(request) {
+                return {
+                    method: request.method,
+                    url: request.url,
+                    // Never log Authorization header or body (may contain PII/secrets)
+                };
+            },
+        },
     },
-  },
 });
 
 // Request-scoped logger (includes request ID automatically)
-fastify.get('/users', async (request) => {
-  request.log.info({ userId: request.user.id }, 'Fetching user list');
-  // Output: {"level":30,"msg":"Fetching user list","reqId":"req-1","userId":"123"}
+fastify.get('/users', async request => {
+    request.log.info({ userId: request.user.id }, 'Fetching user list');
+    // Output: {"level":30,"msg":"Fetching user list","reqId":"req-1","userId":"123"}
 
-  const users = await db.select().from(usersTable);
-  request.log.info({ count: users.length }, 'Users fetched');
-  return users;
+    const users = await db.select().from(usersTable);
+    request.log.info({ count: users.length }, 'Users fetched');
+    return users;
 });
 ```
 
@@ -719,22 +717,22 @@ fastify.get('/users', async (request) => {
 ```ts
 import { v4 as uuid } from 'uuid';
 
-const correlationPlugin: FastifyPluginAsync = fp(async (fastify) => {
-  fastify.addHook('onRequest', async (request) => {
-    // Propagate from upstream or generate new
-    request.correlationId = request.headers['x-correlation-id'] as string ?? uuid();
-    request.log = request.log.child({ correlationId: request.correlationId });
-  });
+const correlationPlugin: FastifyPluginAsync = fp(async fastify => {
+    fastify.addHook('onRequest', async request => {
+        // Propagate from upstream or generate new
+        request.correlationId = (request.headers['x-correlation-id'] as string) ?? uuid();
+        request.log = request.log.child({ correlationId: request.correlationId });
+    });
 
-  fastify.addHook('onSend', async (request, reply) => {
-    // Return to client so they can correlate with support
-    reply.header('x-correlation-id', request.correlationId);
-  });
+    fastify.addHook('onSend', async (request, reply) => {
+        // Return to client so they can correlate with support
+        reply.header('x-correlation-id', request.correlationId);
+    });
 });
 
 // When calling downstream services, forward the ID
 await fetch(`${SERVICE_B_URL}/api/resource`, {
-  headers: { 'x-correlation-id': request.correlationId },
+    headers: { 'x-correlation-id': request.correlationId },
 });
 ```
 
@@ -743,26 +741,26 @@ await fetch(`${SERVICE_B_URL}/api/resource`, {
 ```ts
 // Health: is the process alive?
 fastify.get('/health', { logLevel: 'silent' }, async () => ({
-  status: 'ok',
-  uptime: process.uptime(),
-  timestamp: new Date().toISOString(),
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
 }));
 
 // Readiness: are dependencies ready?
 fastify.get('/ready', { logLevel: 'silent' }, async (request, reply) => {
-  const checks = await Promise.allSettled([
-    db.execute(sql`SELECT 1`),      // DB check
-    redis.ping(),                    // Redis check
-  ]);
+    const checks = await Promise.allSettled([
+        db.execute(sql`SELECT 1`), // DB check
+        redis.ping(), // Redis check
+    ]);
 
-  const dbOk = checks[0].status === 'fulfilled';
-  const redisOk = checks[1].status === 'fulfilled';
-  const ready = dbOk && redisOk;
+    const dbOk = checks[0].status === 'fulfilled';
+    const redisOk = checks[1].status === 'fulfilled';
+    const ready = dbOk && redisOk;
 
-  return reply.code(ready ? 200 : 503).send({
-    status: ready ? 'ready' : 'not ready',
-    checks: { db: dbOk ? 'ok' : 'fail', redis: redisOk ? 'ok' : 'fail' },
-  });
+    return reply.code(ready ? 200 : 503).send({
+        status: ready ? 'ready' : 'not ready',
+        checks: { db: dbOk ? 'ok' : 'fail', redis: redisOk ? 'ok' : 'fail' },
+    });
 });
 ```
 
@@ -775,49 +773,39 @@ fastify.get('/ready', { logLevel: 'silent' }, async (request, reply) => {
 ```ts
 // Transaction with error handling
 async function transferFunds(fromId: string, toId: string, amount: number) {
-  return await db.transaction(async (tx) => {
-    const [from] = await tx
-      .select()
-      .from(accounts)
-      .where(eq(accounts.id, fromId))
-      .for('update'); // SELECT FOR UPDATE — row-level lock
+    return await db.transaction(async tx => {
+        const [from] = await tx.select().from(accounts).where(eq(accounts.id, fromId)).for('update'); // SELECT FOR UPDATE — row-level lock
 
-    if (!from || from.balance < amount) {
-      throw new Error('Insufficient funds'); // rolls back transaction
-    }
+        if (!from || from.balance < amount) {
+            throw new Error('Insufficient funds'); // rolls back transaction
+        }
 
-    await tx
-      .update(accounts)
-      .set({ balance: sql`${accounts.balance} - ${amount}` })
-      .where(eq(accounts.id, fromId));
+        await tx
+            .update(accounts)
+            .set({ balance: sql`${accounts.balance} - ${amount}` })
+            .where(eq(accounts.id, fromId));
 
-    await tx
-      .update(accounts)
-      .set({ balance: sql`${accounts.balance} + ${amount}` })
-      .where(eq(accounts.id, toId));
+        await tx
+            .update(accounts)
+            .set({ balance: sql`${accounts.balance} + ${amount}` })
+            .where(eq(accounts.id, toId));
 
-    return { success: true };
-  });
+        return { success: true };
+    });
 }
 
 // Soft delete pattern
 const tasks = pgTable('tasks', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  title: text('title').notNull(),
-  deletedAt: timestamp('deleted_at'), // null = active, timestamp = deleted
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    deletedAt: timestamp('deleted_at'), // null = active, timestamp = deleted
 });
 
 // Always filter deleted in queries
-const activeTasks = await db
-  .select()
-  .from(tasks)
-  .where(isNull(tasks.deletedAt)); // only non-deleted
+const activeTasks = await db.select().from(tasks).where(isNull(tasks.deletedAt)); // only non-deleted
 
 // Soft delete
-await db
-  .update(tasks)
-  .set({ deletedAt: new Date() })
-  .where(eq(tasks.id, id));
+await db.update(tasks).set({ deletedAt: new Date() }).where(eq(tasks.id, id));
 ```
 
 ### Connection lifecycle
@@ -827,23 +815,23 @@ await db
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 20 });
 
 process.on('SIGTERM', async () => {
-  app.log.info('SIGTERM received, shutting down gracefully');
-  await app.close(); // stop accepting new requests
-  await pool.end();  // close all DB connections
-  process.exit(0);
+    app.log.info('SIGTERM received, shutting down gracefully');
+    await app.close(); // stop accepting new requests
+    await pool.end(); // close all DB connections
+    process.exit(0);
 });
 
 // Retry on startup (DB may not be ready immediately)
 async function connectWithRetry(retries = 5, delay = 2000) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await pool.query('SELECT 1');
-      return; // success
-    } catch (err) {
-      if (i === retries - 1) throw err;
-      await new Promise(r => setTimeout(r, delay * (i + 1))); // exponential
+    for (let i = 0; i < retries; i++) {
+        try {
+            await pool.query('SELECT 1');
+            return; // success
+        } catch (err) {
+            if (i === retries - 1) throw err;
+            await new Promise(r => setTimeout(r, delay * (i + 1))); // exponential
+        }
     }
-  }
 }
 ```
 
@@ -860,10 +848,10 @@ app.register(v2Routes, { prefix: '/api/v2' });
 
 // Header versioning (cleaner URLs, harder to test in browser)
 fastify.addHook('preHandler', async (request, reply) => {
-  const version = request.headers['api-version'] ?? '1';
-  if (version === '2') {
-    // handle v2 logic
-  }
+    const version = request.headers['api-version'] ?? '1';
+    if (version === '2') {
+        // handle v2 logic
+    }
 });
 
 // Maintaining backward compatibility:
@@ -882,56 +870,60 @@ fastify.addHook('preHandler', async (request, reply) => {
 // - Multiple sorts: sort=-priority,createdAt (priority DESC, then createdAt ASC)
 
 fastify.get<{
-  Querystring: {
-    page?: number;
-    limit?: number;
-    status?: 'open' | 'done';
-    sort?: string;
-    search?: string;
-  }
-}>('/tasks', {
-  schema: {
-    querystring: Type.Object({
-      page:   Type.Optional(Type.Integer({ minimum: 1, default: 1 })),
-      limit:  Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
-      status: Type.Optional(Type.Union([Type.Literal('open'), Type.Literal('done')])),
-      sort:   Type.Optional(Type.String()),
-      search: Type.Optional(Type.String()),
-    }),
-  },
-}, async (request) => {
-  const { page = 1, limit = 20, status, sort = '-createdAt', search } = request.query;
-  const offset = (page - 1) * limit;
-
-  const orderBy = sort.startsWith('-')
-    ? desc(tasks[sort.slice(1) as keyof typeof tasks])
-    : asc(tasks[sort as keyof typeof tasks]);
-
-  const conditions = [
-    status && eq(tasks.status, status),
-    search && ilike(tasks.title, `%${search}%`),
-  ].filter(Boolean);
-
-  const [items, [{ count }]] = await Promise.all([
-    db.select().from(tasks)
-      .where(and(...conditions))
-      .orderBy(orderBy)
-      .limit(limit)
-      .offset(offset),
-    db.select({ count: count() }).from(tasks).where(and(...conditions)),
-  ]);
-
-  return {
-    data: items,
-    meta: {
-      page,
-      limit,
-      total: Number(count),
-      totalPages: Math.ceil(Number(count) / limit),
-      hasNextPage: page * limit < Number(count),
+    Querystring: {
+        page?: number;
+        limit?: number;
+        status?: 'open' | 'done';
+        sort?: string;
+        search?: string;
+    };
+}>(
+    '/tasks',
+    {
+        schema: {
+            querystring: Type.Object({
+                page: Type.Optional(Type.Integer({ minimum: 1, default: 1 })),
+                limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
+                status: Type.Optional(Type.Union([Type.Literal('open'), Type.Literal('done')])),
+                sort: Type.Optional(Type.String()),
+                search: Type.Optional(Type.String()),
+            }),
+        },
     },
-  };
-});
+    async request => {
+        const { page = 1, limit = 20, status, sort = '-createdAt', search } = request.query;
+        const offset = (page - 1) * limit;
+
+        const orderBy = sort.startsWith('-') ? desc(tasks[sort.slice(1) as keyof typeof tasks]) : asc(tasks[sort as keyof typeof tasks]);
+
+        const conditions = [status && eq(tasks.status, status), search && ilike(tasks.title, `%${search}%`)].filter(Boolean);
+
+        const [items, [{ count }]] = await Promise.all([
+            db
+                .select()
+                .from(tasks)
+                .where(and(...conditions))
+                .orderBy(orderBy)
+                .limit(limit)
+                .offset(offset),
+            db
+                .select({ count: count() })
+                .from(tasks)
+                .where(and(...conditions)),
+        ]);
+
+        return {
+            data: items,
+            meta: {
+                page,
+                limit,
+                total: Number(count),
+                totalPages: Math.ceil(Number(count) / limit),
+                hasNextPage: page * limit < Number(count),
+            },
+        };
+    },
+);
 ```
 
 ### HATEOAS & response envelope
@@ -981,29 +973,25 @@ fastify.get<{
 // Retry-safe: duplicate requests return the same response
 
 fastify.post('/payments', async (request, reply) => {
-  const idempotencyKey = request.headers['idempotency-key'] as string;
+    const idempotencyKey = request.headers['idempotency-key'] as string;
 
-  if (idempotencyKey) {
-    // Check if we've processed this key before
-    const cached = await redis.get(`idempotency:${idempotencyKey}`);
-    if (cached) {
-      const { statusCode, body } = JSON.parse(cached);
-      return reply.code(statusCode).send(body);
+    if (idempotencyKey) {
+        // Check if we've processed this key before
+        const cached = await redis.get(`idempotency:${idempotencyKey}`);
+        if (cached) {
+            const { statusCode, body } = JSON.parse(cached);
+            return reply.code(statusCode).send(body);
+        }
     }
-  }
 
-  const payment = await processPayment(request.body);
+    const payment = await processPayment(request.body);
 
-  if (idempotencyKey) {
-    // Store response for 24 hours
-    await redis.setex(
-      `idempotency:${idempotencyKey}`,
-      86400,
-      JSON.stringify({ statusCode: 201, body: payment })
-    );
-  }
+    if (idempotencyKey) {
+        // Store response for 24 hours
+        await redis.setex(`idempotency:${idempotencyKey}`, 86400, JSON.stringify({ statusCode: 201, body: payment }));
+    }
 
-  return reply.code(201).send(payment);
+    return reply.code(201).send(payment);
 });
 ```
 
@@ -1032,24 +1020,23 @@ import cluster from 'cluster';
 import os from 'os';
 
 if (cluster.isPrimary) {
-  const numCPUs = os.cpus().length;
-  console.log(`Primary ${process.pid} is running`);
+    const numCPUs = os.cpus().length;
+    console.log(`Primary ${process.pid} is running`);
 
-  // Fork workers
-  for (let i = 0; i < numCPUs; i++) {
-    cluster.fork();
-  }
+    // Fork workers
+    for (let i = 0; i < numCPUs; i++) {
+        cluster.fork();
+    }
 
-  cluster.on('exit', (worker, code) => {
-    console.log(`Worker ${worker.process.pid} died — forking replacement`);
-    cluster.fork(); // replace dead worker
-  });
-
+    cluster.on('exit', (worker, code) => {
+        console.log(`Worker ${worker.process.pid} died — forking replacement`);
+        cluster.fork(); // replace dead worker
+    });
 } else {
-  // Each worker runs the Fastify server
-  const app = await buildApp();
-  await app.listen({ port: 3000, host: '0.0.0.0' });
-  console.log(`Worker ${process.pid} started`);
+    // Each worker runs the Fastify server
+    const app = await buildApp();
+    await app.listen({ port: 3000, host: '0.0.0.0' });
+    console.log(`Worker ${process.pid} started`);
 }
 
 // In production: prefer Kubernetes pods over cluster
@@ -1063,25 +1050,25 @@ import caching from '@fastify/caching';
 
 // Cache GET responses in Redis
 fastify.get('/tasks', {
-  config: { cache: { ttl: 60 } }, // cache for 60 seconds
-  handler: async () => db.select().from(tasks),
+    config: { cache: { ttl: 60 } }, // cache for 60 seconds
+    handler: async () => db.select().from(tasks),
 });
 
 // Manual caching pattern
 fastify.get('/stats', async (request, reply) => {
-  const cacheKey = 'global:stats';
-  const cached = await redis.get(cacheKey);
+    const cacheKey = 'global:stats';
+    const cached = await redis.get(cacheKey);
 
-  if (cached) {
-    reply.header('X-Cache', 'HIT');
-    return JSON.parse(cached);
-  }
+    if (cached) {
+        reply.header('X-Cache', 'HIT');
+        return JSON.parse(cached);
+    }
 
-  const stats = await computeExpensiveStats();
-  await redis.setex(cacheKey, 300, JSON.stringify(stats)); // 5 minutes
+    const stats = await computeExpensiveStats();
+    await redis.setex(cacheKey, 300, JSON.stringify(stats)); // 5 minutes
 
-  reply.header('X-Cache', 'MISS');
-  return stats;
+    reply.header('X-Cache', 'MISS');
+    return stats;
 });
 
 // HTTP cache headers for CDN/browser caching
@@ -1102,70 +1089,70 @@ import { buildApp } from '../src/app';
 import { db } from '../src/db';
 
 describe('Task API', () => {
-  let app: ReturnType<typeof buildApp>;
-  let authToken: string;
+    let app: ReturnType<typeof buildApp>;
+    let authToken: string;
 
-  beforeAll(async () => {
-    app = await buildApp({ logger: false }); // quiet logs in tests
-    await app.ready();
+    beforeAll(async () => {
+        app = await buildApp({ logger: false }); // quiet logs in tests
+        await app.ready();
 
-    // Seed test user and get token
-    const res = await app.inject({
-      method: 'POST',
-      url: '/auth/login',
-      body: { email: 'test@example.com', password: 'password' },
-    });
-    authToken = res.json().accessToken;
-  });
-
-  afterAll(async () => {
-    await app.close();
-    await db.execute(sql`TRUNCATE tasks CASCADE`); // clean up
-  });
-
-  it('GET /tasks returns empty array initially', async () => {
-    const res = await app.inject({
-      method: 'GET',
-      url: '/tasks',
-      headers: { authorization: `Bearer ${authToken}` },
+        // Seed test user and get token
+        const res = await app.inject({
+            method: 'POST',
+            url: '/auth/login',
+            body: { email: 'test@example.com', password: 'password' },
+        });
+        authToken = res.json().accessToken;
     });
 
-    expect(res.statusCode).toBe(200);
-    expect(res.json()).toMatchObject({ data: [], meta: { total: 0 } });
-  });
-
-  it('POST /tasks creates a task', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/tasks',
-      headers: { authorization: `Bearer ${authToken}` },
-      body: { title: 'Test task', priority: 'high' },
+    afterAll(async () => {
+        await app.close();
+        await db.execute(sql`TRUNCATE tasks CASCADE`); // clean up
     });
 
-    expect(res.statusCode).toBe(201);
-    expect(res.json()).toMatchObject({
-      title: 'Test task',
-      priority: 'high',
-      done: false,
-    });
-    expect(res.json().id).toBeDefined();
-  });
+    it('GET /tasks returns empty array initially', async () => {
+        const res = await app.inject({
+            method: 'GET',
+            url: '/tasks',
+            headers: { authorization: `Bearer ${authToken}` },
+        });
 
-  it('returns 400 for invalid body', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/tasks',
-      headers: { authorization: `Bearer ${authToken}` },
-      body: { title: '' }, // title too short
+        expect(res.statusCode).toBe(200);
+        expect(res.json()).toMatchObject({ data: [], meta: { total: 0 } });
     });
 
-    expect(res.statusCode).toBe(400);
-  });
+    it('POST /tasks creates a task', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/tasks',
+            headers: { authorization: `Bearer ${authToken}` },
+            body: { title: 'Test task', priority: 'high' },
+        });
 
-  it('returns 401 without token', async () => {
-    const res = await app.inject({ method: 'GET', url: '/tasks' });
-    expect(res.statusCode).toBe(401);
-  });
+        expect(res.statusCode).toBe(201);
+        expect(res.json()).toMatchObject({
+            title: 'Test task',
+            priority: 'high',
+            done: false,
+        });
+        expect(res.json().id).toBeDefined();
+    });
+
+    it('returns 400 for invalid body', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/tasks',
+            headers: { authorization: `Bearer ${authToken}` },
+            body: { title: '' }, // title too short
+        });
+
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 401 without token', async () => {
+        const res = await app.inject({ method: 'GET', url: '/tasks' });
+        expect(res.statusCode).toBe(401);
+    });
 });
 ```
 
@@ -1177,33 +1164,33 @@ describe('Task API', () => {
 
 ```ts
 async function gracefulShutdown(signal: string) {
-  app.log.info(`Received ${signal}, starting graceful shutdown`);
+    app.log.info(`Received ${signal}, starting graceful shutdown`);
 
-  // Stop accepting new requests
-  await app.close();
+    // Stop accepting new requests
+    await app.close();
 
-  // Wait for in-flight requests (Fastify does this on close)
+    // Wait for in-flight requests (Fastify does this on close)
 
-  // Close DB connections
-  await pool.end();
-  await redis.quit();
+    // Close DB connections
+    await pool.end();
+    await redis.quit();
 
-  app.log.info('Shutdown complete');
-  process.exit(0);
+    app.log.info('Shutdown complete');
+    process.exit(0);
 }
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught exceptions — log then crash (let supervisor restart)
-process.on('uncaughtException', (err) => {
-  app.log.fatal({ err }, 'Uncaught exception');
-  process.exit(1); // crash — uncaught exceptions leave unknown state
+process.on('uncaughtException', err => {
+    app.log.fatal({ err }, 'Uncaught exception');
+    process.exit(1); // crash — uncaught exceptions leave unknown state
 });
 
-process.on('unhandledRejection', (reason) => {
-  app.log.fatal({ reason }, 'Unhandled promise rejection');
-  process.exit(1);
+process.on('unhandledRejection', reason => {
+    app.log.fatal({ reason }, 'Unhandled promise rejection');
+    process.exit(1);
 });
 ```
 
@@ -1213,15 +1200,17 @@ process.on('unhandledRejection', (reason) => {
 // Validate all required env vars at startup — fail fast
 import { z } from 'zod';
 
-const env = z.object({
-  NODE_ENV:       z.enum(['development', 'production', 'test']),
-  PORT:           z.coerce.number().default(3000),
-  DATABASE_URL:   z.string().url(),
-  REDIS_URL:      z.string().url().default('redis://localhost:6379'),
-  JWT_SECRET:     z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  CORS_ORIGIN:    z.string().url(),
-  LOG_LEVEL:      z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
-}).parse(process.env); // throws at startup if invalid
+const env = z
+    .object({
+        NODE_ENV: z.enum(['development', 'production', 'test']),
+        PORT: z.coerce.number().default(3000),
+        DATABASE_URL: z.string().url(),
+        REDIS_URL: z.string().url().default('redis://localhost:6379'),
+        JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+        CORS_ORIGIN: z.string().url(),
+        LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
+    })
+    .parse(process.env); // throws at startup if invalid
 
 export default env;
 ```
@@ -1234,23 +1223,23 @@ import cors from '@fastify/cors';
 
 // Security headers
 await app.register(helmet, {
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", 'data:', 'https:'],
+        },
     },
-  },
-  hsts: { maxAge: 31536000, includeSubDomains: true },
+    hsts: { maxAge: 31536000, includeSubDomains: true },
 });
 
 // CORS
 await app.register(cors, {
-  origin: env.CORS_ORIGIN,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id'],
-  credentials: true, // allow cookies
+    origin: env.CORS_ORIGIN,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id'],
+    credentials: true, // allow cookies
 });
 ```
 
@@ -1365,9 +1354,7 @@ const zlib = require('zlib');
 // fs.readFile('huge.csv', callback);
 
 // With streams: constant ~64KB memory usage regardless of file size
-fs.createReadStream('huge.csv')
-    .pipe(zlib.createGzip())
-    .pipe(fs.createWriteStream('huge.csv.gz'));
+fs.createReadStream('huge.csv').pipe(zlib.createGzip()).pipe(fs.createWriteStream('huge.csv.gz'));
 
 // HTTP: response is a Writable stream
 app.get('/download', (req, res) => {
@@ -1384,7 +1371,7 @@ app.get('/download', (req, res) => {
 > Two process-level handlers catch what escapes your try/catch. In production, log the error and gracefully shut down — the process state is unreliable after an uncaught exception.
 
 ```js
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', err => {
     logger.error('Uncaught exception', err);
     process.exit(1); // must exit — state is corrupt
 });
@@ -1409,7 +1396,7 @@ const os = require('os');
 if (cluster.isPrimary) {
     const numCPUs = os.cpus().length;
     for (let i = 0; i < numCPUs; i++) cluster.fork();
-    cluster.on('exit', (worker) => {
+    cluster.on('exit', worker => {
         console.log(`Worker ${worker.process.pid} died — forking replacement`);
         cluster.fork();
     });
@@ -1453,10 +1440,7 @@ app.use((err, req, res, next) => {
 const query = `SELECT * FROM users WHERE email = '${req.body.email}'`;
 
 // ✓ Parameterized query (pg library)
-const { rows } = await db.query(
-    'SELECT * FROM users WHERE email = $1',
-    [req.body.email]
-);
+const { rows } = await db.query('SELECT * FROM users WHERE email = $1', [req.body.email]);
 
 // ✓ ORM (Drizzle/Prisma) handles escaping automatically
 const user = await db.select().from(users).where(eq(users.email, req.body.email));
@@ -1479,7 +1463,7 @@ const jwt = require('jsonwebtoken');
 const token = jwt.sign(
     { userId: user.id, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: '15m' }   // short-lived access token
+    { expiresIn: '15m' }, // short-lived access token
 );
 
 // Verify — middleware on protected routes
@@ -1505,11 +1489,12 @@ const RedisStore = require('rate-limit-redis');
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,                   // 100 requests per window per IP
+    max: 100, // 100 requests per window per IP
     standardHeaders: true,
-    store: new RedisStore({ /* redis client */ }),
-    handler: (req, res) =>
-        res.status(429).json({ error: 'Too many requests, slow down.' }),
+    store: new RedisStore({
+        /* redis client */
+    }),
+    handler: (req, res) => res.status(429).json({ error: 'Too many requests, slow down.' }),
 });
 
 app.use('/api/', limiter);
@@ -1529,9 +1514,9 @@ import { z } from 'zod';
 
 const envSchema = z.object({
     DATABASE_URL: z.string().url(),
-    JWT_SECRET:   z.string().min(32),
-    PORT:         z.coerce.number().default(3000),
-    NODE_ENV:     z.enum(['development', 'production', 'test']),
+    JWT_SECRET: z.string().min(32),
+    PORT: z.coerce.number().default(3000),
+    NODE_ENV: z.enum(['development', 'production', 'test']),
 });
 
 export const env = envSchema.parse(process.env);
