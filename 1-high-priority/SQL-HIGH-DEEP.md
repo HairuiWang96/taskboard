@@ -604,6 +604,45 @@ SELECT * FROM expensive WHERE y = 2;
 -- With MATERIALIZED: runs ONCE, result is cached, both references read the cached result.‼️
 ```
 
+### CTE vs View — what's the difference?
+
+```sql
+-- CTE = temporary, exists ONLY for the duration of ONE query, then gone.
+-- View = permanent (saved in the database), reusable across any query, by anyone.
+
+-- CTE: exists ONLY within this single query
+WITH active_users AS (
+    SELECT * FROM users WHERE status = 'active'
+)
+SELECT * FROM active_users WHERE age > 25;
+-- after this query runs, "active_users" no longer exists
+
+-- View: saved in the database permanently, usable by anyone anytime
+CREATE VIEW active_users AS
+    SELECT * FROM users WHERE status = 'active';
+
+SELECT * FROM active_users WHERE age > 25;   -- works forever
+SELECT COUNT(*) FROM active_users;            -- works from anywhere
+-- persists until you DROP VIEW active_users;
+
+-- CTE vs View comparison:
+--   Lifetime:       CTE = one query only          | View = permanent until dropped
+--   Stored in DB:   CTE = no                      | View = yes (as a saved query definition)
+--   Reusable:       CTE = no, must rewrite        | View = yes, use it like a table
+--   Recursive:      CTE = yes (WITH RECURSIVE)    | View = no
+--   Permissions:    CTE = no                      | View = yes (GRANT access to a view)
+--   Performance:    CTE = inlined by optimizer     | View = same (re-runs query each time)
+--   Use case:       CTE = break complex query      | View = reusable abstraction, security
+--                   into readable steps            |   (hide columns), simplify common queries
+
+-- Common misconception: a regular view does NOT store data.
+-- It's just a saved SQL query that runs every time you SELECT from it.
+-- It's basically a permanent CTE with a name.
+--
+-- If you want a view that actually CACHES the result on disk:
+-- → Materialized View (must be manually refreshed with REFRESH MATERIALIZED VIEW)
+```
+
 ---
 
 ## 6. Subqueries vs JOINs

@@ -311,11 +311,11 @@ fs.readFile('data.txt', 'utf8', (err, data) => {
 ```
 
 **Error-first callback pattern (Node.js convention):**
-The first argument of the callback is always the error (null if no error), and the second argument is the result. This is how Node.js built-in modules work (fs, http, etc.).
+The first argument of the callback is always the error (null if no error), and the second argument is the result. This is how Node.js built-in modules work (fs, http, etc.).‼️
 
 ```js
 function fetchData(url, callback) {
-  // ... do async work
+  * ... do async work
   if (error) {
     callback(error, null);    // error first
   } else {
@@ -329,7 +329,7 @@ function fetchData(url, callback) {
 getUser(id, (err, user) => {
   getOrders(user.id, (err, orders) => {
     getItems(orders[0].id, (err, items) => {
-      // deeply nested, hard to read, hard to handle errors
+      * deeply nested, hard to read, hard to handle errors
     });
   });
 });
@@ -344,30 +344,30 @@ This is why Promises and async/await were introduced — they flatten nested cal
 <!-- Middleware is a function that sits between the incoming request and the final route handler. It has access to the request object, the response object, and the next middleware function in the chain. It can modify the request/response, end the request cycle, or pass control to the next middleware.
 
 ```js
-// Express middleware signature:
+* Express middleware signature:
 function myMiddleware(req, res, next) {
-  // Do something with req or res
+  * Do something with req or res
   next();  // pass control to the next middleware
 }
 
-app.use(myMiddleware);  // applies to ALL routes
+app.use(myMiddleware);  // applies to ALL routes‼️
 ```
 
 **How the middleware chain works:**
 ```
-Request → [Logger] → [Auth] → [BodyParser] → [Route Handler] → Response
+Request → [Logger] → [Auth] → [BodyParser] → [Route Handler] → Response‼️
 ```
 Each middleware calls `next()` to pass control to the next one. If a middleware doesn't call `next()`, the request hangs (or the middleware must send a response itself).
 
 **Common middleware examples:**
 ```js
-// Logging
+* Logging
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
 
-// Authentication
+* Authentication
 app.use((req, res, next) => {
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: 'No token' });
@@ -375,10 +375,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Body parsing (built-in)
-app.use(express.json());  // parses JSON request bodies
+* Body parsing (built-in)
+app.use(express.json());  // parses JSON request bodies‼️
 
-// Error-handling middleware (4 parameters):
+* Error-handling middleware (4 parameters):
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong' });
@@ -387,56 +387,86 @@ app.use((err, req, res, next) => {
 
 **Key concepts:**
 - Middleware executes in the ORDER it's registered (`app.use()`)
-- `app.use()` applies to all routes; `app.use('/api', ...)` applies only to routes starting with /api
+- `app.use()` applies to all routes; ‼️`app.use('/api', ...)` applies only to routes starting with /api
 - Route-specific middleware: `app.get('/admin', authMiddleware, handler)`
-- Error middleware has 4 params `(err, req, res, next)` and is called when `next(err)` is used
-- Common middleware: cors, helmet (security headers), morgan (logging), express-rate-limit, cookie-parser -->
+- Error middleware has 4 params `(err, req, res, next)` and is called when `next(err)` is used‼️
+- Common middleware: cors, ‼️helmet (security headers), morgan (logging), express-rate-limit, cookie-parser -->
 
 ---
 
-### Q10. What is dependency injection? And what are its benefits?
+### Q10. What is dependency injection? And what are its benefits?‼️
 
 <!-- Dependency injection (DI) is a design pattern where a component receives its dependencies from the outside rather than creating them internally. Instead of a class/function creating what it needs, you "inject" those dependencies in.
 
 ```ts
-// WITHOUT DI — tightly coupled:
+* WITHOUT DI — tightly coupled:
 class UserService {
-  private db = new PostgresDatabase();  // creates its own dependency
+  private db = new PostgresDatabase();  // creates its own dependency‼️
 
   async getUser(id: string) {
     return this.db.query('SELECT * FROM users WHERE id = $1', [id]);
   }
 }
 
-// WITH DI — loosely coupled:
+* WITH DI — loosely coupled:
 class UserService {
-  constructor(private db: Database) {}  // dependency injected from outside
+  constructor(private db: Database) {}  // dependency injected from outside‼️
 
   async getUser(id: string) {
     return this.db.query('SELECT * FROM users WHERE id = $1', [id]);
   }
 }
 
-// Usage:
+* Usage:
 const db = new PostgresDatabase();
 const userService = new UserService(db);  // inject the dependency
 
-// In tests:
+* In tests:
 const mockDb = new MockDatabase();
 const userService = new UserService(mockDb);  // inject a mock
 ```
 
+```
+The difference is WHO DECIDES which database to use:
+
+WITHOUT DI — the class decides internally:
+  private db = new PostgresDatabase();   ← hardcoded INSIDE the class
+  UserService is WELDED to PostgresDatabase. You cannot change it without editing the class.
+  Want to test with a fake DB?      → Can't. It's hardcoded.
+  Want to switch to MySQL?          → Edit the class.
+  Want to use SQLite for local dev? → Edit the class.
+
+WITH DI — the caller decides from outside:
+  constructor(private db: Database) {}   ← passed in from OUTSIDE
+  Now whoever CREATES UserService decides which database:
+  Production: new UserService(new PostgresDatabase())
+  Testing:    new UserService(new FakeDatabase())
+  Local dev:  new UserService(new SQLiteDatabase())
+  The UserService code NEVER changes. Same class, different behavior.
+
+Analogy:
+  WITHOUT DI: the chef grows their own tomatoes in the kitchen.
+              Want different tomatoes? Rebuild the kitchen.
+  WITH DI:    the chef says "I need tomatoes" — someone delivers them.
+              Want different tomatoes? Just deliver different ones.
+              The chef's recipe doesn't change.
+
+Key insight: `Database` in the constructor is an INTERFACE (a contract)‼️, not a specific database.
+Any class that has a .query() method works — Postgres, MySQL, a fake for testing.
+UserService doesn't know or care which one it gets.
+```
+
 **Benefits:**
-1. **Testability** — swap real dependencies with mocks/stubs for unit testing. This is the biggest practical benefit.
+1. **Testability** — swap real dependencies with mocks/stubs for unit testing. This is the biggest practical benefit.‼️
 2. **Loose coupling** — components depend on abstractions (interfaces), not concrete implementations. You can swap Postgres for MySQL without changing UserService.
 3. **Single Responsibility** — a class focuses on its own logic, not on creating/configuring its dependencies.
 4. **Reusability** — the same class works with different implementations of its dependencies.
 5. **Configurability** — easy to change behavior by injecting different implementations (e.g., different loggers for dev vs prod).
 
-**In Node.js/TypeScript, DI is often done through:**
+**In Node.js/TypeScript, DI is often done through:**‼️
 - Constructor injection (most common, shown above)
 - Parameter injection (passing dependencies as function arguments)
-- DI containers/frameworks (NestJS uses decorators and a built-in DI container, similar to Angular and Spring) -->
+- DI containers/frameworks (‼️NestJS uses decorators and a built-in DI container, similar to Angular and Spring) -->
 
 ---
 
@@ -444,7 +474,7 @@ const userService = new UserService(mockDb);  // inject a mock
 
 <!-- HTTP status codes are grouped by their first digit:
 
-**1xx — Informational:**
+**1xx — Informational:**‼️
 - 100 Continue — server received request headers, client should send the body
 - 101 Switching Protocols — switching to WebSocket
 
@@ -455,24 +485,24 @@ const userService = new UserService(mockDb);  // inject a mock
 
 **3xx — Redirection:**
 - 301 Moved Permanently — resource permanently moved (SEO: search engines update their index)
-- 302 Found — temporary redirect
-- 304 Not Modified — cached version is still valid, no need to re-download
+- 302 Found — temporary redirect‼️
+- 304 Not Modified — cached version is still valid, no need to re-download‼️
 
 **4xx — Client Error:**
 - 400 Bad Request — malformed request, invalid JSON, missing required fields
 - 401 Unauthorized — not authenticated (misleading name — really means "unauthenticated")
 - 403 Forbidden — authenticated but not authorized / don't have permission
 - 404 Not Found — resource doesn't exist
-- 405 Method Not Allowed — e.g., POST to a GET-only endpoint
-- 409 Conflict — e.g., duplicate entry, resource already exists
-- 422 Unprocessable Entity — request is valid JSON but fails validation (common in APIs)
+- 405 Method Not Allowed — e.g., POST to a GET-only endpoint‼️
+- 409 Conflict — e.g., duplicate entry, resource already exists‼️
+- 422 Unprocessable Entity — request is valid JSON but fails validation (common in APIs)‼️
 - 429 Too Many Requests — rate limited
 
 **5xx — Server Error:**
 - 500 Internal Server Error — generic server-side failure
-- 502 Bad Gateway — server acting as proxy got invalid response from upstream
-- 503 Service Unavailable — server is overloaded or down for maintenance
-- 504 Gateway Timeout — proxy/load balancer timed out waiting for upstream
+- 502 Bad Gateway — server acting as proxy got invalid response from upstream‼️
+- 503 Service Unavailable — server is overloaded or down for maintenance‼️
+- 504 Gateway Timeout — proxy/load balancer timed out waiting for upstream‼️
 
 **Most important for REST APIs:** 200, 201, 204, 400, 401, 403, 404, 409, 422, 429, 500 -->
 
@@ -480,10 +510,10 @@ const userService = new UserService(mockDb);  // inject a mock
 
 ### Q12. Is HTTP stateful or stateless?
 
-<!-- HTTP is STATELESS. Each request is completely independent — the server does not remember anything about previous requests from the same client.
+<!-- ‼️HTTP is STATELESS. Each request is completely independent — the server does not remember anything about previous requests from the same client.
 
 **What this means:**
-- Every request must contain ALL the information the server needs to process it
+- Every request must contain ALL the information the server needs to process it‼️
 - The server doesn't know if you just sent a request 1 second ago
 - Two requests from the same client are treated as completely unrelated
 
@@ -491,22 +521,22 @@ const userService = new UserService(mockDb);  // inject a mock
 - **Scalability** — any server in a cluster can handle any request (no need to route to a "sticky" server that has your state)
 - **Reliability** — if a server crashes, no session state is lost
 - **Simplicity** — servers don't need to manage/clean up session memory
-- **Cacheability** — stateless responses are easier to cache
+- **Cacheability** — stateless responses are easier to cache‼️
 
-**How we add "state" on top of stateless HTTP:**
+**How we add "state" on top of stateless HTTP:**‼️
 Since many apps need to know who the user is across requests, we use:
-1. **Cookies** — server sends `Set-Cookie` header, browser sends it back on every subsequent request
+1. **Cookies** — server sends `Set-Cookie` header, browser sends it back on every subsequent request‼️
 2. **Session tokens** — server stores session data, sends client a session ID (in a cookie)
-3. **JWTs (JSON Web Tokens)** — self-contained token with user info, sent in `Authorization` header; server doesn't need to store anything (stateless authentication on top of stateless HTTP)
+3. **JWTs (JSON Web Tokens)** — self-contained token with user info, sent in `Authorization` header; server doesn't need to store anything (stateless authentication on top of stateless HTTP)‼️
 4. **URL parameters** — less common, putting session info in the URL
 
-The key insight: HTTP itself is stateless. We build stateful experiences (login sessions, shopping carts) by passing tokens/cookies WITH each request so the server can look up or decode the state. -->
+The key insight: HTTP itself is stateless. We build stateful experiences (login sessions, shopping carts) ‼️ by passing tokens/cookies WITH each request so the server can look up or decode the state. -->
 
 ---
 
 ### Q13. Is SQL declarative or imperative?
 
-<!-- SQL is DECLARATIVE. You describe WHAT data you want, not HOW to get it.
+<!-- ‼️SQL is DECLARATIVE. ‼️You describe WHAT data you want, not HOW to get it.
 
 ```sql
 -- Declarative (SQL) — you say WHAT you want:
@@ -525,7 +555,7 @@ return results
 
 **Why it matters:**
 - The database query optimizer decides HOW to execute your query — which indexes to use, join order, scan strategies
-- The same SQL query might be executed completely differently depending on table size, available indexes, and data distribution
+- The same SQL query might be executed completely differently depending on table size, available indexes, and data distribution‼️
 - You focus on business logic, the database handles performance optimization
 
 **Declarative vs Imperative examples in programming:**
@@ -539,7 +569,7 @@ While SQL is declarative, experienced developers still think about HOW the optim
 
 ### Q14. What is a CTE? And its keyword?
 
-<!-- A CTE (Common Table Expression) is a temporary, named result set defined using the `WITH` keyword. It exists only for the duration of that single query. Think of it as a temporary view or a named subquery that you can reference multiple times.
+<!-- A CTE (Common Table Expression) is a temporary, named result set defined using the ‼️ `WITH` keyword. It exists only for the duration of that single query. ‼️Think of it as a temporary view or a named subquery that you can reference multiple times.
 
 ```sql
 -- Keyword: WITH
@@ -558,9 +588,9 @@ ORDER BY order_count DESC;
 
 **Benefits over subqueries:**
 1. **Readability** — name your subqueries so the logic reads like English
-2. **Reusability** — reference the same CTE multiple times in one query (a subquery would need to be copy-pasted)
+2. **Reusability** — reference the same CTE multiple times in one query (a subquery would need to be copy-pasted)‼️
 3. **Organization** — break complex queries into named, logical steps
-4. **Recursion** — CTEs support recursive queries (subqueries don't)
+4. **Recursion** — CTEs support recursive queries (subqueries don't)‼️
 
 **Multiple CTEs:**
 ```sql
@@ -590,7 +620,7 @@ CTEs don't create actual tables or views — they're just a way to structure a s
 - Is the source of truth
 
 **View:**
-- A view is a SAVED QUERY — it doesn't store data itself
+- A view is a ‼️ SAVED QUERY — it doesn't store data itself
 - It's a virtual table defined by a SELECT statement
 - Every time you query a view, it runs the underlying query against the actual tables
 - Takes up no additional storage (just the query definition)
@@ -604,7 +634,7 @@ FROM users u
 JOIN subscriptions s ON s.user_id = u.id
 WHERE u.status = 'active' AND s.plan_name = 'premium';
 
--- Use it like a table:
+-- Use it like a table:‼️
 SELECT * FROM active_premium_users WHERE name LIKE 'A%';
 ```
 
@@ -615,13 +645,43 @@ SELECT * FROM active_premium_users WHERE name LIKE 'A%';
 4. **Abstraction** — change underlying table structure without breaking queries that use the view
 
 **Materialized View (bonus):**
-A materialized view DOES store data physically — it's a cached snapshot of the query result. It needs to be manually refreshed (`REFRESH MATERIALIZED VIEW`) to pick up changes. Used for performance when the underlying query is expensive and data doesn't need to be real-time. -->
+‼️ A materialized view DOES store data physically — it's a cached snapshot of the query result. It needs to be manually refreshed (`REFRESH MATERIALIZED VIEW`) to pick up changes. Used for performance when the underlying query is expensive and data doesn't need to be real-time.
+
+**CTE vs View — also important to know:**
+
+A CTE (Common Table Expression) is often confused with a view, but they are very different:
+
+```sql
+-- CTE = temporary, exists ONLY for ONE query, then gone
+WITH active_users AS (
+    SELECT * FROM users WHERE status = 'active'
+)
+SELECT * FROM active_users WHERE age > 25;
+-- after this query runs, "active_users" no longer exists
+
+-- View = permanent, saved in the database, reusable by anyone
+CREATE VIEW active_users AS
+    SELECT * FROM users WHERE status = 'active';
+-- use it forever from anywhere, until you DROP VIEW
+```
+
+| | CTE | View |
+|---|---|---|
+| Lifetime | One query only | Permanent until dropped |
+| Stored in DB? | No | Yes (as a saved query definition) |
+| Reusable? | No — rewrite each time | Yes — like a table |
+| Recursive? | Yes (WITH RECURSIVE) | No |
+| Permissions? | No | Yes — GRANT access |
+| Use case | Break complex query into steps | Reusable abstraction, security |
+
+A regular view does NOT store data — it's just a saved query that re-runs every time.
+It's basically a permanent CTE with a name. -->
 
 ---
 
-### Q16. What is a recursive query?
+### Q16. What is a recursive query?‼️
 
-<!-- A recursive query is a query that references itself to process hierarchical or tree-structured data. It uses a recursive CTE (WITH RECURSIVE) to repeatedly execute until a termination condition is met.
+<!-- ‼️ A recursive query is a query that references itself to process hierarchical or tree-structured data. It uses a recursive CTE (WITH RECURSIVE) to repeatedly execute until a termination condition is met.
 
 ```sql
 -- Example: Get an employee and ALL their reports (direct and indirect)
@@ -687,15 +747,15 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 ```
 
 **Why B-tree?**
-- Balanced tree structure — all leaf nodes are at the same depth
+- Balanced tree structure — all leaf nodes are at the same depth‼️
 - O(log n) for search, insert, delete
-- Great for range queries (>, <, BETWEEN) because leaf nodes are linked
+- Great for range queries (>, <, BETWEEN) because leaf nodes are linked‼️
 - Works well with disk-based storage (minimizes disk reads)
 
 **Types of indexes:**
 - **B-tree** — default, good for equality and range queries
-- **Hash** — faster for exact equality, useless for ranges
-- **GIN (Generalized Inverted Index)** — for full-text search, arrays, JSONB
+- **Hash** — faster for exact equality, useless for ranges‼️
+- **GIN (Generalized Inverted Index)** — for full-text search, arrays, JSONB‼️
 - **Unique index** — B-tree + enforces uniqueness constraint
 
 **Trade-offs:**
@@ -725,7 +785,7 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 **Microservice architecture:**
 - The application is split into small, independent services that each do ONE thing
 - Each service has its own codebase, database, and deployment pipeline
-- Services communicate via HTTP/REST, gRPC, or message queues
+- Services communicate via HTTP/REST, gRPC, or message queues‼️
 
 ```
 [Microservices]
@@ -769,14 +829,14 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 
 ---
 
-### Q19. What are some problems you can run into using message queues with microservices?
+### Q19. What are some problems you can run into using message queues with microservices?‼️
 
 <!-- Message queues (RabbitMQ, Kafka, SQS, etc.) enable async communication between microservices, but they introduce several challenges:
 
-**1. Message ordering:**
+**1. Message ordering:**‼️
 - Messages may arrive out of order, especially with multiple consumers
 - Example: "update user" arrives before "create user" — the update fails
-- Fix: partition by key (Kafka), use sequence numbers, design for idempotency
+- Fix: partition by key (Kafka), use sequence numbers, design for idempotency‼️
 
 **2. Duplicate messages (at-least-once delivery):**
 - Most queues guarantee at-least-once delivery, meaning the same message can be delivered twice (broker retries, consumer crashes after processing but before acknowledging)
@@ -787,7 +847,7 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 - Messages can be lost if the broker crashes before persisting, or a consumer acknowledges before processing
 - Fix: persistent/durable queues, acknowledge AFTER processing, use transactions
 
-**4. Poison pill messages:**
+**4. Poison pill messages:**‼️
 - A malformed message that crashes the consumer every time it's delivered
 - Consumer crashes → message goes back to queue → consumer picks it up → crashes again (infinite loop)
 - Fix: dead letter queue (DLQ) — after N failed attempts, move the message to a DLQ for manual inspection
@@ -807,7 +867,7 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 - Can lead to memory issues on the broker and increased latency
 - Fix: auto-scaling consumers, rate limiting producers, monitoring queue depth
 
-**8. Schema evolution:**
+**8. Schema evolution:**‼️
 - If the message format changes, old consumers may not understand new messages (and vice versa)
 - Fix: versioned schemas, backward-compatible changes, schema registry (Avro, Protobuf) -->
 
@@ -821,14 +881,14 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 - Database queries are slow (disk I/O, complex joins)
 - API calls to external services are slow (network latency)
 - Computed results (reports, aggregations) are expensive to generate
-- Caching trades memory for speed
+- Caching trades memory for speed‼️
 
 **Cache layers (closest to user → farthest):**
-1. **Browser cache** — static assets (images, CSS, JS) cached by the browser via HTTP headers
+1. **Browser cache** — static assets (images, CSS, JS) cached by the browser via HTTP headers‼️
 2. **CDN cache** — static content cached at edge servers close to users (CloudFront, Cloudflare)
 3. **Application cache** — in-memory cache in your server process (Node.js Map, LRU cache)
 4. **Distributed cache** — shared cache across multiple servers (Redis, Memcached)
-5. **Database cache** — query result cache, buffer pool (built into the DB)
+5. **Database cache** — query result cache, buffer pool (built into the DB)‼️
 
 **Implementation with Redis (most common in Node.js):**
 ```js
@@ -836,16 +896,16 @@ const Redis = require('ioredis');
 const redis = new Redis();
 
 async function getUser(id) {
-  // 1. Check cache first
+  * 1. Check cache first
   const cached = await redis.get(`user:${id}`);
   if (cached) {
     return JSON.parse(cached);  // cache HIT — fast path
   }
 
-  // 2. Cache MISS — query database
+  * 2. Cache MISS — query database
   const user = await db.query('SELECT * FROM users WHERE id = $1', [id]);
 
-  // 3. Store in cache with TTL (time-to-live)
+  * 3. Store in cache with TTL (time-to-live)
   await redis.set(`user:${id}`, JSON.stringify(user), 'EX', 3600);  // expires in 1 hour
 
   return user;
@@ -855,14 +915,14 @@ async function getUser(id) {
 **Cache invalidation strategies:**
 1. **TTL (Time-to-Live)** — cache expires after a set time. Simple but data can be stale until expiry.
 2. **Write-through** — write to cache AND database at the same time. Always consistent, but every write is slower.
-3. **Write-behind (write-back)** — write to cache first, async write to database later. Fast writes, but risk of data loss if cache crashes.
+3. **Write-behind (write-back)** — write to cache first, async write to database later. Fast writes, but risk of data loss if cache crashes.‼️
 4. **Cache-aside (lazy loading)** — the pattern shown above. Only cache on read. Most common in application code.
-5. **Event-driven invalidation** — when data changes, publish an event that clears the relevant cache keys.
+5. **Event-driven invalidation** — when data changes, publish an event that clears the relevant cache keys.‼️
 
 **Common cache problems:**
-- **Cache stampede** — cache expires, 1000 requests simultaneously hit the database. Fix: mutex/lock, staggered TTLs, pre-warming.
+- **Cache stampede**‼️ — cache expires, 1000 requests simultaneously hit the database. ‼️Fix: mutex/lock, staggered TTLs, pre-warming.
 - **Stale data** — cache shows outdated information. Fix: shorter TTL, active invalidation on writes.
-- **Memory pressure** — cache grows too large. Fix: eviction policies (LRU — Least Recently Used, LFU — Least Frequently Used).
+- **Memory pressure**‼️ — cache grows too large. Fix: eviction policies (LRU — Least Recently Used, LFU — Least Frequently Used).
 
 "There are only two hard things in computer science: cache invalidation and naming things." — Phil Karlton -->
 
@@ -903,8 +963,8 @@ async function getUser(id) {
 1. Your JavaScript code runs synchronously on the call stack
 2. When you encounter an async operation (file read, HTTP request, timer), Node.js hands it off to the system (libuv thread pool or OS kernel)
 3. Your code continues executing — it doesn't wait
-4. When the async operation completes, its callback is placed in the appropriate queue
-5. The event loop picks callbacks from the queues and pushes them onto the call stack when it's empty
+4. When the async operation completes, its callback is placed in the appropriate queue‼️
+5. The event loop picks callbacks from the queues and pushes them onto the call stack when it's empty‼️
 6. This repeats forever until there are no more callbacks to process
 
 **Key phases:**
@@ -928,7 +988,7 @@ process.nextTick(() => console.log('4 - nextTick'));
 
 console.log('5 - end');
 
-// Output: 1 - start, 5 - end, 4 - nextTick, 3 - promise, 2 - setTimeout
+* Output: 1 - start, 5 - end, 4 - nextTick, 3 - promise, 2 - setTimeout
 ```
 
 **Why this matters:**
@@ -940,14 +1000,14 @@ console.log('5 - end');
 
 ### Q22. What data structure does a SQL index use and why?
 
-<!-- The default (and most common) data structure for SQL indexes is a **B-tree** (specifically B+ tree in most implementations like PostgreSQL, MySQL InnoDB, SQL Server).
+<!-- The default (and most common) data structure for SQL indexes is a **B-tree** (specifically ‼️ B+ tree in most implementations like PostgreSQL, MySQL InnoDB, SQL Server).
 
 **What is a B+ tree?**
-A self-balancing tree where:
-- Internal nodes store keys and pointers to child nodes (used for navigation)
-- Leaf nodes store the actual indexed values and pointers to the table rows
-- All leaf nodes are at the same depth (balanced = predictable performance)
-- Leaf nodes are linked together in a doubly-linked list (great for range scans)
+A self-balancing tree where:‼️
+- Internal nodes store keys and pointers to child nodes (used for navigation)‼️
+- Leaf nodes store the actual indexed values and pointers to the table rows‼️
+- All leaf nodes are at the same depth (balanced = predictable performance)‼️
+- Leaf nodes are linked together in a doubly-linked list (great for range scans)‼️
 
 ```
             [50]                    ← root
@@ -959,13 +1019,13 @@ A self-balancing tree where:
 
 **Why B-tree / B+ tree?**
 1. **O(log n) lookups** — with millions of rows, a B-tree might only need 3-4 levels deep. Finding a row = 3-4 disk reads instead of millions.
-2. **Optimized for disk I/O** — B-trees are wide and shallow (high branching factor). Each node can hold many keys, which maps perfectly to disk pages (typically 4KB-16KB). One disk read loads an entire node with hundreds of keys.
+2. **Optimized for disk I/O** — ‼️B-trees are wide and shallow (high branching factor). Each node can hold many keys, which maps perfectly to disk pages (typically 4KB-16KB). One disk read loads an entire node with hundreds of keys.‼️
 3. **Range queries** — because leaf nodes are linked, once you find the start of a range (WHERE price BETWEEN 10 AND 50), you just follow the leaf node chain. An array would need to be sorted + binary searched; a hash table can't do ranges at all.
 4. **Sorted order** — data in a B-tree is sorted, so ORDER BY queries on indexed columns can skip sorting entirely.
 5. **Efficient inserts/deletes** — the tree rebalances itself to maintain O(log n) guarantees even with heavy writes.
 
 **Other index types and their data structures:**
-- **Hash index** — hash table. O(1) exact-match lookups. Cannot do range queries, no ordering. Good for equality checks only.
+- **Hash index** — hash table. O(1) exact-match lookups. ‼️Cannot do range queries, no ordering. Good for equality checks only.
 - **GIN (Generalized Inverted Index)** — inverted index (like a book's index). Used for full-text search, JSONB, arrays. Maps each value to the list of rows containing it.
 - **GiST** — generalized search tree. Used for geometric/spatial data (PostGIS), full-text search.
 - **BRIN (Block Range Index)** — stores min/max per block of table pages. Very small, great for naturally ordered data (timestamps).
@@ -983,7 +1043,7 @@ B-tree is the default because it handles the widest range of operations efficien
 A function you pass to another function, to be called when the work is done. It's the oldest async pattern in JavaScript.
 
 ```js
-// Callback pattern (Node.js error-first convention):
+* Callback pattern (Node.js error-first convention):
 fs.readFile('data.txt', 'utf8', (err, data) => {
   if (err) {
     console.error(err);
@@ -994,10 +1054,10 @@ fs.readFile('data.txt', 'utf8', (err, data) => {
 ```
 
 **Promise:**
-An object that represents a future value. Instead of passing a function in, you get an object back that you can attach handlers to.
+An object that represents a future value. ‼️Instead of passing a function in, you get an object back that you can attach handlers to.
 
 ```js
-// Promise pattern:
+* Promise pattern:
 fetch('/api/data')
   .then(res => res.json())
   .then(data => console.log(data))
@@ -1007,7 +1067,7 @@ fetch('/api/data')
 **Side-by-side comparison — reading a file then parsing it then saving it:**
 
 ```js
-// CALLBACK — nested, messy ("callback hell"):
+* CALLBACK — nested, messy ("callback hell"):
 readFile('input.txt', (err, raw) => {
   if (err) return handleError(err);
   parseData(raw, (err, parsed) => {
@@ -1019,14 +1079,14 @@ readFile('input.txt', (err, raw) => {
   });
 });
 
-// PROMISE — flat chain:
+* PROMISE — flat chain:
 readFile('input.txt')
   .then(raw => parseData(raw))
   .then(parsed => saveToDb(parsed))
   .then(result => console.log('Done:', result))
-  .catch(err => handleError(err));  // one catch handles all errors
+  .catch(err => handleError(err));  * one catch handles all errors
 
-// ASYNC/AWAIT — reads like synchronous code:
+* ASYNC/AWAIT — reads like synchronous code:
 async function process() {
   try {
     const raw = await readFile('input.txt');
@@ -2587,13 +2647,13 @@ const result = await db.query(`
 | 36  | Environment variables       | External key-value config (secrets, DB URLs) — never hardcode; validate with zod; use secrets manager in prod |
 | 37  | Auth vs authorization       | Authentication = WHO are you (401 if fail); Authorization = WHAT can you do (403 if fail)                     |
 | 38  | DB schema design            | Design entities, relationships, indexes; discuss UUIDs, soft deletes, audit trails for legal data             |
-| 39  | Production debugging        | Detect → triage → investigate (logs, metrics) → root cause → fix → prevent recurrence                        |
+| 39  | Production debugging        | Detect → triage → investigate (logs, metrics) → root cause → fix → prevent recurrence                         |
 | 40  | Code review approach        | Check correctness, readability, architecture, performance, security, tests; lead with questions not commands  |
-| 41  | Project structure           | Route → Controller → Service → Repository layers; separation of concerns for testability                     |
+| 41  | Project structure           | Route → Controller → Service → Repository layers; separation of concerns for testability                      |
 | 42  | Database migrations         | Version-controlled schema changes (up/down); never edit applied migrations; backward-compatible               |
-| 43  | Error handling (Node.js)    | Custom error classes + async wrapper + centralized error middleware; consistent error response format          |
-| 44  | Pagination                  | Offset-based (simple, page numbers) vs cursor-based (performant, infinite scroll); index the ORDER BY column |
-| 45  | Security vulnerabilities    | SQL injection (parameterize), XSS (React escapes), CSRF (tokens), bcrypt passwords, helmet + CORS            |
+| 43  | Error handling (Node.js)    | Custom error classes + async wrapper + centralized error middleware; consistent error response format         |
+| 44  | Pagination                  | Offset-based (simple, page numbers) vs cursor-based (performant, infinite scroll); index the ORDER BY column  |
+| 45  | Security vulnerabilities    | SQL injection (parameterize), XSS (React escapes), CSRF (tokens), bcrypt passwords, helmet + CORS             |
 | 46  | Mentoring engineers         | Code reviews as teaching, pair programming, progressive responsibility, design discussions                    |
 | 47  | Take-home approach          | Clean TS, proper error handling, tests, migrations, README with design decisions and tradeoffs                |
-| 48  | DB performance              | EXPLAIN ANALYZE, add indexes, fix N+1 queries, optimize SELECT, cache with Redis, tune connection pool       |
+| 48  | DB performance              | EXPLAIN ANALYZE, add indexes, fix N+1 queries, optimize SELECT, cache with Redis, tune connection pool        |
