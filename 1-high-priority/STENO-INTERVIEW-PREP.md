@@ -2088,11 +2088,11 @@ CREATE INDEX idx_transcripts_proceeding_id ON transcripts(proceeding_id);
 
 **Design decisions to discuss:**
 1. **UUIDs vs auto-increment** — UUIDs are better for distributed systems, avoid ID enumeration attacks, and work well for APIs
-2. **Status as VARCHAR vs enum** — VARCHAR is easier to extend; PostgreSQL enums require ALTER TYPE to add values
+2. **Status as VARCHAR vs enum** — VARCHAR is easier to extend; PostgreSQL enums require ALTER TYPE to add values‼️
 3. **Soft delete vs hard delete** — legal data likely requires soft delete (add `deleted_at` column) for audit trails
-4. **Timestamps with timezone** — always use TIMESTAMPTZ in PostgreSQL for legal records across time zones
+4. **Timestamps with timezone** — always use TIMESTAMPTZ in PostgreSQL for legal records across time zones‼️
 5. **File storage** — store files in S3, store the URL in the database (never store binary blobs in PostgreSQL)
-6. **Audit trail** — for a legal platform, you'd likely want an audit log table tracking all changes (who changed what, when) -->
+6. **Audit trail** — for a legal platform, you'd likely want an audit log table tracking all changes (who changed what, when) -->‼️
 
 ---
 
@@ -2106,8 +2106,8 @@ CREATE INDEX idx_transcripts_proceeding_id ON transcripts(proceeding_id);
 2. **Triage** — how severe? (P0 all users affected? P1 some users? P2 minor degradation?)
 3. **Investigation** — what tools and steps?
    - Check error logs (CloudWatch, Datadog, Sentry)
-   - Check recent deployments (was anything just deployed? → check git log)
-   - Check infrastructure (is the database overloaded? is a service down?)
+   - Check recent deployments (was anything just deployed? → check git log)‼️
+   - Check infrastructure (is the database overloaded? is a service down?)‼️
    - Reproduce the issue (can you trigger it locally or in staging?)
 4. **Root cause** — what was actually wrong?
 5. **Fix** — what did you do? (hotfix, rollback, config change)
@@ -2149,7 +2149,7 @@ CREATE INDEX idx_transcripts_proceeding_id ON transcripts(proceeding_id);
 
 **As a senior engineer:**
 - Mentor through code reviews — explain the "why" behind suggestions
-- Focus on patterns and architecture, not just style (that's what linters are for)
+- Focus on patterns and architecture, not just style (that's what linters are for)‼️
 - Consider the PR author's experience level — adjust depth of feedback accordingly -->
 
 ---
@@ -2169,10 +2169,10 @@ project-root/
 │   │   ├── users.ts          # route definitions: app.get('/users', ...)
 │   │   └── orders.ts
 │   ├── controllers/
-│   │   ├── users.ts          # request handling: parse input, call service, send response
+│   │   ├── users.ts          # request handling: parse input, call service, send response‼️
 │   │   └── orders.ts
 │   ├── services/
-│   │   ├── users.ts          # business logic: validation rules, orchestration
+│   │   ├── users.ts          # business logic: validation rules, orchestration‼️
 │   │   └── orders.ts
 │   ├── repositories/         # (or models/)
 │   │   ├── users.ts          # database queries: SQL, ORM calls
@@ -2184,7 +2184,7 @@ project-root/
 │   ├── types/
 │   │   └── index.ts          # shared TypeScript interfaces/types
 │   └── utils/
-│       └── logger.ts         # logging utility
+│       └── logger.ts         # logging utility‼️
 ├── tests/
 │   ├── unit/
 │   └── integration/
@@ -2198,7 +2198,7 @@ project-root/
 
 **The layered flow:**
 ```
-Route → Controller → Service → Repository → Database
+Route → Controller → Service → Repository → Database‼️
 ```
 
 - **Route**: defines URL patterns and HTTP methods
@@ -2245,7 +2245,7 @@ Route → Controller → Service → Repository → Database
 **Example with a migration tool (e.g., node-pg-migrate, Knex, Prisma):**
 
 ```ts
-// migrations/20240115_001_create_users.ts
+* migrations/20240115_001_create_users.ts
 export async function up(db) {
   await db.query(`
     CREATE TABLE users (
@@ -2263,7 +2263,7 @@ export async function down(db) {
   await db.query('DROP TABLE IF EXISTS users;');
 }
 
-// migrations/20240120_002_add_role_to_users.ts
+* migrations/20240120_002_add_role_to_users.ts
 export async function up(db) {
   await db.query(`
     ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user';
@@ -2280,11 +2280,11 @@ export async function down(db) {
 2. A `migrations` table in the database tracks which migrations have been applied
 3. `migrate up` runs all pending migrations
 4. `migrate down` rolls back the last migration
-5. In CI/CD, migrations run automatically before the new code deploys
+5. In CI/CD, migrations run automatically before the new code deploys‼️
 
 **Best practices:**
 1. **Never edit a migration that's been run in production** — create a new migration instead
-2. **Make migrations backward-compatible** — the old code should still work while the migration is being applied (important for zero-downtime deploys)
+2. **Make migrations backward-compatible** — ‼️ the old code should still work while the migration is being applied (important for zero-downtime deploys)
 3. **Small, focused migrations** — one change per migration file
 4. **Always write a down migration** — you need to be able to rollback
 5. **Test migrations on a copy of production data** before running in production -->
@@ -2296,7 +2296,7 @@ export async function down(db) {
 <!-- **Layered error handling strategy:**
 
 ```ts
-// 1. Define custom error classes:
+* 1. Define custom error classes:
 class AppError extends Error {
   constructor(
     public statusCode: number,
@@ -2319,33 +2319,78 @@ class ValidationError extends AppError {
   }
 }
 
-// 2. Throw errors in your service/repository layer:
+* 2. Throw errors in your service/repository layer:
 async function getUser(id: string) {
   const user = await db.query('SELECT * FROM users WHERE id = $1', [id]);
   if (!user.rows[0]) throw new NotFoundError('User');
   return user.rows[0];
 }
 
-// 3. Controller doesn't need try/catch if you use an async wrapper:
+* 3. Controller doesn't need try/catch if you use an async wrapper:
 const asyncHandler = (fn: RequestHandler) => (req: Request, res: Response, next: NextFunction) => {
-  Promise.resolve(fn(req, res, next)).catch(next);  // forwards errors to error middleware
+  Promise.resolve(fn(req, res, next)).catch(next);  * forwards errors to error middleware
 };
+
+* SYNTAX BREAKDOWN — asyncHandler is a CURRIED FUNCTION (a function that returns another function):‼️
+*
+*   Layer 1: takes fn (your route handler) and returns a NEW function
+*   const asyncHandler = (fn: RequestHandler) =>
+*
+*   Layer 2: the NEW function — this is what Express actually calls as middleware‼️
+*     (req: Request, res: Response, next: NextFunction) => {
+*       Promise.resolve(fn(req, res, next)).catch(next);
+*     };
+*
+*   Without arrow syntax, it's the same as:
+*     function asyncHandler(fn: RequestHandler) {
+*       return function(req: Request, res: Response, next: NextFunction) {
+*         Promise.resolve(fn(req, res, next)).catch(next);
+*       };
+*     }
+*
+*   What Promise.resolve(fn(req, res, next)).catch(next) does:‼️
+*     1. fn(req, res, next) — calls your route handler
+*     2. Promise.resolve(...) — wraps the result in a promise
+*        (if fn is async it already returns a promise; if sync, this makes it one)‼️
+*     3. .catch(next) — if the promise rejects (handler threw an error),
+*        calls next(error) which forwards to Express's error-handling middleware
+*
+*   WHY this exists — without asyncHandler, you must try/catch EVERY route:‼️
+*     app.get('/users', async (req, res, next) => {
+*       try {
+*         const users = await db.getUsers();
+*         res.json(users);
+*       } catch (err) {
+*         next(err);  * manually forward to error middleware
+*       }
+*     });
+*
+*   With asyncHandler — no try/catch needed:‼️
+*     app.get('/users', asyncHandler(async (req, res) => {
+*       const users = await db.getUsers();
+*       res.json(users);  * if this throws, asyncHandler catches it automatically‼️
+*     }));
+*
+*   So asyncHandler is a WRAPPER FACTORY — you give it your handler,
+*   it gives back a new handler with automatic error catching built in.‼️
+*   The currying pattern (fn) => (req, res, next) => ... is what makes it
+*   work as a wrapper you can slot into Express's app.get().
 
 app.get('/users/:id', asyncHandler(async (req, res) => {
   const user = await getUser(req.params.id);
   res.json({ data: user });
 }));
 
-// 4. Global error handling middleware (registered LAST):
+* 4. Global error handling middleware (registered LAST):
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   if (err instanceof AppError) {
-    // Known error — send structured response:
+    * Known error — send structured response:
     return res.status(err.statusCode).json({
       error: { code: err.code, message: err.message }
     });
   }
 
-  // Unknown error — log it, send generic response:
+  * Unknown error — log it, send generic response:
   console.error('Unexpected error:', err);
   res.status(500).json({
     error: { code: 'INTERNAL_ERROR', message: 'Something went wrong' }
@@ -2356,9 +2401,9 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 **Key principles:**
 1. **Fail fast** — validate inputs at the boundary (middleware); throw early if something is wrong
 2. **Custom error classes** — categorize errors (not found, validation, auth, internal) so the error handler can respond appropriately
-3. **Never expose stack traces** to the client in production — log them server-side
+3. **Never expose stack traces** to the client in production — log them server-side‼️
 4. **Centralized error handler** — one place handles all errors consistently
-5. **Async wrapper** — avoids try/catch boilerplate in every route handler
+5. **Async wrapper** — avoids try/catch boilerplate in every route handler‼️
 6. **Log meaningfully** — include request ID, user ID, and context so you can trace issues in production
 7. **Return consistent error format** — every error response has the same shape so clients can handle them uniformly -->
 
@@ -2370,21 +2415,21 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 **1. Offset-based pagination (simpler, most common):**
 ```ts
-// GET /api/users?page=2&limit=20
+* GET /api/users?page=2&limit=20
 app.get('/api/users', async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);  // cap at 100
   const offset = (page - 1) * limit;
 
-  const [users, countResult] = await Promise.all([
+  const [users, countResult] = await Promise.all([‼️
     db.query('SELECT * FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2', [limit, offset]),
     db.query('SELECT COUNT(*) FROM users'),
   ]);
 
-  const total = parseInt(countResult.rows[0].count);
+  const total = parseInt(countResult.rows[0].count);‼️
 
   res.json({
-    data: users.rows,
+    data: users.rows,‼️
     meta: {
       page,
       limit,
@@ -2395,17 +2440,31 @@ app.get('/api/users', async (req, res) => {
 });
 ```
 
-**Problem with offset:** OFFSET scans and discards rows. OFFSET 10000 means the DB reads 10,000 rows and throws them away. Gets slower as pages increase.
+**Problem with offset:** ‼️ OFFSET scans and discards rows. OFFSET 10000 means the DB reads 10,000 rows and throws them away. Gets slower as pages increase.
 
 **2. Cursor-based pagination (better for large datasets):**
 ```ts
-// GET /api/users?cursor=2024-01-15T10:30:00Z&limit=20
+* GET /api/users?cursor=2024-01-15T10:30:00Z&limit=20
 app.get('/api/users', async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
   const cursor = req.query.cursor as string;
 
   let query = 'SELECT * FROM users';
   const params: any[] = [limit + 1];  // fetch one extra to know if there's a next page
+  * [limit + 1] is ARRAY SYNTAX — creates an array with one element inside it.‼️
+  * If limit = 20, this is: const params = [21];
+  *
+  * This array is the list of SQL parameter values that get plugged into the query.
+  * Later when params.push(cursor) is called:
+  *   params becomes [21, '2024-01-15T10:30:00Z']
+  *
+  * Then in the query:
+  *   'SELECT * FROM users WHERE created_at < $2 ORDER BY created_at DESC LIMIT $1'
+  *   $1 → params[0] → 21                    (how many rows to fetch)
+  *   $2 → params[1] → '2024-01-15T10:30:00Z' (the cursor value)
+  *
+  * $1, $2 are PLACEHOLDERS — replaced by values in the params array (by position).‼️
+  * This is called ‼️ PARAMETERIZED QUERIES, which prevents SQL injection.‼️
 
   if (cursor) {
     query += ' WHERE created_at < $2';
@@ -2434,8 +2493,8 @@ app.get('/api/users', async (req, res) => {
 
 **Performance tips:**
 - Always have an index on the ORDER BY column
-- Use `LIMIT + 1` trick to check if there's a next page without a separate COUNT query
-- COUNT(*) on large tables is slow in PostgreSQL — consider approximate counts or caching the total -->
+- Use `LIMIT + 1` trick to check if there's a next page without a separate COUNT query‼️
+- COUNT(*) on large tables is slow in PostgreSQL — consider approximate counts or caching the total -->‼️
 
 ---
 
@@ -2445,25 +2504,25 @@ app.get('/api/users', async (req, res) => {
 
 **1. SQL Injection:**
 ```ts
-// BAD — string concatenation:
-db.query(`SELECT * FROM users WHERE email = '${email}'`);  // attacker: ' OR 1=1 --
+* BAD — string concatenation:
+db.query(`SELECT * FROM users WHERE email = '${email}'`);  * attacker: ' OR 1=1 --
 
-// GOOD — parameterized queries:
+* GOOD — parameterized queries:
 db.query('SELECT * FROM users WHERE email = $1', [email]);
 ```
-Always use parameterized queries. ORMs (Prisma, TypeORM) do this automatically.
+Always use parameterized queries. ORMs (Prisma, TypeORM) do this automatically.‼️
 
 **2. Cross-Site Scripting (XSS):**
 ```jsx
-// BAD — rendering raw HTML:
+* BAD — rendering raw HTML:
 <div dangerouslySetInnerHTML={{ __html: userInput }} />
 
-// GOOD — React auto-escapes by default:
+* GOOD — React auto-escapes by default:‼️
 <div>{userInput}</div>
 ```
-React escapes output by default. Never use dangerouslySetInnerHTML with user input. Sanitize with DOMPurify if you must render HTML.
+‼️ React escapes output by default. Never use dangerouslySetInnerHTML with user input. Sanitize with DOMPurify if you must render HTML.
 
-**3. Cross-Site Request Forgery (CSRF):**
+**3. Cross-Site Request Forgery (CSRF):**‼️
 - Use anti-CSRF tokens for cookie-based auth
 - JWT in Authorization header is inherently CSRF-safe (cookies are the vulnerability)
 - SameSite cookie attribute helps
@@ -2472,7 +2531,7 @@ React escapes output by default. Never use dangerouslySetInnerHTML with user inp
 - Hash passwords with bcrypt (cost factor 10+)
 - Use constant-time comparison for tokens
 - Implement rate limiting on login endpoints
-- JWT: use short expiry + refresh tokens, never store in localStorage (XSS vulnerable), use httpOnly cookies
+- JWT: use short expiry + refresh tokens, never store in localStorage (XSS vulnerable), use httpOnly cookies‼️
 
 **5. Sensitive Data Exposure:**
 - Never log passwords, tokens, or PII
@@ -2488,7 +2547,7 @@ import rateLimit from 'express-rate-limit';
 
 app.use(helmet());
 app.use(cors({ origin: 'https://app.steno.com' }));
-app.use('/api/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }));
+app.use('/api/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }));‼️
 ``` -->
 
 ---
@@ -2552,7 +2611,7 @@ app.use('/api/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }));
 ## Testing
 - [ ] At least unit tests for business logic
 - [ ] At least one integration test for a key API endpoint
-- [ ] Tests actually test behavior, not implementation
+- [ ] Tests actually test behavior, not implementation‼️
 
 ## Documentation
 - [ ] README with: setup instructions, design decisions, tradeoffs, what you'd improve with more time
@@ -2569,13 +2628,13 @@ app.use('/api/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }));
 
 **Step 1: Identify the slow query**
 ```sql
--- PostgreSQL: find slow queries
+-- PostgreSQL: find slow queries‼️
 SELECT query, calls, mean_exec_time, total_exec_time
 FROM pg_stat_statements
 ORDER BY mean_exec_time DESC
 LIMIT 10;
 
--- Or enable slow query logging:
+-- Or enable slow query logging:‼️
 -- SET log_min_duration_statement = 500;  -- log queries taking > 500ms
 ```
 
@@ -2605,13 +2664,13 @@ CREATE INDEX idx_orders_user_status ON orders(user_id, status);
 
 2. **Fix N+1 queries:**
 ```ts
-// BAD — N+1 (1 query for users + N queries for orders):
+* BAD — N+1 (1 query for users + N queries for orders):
 const users = await db.query('SELECT * FROM users');
 for (const user of users.rows) {
   user.orders = await db.query('SELECT * FROM orders WHERE user_id = $1', [user.id]);
 }
 
-// GOOD — single query with JOIN:
+* GOOD — single query with JOIN:
 const result = await db.query(`
   SELECT u.*, json_agg(o.*) as orders
   FROM users u
@@ -2622,14 +2681,14 @@ const result = await db.query(`
 
 3. **Optimize query structure:**
    - Use `SELECT` only the columns you need (not `SELECT *`)
-   - Use `EXISTS` instead of `COUNT(*) > 0`
+   - Use `EXISTS` instead of `COUNT(*) > 0`‼️
    - Use `LIMIT` for pagination (never fetch all rows)
    - Consider materialized views for expensive aggregations
 
-4. **Connection and configuration:**
-   - Tune connection pool size (`max` in pg Pool)
-   - Increase `shared_buffers` and `work_mem` in postgresql.conf
-   - Use connection pooler like PgBouncer for high-concurrency apps
+4. **Connection and configuration:**‼️
+   - Tune connection pool size (`max` in pg Pool)‼️
+   - Increase `shared_buffers` and `work_mem` in postgresql.conf‼️
+   - Use connection pooler like PgBouncer for high-concurrency apps‼️
 
 5. **Caching layer:**
    - Cache frequently-read, rarely-changed data in Redis
