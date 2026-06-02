@@ -22,13 +22,13 @@
 ### How Git stores data
 
 ```text
-Git is a content-addressable filesystem.
-Everything stored as objects, identified by SHA-1 hash of their content.
+Git is a content-addressable filesystem.‼️
+Everything stored as objects, identified by SHA-1 hash of their content.‼️
 
 Object types:
   blob:   file contents (no filename — just content)
   tree:   directory listing (maps names → blobs and other trees)
-  commit: snapshot + parent + author + message → points to a tree
+  commit: snapshot + parent + author + message → points to a tree‼️
   tag:    named pointer to a commit
 
 .git/
@@ -119,6 +119,31 @@ Rules:
   - Use feature flags for incomplete work (not long branches)
 
 Good for: small teams, web apps, continuous deployment
+
+ Squash = combine multiple commits into a single commit.
+     The code is identical — only the history changes.
+
+     BEFORE squash (5 messy commits on your feature branch):
+       a1b2c3  fix typo
+       d4e5f6  WIP saving progress
+       g7h8i9  actually fix the bug
+       j0k1l2  oops forgot a file
+       m3n4o5  add login feature
+     AFTER squash (1 clean commit):
+       x9y8z7  add login feature
+
+     Why squash? Nobody reviewing main wants to see "WIP" or "oops."
+     Squashing keeps history clean — each PR = one meaningful commit on main.
+
+     How to squash:
+       git rebase -i HEAD~5          → interactive rebase, mark commits as "squash"
+       git merge --squash feature    → squash when merging locally
+       GitHub "Squash and merge"     → most common, one-click on PR page
+
+     GitHub PR merge options:
+       "Create a merge commit"  → keeps all commits + adds a merge commit
+       "Squash and merge"       → combines all PR commits into one on main (most teams use this)
+       "Rebase and merge"       → replays commits individually, no merge commit
 ```
 
 ### Git Flow (complex, for release-based software)
@@ -184,7 +209,7 @@ Types:
 Examples:
   feat(matching): add skill-based advocate matching algorithm
   fix(auth): handle expired JWT on concurrent requests
-  feat(tasks)!: remove legacy task endpoint (! = breaking change)
+  feat(tasks)!: remove legacy task endpoint (! = breaking change)‼️
   docs(api): add OpenAPI spec for patient endpoints
   chore(deps): upgrade drizzle-orm to 0.30.0
 
@@ -210,7 +235,7 @@ Body explains WHY, not WHAT (the diff shows what):
      their advocate details. With 200 patients this caused 201
      queries and 3s load times. Replaced with a single LEFT JOIN."
 
-Present tense, imperative:
+Present tense, imperative:‼️
   ✓ "Add email validation" (not "Added" or "Adding")
   This matches how Git itself writes: "Merge branch 'feature'"
 
@@ -251,7 +276,7 @@ Size:
 ```text
 As REVIEWER:
 
-Must block:
+Must block:‼️
   - Security vulnerabilities (SQL injection, XSS, exposed secrets)
   - Correctness bugs (logic errors, off-by-one, null handling)
   - Missing error handling for failure cases
@@ -306,7 +331,7 @@ If you disagree:
 ### Everyday power commands
 
 ```bash
-# Stash — save work without committing
+# Stash — save work without committing‼️
 git stash                          # stash all changes
 git stash push -m "WIP: add matching" # with message
 git stash list                     # see all stashes
@@ -318,7 +343,7 @@ git cherry-pick abc1234            # apply commit abc1234
 git cherry-pick abc1234..def5678   # apply range of commits
 # Use for: backport a bug fix to a release branch
 
-# Bisect — find which commit introduced a bug
+# Bisect — find which commit introduced a bug‼️
 git bisect start
 git bisect bad                     # current commit is bad
 git bisect good v1.2.0             # this release was good
@@ -327,22 +352,22 @@ git bisect good                    # or: git bisect bad
 # Repeat until git identifies the offending commit
 git bisect reset                   # done
 
-# Reflog — recover "lost" commits (your safety net)
+# Reflog — recover "lost" commits (your safety net)‼️
 git reflog                         # all recent HEAD positions
 git checkout abc1234               # recover any commit
-# Even after git reset --hard, commits are in reflog for 90 days
+# Even after git reset --hard, commits are in reflog for 90 days‼️
 
-# Worktree — check out multiple branches simultaneously
+# Worktree — check out multiple branches simultaneously‼️
 git worktree add ../hotfix hotfix/issue-123
 # ../hotfix has the hotfix branch checked out
 # Current directory still has your feature branch
 # No stashing needed
 
-# Interactive staging (stage parts of a file)
+# Interactive staging (stage parts of a file)‼️
 git add -p file.ts                 # interactively stage hunks
 git reset -p HEAD file.ts          # interactively unstage
 
-# Show changes
+# Show changes‼️
 git diff HEAD~3..HEAD -- src/      # diff last 3 commits, specific directory
 git log -p -- src/db/schema.ts     # history of changes to a file
 git blame src/db/schema.ts         # who changed each line, when
@@ -370,8 +395,8 @@ git add forgotten-file.ts
 git commit --amend --no-edit       # add to last commit
 git commit --amend -m "Better message"  # change message
 
-# NEVER amend commits already pushed to shared branches
-# Use revert instead — it's safe and auditable
+# NEVER amend commits already pushed to shared branches‼️
+# Use revert instead — it's safe and auditable‼️
 ```
 
 ### Cleaning up before merge
@@ -399,6 +424,55 @@ git rebase origin/main             # linear — cleaner, rewrites your commits
 # Team convention decides which to use
 ```
 
+### Rebase vs Squash — they solve DIFFERENT problems‼️
+
+```text
+Squash = combine multiple commits into one. Changes history LENGTH.
+Rebase = move your branch to the tip of another branch. Changes history POSITION.
+
+SQUASH — "I have too many commits, combine them into one"
+─────────────────────────────────────────────────────────
+  BEFORE:
+    main:    A --- B
+    feature:       B --- C --- D --- E  (3 messy commits)
+
+  AFTER squash:
+    main:    A --- B
+    feature:       B --- CDE  (1 clean commit containing C+D+E)
+
+  How: git rebase -i HEAD~3  → mark commits as "squash"
+
+
+REBASE — "main moved forward, I need to catch up"
+──────────────────────────────────────────────────
+  BEFORE:
+    main:    A --- B --- F --- G         (main moved forward while you worked)
+    feature:       B --- C --- D --- E   (your branch is based on old B)
+
+  AFTER rebase onto main:
+    main:    A --- B --- F --- G
+    feature:                   G --- C' --- D' --- E'  (replayed on top of G)
+
+  How: git fetch origin && git rebase origin/main
+
+
+IN PRACTICE — use BOTH before merging a PR:‼️
+───────────────────────────────────────────
+  Step 1: rebase onto latest main (catch up)
+    git rebase main
+
+  Step 2: squash your commits into one (clean up)
+    git rebase -i HEAD~4    → mark commits as "squash"
+
+  Result: one clean commit sitting on top of latest main.
+          PR merges cleanly with no conflicts and clean history.
+
+  OR — let GitHub do both at once:
+    GitHub "Squash and merge" button = rebase + squash in one click.
+    Takes all your PR commits, squashes into one, places on top of main.
+    Most teams use this.‼️
+```
+
 ---
 
 ## 6. Git Hooks
@@ -406,10 +480,10 @@ git rebase origin/main             # linear — cleaner, rewrites your commits
 ### Client-side hooks
 
 ```bash
-# .git/hooks/ — scripts that run on git events
+# .git/hooks/ — scripts that run on git events‼️
 # Make executable: chmod +x .git/hooks/pre-commit
 
-# pre-commit: runs before commit — stop bad commits
+# pre-commit: runs before commit — stop bad commits‼️
 #!/bin/sh
 npm run lint --silent || exit 1    # block commit if lint fails
 npm run type-check --silent || exit 1
@@ -438,10 +512,10 @@ npx husky init
 ```json
 // package.json
 {
-  "lint-staged": {
-    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
-    "*.{css,json,md}": ["prettier --write"]
-  }
+    "lint-staged": {
+        "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
+        "*.{css,json,md}": ["prettier --write"]
+    }
 }
 ```
 
@@ -506,24 +580,24 @@ taskboard/               # root
 ```json
 // turbo.json
 {
-  "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
-    "build": {
-      "dependsOn": ["^build"],    // build deps first
-      "outputs": ["dist/**", ".next/**"]
-    },
-    "test": {
-      "dependsOn": ["^build"],
-      "cache": true               // cache test results
-    },
-    "lint": {
-      "outputs": []
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true          // keeps running
+    "$schema": "https://turbo.build/schema.json",
+    "pipeline": {
+        "build": {
+            "dependsOn": ["^build"], // build deps first
+            "outputs": ["dist/**", ".next/**"]
+        },
+        "test": {
+            "dependsOn": ["^build"],
+            "cache": true // cache test results
+        },
+        "lint": {
+            "outputs": []
+        },
+        "dev": {
+            "cache": false,
+            "persistent": true // keeps running
+        }
     }
-  }
 }
 ```
 
@@ -542,9 +616,110 @@ npm install lodash -w packages/ui  # install in specific workspace
 
 ## 8. Common Interview Questions
 
-### "Explain the difference between merge and rebase."
+### "Explain the difference between merge and rebase."‼️
 
 > Both integrate changes from one branch into another. Merge creates a new merge commit that ties two branch histories together — it's non-destructive and preserves exactly what happened and when. Rebase replays your commits on top of the target branch one by one, creating new commits with new SHAs — it produces a linear history that's easier to read but rewrites history. The rule: never rebase branches others are working on (their commits reference the old SHAs and diverge). On solo feature branches that haven't been pushed, rebase is fine and keeps history clean.
+
+```text
+"Rebase replays your commits" — what does this actually mean?‼️
+
+Rebase doesn't MOVE your commits — it COPIES them. The originals are abandoned.
+
+BEFORE rebase (your branch is based on B, but main moved to G):
+
+  main:    A --- B --- F --- G
+  feature:       B --- C --- D
+
+  Commit C has:  parent = B,  SHA = abc111
+  Commit D has:  parent = C,  SHA = abc222
+
+WHAT REBASE DOES — step by step:
+
+  Step 1: Git finds the common ancestor (B)
+  Step 2: Git saves your commits as patches (diffs): C and D
+  Step 3: Git moves your branch pointer to the tip of main (G)
+  Step 4: Git REPLAYS each patch one by one on top of G:
+
+    Replay C on top of G → creates C' (NEW commit, NEW SHA)
+      C' has:  parent = G,  SHA = def333  ← different from original!
+      The CODE CHANGES are the same as C, but the parent changed (B → G),
+      so the SHA changes too.
+
+    Replay D on top of C' → creates D' (NEW commit, NEW SHA)
+      D' has:  parent = C',  SHA = def444  ← different from original!
+
+  Result:
+    main:    A --- B --- F --- G
+    feature:                   G --- C' --- D'
+
+    C and D still exist in git's object store (recoverable via git reflog)‼️
+    but no branch points to them anymore — they're abandoned.‼️
+
+
+WHY new SHAs? Because a commit's SHA is a hash of EVERYTHING:
+
+  SHA = Secure Hash Algorithm
+  Git uses SHA-1 (160-bit) → produces a 40-character hex string like abc1234def5678...
+  (Git is transitioning to SHA-256)
+
+  Every object in Git (commits, files, trees) gets a SHA:
+    Same content → always the same SHA (deterministic)‼️
+    Change ONE byte → completely different SHA
+  It's a fingerprint — a unique ID for every commit, file, and directory.
+
+  When you see:  git cherry-pick abc1234
+                 git revert abc1234
+                 git checkout abc1234
+  That "abc1234" is the first 7 chars of the full 40-char SHA.
+  Git only needs enough characters to be unique within your repo.
+
+  SHA = hash(
+    parent commit SHA    ← this changed (B → G), so SHA changes
+    + tree (your code changes)
+    + author + date
+    + commit message
+  )
+
+  Even if your code changes and message are identical,
+  a different parent = different SHA. Always.
+
+
+WHY "replays one by one" matters — conflicts:
+
+  If you have 5 commits and rebase onto main:
+
+    Replaying commit 1... ✓ clean
+    Replaying commit 2... ✓ clean
+    Replaying commit 3... ✗ CONFLICT!
+      → Git stops here. You fix the conflict, then:
+        git add .
+        git rebase --continue
+    Replaying commit 4... ✓ clean
+    Replaying commit 5... ✓ clean
+
+  You might get conflicts at EACH commit — not just once like merge.
+  Trade-off: rebase = cleaner history, but potentially more conflict steps.‼️
+
+
+WHY "rewrites history" is dangerous for shared branches:
+
+  You and Alice both work off the same branch:
+
+    shared:  A --- B --- C --- D
+    You have: C and D in your local copy
+    Alice has: C and D in her local copy
+
+  If you rebase, C and D become C' and D' (new SHAs).
+  You force-push to replace C,D with C',D'.
+
+  Alice still has the OLD C and D. When she pulls:
+    Git sees C and C' as DIFFERENT commits (different SHAs)
+    even though the code is the same.
+    → merge conflicts, duplicate commits, chaos.
+
+  This is why: NEVER rebase commits that others are working on.
+  Only rebase YOUR OWN unpushed feature branch.
+```
 
 ### "How do you handle merge conflicts?"
 
@@ -568,12 +743,12 @@ git add src/config.ts
 git merge --continue               # or: git rebase --continue
 
 # Prevention:
-# - Merge main into your branch frequently (small conflicts easier than big ones)
-# - Communicate with teammates when touching shared files
-# - Keep branches short-lived
+# - Merge main into your branch frequently (small conflicts easier than big ones)‼️
+# - Communicate with teammates when touching shared files‼️
+# - Keep branches short-lived‼️
 ```
 
-### "What is git bisect and when would you use it?"
+### "What is git bisect and when would you use it?"‼️
 
 > Git bisect is a binary search through your commit history to find which commit introduced a bug. You tell it which commit is known-good and which is known-bad, then it checks out the midpoint. You test and say `git bisect good` or `git bisect bad`. It keeps halving the range until it finds the exact commit. This turns a search through 1,000 commits into ~10 checks. I'd use it when a bug appeared recently but I don't know when, and I can write a script that reliably reproduces it (you can automate bisect with `git bisect run ./test-script.sh`).
 
@@ -588,12 +763,12 @@ git reset: moves the HEAD pointer backwards, rewrites history
   Safe for: local commits not yet pushed
   Dangerous for: shared branches — teammates' history diverges
 
-git revert: creates a NEW commit that undoes the specified commit
+git revert: creates a NEW commit that undoes the specified commit‼️
   History is preserved — revert commit is visible in log
   Safe for shared branches — no history rewriting
 
-Rule: use revert to undo commits on shared/remote branches
-      use reset to undo commits only you have locally
+Rule: use revert to undo commits on shared/remote branches‼️
+      use reset to undo commits only you have locally‼️
 ```
 
 ### "How would you recover a lost commit after git reset --hard?"
@@ -625,7 +800,7 @@ git checkout feature-branch && git rebase main
 git checkout main && git merge feature-branch
 ```
 
-### "What is the difference between `git reset`, `git revert`, and `git restore`?"
+### "What is the difference between `git reset`, `git revert`, and `git restore`?"‼️
 
 > `git reset` moves the branch pointer — can unstage, undo commits, or discard changes (destructive, rewrites history — don't use on pushed commits). `git revert` creates a NEW commit that undoes a previous commit — safe for shared branches, history preserved. `git restore` discards working directory changes for specific files (doesn't touch commits).
 
@@ -644,7 +819,7 @@ git restore src/file.ts
 
 ### "What is `git stash`?"
 
-> `git stash` saves your uncommitted changes (staged and unstaged) onto a stack and reverts the working directory to HEAD — lets you switch branches with a clean state. `git stash pop` reapplies the most recent stash and removes it. `git stash apply` reapplies without removing. Useful for: quick context switches, pulling latest without committing WIP.
+> `git stash` saves your uncommitted changes (staged and unstaged) onto a stack and reverts the working directory to HEAD — lets you switch branches with a clean state. ‼️`git stash pop` reapplies the most recent stash and removes it. ‼️`git stash apply` reapplies without removing. Useful for: quick context switches, pulling latest without committing WIP.
 
 ```bash
 git stash                          # stash current changes
@@ -657,11 +832,11 @@ git stash drop stash@{0}           # delete a stash
 
 ### "What is a detached HEAD state?"
 
-> Normally HEAD points to a branch name (which points to a commit). Detached HEAD means HEAD points directly to a commit hash — not a branch. This happens when you `git checkout <commit-hash>` or a tag. Any commits you make won't belong to a branch and will be lost when you switch away (garbage collected). Fix: create a branch from the detached state with `git checkout -b new-branch`.
+> ‼️Normally HEAD points to a branch name (which points to a commit). ‼️Detached HEAD means HEAD points directly to a commit hash — not a branch. This happens when you `git checkout <commit-hash>` or a tag. Any commits you make won't belong to a branch and will be lost when you switch away (garbage collected). Fix: create a branch from the detached state with `git checkout -b new-branch`.
 
 ### "How does `git cherry-pick` work?"
 
-> Cherry-pick applies the changes from a specific commit onto the current branch — without merging the whole branch. Creates a new commit with the same changes but a different hash. Useful for: backporting a bug fix to an older release branch, taking one specific commit from a feature branch.
+> Cherry-pick applies the changes from a specific commit onto the current branch — ‼️without merging the whole branch. Creates a new commit with the same changes but a different hash. Useful for: backporting a bug fix to an older release branch, taking one specific commit from a feature branch.
 
 ```bash
 # Apply commit abc1234 to current branch
@@ -690,7 +865,7 @@ git bisect reset            # return to HEAD when done
 
 ### "What is the difference between `git fetch` and `git pull`?"
 
-> `git fetch` downloads changes from remote but doesn't update your working branch — safe, non-destructive. `git pull` = `git fetch` + `git merge` (or `git rebase` with `--rebase` flag) — immediately integrates changes. Best practice: `fetch` then review (`git log origin/main`), then merge/rebase manually — more control. `git pull --rebase` is a good default to keep linear history.
+> ‼️`git fetch` downloads changes from remote but doesn't update your working branch — safe, non-destructive. `git pull` = `git fetch` + `git merge` (or `git rebase` with `--rebase` flag) — immediately integrates changes. Best practice: `fetch` then review (`git log origin/main`), then merge/rebase manually — more control. `git pull --rebase` is a good default to keep linear history.
 
 ### "What is a Git hook?"
 
@@ -700,7 +875,7 @@ git bisect reset            # return to HEAD when done
 # .husky/pre-commit
 npm run lint && npm run type-check
 
-# .husky/commit-msg  
+# .husky/commit-msg
 npx commitlint --edit $1  # enforce conventional commits format
 ```
 
@@ -718,4 +893,4 @@ BREAKING CHANGE: v1 endpoints removed, migrate to v2
 
 ### "How do you resolve a merge conflict?"
 
-> 1) `git status` to see conflicting files. 2) Open each file — conflict markers show `<<<<<<< HEAD` (your changes), `=======` (separator), `>>>>>>> branch` (incoming). 3) Edit to desired result, remove all markers. 4) `git add` the resolved files. 5) `git commit` (or `git rebase --continue` if rebasing). Use `git mergetool` for a visual diff. Prevention: pull frequently, keep branches short-lived.
+> 1. `git status` to see conflicting files. 2) Open each file — conflict markers show `<<<<<<< HEAD` (your changes), `=======` (separator), `>>>>>>> branch` (incoming). 3) Edit to desired result, remove all markers. 4) `git add` the resolved files. 5) `git commit` (or `git rebase --continue` if rebasing). Use `git mergetool` for a visual diff. Prevention: pull frequently, keep branches short-lived.
