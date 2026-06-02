@@ -94,6 +94,100 @@ Interactive rebase:
   Use to: clean up WIP commits before merging, split commits
 ```
 
+### Git Internals — Plain English Breakdown
+
+```text
+Git is basically a file system with version tracking.‼️
+
+At its core, Git is a "content-addressable filesystem" — a fancy way of saying
+it stores everything by a unique fingerprint (SHA hash) of the content.
+
+
+THE 4 OBJECT TYPES — think of Git's storage like a filing cabinet with 4 types:
+
+  1. blob — just the raw file contents. No filename, no path. Just the bytes.
+     If two files have identical content, Git stores only ONE blob.
+
+  2. tree — like a directory listing. It maps filenames → blobs (and subdirectories → other trees).
+     A tree says: "file app.ts → blob abc123, folder utils/ → tree def456."
+
+  3. commit — a snapshot in time.‼️
+     Points to a tree (the entire project at that moment)
+     + records the parent commit, author, date, and message.
+     This is what gives you history.
+
+  4. tag — a named label pointing to a specific commit (like v1.0.0).
+
+
+HOW THEY CONNECT:‼️
+
+  commit (abc789)
+    ├── points to → tree (root directory)
+    │                 ├── app.ts → blob (file contents)
+    │                 ├── utils/ → tree
+    │                 │            └── helper.ts → blob
+    │                 └── package.json → blob
+    └── parent → previous commit (def456)
+
+  Every commit is a FULL SNAPSHOT of your entire project — not a diff.‼️
+  Git is efficient about this because identical files reuse the same blob.
+
+
+THE .git/ FOLDER — this IS your repository:‼️
+
+  When you run "git init", it creates a .git/ directory.
+
+  objects/   — all the blobs, trees, commits, and tags live here,
+               named by their SHA hash
+
+  refs/      — branches and tags are just tiny text files containing a SHA.
+               refs/heads/main is a file that contains the SHA of the
+               latest commit on main. That's it.
+               A BRANCH IS JUST A POINTER TO A COMMIT.‼️
+
+  HEAD       — tells Git which branch you're on right now.
+               Usually just the text: ref: refs/heads/main
+
+  index      — the staging area. When you "git add", the file goes here.
+               When you "git commit", Git takes whatever is in the index
+               and makes a commit from it.‼️
+
+
+THE THREE AREAS (this is key):‼️
+
+  Working Directory  →  Staging Area (index)  →  Repository (.git)
+     (your files)         (git add)               (git commit)
+
+  Working directory — the actual files you see and edit on disk
+  Staging area      — a "loading dock" where you prepare what goes into the
+                      next commit. This is WHY you can commit PART of your
+                      changes — "git add" specific files only‼️
+  Repository        — the committed history stored in .git/objects/
+
+
+SHA HASHES — why they matter:
+
+  Every object gets a SHA-1 hash (40 hex characters like a1b2c3d4e5...).
+  This hash is computed from the content itself. So:
+
+    Same content → always the same hash (deterministic)‼️
+    Change even 1 byte → completely different hash
+    This is why rebase creates NEW commits — the parent changed,
+      so the hash changes, even if the code changes are identical‼️
+
+  When you see: git cherry-pick abc1234
+  That "abc1234" is just the first 7 characters of the full 40-char SHA.
+  Git only needs enough characters to be unique in your repo.
+
+
+INSPECTING INTERNALS YOURSELF:
+
+  git cat-file -t abc1234    # tells you: "commit", "blob", "tree", etc.
+  git cat-file -p abc1234    # shows the actual contents of that object
+  git ls-tree HEAD           # shows the tree (directory listing) of current commit
+  git rev-parse HEAD         # shows the full 40-char SHA of current commit
+```
+
 ---
 
 ## 2. Branching Strategies
