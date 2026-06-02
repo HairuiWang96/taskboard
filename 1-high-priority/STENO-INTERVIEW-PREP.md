@@ -11,7 +11,7 @@
 
 ### Q1. What is a git fast-forward merge?
 
-<!-- A fast-forward merge happens when the branch you're merging into has no new commits since the feature branch was created. Git doesn't create a merge commit — it just moves the pointer forward to the latest commit on the feature branch. It's like the main branch "catches up" by sliding its pointer forward along the same commit history.
+<!-- ‼️ A fast-forward merge happens when the branch you're merging into has no new commits since the feature branch was created. ‼️ Git doesn't create a merge commit — it just moves the pointer forward to the latest commit on the feature branch. It's like the main branch "catches up" by sliding its pointer forward along the same commit history.
 
 Example:
 ```
@@ -28,7 +28,7 @@ Because main had no new commits after B, Git just moves the main pointer from B 
 
 When it CAN'T happen: If main has new commits that feature doesn't have, Git can't fast-forward — it needs a real merge commit (or you rebase first).
 
-You can force a merge commit even when fast-forward is possible with `git merge --no-ff`, which is useful to preserve branch history in the log. -->
+‼️ You can force a merge commit even when fast-forward is possible with `git merge --no-ff`, which is useful to preserve branch history in the log. -->
 
 ---
 
@@ -48,7 +48,7 @@ feature:         C --- D
 
 **git rebase:**
 - Takes your commits and replays them on top of the target branch, one by one
-- Rewrites commit history to make it look like you branched off from the latest commit
+- Rewrites commit history to make it look like you branched off from the latest commit‼️
 - Creates a clean, linear history — no merge commits
 ```
 Before rebase:
@@ -71,7 +71,7 @@ feature:               C' --- D'
 
 ### Q3. What is the spread operator?
 
-<!-- The spread operator (`...`) expands an iterable (array, object, string) into individual elements. It's used for copying, merging, and passing arguments.
+<!-- The spread operator (`...`) expands an ‼️ iterable (array, object, string) into individual elements. It's used for copying, merging, and passing arguments.
 
 **Arrays — copy and merge:**
 ```js
@@ -85,7 +85,7 @@ const d = [...a, ...b];     // merge: [1, 2, 3, 1, 2, 3]
 ```js
 const user = { name: 'Alice', age: 30 };
 const updated = { ...user, age: 31 };  // { name: 'Alice', age: 31 }
-Later properties overwrite earlier ones
+* Later properties overwrite earlier ones
 ```
 
 **Function arguments:**
@@ -151,7 +151,7 @@ interface Admin extends User {
 <!-- async/await is syntactic sugar over Promises that makes asynchronous code read like synchronous code.
 
 ```js
-// Promise chain:
+* Promise chain:
 function getUser(id) {
   return fetch(`/users/${id}`)
     .then(res => res.json())
@@ -160,7 +160,7 @@ function getUser(id) {
     .catch(err => console.error(err));
 }
 
-// async/await — same logic, much cleaner:
+* async/await — same logic, much cleaner:
 async function getUser(id) {
   try {
     const res = await fetch(`/users/${id}`);
@@ -200,10 +200,10 @@ async function fetchData() {
 }
 fetchData();  // no .catch(), no try/catch — rejection is unhandled
 
-Fixed — Option 1: .catch()
+* Fixed — Option 1: .catch()
 fetchData().catch(err => console.error('Failed:', err));
 
-Fixed — Option 2: try/catch inside the function
+* Fixed — Option 2: try/catch inside the function
 async function fetchData() {
   try {
     const res = await fetch('https://bad-url.invalid');
@@ -221,7 +221,7 @@ async function fetchData() {
 
 **Global safety net (doesn't replace proper error handling):**‼️
 ```js
-Node.js
+* Node.js
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled rejection:', reason);
   * Log it, alert monitoring, etc.
@@ -274,16 +274,16 @@ double(5);  // 10
 double(10); // 20
 ```
 3. **Event handlers and callbacks** — preserve state between events
-4. **Module pattern** — before ES modules, closures were how you created private state
+4. **Module pattern** — before ES modules, closures were how you created private state‼️
 
 **Classic gotcha — closures in loops:**
 ```js
-// Bug: all callbacks log 3
+* Bug: all callbacks log 3
 for (var i = 0; i < 3; i++) {
   setTimeout(() => console.log(i), 100);  // prints 3, 3, 3
 }
 
-// Fix: use let (block-scoped, creates a new binding per iteration)
+* Fix: use let (block-scoped, creates a new binding per iteration)
 for (let i = 0; i < 3; i++) {
   setTimeout(() => console.log(i), 100);  // prints 0, 1, 2
 }
@@ -298,7 +298,7 @@ for (let i = 0; i < 3; i++) {
 ```js
 * Synchronous callback:
 const numbers = [3, 1, 2];
-numbers.sort((a, b) => a - b);  // the comparator is a callback
+numbers.sort((a, b) => a - b);  // the comparator is a callback‼️
 
 * Asynchronous callback:
 fs.readFile('data.txt', 'utf8', (err, data) => {
@@ -317,9 +317,9 @@ The first argument of the callback is always the error (null if no error), and t
 function fetchData(url, callback) {
   * ... do async work
   if (error) {
-    callback(error, null);    // error first
+    callback(error, null);    // error first‼️
   } else {
-    callback(null, result);   // null error means success
+    callback(null, result);   // null error means success‼️
   }
 }
 ```
@@ -357,7 +357,7 @@ app.use(myMiddleware);  // applies to ALL routes‼️
 ```
 Request → [Logger] → [Auth] → [BodyParser] → [Route Handler] → Response‼️
 ```
-Each middleware calls `next()` to pass control to the next one. If a middleware doesn't call `next()`, the request hangs (or the middleware must send a response itself).
+‼️ Each middleware calls `next()` to pass control to the next one. ‼️ If a middleware doesn't call `next()`, the request hangs (or the middleware must send a response itself).
 
 **Common middleware examples:**
 ```js
@@ -369,7 +369,7 @@ app.use((req, res, next) => {
 
 * Authentication
 app.use((req, res, next) => {
-  const token = req.headers.authorization;
+  const token = req.headers.authorization;‼️
   if (!token) return res.status(401).json({ error: 'No token' });
   req.user = verifyToken(token);  // attach user to request
   next();
@@ -388,7 +388,7 @@ app.use((err, req, res, next) => {
 **Key concepts:**
 - Middleware executes in the ORDER it's registered (`app.use()`)
 - `app.use()` applies to all routes; ‼️`app.use('/api', ...)` applies only to routes starting with /api
-- Route-specific middleware: `app.get('/admin', authMiddleware, handler)`
+- Route-specific middleware: ‼️`app.get('/admin', authMiddleware, handler)`
 - Error middleware has 4 params `(err, req, res, next)` and is called when `next(err)` is used‼️
 - Common middleware: cors, ‼️helmet (security headers), morgan (logging), express-rate-limit, cookie-parser -->
 
@@ -396,7 +396,7 @@ app.use((err, req, res, next) => {
 
 ### Q10. What is dependency injection? And what are its benefits?‼️
 
-<!-- Dependency injection (DI) is a design pattern where a component receives its dependencies from the outside rather than creating them internally. Instead of a class/function creating what it needs, you "inject" those dependencies in.
+<!-- ‼️ Dependency injection (DI) is a design pattern where a component receives its dependencies from the outside rather than creating them internally. Instead of a class/function creating what it needs, you "inject" those dependencies in.
 
 ```ts
 * WITHOUT DI — tightly coupled:
@@ -444,13 +444,6 @@ WITH DI — the caller decides from outside:
   Local dev:  new UserService(new SQLiteDatabase())
   The UserService code NEVER changes. Same class, different behavior.
 
-Analogy:
-  WITHOUT DI: the chef grows their own tomatoes in the kitchen.
-              Want different tomatoes? Rebuild the kitchen.
-  WITH DI:    the chef says "I need tomatoes" — someone delivers them.
-              Want different tomatoes? Just deliver different ones.
-              The chef's recipe doesn't change.
-
 Key insight: `Database` in the constructor is an INTERFACE (a contract)‼️, not a specific database.
 Any class that has a .query() method works — Postgres, MySQL, a fake for testing.
 UserService doesn't know or care which one it gets.
@@ -475,13 +468,13 @@ UserService doesn't know or care which one it gets.
 <!-- HTTP status codes are grouped by their first digit:
 
 **1xx — Informational:**‼️
-- 100 Continue — server received request headers, client should send the body
-- 101 Switching Protocols — switching to WebSocket
+- 100 Continue — server received request headers, client should send the body‼️
+- 101 Switching Protocols — switching to WebSocket‼️
 
 **2xx — Success:**
 - 200 OK — standard success response
 - 201 Created — resource successfully created (POST)
-- 204 No Content — success but no body to return (DELETE)
+- 204 No Content — success but no body to return (DELETE)‼️
 
 **3xx — Redirection:**
 - 301 Moved Permanently — resource permanently moved (SEO: search engines update their index)
@@ -510,7 +503,7 @@ UserService doesn't know or care which one it gets.
 
 ### Q12. Is HTTP stateful or stateless?
 
-<!-- ‼️HTTP is STATELESS. Each request is completely independent — the server does not remember anything about previous requests from the same client.
+<!-- ‼️ HTTP is STATELESS. Each request is completely independent — the server does not remember anything about previous requests from the same client.
 
 **What this means:**
 - Every request must contain ALL the information the server needs to process it‼️
@@ -569,7 +562,7 @@ While SQL is declarative, experienced developers still think about HOW the optim
 
 ### Q14. What is a CTE? And its keyword?
 
-<!-- A CTE (Common Table Expression) is a temporary, named result set defined using the ‼️ `WITH` keyword. It exists only for the duration of that single query. ‼️Think of it as a temporary view or a named subquery that you can reference multiple times.
+<!-- A CTE (Common Table Expression) is a ‼️ temporary, named result set defined using the ‼️ `WITH` keyword. ‼️ It exists only for the duration of that single query. ‼️Think of it as a temporary view or a named subquery that you can reference multiple times.
 
 ```sql
 -- Keyword: WITH
@@ -621,7 +614,7 @@ CTEs don't create actual tables or views — they're just a way to structure a s
 
 **View:**
 - A view is a ‼️ SAVED QUERY — it doesn't store data itself
-- It's a virtual table defined by a SELECT statement
+- It's a virtual table defined by a SELECT statement‼️
 - Every time you query a view, it runs the underlying query against the actual tables
 - Takes up no additional storage (just the query definition)
 - Always reflects the current data in the underlying tables
@@ -642,7 +635,7 @@ SELECT * FROM active_premium_users WHERE name LIKE 'A%';
 1. **Simplification** — hide complex JOINs behind a simple name
 2. **Security** — expose only certain columns to certain roles (e.g., a view without salary column)
 3. **Consistency** — everyone uses the same query logic instead of copy-pasting SQL
-4. **Abstraction** — change underlying table structure without breaking queries that use the view
+4. **Abstraction** — change underlying table structure without breaking queries that use the view‼️
 
 **Materialized View (bonus):**
 ‼️ A materialized view DOES store data physically — it's a cached snapshot of the query result. It needs to be manually refreshed (`REFRESH MATERIALIZED VIEW`) to pick up changes. Used for performance when the underlying query is expensive and data doesn't need to be real-time.
@@ -665,13 +658,13 @@ CREATE VIEW active_users AS
 -- use it forever from anywhere, until you DROP VIEW
 ```
 
-| | CTE | View |
+|           | CTE | View |
 |---|---|---|
 | Lifetime | One query only | Permanent until dropped |
-| Stored in DB? | No | Yes (as a saved query definition) |
+| Stored in DB? | No | ‼️Yes (as a saved query definition) |
 | Reusable? | No — rewrite each time | Yes — like a table |
 | Recursive? | Yes (WITH RECURSIVE) | No |
-| Permissions? | No | Yes — GRANT access |
+| Permissions? | No | ‼️Yes — GRANT access |
 | Use case | Break complex query into steps | Reusable abstraction, security |
 
 A regular view does NOT store data — it's just a saved query that re-runs every time.
@@ -715,7 +708,7 @@ SELECT * FROM org_tree;
 - **Graph traversal** — shortest path, connected components
 
 **Important safeguard:**
-Recursive queries can run forever if there's a cycle. Most databases let you set a limit:
+Recursive queries can run forever if there's a cycle. Most databases let you set a limit:‼️
 ```sql
 -- PostgreSQL: limit recursion depth
 WITH RECURSIVE ...
@@ -750,7 +743,7 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 - Balanced tree structure — all leaf nodes are at the same depth‼️
 - O(log n) for search, insert, delete
 - Great for range queries (>, <, BETWEEN) because leaf nodes are linked‼️
-- Works well with disk-based storage (minimizes disk reads)
+- Works well with disk-based storage (minimizes disk reads)‼️
 
 **Types of indexes:**
 - **B-tree** — default, good for equality and range queries
@@ -799,14 +792,14 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 
 **Monolith — Pros:**
 - Simple to develop, test, deploy, and debug
-- No network latency between components (it's all in-process function calls)
+- No network latency between components (it's all in-process function calls)‼️
 - Easy to maintain data consistency (one database, real transactions)
 - Lower operational complexity (one thing to monitor, deploy, scale)
 
 **Monolith — Cons:**
 - Gets harder to maintain as it grows (one change can break unrelated features)
 - Must deploy the entire app for any change
-- Scales as a whole unit (can't scale just the payment service)
+- Scales as a whole unit (can't scale just the payment service)‼️
 - Technology lock-in (one language, one framework)
 
 **Microservices — Pros:**
@@ -817,8 +810,8 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 
 **Microservices — Cons:**
 - Distributed system complexity — network failures, latency, eventual consistency
-- Harder to debug (tracing a request across 10 services)
-- Data consistency is hard (no cross-service transactions without patterns like Saga)
+- Harder to debug (tracing a request across 10 services)‼️
+- Data consistency is hard (no cross-service transactions without patterns like Saga)‼️
 - Operational overhead — more services to deploy, monitor, and maintain
 - Requires mature DevOps (CI/CD, container orchestration, service mesh)
 
@@ -833,8 +826,36 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 
 <!-- Message queues (RabbitMQ, Kafka, SQS, etc.) enable async communication between microservices, but they introduce several challenges:
 
+**What is a "broker" in this context?**‼️
+
+A broker is the message queue server itself — the middleman that sits between services and routes messages.
+Think of it like a post office:
+
+- **Producer** (sender) — the microservice that creates and sends a message
+- **Broker** (post office) — the system that receives, stores, and delivers messages. Examples: **RabbitMQ, Kafka, Amazon SQS**
+- **Consumer** (recipient) — the microservice that reads and processes the message
+
+```
+Service A  →  [ Broker (RabbitMQ/Kafka) ]  →  Service B
+(producer)     stores messages in queues       (consumer)
+               until consumers pick them up
+```
+
+The broker's job is to:
+1. **Accept** messages from producers
+2. **Store** them (in memory or on disk, depending on durability settings)
+3. **Deliver** them to consumers
+4. **Track** which messages have been acknowledged (processed)‼️
+
+So when the notes below say things like:
+- "broker crashes before persisting" — the queue server itself goes down before saving the message to disk, so the message is lost
+- "memory issues on the broker" — too many unprocessed messages pile up and the queue server runs out of memory
+- "broker retries" — the queue server re-sends a message because it didn't get an acknowledgment back from the consumer
+
+The term "broker" comes from the idea that it brokers (mediates) communication between services that don't talk to each other directly.
+
 **1. Message ordering:**‼️
-- Messages may arrive out of order, especially with multiple consumers
+- Messages may arrive out of order, ‼️ especially with multiple consumers
 - Example: "update user" arrives before "create user" — the update fails
 - Fix: partition by key (Kafka), use sequence numbers, design for idempotency‼️
 
@@ -848,9 +869,9 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 - Fix: persistent/durable queues, acknowledge AFTER processing, use transactions
 
 **4. Poison pill messages:**‼️
-- A malformed message that crashes the consumer every time it's delivered
+- A malformed message that crashes the consumer every time it's delivered‼️
 - Consumer crashes → message goes back to queue → consumer picks it up → crashes again (infinite loop)
-- Fix: dead letter queue (DLQ) — after N failed attempts, move the message to a DLQ for manual inspection
+- Fix: dead letter queue (DLQ) — after N failed attempts, move the message to a DLQ for manual inspection‼️
 
 **5. Eventual consistency:**
 - Services are no longer immediately consistent — one service may have processed the message while another hasn't yet
@@ -860,7 +881,7 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
 **6. Monitoring and debugging complexity:**
 - Hard to trace a request across multiple services and queues
 - Need distributed tracing (Jaeger, Datadog) and centralized logging
-- Messages sitting in a queue don't show up in normal request logs
+- Messages sitting in a queue don't show up in normal request logs‼️
 
 **7. Queue backpressure / consumer lag:**
 - If producers send messages faster than consumers process them, the queue grows
@@ -1028,7 +1049,7 @@ A self-balancing tree where:‼️
 - **Hash index** — hash table. O(1) exact-match lookups. ‼️Cannot do range queries, no ordering. Good for equality checks only.
 - **GIN (Generalized Inverted Index)** — inverted index (like a book's index). Used for full-text search, JSONB, arrays. Maps each value to the list of rows containing it.
 - **GiST** — generalized search tree. Used for geometric/spatial data (PostGIS), full-text search.
-- **BRIN (Block Range Index)** — stores min/max per block of table pages. Very small, great for naturally ordered data (timestamps).
+- **BRIN (Block Range Index)** — stores min/max per block of table pages. Very small, great for naturally ordered data (timestamps).‼️
 
 **The key insight for interviews:**
 B-tree is the default because it handles the widest range of operations efficiently: equality (`=`), range (`>`, `<`, `BETWEEN`), sorting (`ORDER BY`), and prefix matching (`LIKE 'abc%'`). It's the best general-purpose trade-off between read speed, write speed, and disk access patterns. -->
@@ -1054,7 +1075,7 @@ fs.readFile('data.txt', 'utf8', (err, data) => {
 ```
 
 **Promise:**
-An object that represents a future value. ‼️Instead of passing a function in, you get an object back that you can attach handlers to.
+An object that represents a future value. ‼️ Instead of passing a function in, you get an object back that you can attach handlers to.
 
 ```js
 * Promise pattern:
@@ -1101,14 +1122,14 @@ async function process() {
 
 **Key differences:**
 
-| | Callback | Promise |
+|                   | Callback | Promise |
 |---|---|---|
 | **Flow control** | Nesting (pyramid of doom) | Chaining (.then()) or sequential (await) |
 | **Error handling** | Check `err` in every callback | Single .catch() or try/catch |
 | **Composition** | Manual, painful | Promise.all(), Promise.race(), Promise.allSettled() |
 | **Inversion of control** | You hand your function to someone else — you trust they'll call it correctly, once, with the right args | You get an object back — YOU decide what to do with it |
 | **Guarantees** | None — callback could be called twice, never, or synchronously | Settled exactly once (either fulfilled or rejected), always async |
-| **Return values** | Can't return from a callback to the outer function | Promises chain — each .then() returns a new Promise |
+| **Return values** | ‼️ Can't return from a callback to the outer function | Promises chain — each .then() returns a new Promise |
 
 **The evolution:**
 Callbacks (ES5) → Promises (ES6/2015) → async/await (ES2017)
@@ -1140,10 +1161,10 @@ These are synchronous or event-based callbacks — not the async-flow-control ca
 
 <!-- **Unit testing** tests a single function, method, or component in ISOLATION. All external dependencies (database, APIs, other modules) are mocked or stubbed.
 
-**Integration testing** tests how multiple components work TOGETHER — hitting real databases, real APIs, real middleware chains.
+**‼️ Integration testing** tests how multiple components work TOGETHER — hitting real databases, real APIs, real middleware chains.
 
 ```ts
-// UNIT TEST — isolated, fast, mocked dependencies:
+* UNIT TEST — isolated, fast, mocked dependencies:
 describe('calculateTotal', () => {
   it('applies discount correctly', () => {
     const items = [{ price: 100, qty: 2 }, { price: 50, qty: 1 }];
@@ -1151,7 +1172,7 @@ describe('calculateTotal', () => {
   });
 });
 
-// INTEGRATION TEST — real database, real HTTP:
+* INTEGRATION TEST — real database, real HTTP:
 describe('POST /api/orders', () => {
   it('creates an order and stores it in the database', async () => {
     const res = await request(app)
@@ -1160,7 +1181,7 @@ describe('POST /api/orders', () => {
 
     expect(res.status).toBe(201);
 
-    // Verify it actually hit the database:
+    * Verify it actually hit the database:
     const order = await db.query('SELECT * FROM orders WHERE id = $1', [res.body.id]);
     expect(order.rows).toHaveLength(1);
   });
@@ -1169,7 +1190,7 @@ describe('POST /api/orders', () => {
 
 **Key differences:**
 
-| | Unit Test | Integration Test |
+|           | Unit Test | Integration Test |
 |---|---|---|
 | **Scope** | Single function/class | Multiple components together |
 | **Dependencies** | Mocked/stubbed | Real (DB, APIs, file system) |
@@ -1189,7 +1210,7 @@ describe('POST /api/orders', () => {
 **In practice at a Node.js + PostgreSQL stack:**
 - Unit tests: pure business logic, utility functions, data transformations
 - Integration tests: API endpoints end-to-end, database queries, middleware chains
-- Use a test database (docker-compose with Postgres) for integration tests, reset between runs
+- Use a test database (docker-compose with Postgres) for integration tests, reset between runs‼️
 
 **Common tools:** Jest or Vitest for both, Supertest for HTTP integration tests, testcontainers for spinning up real Postgres in CI. -->
 
@@ -1235,8 +1256,8 @@ describe('POST /api/orders', () => {
 5. **Security** — the database is never exposed to the client; all access goes through the API layer
 
 **How it compares to monolith vs microservices:**
-- N-tier describes how you LAYER your code (vertical separation)
-- Monolith vs microservices describes how you DEPLOY your code (horizontal separation)
+- N-tier describes how you LAYER your code (vertical separation)‼️
+- Monolith vs microservices describes how you DEPLOY your code (horizontal separation)‼️
 - You can have a monolith with n-tier architecture (most common for small-to-mid apps)
 - Microservices often have their own internal n-tier structure per service -->
 
@@ -1244,15 +1265,15 @@ describe('POST /api/orders', () => {
 
 ### Q26. What is CI/CD? How would you set up a pipeline?
 
-<!-- **CI (Continuous Integration):** Automatically build and test code every time someone pushes to the repository. Catches bugs early.
+<!-- **CI (Continuous Integration):** ‼️ Automatically build and test code every time someone pushes to the repository. Catches bugs early.
 
 **CD (Continuous Delivery / Deployment):**
-- Continuous Delivery: code is always in a deployable state; deployment is a manual approval
+- Continuous Delivery: code is always in a deployable state; deployment is a manual approval‼️
 - Continuous Deployment: every change that passes tests is automatically deployed to production
 
 **A typical CI/CD pipeline:**
 ```
-Push code → Build → Lint → Unit Tests → Integration Tests → Deploy to Staging → Deploy to Prod
+Push code → Build → ‼️Lint → Unit Tests → Integration Tests → Deploy to Staging → Deploy to Prod
 ```
 
 **Example GitHub Actions pipeline for a Node.js + TypeScript app:**
@@ -1278,7 +1299,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
-      - run: npm ci                      # install deps (uses lockfile)
+      - run: npm ci                      # install deps (uses lockfile)‼️
       - run: npm run lint                # ESLint
       - run: npm run typecheck           # tsc --noEmit
       - run: npm run test:unit           # Jest unit tests
@@ -1287,8 +1308,8 @@ jobs:
           DATABASE_URL: postgres://postgres:test@localhost:5432/test_db
 
   deploy:
-    needs: test                          # only runs if tests pass
-    if: github.ref == 'refs/heads/main'  # only on main branch
+    needs: test                          # only runs if tests pass‼️
+    if: github.ref == 'refs/heads/main'  # only on main branch‼️
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -1298,7 +1319,7 @@ jobs:
 
 **Key CI/CD practices:**
 1. **Run on every PR** — catch problems before merge
-2. **Fast feedback** — parallelize tests, cache dependencies
+2. **Fast feedback** — parallelize tests, cache dependencies‼️
 3. **Test against real dependencies** — use service containers (Postgres, Redis) in CI
 4. **Environment parity** — CI should mirror production as closely as possible
 5. **Automated deployments** — remove human error from the deploy process
@@ -1332,7 +1353,7 @@ const str = first(['a', 'b']);      // str is `string`
 **Common use cases:**
 
 ```ts
-// Generic interface:
+* Generic interface:
 interface ApiResponse<T> {
   data: T;
   status: number;
@@ -1340,16 +1361,17 @@ interface ApiResponse<T> {
 }
 
 const userRes: ApiResponse<User> = await fetchUser(1);
-// userRes.data is typed as User
+* userRes.data is typed as User
 
-// Generic with constraints:
+* Generic with constraints:
 function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
   return obj[key];
 }
-getProperty({ name: 'Alice', age: 30 }, 'name');  // returns string
+getProperty({ name: 'Alice', age: 30 }, 'name');  // return TYPE is string, return VALUE is 'Alice'
+* T = { name: string, age: number }, K = 'name', so T[K] = T['name'] = string
 getProperty({ name: 'Alice', age: 30 }, 'foo');   // ERROR: 'foo' is not a key
 
-// Generic class:
+* Generic class:
 class Stack<T> {
   private items: T[] = [];
   push(item: T) { this.items.push(item); }
@@ -1372,50 +1394,60 @@ numStack.push('a');  // ERROR: string is not assignable to number
 
 ### Q28. What is the React virtual DOM, and how does React rendering work?
 
-<!-- The virtual DOM is a lightweight JavaScript representation of the actual DOM. React uses it to minimize expensive real DOM operations.
+<!-- The virtual DOM is a ‼️ lightweight JavaScript representation of the actual DOM. React uses it to minimize expensive real DOM operations.
 
 **How it works:**
 ```
 1. State changes (setState, useState setter)
         ↓
-2. React re-renders the component → creates a NEW virtual DOM tree
+2. React re-renders the component → creates a NEW virtual DOM tree‼️
         ↓
 3. React DIFFS the new virtual DOM against the previous one ("reconciliation")
         ↓
-4. React calculates the MINIMUM set of real DOM changes needed
+4. React calculates the MINIMUM set of real DOM changes needed‼️
         ↓
-5. React applies only those changes to the real DOM ("commit phase")
+5. React applies only those changes to the real DOM ("commit phase")‼️
 ```
 
 **Why not just update the real DOM directly?**
 - Real DOM operations are SLOW (layout recalculation, repaint, reflow)
 - JavaScript object comparison (virtual DOM diff) is FAST
-- Batching multiple changes into one DOM update is much cheaper than doing them individually
+- Batching multiple changes into one DOM update is much cheaper than doing them individually‼️
 
-**React rendering phases:**
-1. **Render phase** — React calls your component function, generates virtual DOM. Pure, no side effects. Can be interrupted (concurrent mode).
-2. **Commit phase** — React applies the diff to the real DOM. Runs useEffect/useLayoutEffect. Cannot be interrupted.
+**React rendering phases:**‼️
+1. **Render phase** — ‼️ React calls your component function, generates virtual DOM. Pure, no side effects. Can be interrupted (concurrent mode).
+2. **Commit phase** — ‼️ React applies the diff to the real DOM. Runs useEffect/useLayoutEffect. Cannot be interrupted.
+
+<!-- useEffect vs useLayoutEffect:
+  useEffect        — runs AFTER the browser paints the screen. Async, non-blocking.
+                     Use for: data fetching, subscriptions, logging. (99% of the time use this)
+  useLayoutEffect  — runs AFTER DOM update but BEFORE the browser paints.‼️ Synchronous, blocks paint.
+                     Use for: measuring DOM layout (element size/position), preventing visual flicker.
+  Same API, different timing. useLayoutEffect fires first, useEffect fires second.‼️
+  If you don't need to read/modify layout before paint, always prefer useEffect. -->
 
 **Key concepts:**
-- **Re-render ≠ DOM update** — a component re-rendering means React calls the function again, but the DOM only updates if the output actually changed
+
+- **Re-render ≠ DOM update** — ‼️ a component re-rendering means React calls the function again, but the DOM only updates if the output actually changed
 - **Reconciliation** — React's diffing algorithm. Compares elements by type and key. Same type = update props; different type = unmount and remount.
 - **Keys** — help React identify which items in a list changed, were added, or removed. Using array index as key is an anti-pattern when list order changes.
 
 ```jsx
-// React re-renders when:
-// 1. State changes
+* React re-renders when:
+* 1. State changes
 const [count, setCount] = useState(0);
 setCount(1);  // triggers re-render
 
-// 2. Parent re-renders (even if props didn't change)
-// Fix: wrap child in React.memo()
+* 2. Parent re-renders (even if props didn't change)
+* Fix: wrap child in React.memo()
 const Child = React.memo(({ name }) => <div>{name}</div>);
 
-// 3. Context value changes
+* 3. Context value changes
 const theme = useContext(ThemeContext);  // re-renders when theme changes
 ```
 
 **Performance optimization tools:**
+
 - `React.memo()` — skip re-render if props haven't changed
 - `useMemo()` — memoize expensive computed values
 - `useCallback()` — memoize function references (prevent child re-renders)
@@ -1430,31 +1462,31 @@ const theme = useContext(ThemeContext);  // re-renders when theme changes
 **Core hooks:**
 
 ```jsx
-// useState — local state
+* useState — local state
 const [count, setCount] = useState(0);
 
-// useEffect — side effects (data fetching, subscriptions, DOM manipulation)
+* useEffect — side effects (data fetching, subscriptions, DOM manipulation)
 useEffect(() => {
   fetchData();
-  return () => cleanup();  // cleanup on unmount or before next effect
+  return () => cleanup();  * cleanup on unmount or before next effect
 }, [dependency]);  // re-runs when dependency changes; [] = mount only
 
-// useContext — access context without nesting Consumer components
+* useContext — access context without nesting Consumer components
 const theme = useContext(ThemeContext);
 
-// useRef — mutable value that persists across re-renders without causing re-render
+* useRef — mutable value that persists across re-renders without causing re-render
 const inputRef = useRef(null);
 inputRef.current.focus();
 
-// useMemo — memoize expensive computation, recompute only when deps change
-const sorted = useMemo(() => expensiveSort(items), [items]);
+* useMemo — memoize expensive computation, recompute only when deps change
+const sorted = useMemo(() => expensiveSort(items), [items]);‼️
 
-// useCallback — memoize a function reference (useful to prevent child re-renders)
+* useCallback — memoize a function reference (useful to prevent child re-renders)
 const handleClick = useCallback(() => {
   doSomething(id);
 }, [id]);
 
-// useReducer — complex state logic (like Redux, but local)
+* useReducer — complex state logic (like Redux, but local)
 const [state, dispatch] = useReducer(reducer, initialState);
 dispatch({ type: 'INCREMENT' });
 ```
@@ -1464,7 +1496,7 @@ dispatch({ type: 'INCREMENT' });
 2. Only call hooks from React function components or custom hooks
 
 **Why these rules exist:**
-React relies on the ORDER hooks are called to match state to the right hook. If you put a hook inside an `if` statement, the order could change between renders, and React would mix up which state belongs to which hook.
+‼️ React relies on the ORDER hooks are called to match state to the right hook. If you put a hook inside an `if` statement, the order could change between renders, and React would mix up which state belongs to which hook.
 
 **Custom hooks — reusable logic:**
 ```tsx
@@ -1484,7 +1516,7 @@ function useFetch<T>(url: string) {
   return { data, loading, error };
 }
 
-// Usage:
+* Usage:
 const { data: users, loading } = useFetch<User[]>('/api/users');
 ``` -->
 
@@ -1492,7 +1524,7 @@ const { data: users, loading } = useFetch<User[]>('/api/users');
 
 ### Q30. What are PostgreSQL transactions, and what is ACID?
 
-<!-- A transaction is a group of SQL operations that execute as a single unit — either ALL succeed or ALL are rolled back. No partial changes.
+<!-- A transaction is a group of SQL operations that execute as a single unit — ‼️ either ALL succeed or ALL are rolled back. No partial changes.
 
 ```sql
 BEGIN;
@@ -1516,7 +1548,7 @@ A transaction brings the database from one valid state to another. Constraints (
 Concurrent transactions don't interfere with each other. Each transaction sees a consistent snapshot of the data, as if it were the only one running. (The level of isolation is configurable — see isolation levels below.)
 
 **D — Durability:**
-Once a transaction is committed, it's permanent — even if the server crashes immediately after. The data is written to disk (WAL — Write-Ahead Log).
+Once a transaction is committed, it's permanent — even if the server crashes immediately after. ‼️ The data is written to disk (WAL — Write-Ahead Log).
 
 **PostgreSQL isolation levels (from least to most strict):**
 1. **Read Uncommitted** — can see uncommitted changes from other transactions (PostgreSQL treats this as Read Committed)
@@ -1525,13 +1557,13 @@ Once a transaction is committed, it's permanent — even if the server crashes i
 4. **Serializable** — strictest; transactions behave as if they ran one after another
 
 ```sql
--- Set isolation level:
+-- Set isolation level:‼️
 BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
   -- your queries here
 COMMIT;
 ```
 
-**In Node.js with a connection pool:**
+**In Node.js with a connection pool:**‼️
 ```ts
 const client = await pool.connect();
 try {
@@ -1583,7 +1615,7 @@ FROM users u RIGHT JOIN orders o ON u.id = o.user_id;
 -- Result: Alice|50, Alice|30, NULL|20  (order 3 has user_id 4 which doesn't exist)
 ```
 
-**FULL OUTER JOIN** — all rows from BOTH tables, NULLs where no match:
+**FULL OUTER JOIN** — all rows from BOTH tables, NULLs where no match:‼️
 ```sql
 SELECT u.name, o.total
 FROM users u FULL OUTER JOIN orders o ON u.id = o.user_id;
@@ -1597,7 +1629,7 @@ SELECT u.name, o.total FROM users u CROSS JOIN orders o;
 ```
 
 **Quick decision guide:**
-- "Get all users WITH their orders" → LEFT JOIN (includes users with no orders)
+- "Get all users WITH their orders" → LEFT JOIN (includes users with no orders)‼️
 - "Get only users who HAVE orders" → INNER JOIN
 - "Find users WITHOUT orders" → LEFT JOIN ... WHERE o.id IS NULL
 - "Combine everything from both sides" → FULL OUTER JOIN
@@ -1608,7 +1640,7 @@ SELECT u.name, o.total FROM users u CROSS JOIN orders o;
 
 ### Q32. What is a RESTful API? What are best practices for API design?
 
-<!-- REST (Representational State Transfer) is an architectural style for designing APIs that uses HTTP methods and URLs to model resources.
+<!-- REST (‼️ Representational State Transfer) is an architectural style for designing APIs that uses HTTP methods and URLs to model resources.
 
 **Core principles:**
 1. **Resources** are nouns, identified by URLs: `/users`, `/orders/123`
@@ -1624,11 +1656,11 @@ SELECT u.name, o.total FROM users u CROSS JOIN orders o;
 **REST API design best practices:**
 
 ```
-# Use plural nouns for resources:
+# Use plural nouns for resources:‼️
 GET    /users          ← list all users
 GET    /users/123      ← get specific user
 POST   /users          ← create a user
-PUT    /users/123      ← replace user 123
+PUT    /users/123      ← replace user 123‼️
 PATCH  /users/123      ← update specific fields on user 123
 DELETE /users/123      ← delete user 123
 
@@ -1637,7 +1669,7 @@ GET    /users/123/orders       ← orders for user 123
 POST   /users/123/orders       ← create order for user 123
 
 # Filtering, sorting, pagination via query params:
-GET    /users?status=active&sort=name&page=2&limit=20
+GET    /users?status=active&sort=name&page=2&limit=20‼️
 
 # Versioning:
 GET    /api/v1/users
@@ -1645,10 +1677,10 @@ GET    /api/v1/users
 
 **Response design:**
 ```json
-// Success:
+* Success:
 { "data": { "id": 123, "name": "Alice" } }
 
-// Error:
+* Error:
 {
   "error": {
     "code": "VALIDATION_ERROR",
@@ -1657,21 +1689,21 @@ GET    /api/v1/users
   }
 }
 
-// List with pagination:
+* List with pagination:
 {
   "data": [...],
-  "meta": { "page": 2, "limit": 20, "total": 145 }
+  "meta": { "page": 2, "limit": 20, "total": 145 }‼️
 }
 ```
 
 **Best practices:**
 1. Use proper HTTP status codes (201 for created, 404 for not found, etc.)
 2. Use JSON for request/response bodies
-3. Version your API from day one (`/api/v1/`)
-4. Use pagination for list endpoints (never return unbounded results)
+3. Version your API from day one (`/api/v1/`)‼️
+4. Use pagination for list endpoints (never return unbounded results)‼️
 5. Return consistent error format across all endpoints
 6. Use HTTPS always
-7. Validate input at the API boundary; sanitize before database queries
+7. Validate input at the API boundary; ‼️ sanitize before database queries
 8. Rate limit public endpoints
 9. Document with OpenAPI/Swagger -->
 
@@ -1685,23 +1717,23 @@ GET    /api/v1/users
 
 **Compute:**
 - **EC2** — virtual machines (servers) you can SSH into and run anything
-- **ECS/EKS** — run Docker containers (ECS = AWS-managed, EKS = Kubernetes)
+- **ECS/EKS** — run Docker containers (ECS = AWS-managed, EKS = Kubernetes)‼️
 - **Lambda** — serverless functions, pay per execution, auto-scales to zero
-- **Fargate** — serverless containers (no server management)
+- **Fargate** — serverless containers (no server management)‼️
 
 **Storage:**
 - **S3** — object storage (files, images, backups). Virtually unlimited, cheap.
-- **EBS** — block storage attached to EC2 (like a hard drive)
+- **EBS** — block storage attached to EC2 (like a hard drive)‼️
 
 **Database:**
 - **RDS** — managed relational databases (PostgreSQL, MySQL). Handles backups, patching, replication.
-- **ElastiCache** — managed Redis/Memcached
+- **ElastiCache** — managed Redis/Memcached‼️
 
 **Networking:**
 - **VPC** — your private network in the cloud. Isolates your resources.
 - **Load Balancer (ALB)** — distributes traffic across multiple instances
 - **Route 53** — DNS management
-- **CloudFront** — CDN for static assets
+- **CloudFront** — CDN for static assets‼️
 
 **Key concepts for interviews:**
 
@@ -1710,7 +1742,7 @@ GET    /api/v1/users
 - Horizontal: more servers behind a load balancer — scales infinitely
 
 **Infrastructure as Code (IaC):**
-- Define your infrastructure in code (Terraform, CloudFormation, Pulumi)
+- Define your infrastructure in code (Terraform, CloudFormation, Pulumi)‼️
 - Version controlled, reproducible, reviewable in PRs
 
 **Environment parity:**
@@ -1721,7 +1753,7 @@ GET    /api/v1/users
 - Store config in environment variables (not in code)
 - Treat backing services (DB, cache, queue) as attached resources
 - Logs are event streams (write to stdout, let the platform collect them)
-- Processes are stateless (store session data in Redis, not in memory) -->
+- Processes are stateless (‼️ store session data in Redis, not in memory) -->
 
 ---
 
@@ -1759,14 +1791,14 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,  // fail if can't connect within 2s
 });
 
-// Simple query (auto-borrows and returns connection):
+* Simple query (auto-borrows and returns connection):
 const result = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
 
-// For transactions (manually manage the connection):
+* For transactions (manually manage the connection):
 const client = await pool.connect();
 try {
   await client.query('BEGIN');
-  // ... multiple queries ...
+  * ... multiple queries ...
   await client.query('COMMIT');
 } catch {
   await client.query('ROLLBACK');
@@ -1777,7 +1809,7 @@ try {
 
 **Why it matters:**
 1. **Performance** — eliminates connection overhead per request
-2. **Resource management** — PostgreSQL has a max connections limit (default 100). Without pooling, 100 concurrent requests = 100 connections = limit hit.
+2. **Resource management** — ‼️ PostgreSQL has a max connections limit (default 100). Without pooling, 100 concurrent requests = 100 connections = limit hit.
 3. **Reliability** — pool handles reconnection, health checks, and connection lifecycle
 4. **Concurrency** — pool queues requests when all connections are busy, preventing database overload
 
@@ -1791,7 +1823,7 @@ try {
 
 **The problem Docker solves:**
 - "It works on my machine" — different Node versions, different OS, different Postgres versions
-- Setting up a new developer takes hours of installing dependencies
+- Setting up a new developer takes hours of installing dependencies‼️
 - Production environment differs from development
 
 **Key concepts:**
@@ -1812,7 +1844,7 @@ CMD ["node", "dist/index.js"]     # start command
 - **Image** — a blueprint (like a class). Built from a Dockerfile. Immutable.
 - **Container** — a running instance of an image (like an object). Has its own filesystem, network, process space.
 
-**docker-compose — run multiple services together:**
+**docker-compose — run multiple services together:**‼️
 ```yaml
 # docker-compose.yml
 services:
@@ -1865,12 +1897,12 @@ PORT=3000
 ```
 
 ```ts
-// Access in Node.js:
+* Access in Node.js:
 const dbUrl = process.env.DATABASE_URL;
 const port = process.env.PORT || 3000;
 
 if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET is required');  // fail fast if missing
+  throw new Error('JWT_SECRET is required');  * fail fast if missing
 }
 ```
 
@@ -1881,7 +1913,7 @@ if (!process.env.JWT_SECRET) {
 
 **Common patterns in Node.js:**
 
-**.env files (development only):**
+**.env files (development only):**‼️
 ```bash
 # .env (NEVER commit this — add to .gitignore)
 DATABASE_URL=postgres://localhost:5432/myapp_dev
@@ -1890,8 +1922,8 @@ REDIS_URL=redis://localhost:6379
 ```
 
 ```ts
-// Load with dotenv (dev only):
-import 'dotenv/config';  // loads .env into process.env
+* Load with dotenv (dev only):‼️
+import 'dotenv/config';  // loads .env into process.env‼️
 ```
 
 **Validation with a library (e.g., zod, envalid):**
@@ -1906,13 +1938,13 @@ const envSchema = z.object({
 });
 
 export const env = envSchema.parse(process.env);
-// Throws a clear error if any required var is missing or invalid
+* Throws a clear error if any required var is missing or invalid
 ```
 
 **In production:**
 - Set env vars through your cloud provider (AWS Parameter Store, ECS task definitions, Kubernetes secrets)
 - Use a secrets manager (AWS Secrets Manager, HashiCorp Vault) for sensitive values
-- NEVER use .env files in production — they're a development convenience only -->
+- NEVER use .env files in production — they're a development convenience only -->‼️
 
 ---
 
@@ -1930,7 +1962,7 @@ Request → [Authentication] → [Authorization] → [Route Handler]
 
 **Authentication example (JWT-based):**
 ```ts
-// Login — create a token:
+* Login — create a token:
 app.post('/login', async (req, res) => {
   const user = await db.findByEmail(req.body.email);
   const valid = await bcrypt.compare(req.body.password, user.passwordHash);
@@ -1940,7 +1972,7 @@ app.post('/login', async (req, res) => {
   res.json({ token });
 });
 
-// Authentication middleware — verify the token:
+* Authentication middleware — verify the token:
 function authenticate(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'No token provided' });
@@ -1956,7 +1988,7 @@ function authenticate(req, res, next) {
 
 **Authorization example (role-based):**
 ```ts
-// Authorization middleware — check permissions:
+* Authorization middleware — check permissions:
 function authorize(...allowedRoles) {
   return (req, res, next) => {
     if (!allowedRoles.includes(req.user.role)) {
@@ -1966,9 +1998,9 @@ function authorize(...allowedRoles) {
   };
 }
 
-// Usage:
-app.delete('/users/:id', authenticate, authorize('admin'), deleteUser);
-// Must be authenticated AND must have admin role
+* Usage:
+app.delete('/users/:id', authenticate, authorize('admin'), deleteUser);‼️
+* Must be authenticated AND must have admin role
 ```
 
 **Key distinction in HTTP status codes:**
@@ -1976,10 +2008,10 @@ app.delete('/users/:id', authenticate, authorize('admin'), deleteUser);
 - **403 Forbidden** — authenticated but NOT AUTHORIZED (valid token, wrong permissions)
 
 **Common auth strategies:**
-- **Session-based** — server stores session, client sends cookie. Stateful.
+- **Session-based** — server stores session, client sends cookie. Stateful.‼️
 - **JWT-based** — token contains user info, server doesn't store state. Stateless. Must handle token expiry and refresh.
 - **OAuth2/OpenID Connect** — delegated auth ("Login with Google"). Used for third-party access.
-- **API keys** — for service-to-service communication. Simple but limited. -->
+- **API keys** — for service-to-service communication. Simple but limited. -->‼️
 
 ---
 
