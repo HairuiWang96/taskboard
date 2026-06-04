@@ -1,6 +1,6 @@
 # Node.js & REST APIs — Senior Developer Deep Reference
 
-> Covers Node.js internals, Fastify, API design, security, performance, and production patterns.
+> Covers Node.js internals, Express, Fastify, NestJS, API design, security, performance, and production patterns.
 
 ---
 
@@ -10,17 +10,19 @@
 2. [Streams](#2-streams)
 3. [Worker Threads & Child Processes](#3-worker-threads--child-processes)
 4. [Fastify — Deep Dive](#4-fastify--deep-dive)
-5. [Middleware & Plugin Architecture](#5-middleware--plugin-architecture)
-6. [Validation & Serialization](#6-validation--serialization)
-7. [Authentication & Authorization](#7-authentication--authorization)
-8. [Error Handling](#8-error-handling)
-9. [Logging & Observability](#9-logging--observability)
-10. [Database Patterns](#10-database-patterns)
-11. [REST API Design — Advanced](#11-rest-api-design--advanced)
-12. [Performance & Scaling](#12-performance--scaling)
-13. [Testing Node.js APIs](#13-testing-nodejs-apis)
-14. [Production Readiness](#14-production-readiness)
-15. [Common Interview Questions](#15-common-interview-questions)
+5. [Express.js — Deep Dive](#5-expressjs--deep-dive)
+6. [NestJS — Deep Dive](#6-nestjs--deep-dive)
+7. [Middleware & Plugin Architecture](#7-middleware--plugin-architecture)
+8. [Validation & Serialization](#8-validation--serialization)
+9. [Authentication & Authorization](#9-authentication--authorization)
+10. [Error Handling](#10-error-handling)
+11. [Logging & Observability](#11-logging--observability)
+12. [Database Patterns](#12-database-patterns)
+13. [REST API Design — Advanced](#13-rest-api-design--advanced)
+14. [Performance & Scaling](#14-performance--scaling)
+15. [Testing Node.js APIs](#15-testing-nodejs-apis)
+16. [Production Readiness](#16-production-readiness)
+17. [Common Interview Questions](#17-common-interview-questions)
 
 ---
 
@@ -58,7 +60,7 @@ setTimeout(() => console.log('setTimeout 0'), 0);
 process.nextTick(() => console.log('nextTick'));
 Promise.resolve().then(() => console.log('promise'));
 
-// Output order: nextTick, promise, setTimeout 0 OR setImmediate (non-deterministic outside I/O)
+// Output order: nextTick, promise, ‼️ setTimeout 0 OR setImmediate (non-deterministic outside I/O)
 
 // Inside an I/O callback:
 fs.readFile('file', () => {
@@ -78,24 +80,45 @@ const crypto = require('crypto');
 // Blocking (bad for server performance):
 const hash = crypto.createHash('sha256').update(data).digest('hex');
 
-// Async (uses thread pool):
+// Async (uses thread pool):‼️
 crypto.pbkdf2(password, salt, 100000, 64, 'sha512', (err, key) => {
-    // runs in thread pool, callback fires when done
+    // runs in thread pool, callback fires when done‼️
 });
 
 // Increase thread pool size for CPU-heavy apps:
-process.env.UV_THREADPOOL_SIZE = '8'; // must be set before libuv loads (very top of entry)
+process.env.UV_THREADPOOL_SIZE = '8'; // must be set before libuv loads (very top of entry)‼️
 
-// Worker threads (better than thread pool for sustained CPU work):
+// Worker threads (better than thread pool for sustained CPU work):‼️
 // See section 3
 ```
 
 ### Memory and garbage collection
 
 ```text
-V8 heap:
+What is the "heap"?
+
+  Your program's memory has two main areas:
+
+  Stack (small, fast, automatic)          Heap (large, flexible, managed)‼️
+  ─────────────────────────────           ────────────────────────────────
+  - Function calls                        - Objects: { name: 'Alice' }
+  - Local variables (primitives)          - Arrays: [1, 2, 3]
+  - Fixed size, cleaned up automatically  - Strings, closures, class instances
+    when function returns                 - Anything created with "new"
+                                          - Size unknown at compile time
+                                          - Garbage collector cleans it up
+
+  const user = { name: 'Alice', age: 30 };  // object → stored on the HEAP
+  const count = 5;                           // primitive → stored on the STACK‼️
+
+  The heap is where JavaScript stores data that doesn't have a fixed size or lifetime.‼️
+  V8 (Chrome's JS engine that Node.js uses) manages this heap and garbage collects it.‼️
+
+V8 heap:‼️
   New space (nursery):  young objects, GC'd frequently (~1ms pause)
-  Old space:            survived GC, collected infrequently (~100ms pause)
+                        Most objects die young (temporary variables) — so this is fast‼️
+  Old space:            objects that survived multiple GC cycles get promoted here
+                        Collected less often (~100ms pause, slower)
   Code space:           compiled code
   Large object space:   objects > 1MB — not compacted
 
@@ -103,14 +126,14 @@ Default heap limit: ~1.5GB (32-bit), ~4GB (64-bit)
 Increase for memory-intensive apps:
   node --max-old-space-size=4096 server.js  (4GB)
 
-Memory leak indicators:
+Memory leak indicators:‼️
   process.memoryUsage().heapUsed keeps growing
   GC pauses getting longer (visible in metrics)
   EventEmitter warnings: "MaxListenersExceededWarning"
 
 Common leak sources:
   - Event listeners not removed (use emitter.removeListener or once())
-  - Global caches growing without eviction
+  - Global caches growing without eviction‼️
   - Closures holding large objects
   - Stream not consumed (backpressure not handled)
 ```
@@ -156,7 +179,7 @@ const writable = new Writable({
     },
 });
 
-// Transform — transforms data (both readable and writable)
+// Transform — transforms data (both readable and writable)‼️
 const upperCase = new Transform({
     transform(chunk, encoding, callback) {
         this.push(chunk.toString().toUpperCase());
@@ -164,7 +187,7 @@ const upperCase = new Transform({
     },
 });
 
-// Pipeline — safe pipe with error propagation (use instead of .pipe())
+// Pipeline — safe pipe with error propagation (use instead of .pipe())‼️
 const { promisify } = require('util');
 const pipelineAsync = promisify(pipeline);
 
@@ -203,7 +226,7 @@ for await (const chunk of readable) {
 ### Worker threads
 
 ```js
-// Worker threads: run JS in parallel threads — shared memory via SharedArrayBuffer
+// Worker threads: run JS in parallel threads — shared memory via SharedArrayBuffer‼️
 import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
 
 // In main thread:
@@ -223,7 +246,7 @@ if (!isMainThread) {
     parentPort.postMessage(result);
 }
 
-// Worker pool pattern (for repeated CPU work):
+// Worker pool pattern (for repeated CPU work):‼️
 import Piscina from 'piscina'; // worker pool library
 
 const pool = new Piscina({ filename: './worker.js', maxThreads: 4 });
@@ -241,12 +264,12 @@ exec('ls -la', (err, stdout, stderr) => {
     console.log(stdout);
 });
 
-// spawn: streaming output (large outputs, long-running)
+// spawn: streaming output (large outputs, long-running)‼️
 const ls = spawn('ls', ['-la']);
 ls.stdout.pipe(process.stdout);
 ls.stderr.pipe(process.stderr);
 
-// fork: special spawn for Node.js scripts — built-in IPC channel
+// fork: special spawn for Node.js scripts — built-in IPC channel‼️
 const child = fork('./worker.js');
 child.send({ task: 'compute', data: payload }); // IPC message
 child.on('message', result => console.log(result));
@@ -395,7 +418,420 @@ fastify.post<{ Body: CreateUserBody }>('/users', {
 
 ---
 
-## 5. Middleware & Plugin Architecture
+## 5. Express.js — Deep Dive
+
+### What is Express?
+
+```text
+Express is the most popular Node.js web framework.
+Minimal, unopinionated — gives you routing and middleware, you choose everything else.
+
+Express is to Node.js what Spring is to Java or Flask is to Python.
+
+Key characteristics:
+  - Middleware-based architecture (everything is a middleware)‼️
+  - Synchronous middleware chain (req, res, next)
+  - No built-in validation, serialization, or ORM — you pick your own
+  - Massive ecosystem (thousands of middleware packages)
+  - ~15,000 req/s (slower than Fastify, but fast enough for most apps)‼️
+```
+
+### Basic Express app
+
+```ts
+import express from 'express';
+
+const app = express();
+
+// Built-in middleware
+app.use(express.json()); // parse JSON request bodies
+app.use(express.urlencoded({ extended: true })); // parse form data
+
+// Route
+app.get('/api/users', (req, res) => {
+    res.json({ users: [] });
+});
+
+// Start server
+app.listen(3000, () => console.log('Server running on port 3000'));
+```
+
+### Middleware — the core concept‼️
+
+```ts
+// Middleware = function with (req, res, next) signature
+// They run in ORDER of registration — order matters!
+
+// 1. Application-level middleware (runs on every request)
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next(); // MUST call next() or the request hangs forever‼️
+});
+
+// 2. Route-level middleware (runs only on specific routes)
+const requireAuth = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    try {
+        req.user = jwt.verify(token, process.env.JWT_SECRET);
+        next(); // authenticated — continue to route handler
+    } catch {
+        res.status(401).json({ error: 'Invalid token' });
+        // no next() — stops the chain here‼️
+    }
+};
+
+app.get('/protected', requireAuth, (req, res) => {
+    res.json({ message: `Hello ${req.user.id}` });
+});
+
+// 3. Error-handling middleware (4 params — must have all 4!)‼️
+// ‼️ Register LAST — catches errors from all middleware above it
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(err.status || 500).json({ error: err.message });
+});
+
+// HOW errors flow:
+//   next()      → passes to NEXT normal middleware
+//   next(err)   → SKIPS all normal middleware, jumps to error middleware‼️
+//   throw err   → Express catches it (sync only), same as next(err)‼️
+//   async throw → Express does NOT catch it! You need asyncHandler or try/catch‼️
+```
+
+### Router — organizing routes
+
+```ts
+// Express Router = mini-app for grouping related routes‼️
+import { Router } from 'express';
+
+const userRouter = Router();
+
+userRouter.get('/', listUsers); // GET /api/users
+userRouter.get('/:id', getUser); // GET /api/users/123
+userRouter.post('/', createUser); // POST /api/users
+userRouter.patch('/:id', updateUser); // PATCH /api/users/123
+userRouter.delete('/:id', deleteUser); // DELETE /api/users/123
+
+// Mount router with prefix
+app.use('/api/users', userRouter);
+
+// Router-level middleware (applies to all routes in this router)‼️
+const adminRouter = Router();
+adminRouter.use(requireAuth); // all admin routes need auth
+adminRouter.use(requireRole('admin')); // all admin routes need admin role
+adminRouter.get('/stats', getStats);
+app.use('/api/admin', adminRouter);
+```
+
+### Async error handling — the biggest Express gotcha‼️
+
+```ts
+// Express was built before async/await — it does NOT catch async errors!‼️
+
+// ✗ BROKEN — if getUsers() rejects, Express hangs or crashes‼️
+app.get('/users', async (req, res) => {
+    const users = await db.getUsers(); // if this throws → unhandled rejection!
+    res.json(users);
+});
+
+// ✓ FIX 1: try/catch every route (tedious)
+app.get('/users', async (req, res, next) => {
+    try {
+        const users = await db.getUsers();
+        res.json(users);
+    } catch (err) {
+        next(err); // forward to error middleware
+    }
+});
+
+// ✓ FIX 2: asyncHandler wrapper (recommended)‼️
+const asyncHandler = fn => (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+app.get(
+    '/users',
+    asyncHandler(async (req, res) => {
+        const users = await db.getUsers(); // errors auto-forwarded to error middleware
+        res.json(users);
+    }),
+);
+
+// ✓ FIX 3: express-async-errors package (monkey-patches Express)‼️
+import 'express-async-errors'; // just import it — async errors now caught automatically
+
+// Note: Express 5 (in beta) will handle async errors natively‼️
+```
+
+### Express vs Fastify comparison‼️
+
+```text
+                    Express                     Fastify
+─────────────────────────────────────────────────────────────
+Architecture      Middleware chain             Plugin system with encapsulation‼️
+Speed             ~15,000 req/s               ~75,000 req/s (5x faster)‼️
+Validation        Manual (add Joi, Zod, etc)  Built-in (JSON Schema + ajv)‼️
+Serialization     JSON.stringify              fast-json-stringify (2-3x faster)
+TypeScript        Bolted-on (@types/express)  First-class support‼️
+Async errors      Not caught (need wrapper)   Caught automatically‼️
+Ecosystem         Massive (10+ years)         Growing (newer)
+Learning curve    Very low                    Low-medium
+When to use       Quick prototypes,           New production APIs,
+                  legacy codebases            performance-critical services
+
+Most teams starting new projects in 2024+ choose Fastify.‼️
+Express is still fine — most apps are I/O-bound, not framework-bound.
+```
+
+---
+
+## 6. NestJS — Deep Dive
+
+### What is NestJS?
+
+```text
+NestJS is an opinionated Node.js framework built on top of Express (or Fastify).‼️
+‼️ Heavily inspired by Angular — uses decorators, dependency injection, and modules.
+
+Key characteristics:
+  - TypeScript-first (built in TypeScript, designed for TypeScript)‼️
+  - Decorator-based (@Controller, @Get, @Injectable, etc.)‼️
+  - Dependency injection (DI) container built-in‼️
+  - Modular architecture — every feature is a module‼️
+  - Can use Express OR Fastify as the underlying HTTP engine
+  - Opinionated structure — enforces patterns (good for teams)
+
+When to use NestJS:
+  - Large team projects that need consistent structure‼️
+  - Enterprise apps where enforced patterns prevent chaos
+  - Teams coming from Angular or Spring Boot (familiar patterns)
+  - When you want batteries-included (validation, auth, docs, etc.)
+
+When NOT to use NestJS:
+  - Small APIs / microservices (too much boilerplate)‼️
+  - Learning Node.js (too much abstraction to understand what's happening)
+  - Performance-critical services (the decorator/DI overhead adds latency)‼️
+```
+
+### Core building blocks
+
+```text
+NestJS has 3 core building blocks:
+
+  1. Modules    — organize code into feature groups
+  2. Controllers — handle incoming requests (routes)
+  3. Providers   — services, repositories, anything injectable (business logic)
+
+  Request → Controller → Service → Database
+             (route)     (logic)   (data)
+
+  This is the same pattern as Angular:
+    Angular:  Component → Service → HTTP
+    NestJS:   Controller → Service → Database
+```
+
+### Module
+
+```ts
+// Every NestJS app has at least one module: AppModule‼️
+// Modules group related controllers and providers together
+
+import { Module } from '@nestjs/common';
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+
+@Module({
+    controllers: [UsersController], // route handlers in this module
+    providers: [UsersService], // injectable services in this module
+    exports: [UsersService], // make available to OTHER modules that import this one
+})
+export class UsersModule {}
+
+// Root module — imports all feature modules
+@Module({
+    imports: [UsersModule, AuthModule, TasksModule], // feature modules
+})
+export class AppModule {}
+```
+
+### Controller
+
+```ts
+// Controllers handle HTTP requests — decorated with @Controller
+// Each method is a route handler decorated with @Get, @Post, etc.
+
+import { Controller, Get, Post, Param, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+
+@Controller('users') // prefix: all routes start with /users
+export class UsersController {
+    // Dependency injection — NestJS creates and injects UsersService automatically‼️
+    constructor(private readonly usersService: UsersService) {}
+
+    @Get() // GET /users
+    findAll(@Query('page') page: number = 1) {
+        return this.usersService.findAll(page);
+    }
+
+    @Get(':id') // GET /users/:id
+    findOne(@Param('id') id: string) {
+        return this.usersService.findOne(id);
+    }
+
+    @Post() // POST /users
+    @HttpCode(HttpStatus.CREATED) // 201 instead of default 200
+    create(@Body() createUserDto: CreateUserDto) {
+        return this.usersService.create(createUserDto); // DTO: Data Transfer Object
+    }
+}
+
+// WHAT THE DECORATORS DO:‼️
+// @Controller('users')    → registers this class as a route handler for /users
+// @Get(':id')             → maps this method to GET /users/:id
+// @Param('id')            → extracts req.params.id and passes it as argument
+// @Body()                 → extracts req.body and passes it as argument
+// @Query('page')          → extracts req.query.page and passes it as argument
+//
+// Under the hood, NestJS converts this to Express/Fastify routes.
+// The decorator version is just syntactic sugar over app.get('/users/:id', handler)
+```
+
+### Provider / Service
+
+```ts
+// Services contain business logic — decorated with @Injectable
+// NestJS's DI container creates ONE instance and shares it (singleton by default)‼️
+
+import { Injectable, NotFoundException } from '@nestjs/common';
+
+@Injectable() // tells NestJS this can be injected into other classes
+export class UsersService {
+    constructor(private readonly db: DatabaseService) {} // inject database service
+
+    async findAll(page: number) {
+        return this.db.query('SELECT * FROM users LIMIT 20 OFFSET $1', [(page - 1) * 20]);
+    }
+
+    async findOne(id: string) {
+        const user = await this.db.query('SELECT * FROM users WHERE id = $1', [id]);
+        if (!user) throw new NotFoundException(`User ${id} not found`);
+        // NotFoundException → automatically returns 404 with proper error body‼️
+        return user;
+    }
+
+    async create(dto: CreateUserDto) {
+        return this.db.query('INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *', [dto.name, dto.email]);
+    }
+}
+
+// HOW DEPENDENCY INJECTION WORKS:
+// 1. You mark a class with @Injectable()
+// 2. You add it to a module's "providers" array
+// 3. You declare it as a constructor parameter in another class
+// 4. NestJS automatically creates an instance and passes it in
+//
+// WHY DI? You never write "new UsersService()" yourself.
+// This makes testing easy — you can swap in a mock service.
+// It also means NestJS controls the lifecycle (singleton, scoped, etc.)
+```
+
+### DTOs and validation with class-validator‼️
+
+```ts
+// DTO = Data Transfer Object — defines the shape of request data
+// Combined with class-validator for automatic validation
+
+import { IsString, IsEmail, MinLength, IsOptional } from 'class-validator';
+
+export class CreateUserDto {
+    @IsString()
+    @MinLength(1)
+    name: string;
+
+    @IsEmail()
+    email: string;
+
+    @IsOptional()
+    @IsString()
+    role?: string;
+}
+
+// In main.ts — enable global validation pipe:
+app.useGlobalPipes(
+    new ValidationPipe({
+        whitelist: true, // strip properties not in DTO‼️
+        forbidNonWhitelisted: true, // throw error if unknown properties sent
+        transform: true, // auto-transform types (string "1" → number 1)
+    }),
+);
+
+// Now if someone sends POST /users with { name: "", email: "not-an-email" }:
+// NestJS automatically returns 400 with detailed validation errors‼️
+// Your controller code never runs — validation happens before it
+```
+
+### Guards, Interceptors, and Pipes‼️
+
+```text
+NestJS request lifecycle (in order):‼️
+
+  Middleware → Guards → Interceptors (before) → Pipes → Handler → Interceptors (after) → Response
+
+  Middleware:    same as Express middleware (logging, CORS)
+  Guards:        decide if request can proceed (auth, roles)‼️ — return true/false
+  Interceptors:  transform request/response (logging, caching, timeout)
+  Pipes:         validate and transform input data (ValidationPipe)
+  Handler:       your controller method
+```
+
+```ts
+// Guard example — role-based access control‼️
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+    const requiredRoles = this.reflector.get<string[]>('roles', context.getHandler());
+    return requiredRoles.includes(user.role);  // true = allow, false = 403‼️
+  }
+}
+
+// Use with decorator:
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('admin')  // custom decorator that sets metadata
+@Delete(':id')
+remove(@Param('id') id: string) {
+  return this.usersService.remove(id);
+}
+```
+
+### NestJS vs Express vs Fastify comparison‼️
+
+```text
+                    Express         Fastify           NestJS
+────────────────────────────────────────────────────────────────────
+Opinion level     Unopinionated   Unopinionated     Opinionated‼️
+Structure         You decide      You decide        Enforced (modules, DI)
+TypeScript        Bolted-on       First-class       Built-in TypeScript‼️
+Validation        Manual          JSON Schema       class-validator + pipes
+DI                None            None              Built-in container‼️
+Learning curve    Low             Low-medium        Medium-high
+Boilerplate       Minimal         Minimal           More (decorators, modules)
+Performance       ~15k req/s      ~75k req/s        ~15k req/s (Express under hood)
+Best for          Small APIs,     Performance,      Large team projects,
+                  prototypes      microservices     enterprise apps
+
+NestJS is not a replacement for Express/Fastify — it's a LAYER ON TOP.‼️
+You can use NestJS with Express (default) or NestJS with Fastify (faster).
+```
+
+---
+
+## 7. Middleware & Plugin Architecture
 
 ### Scoped plugins
 
@@ -446,7 +882,7 @@ fastify.post('/auth/login', {
 
 ---
 
-## 6. Validation & Serialization
+## 8. Validation & Serialization
 
 ### Fastify's validation pipeline
 
@@ -502,7 +938,7 @@ fastify.post('/users', async (request, reply) => {
 
 ---
 
-## 7. Authentication & Authorization
+## 9. Authentication & Authorization
 
 ### JWT implementation
 
@@ -609,7 +1045,7 @@ async function requireOwnerOrAdmin(request: FastifyRequest<{ Params: { id: strin
 
 ---
 
-## 8. Error Handling
+## 10. Error Handling
 
 ### Global error handler
 
@@ -678,7 +1114,7 @@ throw new Conflict('Email %s already registered', email);
 
 ---
 
-## 9. Logging & Observability
+## 11. Logging & Observability
 
 ### Pino (Fastify's built-in logger)
 
@@ -766,7 +1202,7 @@ fastify.get('/ready', { logLevel: 'silent' }, async (request, reply) => {
 
 ---
 
-## 10. Database Patterns
+## 12. Database Patterns
 
 ### Drizzle ORM — production patterns
 
@@ -837,7 +1273,7 @@ async function connectWithRetry(retries = 5, delay = 2000) {
 
 ---
 
-## 11. REST API Design — Advanced
+## 13. REST API Design — Advanced
 
 ### Versioning strategies
 
@@ -997,7 +1433,7 @@ fastify.post('/payments', async (request, reply) => {
 
 ---
 
-## 12. Performance & Scaling
+## 14. Performance & Scaling
 
 ### Fastify performance defaults
 
@@ -1079,7 +1515,7 @@ reply.header('Last-Modified', new Date().toUTCString());
 
 ---
 
-## 13. Testing Node.js APIs
+## 15. Testing Node.js APIs
 
 ### Integration testing with Fastify
 
@@ -1158,7 +1594,7 @@ describe('Task API', () => {
 
 ---
 
-## 14. Production Readiness
+## 16. Production Readiness
 
 ### Graceful shutdown
 
@@ -1245,7 +1681,7 @@ await app.register(cors, {
 
 ---
 
-## 15. Common Interview Questions
+## 17. Common Interview Questions
 
 ### "How does Node.js handle concurrency if it's single-threaded?"
 
