@@ -127,14 +127,14 @@ Increase for memory-intensive apps:
   node --max-old-space-size=4096 server.js  (4GB)
 
 Memory leak indicators:‼️
-  process.memoryUsage().heapUsed keeps growing
-  GC pauses getting longer (visible in metrics)
-  EventEmitter warnings: "MaxListenersExceededWarning"
+  process.memoryUsage().heapUsed keeps growing‼️
+  GC pauses getting longer (visible in metrics)‼️
+  EventEmitter warnings: "MaxListenersExceededWarning"‼️
 
 Common leak sources:
   - Event listeners not removed (use emitter.removeListener or once())
   - Global caches growing without eviction‼️
-  - Closures holding large objects
+  - Closures holding large objects‼️
   - Stream not consumed (backpressure not handled)
 ```
 
@@ -223,6 +223,99 @@ for await (const chunk of readable) {
 
 ## 3. Worker Threads & Child Processes
 
+### Thread Pool vs Worker Threads vs Child Processes — what's the difference?‼️
+
+```text
+These three are often confused. They all enable parallelism, but in very different ways:
+
+THREAD POOL (libuv) — Node's internal helper threads
+  - Built into Node.js via libuv — you DON'T create these yourself
+  - 4 threads by default (configurable via UV_THREADPOOL_SIZE)
+  - Used AUTOMATICALLY for specific operations:
+    fs.readFile, crypto.pbkdf2, dns.lookup, some zlib
+  - You can't control what runs on it — Node decides
+  - Think of it as: Node's internal helper threads for built-in C++ operations
+
+WORKER THREADS — your own JavaScript running in parallel‼️
+  - YOU create these explicitly with: new Worker('./worker.js')
+  - Run JavaScript in parallel threads WITHIN THE SAME PROCESS
+  - Can share memory via SharedArrayBuffer (fast, no copying)‼️
+  - Communicate via postMessage() / on('message')
+  - Use for: YOUR OWN CPU-heavy JavaScript (image processing, data crunching, parsing)
+  - Lightweight — threads share the same process memory space
+
+CHILD PROCESSES — completely separate programs‼️
+  - SEPARATE OS PROCESSES — completely independent, own memory, own V8 instance
+  - Created with spawn, exec, execFile, or fork
+  - fork is special — creates a Node.js child process with built-in IPC channel‼️
+  - Communicate via IPC messages (child.send() / process.on('message'))
+  - Use for: running EXTERNAL PROGRAMS (ffmpeg, git) or isolating untrusted code
+  - Heavier — each process has its own memory (no sharing)
+
+
+SIDE-BY-SIDE COMPARISON:
+
+                    Thread Pool        Worker Threads       Child Processes
+──────────────────────────────────────────────────────────────────────────────
+Created by          Node/libuv         You (new Worker)     You (spawn/fork)
+Runs                C++ operations     Your JavaScript      Any program / Node script
+Parallelism         Yes                Yes                  Yes
+Same process?       Yes                Yes                  NO — separate process
+Shared memory?      N/A                Yes (SharedArrayBuffer)   No
+Communication       Callback           postMessage          IPC (fork) / stdio (spawn)
+Overhead            Very low           Low                  High (new V8 + memory)
+Default count       4 threads          You decide           You decide
+Use case            fs, crypto, dns    CPU-heavy JS work    External tools, isolation
+
+
+WHEN TO USE WHAT:
+
+  "I need faster fs.readFile"         → Thread pool handles it automatically, nothing to do
+  "I need to hash passwords"          → Thread pool (crypto.pbkdf2 uses it automatically)
+  "I need to parse a huge JSON"       → Worker thread (your JS code, CPU-heavy)
+  "I need to resize 100 images"       → Worker thread pool (Piscina library)
+  "I need to run ffmpeg"              → Child process (spawn)
+  "I need to run another Node script" → Child process (fork) with IPC
+  "I need complete isolation"         → Child process (crash won't take down main)‼️
+
+
+HOW EACH MAPS TO YOUR HARDWARE:
+
+  CPU CORES are the key resource. Your machine has a fixed number of cores
+  (e.g., 4, 8, 16). Each core can execute ONE thread at a time.
+
+  Your Machine (e.g., 8-core CPU, 16GB RAM)
+  ├── Core 1:  Node.js main thread (event loop, your JS code)‼️
+  ├── Core 2:  Thread pool thread 1 (fs.readFile)
+  ├── Core 3:  Thread pool thread 2 (crypto.pbkdf2)
+  ├── Core 4:  Thread pool thread 3 (idle, waiting for work)
+  ├── Core 5:  Thread pool thread 4 (dns.lookup)
+  ├── Core 6:  Worker thread (your image processing JS)
+  ├── Core 7:  Child process (ffmpeg converting video)
+  ├── Core 8:  Child process (another Node.js script)
+
+  CPU USAGE:
+    Thread pool    — each thread runs on a core. 4 threads = uses up to 4 cores.
+                     If you only have 4 cores and the thread pool uses all 4,
+                     your main thread has to SHARE a core (time-slicing).‼️
+    Worker threads — each worker gets a core. They share the same RAM (same process).
+                     Creating 10 workers on a 4-core machine means the OS time-slices
+                     them → diminishing returns past your core count.‼️
+    Child processes — each process gets a core. 8 child processes on a 4-core machine
+                     = cores are oversubscribed + each process eats RAM independently.
+
+  RAM USAGE:
+    Thread pool     — negligible extra RAM (uses main process memory)
+    Worker threads  — share process memory + ~10-30MB per worker for its own V8 context
+    Child processes — EACH gets its own V8 heap (~50-100MB minimum)‼️
+                      10 processes = 500MB-1GB just for V8 overhead
+
+  RULE OF THUMB:
+    Number of workers/processes should ≈ number of CPU cores.‼️
+    More than that = diminishing returns (OS spends time switching between them).
+    This is why cluster mode forks os.cpus().length workers — one per core.
+```
+
 ### Worker threads
 
 ```js
@@ -275,10 +368,10 @@ child.send({ task: 'compute', data: payload }); // IPC message
 child.on('message', result => console.log(result));
 
 // Use cases:
-// exec/execFile: run external tools (git, ffmpeg, pdflatex)
-// spawn: stream output from external process
-// fork: run another Node.js script with communication
-// Worker threads: CPU work in same process, shared memory possible
+// exec/execFile: run external tools (git, ffmpeg, pdflatex)‼️
+// spawn: stream output from external process‼️
+// fork: run another Node.js script with communication‼️
+// Worker threads: CPU work in same process, shared memory possible‼️
 ```
 
 ---
@@ -456,7 +549,7 @@ app.get('/api/users', (req, res) => {
 app.listen(3000, () => console.log('Server running on port 3000'));
 ```
 
-### Middleware — the core concept‼️
+### Middleware — the core concept
 
 ```ts
 // Middleware = function with (req, res, next) signature
@@ -737,7 +830,7 @@ export class UsersService {
 // It also means NestJS controls the lifecycle (singleton, scoped, etc.)
 ```
 
-### DTOs and validation with class-validator‼️
+### DTOs and validation with class-validator
 
 ```ts
 // DTO = Data Transfer Object — defines the shape of request data
@@ -761,7 +854,7 @@ export class CreateUserDto {
 // In main.ts — enable global validation pipe:
 app.useGlobalPipes(
     new ValidationPipe({
-        whitelist: true, // strip properties not in DTO‼️
+        whitelist: true, // strip properties not in DTO
         forbidNonWhitelisted: true, // throw error if unknown properties sent
         transform: true, // auto-transform types (string "1" → number 1)
     }),
@@ -772,10 +865,10 @@ app.useGlobalPipes(
 // Your controller code never runs — validation happens before it
 ```
 
-### Guards, Interceptors, and Pipes‼️
+### Guards, Interceptors, and Pipes
 
 ```text
-NestJS request lifecycle (in order):‼️
+NestJS request lifecycle (in order):
 
   Middleware → Guards → Interceptors (before) → Pipes → Handler → Interceptors (after) → Response
 
@@ -833,7 +926,58 @@ You can use NestJS with Express (default) or NestJS with Fastify (faster).
 
 ## 7. Middleware & Plugin Architecture
 
-### Scoped plugins
+### Express — route grouping with Router
+
+```ts
+import { Router } from 'express';
+
+// Group related routes into a Router (Express's version of "scoped plugins")
+const userRouter = Router();
+
+// Middleware only applies to routes in THIS router‼️
+userRouter.use(requireAuth);
+
+userRouter.get('/', listUsers);
+userRouter.get('/:id', getUser);
+userRouter.post('/', createUser);
+userRouter.patch('/:id', updateUser);
+userRouter.delete('/:id', deleteUser);
+
+// Route grouping with different auth requirements
+const app = express();
+app.use('/api/users', userRouter); // auth required
+app.use('/api/public', publicRouter); // no auth
+app.use('/api/admin', adminRouter); // admin auth
+```
+
+### Express — rate limiting
+
+```ts
+import rateLimit from 'express-rate-limit';
+import RedisStore from 'rate-limit-redis';
+import Redis from 'ioredis';
+
+// Global rate limiter
+const limiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 100, // 100 requests per window
+    standardHeaders: true, // Return rate limit info in headers
+    store: new RedisStore({ sendCommand: (...args) => redis.call(...args) }),
+    keyGenerator: req => req.user?.id ?? req.ip,
+    handler: (req, res) =>
+        res.status(429).json({
+            error: 'Too Many Requests',
+        }),
+});
+
+app.use('/api/', limiter);
+
+// Stricter for login
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
+app.post('/auth/login', loginLimiter, loginHandler);
+```
+
+### Fastify — scoped plugins
 
 ```ts
 // Group related routes with shared prefix, hooks, and config
@@ -855,7 +999,7 @@ app.register(publicRoutes, { prefix: '/api/public' }); // no auth hook
 app.register(adminRoutes, { prefix: '/api/admin' }); // admin auth hook
 ```
 
-### Rate limiting plugin
+### Fastify — rate limiting plugin
 
 ```ts
 import rateLimit from '@fastify/rate-limit';
@@ -880,11 +1024,85 @@ fastify.post('/auth/login', {
 });
 ```
 
+### Express vs Fastify — middleware/plugin comparison‼️
+
+```text
+Express:  Middleware runs in ORDER of app.use() registration.
+          Router scopes middleware to a route prefix.
+          Middleware leaks UP — if you add auth middleware above a public route, it applies.‼️
+
+Fastify:  Plugins are ENCAPSULATED by default — hooks/decorators don't leak.‼️
+          Use fastify-plugin (fp) to intentionally share across the whole app.
+          Cleaner isolation — each plugin is its own scope.
+```
+
 ---
 
 ## 8. Validation & Serialization
 
-### Fastify's validation pipeline
+### Express — validation (manual, you pick your own library)‼️
+
+```text
+Express has NO built-in validation.‼️
+You must add it yourself using a library like Zod, Joi, or express-validator.
+
+Request flow:
+  Request body → express.json() parses it → YOUR validation middleware → Handler
+  No automatic response serialization — just JSON.stringify
+```
+
+```ts
+// Express + Zod validation middleware pattern‼️
+import { z, ZodSchema } from 'zod';
+
+// Reusable validation middleware factory
+const validate = (schema: ZodSchema) => (req, res, next) => {
+    const result = schema.safeParse(req.body);
+    if (!result.success) {
+        return res.status(400).json({
+            error: 'Validation failed',
+            details: result.error.flatten(),
+        });
+    }
+    req.body = result.data; // replace with validated + typed data
+    next();
+};
+
+// Define schema
+const createUserSchema = z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    role: z.enum(['admin', 'user']).optional(),
+});
+
+// Use in route
+app.post('/users', validate(createUserSchema), async (req, res) => {
+    // req.body is validated and typed here
+    const user = await createUser(req.body);
+    res.status(201).json(user);
+});
+
+// Express + Joi (alternative)
+import Joi from 'joi';
+
+const schema = Joi.object({
+    name: Joi.string().min(1).required(),
+    email: Joi.string().email().required(),
+});
+
+app.post(
+    '/users',
+    (req, res, next) => {
+        const { error, value } = schema.validate(req.body);
+        if (error) return res.status(400).json({ error: error.details[0].message });
+        req.body = value;
+        next();
+    },
+    createUserHandler,
+);
+```
+
+### Fastify — validation pipeline (built-in)‼️
 
 ```text
 Request body → JSON.parse → Schema validation (ajv) → Handler
@@ -893,10 +1111,8 @@ Response object → Schema serialization (fast-json-stringify) → JSON string �
 Benefits:
   - Invalid requests rejected before reaching handler (400 automatic)
   - Response serialization: 2-3x faster than JSON.stringify (schema-aware)
-  - Response schema strips extra fields (security — no accidental data leaks)
+  - Response schema strips extra fields (security — no accidental data leaks)‼️
 ```
-
-### Custom validators
 
 ```ts
 import Ajv from 'ajv';
@@ -914,7 +1130,7 @@ ajv.addFormat('phone', {
 // Register with Fastify
 fastify.setValidatorCompiler(({ schema }) => ajv.compile(schema));
 
-// Zod as alternative validator
+// Zod as alternative validator in Fastify
 import { z } from 'zod';
 
 fastify.post('/users', async (request, reply) => {
@@ -940,7 +1156,117 @@ fastify.post('/users', async (request, reply) => {
 
 ## 9. Authentication & Authorization
 
-### JWT implementation
+### Express — JWT implementation
+
+```ts
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import cookieParser from 'cookie-parser';
+
+app.use(cookieParser()); // needed to read cookies in Express
+
+// Login endpoint
+app.post(
+    '/auth/login',
+    asyncHandler(async (req, res) => {
+        const { email, password } = req.body;
+        const user = await findUserByEmail(email);
+
+        if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const accessToken = jwt.sign(
+            { sub: user.id, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '15m' }, // short-lived access token
+        );
+        const refreshToken = crypto.randomBytes(64).toString('hex');
+
+        // Store refresh token hash in DB
+        await storeRefreshToken(user.id, await bcrypt.hash(refreshToken, 10));
+
+        // Set refresh token in httpOnly cookie (not localStorage)‼️
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true, // no JS access
+            secure: true, // HTTPS only
+            sameSite: 'strict', // CSRF protection
+            path: '/auth', // only sent to /auth routes
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (Express uses ms, not seconds)‼️
+        });
+
+        res.json({ accessToken });
+    }),
+);
+
+// Auth middleware‼️
+const authenticate = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    try {
+        req.user = jwt.verify(token, process.env.JWT_SECRET);
+        next();
+    } catch {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+};
+
+// Token refresh
+app.post(
+    '/auth/refresh',
+    asyncHandler(async (req, res) => {
+        const { refreshToken } = req.cookies;
+        if (!refreshToken) return res.status(401).json({ error: 'No refresh token' });
+
+        const tokenRecord = await findRefreshToken(refreshToken);
+        if (!tokenRecord || tokenRecord.revokedAt) {
+            return res.status(401).json({ error: 'Invalid refresh token' });
+        }
+
+        // Rotate: invalidate old, issue new
+        await revokeRefreshToken(refreshToken);
+        const newRefreshToken = crypto.randomBytes(64).toString('hex');
+        await storeRefreshToken(tokenRecord.userId, newRefreshToken);
+
+        const accessToken = jwt.sign({ sub: tokenRecord.userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+
+        res.cookie('refreshToken', newRefreshToken, { httpOnly: true, secure: true });
+        res.json({ accessToken });
+    }),
+);
+```
+
+### Express — RBAC (Role-Based Access Control)
+
+```ts
+// Middleware factory for role checking‼️
+function requireRole(...roles) {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: `Requires one of: ${roles.join(', ')}`,
+            });
+        }
+        next(); // Express requires next() — Fastify doesn't‼️
+    };
+}
+
+// Route-level: chain middleware in order
+app.delete('/users/:id', authenticate, requireRole('admin'), deleteUser);
+
+// Resource ownership
+function requireOwnerOrAdmin(req, res, next) {
+    const { id } = req.params;
+    if (req.user.role === 'admin') return next();
+    if (req.user.sub !== id) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+}
+```
+
+### Fastify — JWT implementation
 
 ```ts
 import jwt from '@fastify/jwt';
@@ -964,39 +1290,16 @@ fastify.post<{ Body: { email: string; password: string } }>('/auth/login', async
     const accessToken = app.jwt.sign({ sub: user.id, role: user.role });
     const refreshToken = crypto.randomBytes(64).toString('hex');
 
-    // Store refresh token hash in DB
     await storeRefreshToken(user.id, await bcrypt.hash(refreshToken, 10));
 
-    // Set refresh token in httpOnly cookie (not localStorage)
     reply.setCookie('refreshToken', refreshToken, {
-        httpOnly: true, // no JS access
-        secure: true, // HTTPS only
-        sameSite: 'strict', // CSRF protection
-        path: '/auth', // only sent to /auth routes
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        path: '/auth',
+        maxAge: 60 * 60 * 24 * 7, // 7 days (Fastify uses seconds)
     });
 
-    return { accessToken };
-});
-
-// Token refresh
-fastify.post('/auth/refresh', async (request, reply) => {
-    const refreshToken = request.cookies.refreshToken;
-    if (!refreshToken) return reply.code(401).send({ error: 'No refresh token' });
-
-    const tokenRecord = await findRefreshToken(refreshToken);
-    if (!tokenRecord || tokenRecord.revokedAt) {
-        return reply.code(401).send({ error: 'Invalid refresh token' });
-    }
-
-    // Rotate: invalidate old, issue new
-    await revokeRefreshToken(refreshToken);
-    const newRefreshToken = crypto.randomBytes(64).toString('hex');
-    await storeRefreshToken(tokenRecord.userId, newRefreshToken);
-
-    const accessToken = app.jwt.sign({ sub: tokenRecord.userId });
-
-    reply.setCookie('refreshToken', newRefreshToken, { httpOnly: true, secure: true });
     return { accessToken };
 });
 
@@ -1012,10 +1315,9 @@ const authenticate: FastifyPluginAsync = fp(async fastify => {
 });
 ```
 
-### RBAC (Role-Based Access Control)
+### Fastify — RBAC
 
 ```ts
-// Middleware factory for role checking
 function requireRole(...roles: string[]): preHandlerHookHandler {
     return async (request, reply) => {
         if (!roles.includes(request.user.role)) {
@@ -1024,19 +1326,20 @@ function requireRole(...roles: string[]): preHandlerHookHandler {
                 message: `Requires one of: ${roles.join(', ')}`,
             });
         }
+        // No next() needed — Fastify hooks auto-continue if no reply sent‼️
     };
 }
 
-// Route-level: applied to specific routes
+// Route-level
 fastify.delete('/users/:id', {
     preHandler: [authenticate, requireRole('admin')],
     handler: deleteUser,
 });
 
-// Resource ownership: users can only modify their own data
+// Resource ownership
 async function requireOwnerOrAdmin(request: FastifyRequest<{ Params: { id: string } }>, reply) {
     const { id } = request.params;
-    if (request.user.role === 'admin') return; // admins bypass
+    if (request.user.role === 'admin') return;
     if (request.user.sub !== id) {
         return reply.code(403).send({ error: 'Forbidden' });
     }
@@ -1047,7 +1350,84 @@ async function requireOwnerOrAdmin(request: FastifyRequest<{ Params: { id: strin
 
 ## 10. Error Handling
 
-### Global error handler
+### Express — global error handler‼️
+
+```ts
+// Express error handler = middleware with 4 params (err, req, res, next)
+// MUST be registered LAST — after all routes‼️
+
+// Custom error class (works with both Express and Fastify)
+class AppError extends Error {
+    constructor(
+        public statusCode: number,
+        message: string,
+        public code?: string,
+    ) {
+        super(message);
+    }
+}
+class NotFoundError extends AppError {
+    constructor(resource = 'Resource') {
+        super(404, `${resource} not found`, 'NOT_FOUND');
+    }
+}
+class ForbiddenError extends AppError {
+    constructor() {
+        super(403, 'Access denied', 'FORBIDDEN');
+    }
+}
+class ConflictError extends AppError {
+    constructor(msg: string) {
+        super(409, msg, 'CONFLICT');
+    }
+}
+
+// Throw from handlers — caught by error middleware
+app.get(
+    '/users/:id',
+    asyncHandler(async (req, res) => {
+        const user = await db.findUser(req.params.id);
+        if (!user) throw new NotFoundError('User');
+        if (user.id !== req.user.sub) throw new ForbiddenError();
+        res.json(user);
+    }),
+);
+
+// Global error handler — registered LAST
+app.use((err, req, res, next) => {
+    // Validation errors
+    if (err.name === 'ZodError') {
+        return res.status(400).json({
+            error: 'Validation Error',
+            details: err.flatten(),
+        });
+    }
+
+    // Known HTTP errors (your custom AppError)
+    if (err.statusCode) {
+        return res.status(err.statusCode).json({ error: err.message });
+    }
+
+    // Database errors
+    if (err.code === '23505') {
+        return res.status(409).json({ error: 'Resource already exists' });
+    }
+
+    // Unexpected errors — don't leak internals‼️
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+});
+
+// 404 handler — registered AFTER all routes but BEFORE error handler
+app.use((req, res) => {
+    res.status(404).json({
+        error: 'Not Found',
+        message: `Route ${req.method} ${req.path} not found`,
+    });
+});
+```
+
+### Fastify — global error handler
 
 ```ts
 fastify.setErrorHandler((error, request, reply) => {
@@ -1070,7 +1450,6 @@ fastify.setErrorHandler((error, request, reply) => {
 
     // Database errors
     if (error.code === '23505') {
-        // Postgres unique constraint violation
         return reply.code(409).send({
             error: 'Resource already exists',
         });
@@ -1090,40 +1469,92 @@ fastify.setNotFoundHandler((request, reply) => {
 });
 ```
 
-### Custom error classes
+### Fastify — custom error classes
 
 ```ts
 import createError from '@fastify/error';
 
-// Create typed HTTP errors
 const NotFound = createError('NOT_FOUND', 'Resource not found', 404);
 const Forbidden = createError('FORBIDDEN', 'Access denied', 403);
-const Conflict = createError('CONFLICT', '%s', 409); // %s = format string
+const Conflict = createError('CONFLICT', '%s', 409);
 
-// Throw from handlers — caught by setErrorHandler
 async function getUser(request) {
     const user = await db.findUser(request.params.id);
     if (!user) throw new NotFound();
     if (user.id !== request.user.sub) throw new Forbidden();
     return user;
 }
+```
 
-// With message formatting
-throw new Conflict('Email %s already registered', email);
+### Key difference‼️
+
+```text
+Express:  Error handler is a middleware with 4 params — registered LAST with app.use()
+          Must call next(err) to forward errors. Async errors NOT caught automatically.
+
+Fastify:  Error handler is set with setErrorHandler() — one central function.
+          Async errors caught automatically. No next() needed.
 ```
 
 ---
 
 ## 11. Logging & Observability
 
-### Pino (Fastify's built-in logger)
+### Express — logging with Morgan + Winston/Pino
+
+```ts
+// Express has NO built-in logger — you add your own‼️
+
+// Morgan — HTTP request logging middleware (most common for Express)
+import morgan from 'morgan';
+app.use(morgan('combined')); // Apache-style log: IP, method, URL, status, time
+// Output: ::1 - - [04/Jun/2026:10:30:00] "GET /api/users 200 15ms"
+
+// For structured JSON logging, use Pino with Express:
+import pino from 'pino';
+import pinoHttp from 'pino-http';
+
+const logger = pino({
+    level: process.env.LOG_LEVEL ?? 'info',
+    transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty', options: { colorize: true } } : undefined,
+});
+
+app.use(pinoHttp({ logger })); // adds req.log to every request
+
+// Use in routes
+app.get(
+    '/users',
+    asyncHandler(async (req, res) => {
+        req.log.info({ userId: req.user.id }, 'Fetching user list');
+        const users = await db.select().from(usersTable);
+        req.log.info({ count: users.length }, 'Users fetched');
+        res.json(users);
+    }),
+);
+```
+
+### Express — correlation IDs
+
+```ts
+import { v4 as uuid } from 'uuid';
+
+// Middleware — runs on every request
+app.use((req, res, next) => {
+    req.correlationId = (req.headers['x-correlation-id'] as string) ?? uuid();
+    res.setHeader('x-correlation-id', req.correlationId);
+    // Attach to logger for all subsequent logs in this request
+    req.log = req.log?.child({ correlationId: req.correlationId });
+    next();
+});
+```
+
+### Fastify — logging with Pino (built-in)
 
 ```ts
 // Fastify uses Pino — structured JSON logging, very fast
 const app = Fastify({
     logger: {
         level: process.env.LOG_LEVEL ?? 'info',
-        // Pretty print in dev only:
         transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty', options: { colorize: true } } : undefined,
         serializers: {
             req(request) {
@@ -1148,51 +1579,54 @@ fastify.get('/users', async request => {
 });
 ```
 
-### Correlation IDs for distributed tracing
+### Fastify — correlation IDs
 
 ```ts
 import { v4 as uuid } from 'uuid';
 
 const correlationPlugin: FastifyPluginAsync = fp(async fastify => {
     fastify.addHook('onRequest', async request => {
-        // Propagate from upstream or generate new
         request.correlationId = (request.headers['x-correlation-id'] as string) ?? uuid();
         request.log = request.log.child({ correlationId: request.correlationId });
     });
 
     fastify.addHook('onSend', async (request, reply) => {
-        // Return to client so they can correlate with support
         reply.header('x-correlation-id', request.correlationId);
     });
 });
-
-// When calling downstream services, forward the ID
-await fetch(`${SERVICE_B_URL}/api/resource`, {
-    headers: { 'x-correlation-id': request.correlationId },
-});
 ```
 
-### Health and readiness endpoints
+### Health and readiness endpoints (works with both)
 
 ```ts
-// Health: is the process alive?
+// Express version:
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+
+app.get('/ready', async (req, res) => {
+    const checks = await Promise.allSettled([db.execute(sql`SELECT 1`), redis.ping()]);
+    const dbOk = checks[0].status === 'fulfilled';
+    const redisOk = checks[1].status === 'fulfilled';
+    const ready = dbOk && redisOk;
+    res.status(ready ? 200 : 503).json({
+        status: ready ? 'ready' : 'not ready',
+        checks: { db: dbOk ? 'ok' : 'fail', redis: redisOk ? 'ok' : 'fail' },
+    });
+});
+
+// Fastify version:
 fastify.get('/health', { logLevel: 'silent' }, async () => ({
     status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
 }));
 
-// Readiness: are dependencies ready?
 fastify.get('/ready', { logLevel: 'silent' }, async (request, reply) => {
-    const checks = await Promise.allSettled([
-        db.execute(sql`SELECT 1`), // DB check
-        redis.ping(), // Redis check
-    ]);
-
+    const checks = await Promise.allSettled([db.execute(sql`SELECT 1`), redis.ping()]);
     const dbOk = checks[0].status === 'fulfilled';
     const redisOk = checks[1].status === 'fulfilled';
     const ready = dbOk && redisOk;
-
     return reply.code(ready ? 200 : 503).send({
         status: ready ? 'ready' : 'not ready',
         checks: { db: dbOk ? 'ok' : 'fail', redis: redisOk ? 'ok' : 'fail' },
@@ -1435,7 +1869,7 @@ fastify.post('/payments', async (request, reply) => {
 
 ## 14. Performance & Scaling
 
-### Fastify performance defaults
+### Express vs Fastify performance‼️
 
 ```text
 Fastify vs Express benchmarks:
@@ -1447,9 +1881,14 @@ Why Fastify is faster:
   - Compiled route matching (find-my-way radix router)
   - No middleware overhead (hooks are async functions, not connect-style middleware)
   - Pre-compiled validators (ajv)
+
+Does Express performance matter?
+  For most apps: NO. Your bottleneck is the database, not the framework.‼️
+  A database query takes 5-50ms. Express overhead is ~0.07ms per request.
+  Framework speed matters for: high-throughput APIs, low-latency real-time services.
 ```
 
-### Cluster mode
+### Cluster mode (framework-agnostic)
 
 ```ts
 import cluster from 'cluster';
@@ -1459,20 +1898,22 @@ if (cluster.isPrimary) {
     const numCPUs = os.cpus().length;
     console.log(`Primary ${process.pid} is running`);
 
-    // Fork workers
     for (let i = 0; i < numCPUs; i++) {
         cluster.fork();
     }
 
     cluster.on('exit', (worker, code) => {
         console.log(`Worker ${worker.process.pid} died — forking replacement`);
-        cluster.fork(); // replace dead worker
+        cluster.fork();
     });
 } else {
-    // Each worker runs the Fastify server
-    const app = await buildApp();
-    await app.listen({ port: 3000, host: '0.0.0.0' });
-    console.log(`Worker ${process.pid} started`);
+    // Express:
+    const app = createExpressApp();
+    app.listen(3000, () => console.log(`Worker ${process.pid} started`));
+
+    // Fastify:
+    // const app = await buildApp();
+    // await app.listen({ port: 3000, host: '0.0.0.0' });
 }
 
 // In production: prefer Kubernetes pods over cluster
@@ -1482,15 +1923,46 @@ if (cluster.isPrimary) {
 ### Caching responses
 
 ```ts
+// Express — manual caching with Redis
+app.get(
+    '/stats',
+    asyncHandler(async (req, res) => {
+        const cacheKey = 'global:stats';
+        const cached = await redis.get(cacheKey);
+
+        if (cached) {
+            res.setHeader('X-Cache', 'HIT');
+            return res.json(JSON.parse(cached));
+        }
+
+        const stats = await computeExpensiveStats();
+        await redis.setex(cacheKey, 300, JSON.stringify(stats)); // 5 minutes
+
+        res.setHeader('X-Cache', 'MISS');
+        res.json(stats);
+    }),
+);
+
+// Express — apicache middleware (simple route-level caching)
+import apicache from 'apicache';
+app.get(
+    '/tasks',
+    apicache.middleware('1 minute'),
+    asyncHandler(async (req, res) => {
+        const tasks = await db.select().from(tasksTable);
+        res.json(tasks);
+    }),
+);
+
+// Fastify — plugin-based caching
 import caching from '@fastify/caching';
 
-// Cache GET responses in Redis
 fastify.get('/tasks', {
-    config: { cache: { ttl: 60 } }, // cache for 60 seconds
+    config: { cache: { ttl: 60 } },
     handler: async () => db.select().from(tasks),
 });
 
-// Manual caching pattern
+// Fastify — manual caching
 fastify.get('/stats', async (request, reply) => {
     const cacheKey = 'global:stats';
     const cached = await redis.get(cacheKey);
@@ -1501,26 +1973,85 @@ fastify.get('/stats', async (request, reply) => {
     }
 
     const stats = await computeExpensiveStats();
-    await redis.setex(cacheKey, 300, JSON.stringify(stats)); // 5 minutes
+    await redis.setex(cacheKey, 300, JSON.stringify(stats));
 
     reply.header('X-Cache', 'MISS');
     return stats;
 });
 
-// HTTP cache headers for CDN/browser caching
-reply.header('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
-reply.header('ETag', `"${hash(data)}"`); // conditional requests
-reply.header('Last-Modified', new Date().toUTCString());
+// HTTP cache headers (same for both frameworks)
+res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
+res.setHeader('ETag', `"${hash(data)}"`);
 ```
 
 ---
 
 ## 15. Testing Node.js APIs
 
-### Integration testing with Fastify
+### Express — integration testing with Supertest‼️
 
 ```ts
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+// Express uses "supertest" — sends HTTP requests to your app without starting a server‼️
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import request from 'supertest';
+import { createApp } from '../src/app';
+import { db } from '../src/db';
+
+describe('Task API', () => {
+    let app: Express;
+    let authToken: string;
+
+    beforeAll(async () => {
+        app = createApp(); // create Express app (don't call .listen())‼️
+
+        // Seed test user and get token
+        const res = await request(app).post('/auth/login').send({ email: 'test@example.com', password: 'password' });
+        authToken = res.body.accessToken;
+    });
+
+    afterAll(async () => {
+        await db.execute(sql`TRUNCATE tasks CASCADE`);
+    });
+
+    it('GET /tasks returns empty array initially', async () => {
+        const res = await request(app)
+            .get('/tasks')
+            .set('Authorization', `Bearer ${authToken}`) // set headers with .set()‼️
+            .expect(200); // supertest can assert status inline
+
+        expect(res.body).toMatchObject({ data: [], meta: { total: 0 } });
+    });
+
+    it('POST /tasks creates a task', async () => {
+        const res = await request(app)
+            .post('/tasks')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({ title: 'Test task', priority: 'high' }) // send body with .send()‼️
+            .expect(201);
+
+        expect(res.body).toMatchObject({
+            title: 'Test task',
+            priority: 'high',
+            done: false,
+        });
+        expect(res.body.id).toBeDefined();
+    });
+
+    it('returns 400 for invalid body', async () => {
+        await request(app).post('/tasks').set('Authorization', `Bearer ${authToken}`).send({ title: '' }).expect(400);
+    });
+
+    it('returns 401 without token', async () => {
+        await request(app).get('/tasks').expect(401);
+    });
+});
+```
+
+### Fastify — integration testing with inject()‼️
+
+```ts
+// Fastify has BUILT-IN testing — app.inject() sends fake HTTP requests, no server needed‼️
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../src/app';
 import { db } from '../src/db';
 
@@ -1529,21 +2060,20 @@ describe('Task API', () => {
     let authToken: string;
 
     beforeAll(async () => {
-        app = await buildApp({ logger: false }); // quiet logs in tests
+        app = await buildApp({ logger: false });
         await app.ready();
 
-        // Seed test user and get token
         const res = await app.inject({
             method: 'POST',
             url: '/auth/login',
-            body: { email: 'test@example.com', password: 'password' },
+            payload: { email: 'test@example.com', password: 'password' },
         });
         authToken = res.json().accessToken;
     });
 
     afterAll(async () => {
         await app.close();
-        await db.execute(sql`TRUNCATE tasks CASCADE`); // clean up
+        await db.execute(sql`TRUNCATE tasks CASCADE`);
     });
 
     it('GET /tasks returns empty array initially', async () => {
@@ -1562,7 +2092,7 @@ describe('Task API', () => {
             method: 'POST',
             url: '/tasks',
             headers: { authorization: `Bearer ${authToken}` },
-            body: { title: 'Test task', priority: 'high' },
+            payload: { title: 'Test task', priority: 'high' },
         });
 
         expect(res.statusCode).toBe(201);
@@ -1574,22 +2104,23 @@ describe('Task API', () => {
         expect(res.json().id).toBeDefined();
     });
 
-    it('returns 400 for invalid body', async () => {
-        const res = await app.inject({
-            method: 'POST',
-            url: '/tasks',
-            headers: { authorization: `Bearer ${authToken}` },
-            body: { title: '' }, // title too short
-        });
-
-        expect(res.statusCode).toBe(400);
-    });
-
     it('returns 401 without token', async () => {
         const res = await app.inject({ method: 'GET', url: '/tasks' });
         expect(res.statusCode).toBe(401);
     });
 });
+```
+
+### Key difference‼️
+
+```text
+Express:  Uses "supertest" library — request(app).get('/path').expect(200)
+          Chainable API: .set() for headers, .send() for body, .expect() for status
+          Does NOT need the server to be listening — supertest handles it‼️
+
+Fastify:  Uses built-in app.inject() — no external library needed‼️
+          Pass an object: { method, url, headers, payload }
+          Returns response object with .statusCode, .json(), .headers
 ```
 
 ---
@@ -1654,29 +2185,48 @@ export default env;
 ### Security headers
 
 ```ts
+// Express — helmet and cors are npm packages (same library, different import)
+import helmet from 'helmet';
+import cors from 'cors';
+
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                imgSrc: ["'self'", 'data:', 'https:'],
+            },
+        },
+        hsts: { maxAge: 31536000, includeSubDomains: true },
+    }),
+);
+
+app.use(
+    cors({
+        origin: env.CORS_ORIGIN,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id'],
+        credentials: true,
+    }),
+);
+
+// Fastify — uses @fastify/ scoped packages (same config, different registration)
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 
-// Security headers
 await app.register(helmet, {
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", 'data:', 'https:'],
-        },
-    },
-    hsts: { maxAge: 31536000, includeSubDomains: true },
+    /* same options as above */
+});
+await app.register(cors, {
+    /* same options as above */
 });
 
-// CORS
-await app.register(cors, {
-    origin: env.CORS_ORIGIN,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id'],
-    credentials: true, // allow cookies
-});
+// KEY DIFFERENCE:‼️
+// Express:  app.use(helmet())          — middleware style
+// Fastify:  app.register(helmet)       — plugin style
+// The options and behavior are nearly identical — just different wiring.
 ```
 
 ---

@@ -11,7 +11,7 @@
 
 ### Q1. What is a git fast-forward merge?
 
-<!-- ‼️ A fast-forward merge happens when the branch you're merging into has no new commits since the feature branch was created. ‼️ Git doesn't create a merge commit — it just moves the pointer forward to the latest commit on the feature branch. It's like the main branch "catches up" by sliding its pointer forward along the same commit history.
+<!-- ‼️ A fast-forward merge happens when the branch you're merging into has no new commits since the feature branch was created. ‼️ Git doesn't create a merge commit — ‼️ it just moves the pointer forward to the latest commit on the feature branch. It's like the main branch "catches up" by sliding its pointer forward along the same commit history.
 
 Example:
 ```
@@ -37,7 +37,7 @@ When it CAN'T happen: If main has new commits that feature doesn't have, Git can
 <!-- Both integrate changes from one branch into another, but they do it differently:
 
 **git merge:**
-- Creates a new "merge commit" that ties two branches together
+- Creates a new "merge commit" that ties two branches together‼️
 - Preserves the full history — you can see exactly when branches diverged and came back together
 - The commit graph looks like a railroad track with merging lines
 ```
@@ -47,7 +47,7 @@ feature:         C --- D
 ```
 
 **git rebase:**
-- Takes your commits and replays them on top of the target branch, one by one
+- Takes your commits and replays them on top of the target branch, one by one‼️
 - Rewrites commit history to make it look like you branched off from the latest commit‼️
 - Creates a clean, linear history — no merge commits
 ```
@@ -175,8 +175,8 @@ async function getUser(id) {
 
 **Benefits:**
 1. **Readability** — code reads top-to-bottom like synchronous code, no .then() chains
-2. **Error handling** — use standard try/catch instead of .catch() chains; one try/catch can wrap multiple async operations
-3. **Debugging** — stack traces are meaningful; you can step through async code in a debugger line by line
+2. **Error handling** — use standard try/catch instead of .catch() chains; one try/catch can wrap multiple async operations‼️
+3. **Debugging** — stack traces are meaningful; you can step through async code in a debugger line by line‼️
 4. **Conditionals** — easy to branch based on async results (with .then() chains, conditional logic gets messy fast)
 5. **Loops** — you can use for loops, while loops, for...of with await; Promise chains can't do this cleanly‼️
 
@@ -310,7 +310,7 @@ fs.readFile('data.txt', 'utf8', (err, data) => {
 });
 ```
 
-**Error-first callback pattern (Node.js convention):**
+**Error-first callback pattern (Node.js convention):**‼️
 The first argument of the callback is always the error (null if no error), and the second argument is the result. This is how Node.js built-in modules work (fs, http, etc.).‼️
 
 ```js
@@ -390,7 +390,7 @@ app.use((err, req, res, next) => {
 - `app.use()` applies to all routes; ‼️`app.use('/api', ...)` applies only to routes starting with /api
 - Route-specific middleware: ‼️`app.get('/admin', authMiddleware, handler)`
 - Error middleware has 4 params `(err, req, res, next)` and is called when `next(err)` is used‼️
-- Common middleware: cors, ‼️helmet (security headers), morgan (logging), express-rate-limit, cookie-parser -->
+- Common middleware: cors, ‼️helmet (security headers), ‼️morgan (logging), express-rate-limit, cookie-parser -->
 
 ---
 
@@ -401,7 +401,7 @@ app.use((err, req, res, next) => {
 ```ts
 * WITHOUT DI — tightly coupled:
 class UserService {
-  private db = new PostgresDatabase();  // creates its own dependency‼️
+  private db = new PostgresDatabase();  // creates its own dependency
 
   async getUser(id: string) {
     return this.db.query('SELECT * FROM users WHERE id = $1', [id]);
@@ -456,9 +456,9 @@ UserService doesn't know or care which one it gets.
 4. **Reusability** — the same class works with different implementations of its dependencies.
 5. **Configurability** — easy to change behavior by injecting different implementations (e.g., different loggers for dev vs prod).
 
-**In Node.js/TypeScript, DI is often done through:**‼️
-- Constructor injection (most common, shown above)
-- Parameter injection (passing dependencies as function arguments)
+**In Node.js/TypeScript, DI is often done through:**
+- Constructor injection (most common, shown above)‼️
+- Parameter injection (passing dependencies as function arguments)‼️
 - DI containers/frameworks (‼️NestJS uses decorators and a built-in DI container, similar to Angular and Spring) -->
 
 ---
@@ -477,7 +477,7 @@ UserService doesn't know or care which one it gets.
 - 204 No Content — success but no body to return (DELETE)‼️
 
 **3xx — Redirection:**
-- 301 Moved Permanently — resource permanently moved (SEO: search engines update their index)
+- 301 Moved Permanently — resource permanently moved (SEO: search engines update their index)‼️
 - 302 Found — temporary redirect‼️
 - 304 Not Modified — cached version is still valid, no need to re-download‼️
 
