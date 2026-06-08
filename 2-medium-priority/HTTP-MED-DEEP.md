@@ -1,4 +1,5 @@
 # HTTP & Web Protocols — Senior Developer Deep Reference
+
 **Priority: MEDIUM**
 
 > Covers: HTTP/1.1, HTTP/2, HTTP/3, caching headers, cookies, CORS deep dive, and common interview questions.
@@ -25,6 +26,17 @@
 
 ```
 GET /api/users?page=2 HTTP/1.1
+^^^ ^^^^^^^^^^^^^^^^^ ^^^^^^^^
+ |        |               |
+Method   Path + Query   Protocol version‼️
+
+The first line is the "request line" — always has 3 parts:
+   1. HTTP method (GET, POST, PUT, DELETE, etc.)
+   2. Request target (path + query string)‼️
+   3. HTTP version (HTTP/1.1, HTTP/2, etc.)‼️
+   You never write this yourself — fetch/axios/browsers add it automatically.‼️
+   But it's always there on the wire. Visible in DevTools under "Request Headers" raw view.‼️
+
 Host: api.example.com
 Authorization: Bearer eyJhbGci...
 Content-Type: application/json
@@ -49,8 +61,8 @@ Content-Length: 42
 HTTP/1.1 201 Created
 Content-Type: application/json
 Location: /api/users/123
-Cache-Control: no-store
-X-Request-Id: abc-123
+Cache-Control: no-store‼️
+X-Request-Id: abc-123‼️
 
 {"id": "123", "name": "Alice"}
 ```
@@ -65,31 +77,38 @@ X-Request-Id: abc-123
   200 OK           — standard success
   201 Created      — resource created (POST)
   204 No Content   — success, no body (DELETE)
-  206 Partial Content — range request fulfilled (video streaming, resumable uploads)
+  206 Partial Content — range request fulfilled (video streaming, resumable uploads)‼️
 
 3xx — Redirection
-  301 Moved Permanently  — permanent redirect (cached by browser forever)
-  302 Found              — temporary redirect (not cached)
+  301 Moved Permanently  — permanent redirect (cached by browser forever)‼️
+    "Cached forever" means: once the browser sees a 301, it SAVES that redirect
+    and NEVER asks the original URL again — it goes straight to the new URL.‼️
+    First visit:  GET /old → 301 Location: /new → browser saves "/old → /new"
+    Every future visit: browser sees /old → skips server → goes directly to /new
+    ‼️ Dangerous if set by mistake — users' browsers keep redirecting even after
+    you remove it on the server. Users would have to manually clear browser cache.
+    That's why 302/307 exist — they are NOT cached, browser always checks server first.‼️
+  302 Found              — temporary redirect (not cached)‼️
   304 Not Modified       — cached version is still valid (conditional GET)
-  307 Temporary Redirect — same as 302 but preserves HTTP method
-  308 Permanent Redirect — same as 301 but preserves HTTP method
+  307 Temporary Redirect — same as 302 but preserves HTTP method‼️
+  308 Permanent Redirect — same as 301 but preserves HTTP method‼️
 
 4xx — Client Error
   400 Bad Request       — malformed request / validation error
   401 Unauthorized      — not authenticated
   403 Forbidden         — authenticated but not allowed
   404 Not Found         — resource doesn't exist
-  405 Method Not Allowed — wrong HTTP method for this endpoint
+  405 Method Not Allowed — wrong HTTP method for this endpoint‼️
   409 Conflict          — duplicate (email already taken)
-  410 Gone              — resource permanently deleted
-  422 Unprocessable     — valid JSON but semantically wrong
+  410 Gone              — resource permanently deleted‼️
+  422 Unprocessable     — valid JSON but semantically wrong‼️
   429 Too Many Requests — rate limited
 
 5xx — Server Error
   500 Internal Server Error — unexpected failure
   502 Bad Gateway           — upstream server returned invalid response
   503 Service Unavailable   — server temporarily down (maintenance, overload)
-  504 Gateway Timeout       — upstream server timed out
+  504 Gateway Timeout       — upstream server timed out‼️
 ```
 
 ---
@@ -108,9 +127,9 @@ Key features:
     (rarely used in practice — head-of-line blocking still exists)
 
 Problems:
-  - Head-of-line blocking: if request 1 is slow, requests 2 and 3 wait behind it
-  - No header compression: headers repeat on every request (User-Agent, Cookie, etc.)
-  - Max 6 concurrent connections per host (browsers limit this)
+  - Head-of-line blocking: if request 1 is slow, requests 2 and 3 wait behind it‼️
+  - No header compression: headers repeat on every request (User-Agent, Cookie, etc.)‼️
+  - Max 6 concurrent connections per host (browsers limit this)‼️
   - Workarounds: domain sharding, CSS sprites, JS bundling, inlining — all hacks
 ```
 
@@ -130,7 +149,7 @@ Key improvements:
     Reduces overhead significantly for APIs with many small requests.
 
   Binary protocol:
-    HTTP/1.1 is text-based (human readable). HTTP/2 is binary (faster to parse).
+    HTTP/1.1 is text-based (human readable). HTTP/2 is binary (faster to parse).‼️
 
   Server push (largely deprecated):
     Server can proactively send resources the client will need.
@@ -150,11 +169,11 @@ Remaining problem:
 ```text
 Released: 2022. ~30% of websites as of 2024.
 
-Key change: replaces TCP with QUIC (UDP-based protocol)
+Key change: replaces TCP with QUIC (UDP-based protocol)‼️
 
 QUIC solves:
   TCP head-of-line blocking: each QUIC stream is independent —
-  a lost packet only stalls its own stream, not others.
+  a lost packet only stalls its own stream, not others.‼️
 
   Connection migration: connections are identified by a connection ID, not IP:port.
   Switching from WiFi to 4G doesn't break connections (great for mobile).
@@ -186,14 +205,14 @@ Adoption              Universal     ~70%           ~30%
 ### Cache-Control
 
 ```text
-The primary caching directive. Controls who can cache, how long, and how.
+The primary caching directive. Controls who can cache, how long, and how.‼️
 
-Directives:
+Directives:‼️
   max-age=N         — cache for N seconds (from response time)
   s-maxage=N        — max-age for shared caches (CDN) only, overrides max-age
   no-store          — never cache (sensitive data — bank statements, PHI)
   no-cache          — can cache but MUST revalidate with server before using
-                      (despite the name, it DOES cache — just always checks)
+                      (despite the name, it DOES cache — just always checks)‼️
   private           — only browser can cache, not CDNs/proxies
   public            — CDNs and proxies can cache
   must-revalidate   — once stale (past max-age), must revalidate before using
@@ -227,7 +246,7 @@ reply.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
 ### ETag and Last-Modified (conditional requests)
 
 ```js
-// ETag: opaque identifier for a specific version of a resource
+// ETag: opaque identifier for a specific version of a resource‼️
 // Server sends: ETag: "abc123"
 // Client sends back on next request: If-None-Match: "abc123"
 // Server compares: if unchanged → 304 Not Modified (no body sent)
@@ -243,15 +262,15 @@ app.register(import('@fastify/etag'));
 
 // Manual ETag:
 fastify.get('/api/resource', async (req, reply) => {
-  const data = await getData();
-  const etag = `"${hashData(data)}"`;
+    const data = await getData();
+    const etag = `"${hashData(data)}"`;
 
-  if (req.headers['if-none-match'] === etag) {
-    return reply.code(304).send(); // client has current version
-  }
+    if (req.headers['if-none-match'] === etag) {
+        return reply.code(304).send(); // client has current version
+    }
 
-  reply.header('ETag', etag);
-  return data;
+    reply.header('ETag', etag);
+    return data;
 });
 ```
 
@@ -270,7 +289,7 @@ reply.header('Vary', 'Accept-Language');
 // Multiple:
 reply.header('Vary', 'Accept-Encoding, Accept-Language');
 
-// Warning: high Vary values reduce CDN cache efficiency
+// Warning: high Vary values reduce CDN cache efficiency‼️
 // Each unique combination of Vary header values = separate cache entry
 ```
 
@@ -283,21 +302,21 @@ reply.header('Vary', 'Accept-Encoding, Accept-Language');
 ```js
 // Set a cookie with all security attributes
 reply.setCookie('session', sessionId, {
-  httpOnly: true,     // cannot be read by JavaScript (XSS protection)
-  secure: true,       // only sent over HTTPS
-  sameSite: 'strict', // not sent on cross-site requests (CSRF protection)
-  path: '/',          // available on all routes
-  maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
-  domain: 'example.com', // available on example.com and subdomains
+    httpOnly: true, // cannot be read by JavaScript (XSS protection)‼️
+    secure: true, // only sent over HTTPS
+    sameSite: 'strict', // not sent on cross-site requests (CSRF protection)
+    path: '/', // available on all routes
+    maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
+    domain: 'example.com', // available on example.com and subdomains
 });
 ```
 
 ```text
 Attribute     Values                  Purpose
 ────────────────────────────────────────────────────────────
-HttpOnly      (flag)                  JS cannot read cookie — XSS protection
+HttpOnly      (flag)                  JS cannot read cookie — XSS protection‼️
 Secure        (flag)                  Only sent over HTTPS
-SameSite      Strict / Lax / None     CSRF protection
+SameSite      Strict / Lax / None     CSRF protection‼️
   Strict: never sent on cross-site requests
   Lax: sent on top-level navigation (clicking a link), not on AJAX/fetch
   None: always sent cross-site (must also set Secure — for embedded widgets)
@@ -309,15 +328,15 @@ Expires/Max-Age  date / seconds       Session cookie (no expiry) vs persistent
 ### Cookie types and storage decision
 
 ```text
-Session cookie:    No Max-Age/Expires. Deleted when browser closes.
-Persistent cookie: Has Max-Age or Expires. Survives browser restart.
+Session cookie:    No Max-Age/Expires. Deleted when browser closes.‼️
+Persistent cookie: Has Max-Age or Expires. Survives browser restart.‼️
 
 Where to store JWT tokens:
   localStorage    → survives refresh, accessible to JS → XSS can steal it
   sessionStorage  → cleared on tab close, accessible to JS → XSS can steal it
   HttpOnly cookie → not accessible to JS → XSS CANNOT steal it
 
-Recommended: store access token in memory (JS var), refresh token in HttpOnly cookie.
+Recommended: store access token in memory (JS var), refresh token in HttpOnly cookie.‼️
   - Access token (15min): JS memory → lost on refresh → use refresh cookie to renew
   - Refresh token (7d): HttpOnly cookie → safe from XSS, SameSite=Strict for CSRF
 
@@ -331,14 +350,14 @@ HIPAA context: HttpOnly cookies for anything authentication-related.
 ### The same-origin policy
 
 ```text
-Same-origin = same protocol + same host + same port.
+Same-origin = same protocol + same host + same port.‼️
   https://app.example.com:443 = origin
-  https://app.example.com/api — SAME origin (path doesn't matter)
+  https://app.example.com/api — SAME origin (path doesn't matter)‼️
   http://app.example.com      — DIFFERENT (http vs https)
   https://api.example.com     — DIFFERENT (different subdomain)
   https://app.example.com:8080 — DIFFERENT (different port)
 
-Browsers enforce same-origin policy on:
+Browsers enforce same-origin policy on:‼️
   fetch / XMLHttpRequest to a different origin
   Cookies (sent automatically to the same origin)
   JS access to iframes from different origins
@@ -353,14 +372,14 @@ Simple request (no preflight needed):
   Headers: only safe headers (Accept, Content-Type: text/plain|form/multipart|urlencoded)
   Content-Type: application/json → NOT a simple request (triggers preflight)
 
-Preflight request:
-  Browser sends OPTIONS request first to check if server allows it
+Preflight request:‼️
+  Browser sends OPTIONS request first to check if server allows it‼️
   Only then sends the actual request
   Triggered by: DELETE, PUT, PATCH; custom headers (Authorization, X-Custom); JSON body
 ```
 
 ```js
-// What a preflight looks like:
+// What a preflight looks like:‼️
 OPTIONS /api/users HTTP/1.1
 Origin: https://app.example.com
 Access-Control-Request-Method: POST
@@ -383,28 +402,28 @@ import cors from '@fastify/cors';
 
 // Development
 app.register(cors, {
-  origin: 'http://localhost:5173',
-  credentials: true, // allow cookies to be sent cross-origin
+    origin: 'http://localhost:5173',
+    credentials: true, // allow cookies to be sent cross-origin
 });
 
 // Production — multiple allowed origins
 app.register(cors, {
-  origin: (origin, callback) => {
-    const allowed = ['https://app.example.com', 'https://admin.example.com'];
-    if (!origin || allowed.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  maxAge: 86400,
+    origin: (origin, callback) => {
+        const allowed = ['https://app.example.com', 'https://admin.example.com'];
+        if (!origin || allowed.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    maxAge: 86400,
 });
 
 // ✗ Never use in production:
-origin: '*'  // AND credentials: true — these cannot coexist
+origin: '*'; // AND credentials: true — these cannot coexist
 // * with credentials is blocked by the browser — security restriction
 ```
 
@@ -416,7 +435,7 @@ origin: '*'  // AND credentials: true — these cannot coexist
 // 2. Client: credentials: 'include' in fetch options
 
 fetch('https://api.example.com/data', {
-  credentials: 'include', // sends cookies with cross-origin request
+    credentials: 'include', // sends cookies with cross-origin request
 });
 
 // Without credentials: 'include', cookies are NOT sent cross-origin
@@ -431,20 +450,20 @@ fetch('https://api.example.com/data', {
 Method      Idempotent  Safe    Body    Typical use
 ──────────────────────────────────────────────────────────
 GET         Yes         Yes     No      Fetch data
-HEAD        Yes         Yes     No      Same as GET but no body (metadata check)
+HEAD        Yes         Yes     No      Same as GET but no body (metadata check)‼️
 POST        No          No      Yes     Create resource, non-idempotent actions
 PUT         Yes         No      Yes     Full replace of a resource
-PATCH       No*         No      Yes     Partial update
+PATCH       No*         No      Yes     Partial update‼️
 DELETE      Yes         No      No      Delete resource
-OPTIONS     Yes         Yes     No      CORS preflight, discover capabilities
+OPTIONS     Yes         Yes     No      CORS preflight, discover capabilities‼️
 
-*PATCH is idempotent if implemented correctly but spec doesn't require it.
+*PATCH is idempotent if implemented correctly but spec doesn't require it.‼️
 
 Idempotent: calling the same request N times = same result as calling it once.
   DELETE /users/1 called 3 times: first call deletes, next two calls → 404. Same end state.
   POST /users called 3 times: creates 3 users. Not idempotent.
 
-Safe: no side effects — read-only.
+Safe: no side effects — read-only.‼️
 
 Idempotency key (for POST):
   Client generates a unique key per request.
@@ -460,6 +479,17 @@ Idempotency key (for POST):
 ---
 
 ## 7. HTTPS & TLS
+
+```text
+TLS = Transport Layer Security
+It's the encryption protocol that makes HTTPS work — the "S" in HTTPS is TLS.‼️
+It encrypts ALL data between browser and server so no one in between
+(WiFi sniffers, ISPs, man-in-the-middle attackers) can read or tamper with it.
+
+HTTPS = HTTP + TLS
+  HTTP  → plain text, anyone on the network can read your passwords, cookies, data
+  HTTPS → encrypted with TLS, only browser and server can read the data‼️
+```
 
 ### TLS handshake
 
@@ -508,7 +538,7 @@ Long Polling:
   Then client immediately makes another request. Simulates real-time.
   Cons: high overhead (HTTP headers each request), latency from reconnect.
 
-Server-Sent Events (SSE):
+Server-Sent Events (SSE):‼️
   One-directional: server → client only.
   Built on HTTP — works through proxies, no protocol upgrade.
   Auto-reconnects on disconnect.
@@ -524,30 +554,30 @@ WebSocket:
 ```js
 // SSE in Fastify
 fastify.get('/events', async (req, reply) => {
-  reply.raw.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-  });
+    reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+    });
 
-  const sendEvent = (data) => {
-    reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
-  };
+    const sendEvent = data => {
+        reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
 
-  // Send events
-  const interval = setInterval(() => sendEvent({ time: Date.now() }), 1000);
+    // Send events
+    const interval = setInterval(() => sendEvent({ time: Date.now() }), 1000);
 
-  req.raw.on('close', () => clearInterval(interval)); // cleanup on disconnect
+    req.raw.on('close', () => clearInterval(interval)); // cleanup on disconnect
 });
 
 // Client-side SSE
 const source = new EventSource('/events');
-source.onmessage = (e) => console.log(JSON.parse(e.data));
-source.onerror   = () => source.close(); // handle disconnect
+source.onmessage = e => console.log(JSON.parse(e.data));
+source.onerror = () => source.close(); // handle disconnect
 
 // Named events (SSE)
 reply.raw.write(`event: taskUpdated\ndata: {"id": "123"}\n\n`);
-source.addEventListener('taskUpdated', (e) => updateTask(JSON.parse(e.data)));
+source.addEventListener('taskUpdated', e => updateTask(JSON.parse(e.data)));
 ```
 
 ---
@@ -556,35 +586,35 @@ source.addEventListener('taskUpdated', (e) => updateTask(JSON.parse(e.data)));
 
 ### "What is the difference between HTTP/1.1 and HTTP/2?"
 
-> HTTP/2 adds multiplexing — multiple requests over one TCP connection simultaneously, eliminating HTTP-level head-of-line blocking. HTTP/1.1 can only handle one request at a time per connection (pipelining was unreliable), requiring browsers to open 6+ connections per host. HTTP/2 also adds header compression (HPACK) and uses a binary framing layer instead of text. The downside: HTTP/2 still uses TCP, so a single lost packet blocks all streams (TCP head-of-line blocking) — solved by HTTP/3/QUIC.
+> HTTP/2 adds multiplexing — ‼️ multiple requests over one TCP connection simultaneously, ‼️ eliminating HTTP-level head-of-line blocking. HTTP/1.1 can only handle one request at a time per connection (pipelining was unreliable), requiring browsers to open 6+ connections per host. HTTP/2 also adds header compression (HPACK) and uses a binary framing layer instead of text. The downside: HTTP/2 still uses TCP, so a single lost packet blocks all streams (TCP head-of-line blocking) — solved by HTTP/3/QUIC.
 
 ### "What is CORS and how does it work?"
 
-> CORS (Cross-Origin Resource Sharing) is a browser security mechanism that restricts JavaScript from making HTTP requests to a different origin than the page it's on. When a browser detects a cross-origin request, it first sends a preflight OPTIONS request to ask the server if the real request is allowed. The server responds with `Access-Control-Allow-Origin` and related headers. If approved, the browser sends the actual request. Fix: add `@fastify/cors` plugin and configure the allowed origins.
+> CORS ‼️ (Cross-Origin Resource Sharing) is a browser security mechanism that restricts JavaScript from making HTTP requests to a different origin than the page it's on. ‼️ When a browser detects a cross-origin request, it first sends a preflight OPTIONS request to ask the server if the real request is allowed. The server responds with `Access-Control-Allow-Origin` and related headers. If approved, the browser sends the actual request. Fix: add `@fastify/cors` plugin and configure the allowed origins.
 
 ### "What is the difference between no-cache and no-store?"
 
-> `no-store` means never cache anything — not in the browser, not in any proxy. Use for sensitive data. `no-cache` means the response CAN be cached, but the browser must revalidate with the server before using it (sends a conditional GET). If the server says nothing changed (304), the cached version is used. Despite the name, `no-cache` does allow caching.
+> `no-store` means never cache anything — not in the browser, not in any proxy. Use for sensitive data. `no-cache` means the response CAN be cached, ‼️ but the browser must revalidate with the server before using it (sends a conditional GET). If the server says nothing changed (304), the cached version is used. Despite the name, `no-cache` does allow caching.
 
 ### "What is an ETag?"
 
-> An ETag is an opaque identifier representing a specific version of a resource. The server includes it in responses. On subsequent requests, the client sends `If-None-Match: <etag>`. If the resource hasn't changed, the server returns `304 Not Modified` with no body — saving bandwidth. ETags are more reliable than `Last-Modified` because they're based on content, not timestamps.
+> An ETag is an opaque identifier representing a specific version of a resource. The server includes it in responses. On subsequent requests, the client sends `If-None-Match: <etag>`. If the resource hasn't changed, the server returns `304 Not Modified` with no body — saving bandwidth. ‼️ ETags are more reliable than `Last-Modified` because they're based on content, not timestamps.
 
 ### "What is the difference between PUT and PATCH?"
 
-> PUT replaces the entire resource — you send the full representation. PATCH partially updates the resource — you send only the fields to change. PUT is idempotent: sending the same PUT request twice produces the same result. PATCH can be idempotent if designed carefully (e.g., `PATCH /users/1 { status: 'active' }`) but doesn't have to be.
+> PUT replaces the entire resource — you send the full representation. ‼️ PATCH partially updates the resource — you send only the fields to change. ‼️ PUT is idempotent: sending the same PUT request twice produces the same result. PATCH can be idempotent if designed carefully (e.g., `PATCH /users/1 { status: 'active' }`) but doesn't have to be.
 
 ### "How does HTTPS work?"
 
-> HTTPS is HTTP over TLS. The TLS handshake establishes a shared secret: the client and server exchange public keys, verify the server's certificate is signed by a trusted Certificate Authority, and derive symmetric encryption keys. All subsequent HTTP traffic is encrypted with those symmetric keys. In TLS 1.3, this handshake takes one round trip.
+> HTTPS is HTTP over TLS. ‼️ The TLS handshake establishes a shared secret: the client and server exchange public keys, verify the server's certificate is signed by a trusted Certificate Authority, and derive symmetric encryption keys. All subsequent HTTP traffic is encrypted with those symmetric keys. In TLS 1.3, this handshake takes one round trip.
 
 ---
 
 ## Most Asked HTTP & Networking Interview Questions
 
-### "What happens when you type a URL into a browser?"
+### "What happens when you type a URL into a browser?"‼️
 
-> 1) **DNS resolution** — browser checks cache, then OS cache, then queries DNS resolver to convert domain to IP. 2) **TCP connection** — three-way handshake (SYN → SYN-ACK → ACK). 3) **TLS handshake** (for HTTPS) — exchange certificates, negotiate session key. 4) **HTTP request** — browser sends `GET / HTTP/1.1` with headers. 5) **Server processes** — handles routing, DB queries, etc. 6) **Response** — server returns HTML with status 200. 7) **Browser parses** HTML, discovers CSS/JS/images, makes additional requests, renders the page.
+> 1. **DNS resolution** — browser checks cache, then OS cache, then queries DNS resolver to convert domain to IP. 2) **TCP connection** — three-way handshake (SYN → SYN-ACK → ACK). 3) **TLS handshake** (for HTTPS) — exchange certificates, negotiate session key. 4) **HTTP request** — browser sends `GET / HTTP/1.1` with headers. 5) **Server processes** — handles routing, DB queries, etc. 6) **Response** — server returns HTML with status 200. 7) **Browser parses** HTML, discovers CSS/JS/images, makes additional requests, renders the page.
 
 ### "What are HTTP status codes? List the key ones."
 
@@ -619,7 +649,7 @@ source.addEventListener('taskUpdated', (e) => updateTask(JSON.parse(e.data)));
 
 ### "What is the difference between HTTP/1.1, HTTP/2, and HTTP/3?"
 
-> **HTTP/1.1**: one request per TCP connection (or persistent with Keep-Alive but still sequential). Head-of-line blocking — slow request blocks others. **HTTP/2**: multiplexing — multiple requests over a single connection concurrently. Header compression (HPACK). Server push. Significantly faster for multiple resources. **HTTP/3**: runs over QUIC (UDP-based) instead of TCP. Eliminates TCP head-of-line blocking. Faster connection setup. Better on unreliable networks (mobile).
+> **HTTP/1.1**: one request per TCP connection (or persistent with Keep-Alive but still sequential). Head-of-line blocking — slow request blocks others. **HTTP/2**: multiplexing — multiple requests over a single connection concurrently. Header compression (HPACK). Server push. Significantly faster for multiple resources. **HTTP/3**: runs over QUIC (UDP-based) instead of TCP. Eliminates TCP head-of-line blocking. Faster connection setup. ‼️ Better on unreliable networks (mobile).
 
 ### "What is REST and what are its constraints?"
 
@@ -632,7 +662,7 @@ source.addEventListener('taskUpdated', (e) => updateTask(JSON.parse(e.data)));
 ```
 GET    → retrieve, safe, idempotent
 POST   → create, not safe, not idempotent
-PUT    → full replace, idempotent
+PUT    → full replace, idempotent‼️
 PATCH  → partial update, not guaranteed idempotent
 DELETE → delete, idempotent
 ```
@@ -659,7 +689,7 @@ Access-Control-Allow-Credentials: true  // needed for cookies
 
 ### "What is WebSocket and when do you use it?"
 
-> WebSocket is a full-duplex, persistent connection between client and server — both sides can send messages at any time. HTTP is request-response; WebSocket is bidirectional. Use for: real-time features (chat, live notifications, collaborative editing, live sports scores, trading dashboards). Overkill for: simple polling, infrequent updates (use Server-Sent Events or polling instead).
+> WebSocket is a full-duplex, persistent connection between client and server — both sides can send messages at any time. HTTP is request-response; WebSocket is bidirectional. Use for: ‼️ real-time features (chat, live notifications, collaborative editing, live sports scores, trading dashboards). Overkill for: simple polling, infrequent updates (use Server-Sent Events or polling instead).
 
 ### "What is the difference between TCP and UDP?"
 
