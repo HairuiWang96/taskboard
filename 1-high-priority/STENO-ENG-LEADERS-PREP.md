@@ -8,7 +8,7 @@
 
 ## About Steno — Know This Before the Interview
 
-<!-- Steno was founded in 2018 by CEO Greg Hong to revolutionize the court reporting industry. They're a hybrid service + technology company in the legal tech space.
+<!-- Steno was founded in 2018 by CEO Greg Hong to revolutionize the court reporting industry. ‼️ They're a hybrid service + technology company in the legal tech space.
 
 **What they do:**
 - Court reporting services (stenographic reporters, videography, interpreters)
@@ -25,7 +25,7 @@
 
 **Tech stack:** Node.js + TypeScript, React.js, PostgreSQL, cloud infrastructure, CI/CD
 **Team:** Fully remote, grew from 9 to 400+ employees in 6 years
-**Compliance:** SOC 2 Type II and HIPAA compliant
+**Compliance:** SOC 2 Type II and HIPAA compliant‼️
 **CTO:** Dan Anderson — known as a strong tech leader trusted by eng, product, and design
 
 **Core values:** Highly reliable, constantly innovating, hospitality mindset
@@ -46,7 +46,7 @@ Engineering leaders will want to see that you understand their BUSINESS, not jus
 
 <!-- **2-minute version — tailored to Steno:**
 
-"I'm a senior full-stack engineer with 6 years of experience, most recently at Gophr, a logistics and delivery startup where I was one of the early engineers. I built and maintained 3 of our 4 core microservices — Shipments, Users, and Inventories — using Node.js, TypeScript, and PostgreSQL, handling thousands of daily requests across multiple client apps.
+"I'm a senior full-stack engineer with 6 years of experience, most recently at Gophr, a logistics and delivery startup where I was one of the early engineers. I built and maintained 3 of our 4 core microservices — Shipments, Users, and Inventories — using Node.js and PostgreSQL, handling thousands of daily requests across multiple client apps.
 
 What I think maps well to Steno is that I've been building for a platform with many user types — at Gophr we had consumers, drivers, merchants, and dispatchers, each with different dashboards and workflows. I imagine Steno has a similar dynamic with attorneys, court reporters, and internal operations all interacting with the platform differently.
 
@@ -67,7 +67,7 @@ I also led the frontend admin dashboard that streamlined operations and reduced 
 "Gophr's platform has four core microservices: Shipments, Users, Inventories, and a fourth for payments/billing. I built and maintained the first three.
 
 **Architecture overview:**
-- Each service is a Node.js + TypeScript API with its own PostgreSQL database
+- Each service is a Node.js API with its own PostgreSQL database
 - Services communicate via REST APIs for synchronous calls and message queues for async events
 - Each service is independently deployable with its own CI/CD pipeline
 - A shared API gateway handles routing, authentication, and rate limiting
@@ -89,7 +89,7 @@ I also led the frontend admin dashboard that streamlined operations and reduced 
 - Powers the consumer app's browsing and ordering experience
 
 **Key decisions I'd discuss:**
-- Why we split into microservices (team autonomy, independent scaling — Shipments needed more resources than Users)
+- Why we split into microservices (team autonomy, independent scaling — ‼️ Shipments needed more resources than Users)
 - How we handled cross-service data (e.g., Shipments needs user info — we used data replication for read-heavy data, API calls for real-time data)
 - Database-per-service pattern — each service owns its data, no shared databases" -->
 
@@ -139,7 +139,7 @@ I also led the frontend admin dashboard that streamlined operations and reduced 
 **Technical details:**
 - Used OpenAI Assistants API with function calling for structured output
 - Prompts were engineered to return JSON with vehicle type, price breakdown, and reasoning
-- Implemented rate limiting and fallback (if API fails, queue for manual processing)
+- Implemented rate limiting and fallback (if API fails, queue for manual processing)‼️
 - Response time: ~3-5 seconds vs. 15-20 minutes manual
 
 **Result:**
@@ -215,15 +215,15 @@ I also led the frontend admin dashboard that streamlined operations and reduced 
 - Small team (< 5-8 engineers)
 - Single product with shared data models
 - Speed of development matters more than independent deployment
-- You're still figuring out domain boundaries
+- You're still figuring out domain boundaries‼️
 
 **When I'd extract a microservice:**
-- A component has fundamentally different scaling needs (e.g., our Shipments service needed to handle 10x more traffic than Users)
+- A component has fundamentally different scaling needs ‼️ (e.g., our Shipments service needed to handle 10x more traffic than Users)
 - Different teams need to deploy independently
 - A feature has a clear bounded context with minimal cross-service dependencies
 
 **The Steno context:**
-If I were at Steno, I'd expect some natural service boundaries:
+If I were at Steno, I'd expect some natural service boundaries:‼️
 - Scheduling/booking service (proceedings, court reporter assignment)
 - Transcript service (upload, processing, storage, AI analysis)
 - User/auth service (attorneys, reporters, admins)
@@ -241,7 +241,7 @@ But I'd only split when the complexity of the monolith is actually causing probl
 
 **Core components:**
 1. **Video/Audio** — use Zoom's SDK (they already do this) rather than building WebRTC from scratch
-2. **Exhibit Management** — the differentiator
+2. **Exhibit Management** — the differentiator‼️
    - Upload exhibits before or during the deposition
    - Real-time sharing: when an attorney shares an exhibit, all participants see it simultaneously
    - Auto-numbering and annotation (collaborative, not just presenter)
@@ -250,15 +250,15 @@ But I'd only split when the complexity of the monolith is actually causing probl
 4. **Transcript sync** — if a court reporter is producing a live transcript, it could be synced to the session
 
 **Technical approach:**
-- WebSocket server for real-time state sync (exhibit changes, annotations)
+- WebSocket server for real-time state sync (exhibit changes, annotations)‼️
 - S3 for exhibit storage with pre-signed URLs for secure access
 - PostgreSQL for session metadata, exhibit ordering, and audit trail
-- Redis for ephemeral session state (who's connected, current exhibit)
-- Queue (SQS/RabbitMQ) for async processing (thumbnail generation, OCR on uploaded docs)
+- Redis for ephemeral session state (who's connected, current exhibit)‼️
+- Queue (SQS/RabbitMQ) for async processing (thumbnail generation, OCR on uploaded docs)‼️
 
 **Key concerns for legal tech:**
-- Everything must be recorded for the legal record — audit trail is non-negotiable
-- SOC 2 / HIPAA compliance — encrypted at rest and in transit, access controls
+- Everything must be recorded for the legal record — audit trail is non-negotiable‼️
+- SOC 2 / HIPAA compliance — encrypted at rest and in transit, access controls‼️
 - Reliability — a dropped connection during a deposition is a serious problem
 - Low latency — exhibit sharing must feel instant" -->
 
@@ -286,7 +286,7 @@ But I'd only split when the complexity of the monolith is actually causing probl
 ```
 Upload → Parse → Chunk → Embed → Store (PostgreSQL + pgvector)
                                        ↓
-Attorney asks question → Embed query → Vector search → Retrieve relevant chunks
+Attorney asks question → Embed query → Vector search → Retrieve relevant chunks‼️
                                                                 ↓
                                                     LLM generates answer with citations
 ```
@@ -298,7 +298,7 @@ I built the OpenAI integration for vehicle recommendations, so I understand:
 - Rate limiting and error handling for LLM APIs
 - The importance of human-in-the-loop (ops reviewed AI recommendations before sending)
 
-For a legal product, accuracy is even more critical — hallucinated citations could be a liability. I'd implement confidence scoring and always surface the source chunks so attorneys can verify." -->
+For a legal product, accuracy is even more critical — hallucinated citations could be a liability. ‼️ I'd implement confidence scoring and always surface the source chunks so attorneys can verify." -->
 
 ---
 
@@ -335,7 +335,7 @@ ALTER TABLE users DROP COLUMN name;
 - Drop a column that the running code still reads (deploy code first, then migrate)
 
 **At Gophr:**
-We ran migrations as part of our CI/CD pipeline. The migration ran before the new code deployed, so we always ensured backward compatibility. For large backfills, I'd run them in batches during off-peak hours with monitoring on database CPU and connection count." -->
+We ran migrations as part of our CI/CD pipeline. The migration ran before the new code deployed, so we always ensured backward compatibility. ‼️ For large backfills, I'd run them in batches during off-peak hours with monitoring on database CPU and connection count." -->
 
 ---
 
@@ -353,8 +353,8 @@ We ran migrations as part of our CI/CD pipeline. The migration ran before the ne
 
 **2. Connection pooling:**
 - Used pg Pool with max: 20 connections
-- Added PgBouncer when we scaled beyond a single API instance
-- Monitored pool utilization to catch connection leaks
+- Added PgBouncer when we scaled beyond a single API instance‼️
+- Monitored pool utilization to catch connection leaks‼️
 
 **3. Read replicas:**
 - Offloaded read-heavy queries (dashboard analytics, reporting) to a read replica
@@ -373,9 +373,9 @@ We ran migrations as part of our CI/CD pipeline. The migration ran before the ne
 
 **What I'd do at Steno:**
 Transcripts are likely the heaviest data — potentially thousands of pages per case, with full-text search requirements. I'd consider:
-- Full-text search with PostgreSQL's tsvector/GIN indexes (or Elasticsearch for scale)
+- Full-text search with PostgreSQL's tsvector/GIN indexes (or Elasticsearch for scale)‼️
 - pgvector for the AI embedding similarity search
-- S3 for raw file storage, database for metadata and searchable content
+- S3 for raw file storage, database for metadata and searchable content‼️
 - Materialized views for common dashboard aggregations" -->
 
 ---
@@ -393,7 +393,7 @@ Transcripts are likely the heaviest data — potentially thousands of pages per 
 - Automated tests run in CI on every PR (unit + integration)
 
 **Communication:**
-- PRs have detailed descriptions: what changed, why, how to test, any risks
+- PRs have detailed descriptions: what changed, why, how to test, any risks‼️
 - For complex features, I write a brief design doc before coding (even just a few paragraphs in a GitHub issue)
 - Async-first communication (written over verbal), with Zoom for complex discussions
 - I document architecture decisions in ADRs (Architecture Decision Records) so future engineers understand WHY we built things a certain way
@@ -417,7 +417,7 @@ Transcripts are likely the heaviest data — potentially thousands of pages per 
 - One endpoint per resource: `GET /users`, `GET /users/123/orders`
 - Server decides what data to return
 - Simple, well-understood, great caching (HTTP caching built-in)‼️
-- Problem: over-fetching (get 20 fields when you need 3) and under-fetching (need 3 requests to build one page)
+- Problem: over-fetching (get 20 fields when you need 3) and ‼️ under-fetching (need 3 requests to build one page)
 
 **GraphQL:**
 - One endpoint: `POST /graphql`‼️
@@ -499,7 +499,7 @@ socket.on('exhibit-shared', ({ exhibitId }) => {
 ```
 
 **Scaling WebSockets:**
-- WebSockets are stateful — the connection is tied to a specific server
+- WebSockets are stateful — the connection is tied to a specific server‼️
 - With multiple servers, ‼️ use Redis adapter (socket.io-redis) so messages are broadcast across all instances
 - Use sticky sessions on the load balancer, or use Redis pub/sub for cross-server communication‼️
 
@@ -548,7 +548,7 @@ app.post('/api/uploads/request', authenticate, async (req, res) => {
 
 * 2. Client uploads directly to S3 using the pre-signed URL
 
-* 3. S3 event (via SQS/Lambda) triggers post-processing:
+* 3. S3 event (via SQS/Lambda) triggers post-processing:‼️
 *    - Generate thumbnail for images/PDFs
 *    - Run OCR on scanned documents
 *    - Extract text from transcripts for search indexing
@@ -557,11 +557,11 @@ app.post('/api/uploads/request', authenticate, async (req, res) => {
 ```
 
 **Key considerations for legal tech:**
-- **Encryption**: S3 server-side encryption (SSE-S3 or SSE-KMS) for compliance
+- **Encryption**: S3 server-side encryption (SSE-S3 or SSE-KMS) for compliance‼️
 - **Access control**: pre-signed URLs expire; only authorized users can generate them
-- **Audit trail**: log every upload, download, and access
+- **Audit trail**: log every upload, download, and access‼️
 - **Virus scanning**: scan uploads before making them available
-- **Versioning**: S3 versioning to prevent accidental overwrites (legal docs must be immutable)" -->
+- **Versioning**: S3 versioning to prevent accidental overwrites (legal docs must be immutable)" -->‼️
 
 ---
 
@@ -571,10 +571,10 @@ app.post('/api/uploads/request', authenticate, async (req, res) => {
 
 Node.js is single-threaded. For CPU-intensive work, you have two options:
 
-**Clustering — multiple processes:**
+**Clustering — ‼️ multiple processes:**
 - Spawns multiple Node.js processes (one per CPU core)
 - Each process has its OWN event loop and memory
-- A master process distributes incoming connections via round-robin
+- A master process distributes incoming connections via round-robin‼️
 - Use for: scaling your HTTP server across CPU cores‼️
 
 ```ts
@@ -584,7 +584,7 @@ import os from 'os';
 if (cluster.isPrimary) {
   const numCPUs = os.cpus().length;
   for (let i = 0; i < numCPUs; i++) {
-    cluster.fork();  // spawn a worker process
+    cluster.fork();  // spawn a worker process‼️
   }
   cluster.on('exit', (worker) => {
     cluster.fork();  // restart if a worker dies
@@ -595,8 +595,8 @@ if (cluster.isPrimary) {
 }
 ```
 
-**Worker Threads — multiple threads in one process:**
-- Runs JavaScript in parallel threads WITHIN a single process
+**Worker Threads — ‼️ multiple threads in one process:**
+- Runs JavaScript in parallel threads WITHIN a single process‼️
 - Threads can share memory (SharedArrayBuffer)
 - Use for: CPU-intensive tasks (parsing large files, encryption, image processing) without blocking the event loop
 
@@ -622,12 +622,12 @@ parentPort.postMessage({ status: 'processed', chunks: 150 });
 **When to use which:**‼️
 |              | Clustering | Worker Threads |
 |---|---|---|
-| **Purpose** | Scale HTTP server across cores | Offload CPU-heavy tasks |
+| **Purpose** | Scale HTTP server across cores | Offload CPU-heavy tasks |‼️
 | **Memory** | Separate memory per process | Shared memory possible |
-| **Use case** | Handle more concurrent requests | Parse large transcripts, generate AI embeddings |
+| **Use case** | Handle more concurrent requests | Parse large transcripts, generate AI embeddings |‼️
 | **Overhead** | Higher (full process per worker) | Lower (threads within one process) |
 
-**At Steno:** Worker threads would be ideal for processing large transcripts — parsing, chunking, and generating embeddings without blocking the API server's event loop." -->
+**At Steno:** ‼️ Worker threads would be ideal for processing large transcripts — parsing, chunking, and generating embeddings without blocking the API server's event loop." -->
 
 ---
 
@@ -683,7 +683,7 @@ console.log('5 - end');
 "In a monolith, you have database transactions. In microservices, each service has its own database — you can't do a cross-service transaction. So how do you keep data consistent?
 
 **Pattern 1: Saga Pattern (most common)**‼️
-A sequence of local transactions, each publishing an event that triggers the next step. If one step fails, compensating transactions undo the previous steps.
+A sequence of local transactions, ‼️ each publishing an event that triggers the next step. If one step fails, compensating transactions undo the previous steps.
 
 ```
 Order Service          Payment Service         Inventory Service
@@ -766,7 +766,7 @@ app.use('/api/login', rateLimit({
 }));
 ```
 
-**Why Redis?** In a multi-server deployment, you need a shared store. In-memory rate limiting only works for a single server instance — each server would have its own count. Redis makes the count shared across all API instances.
+**Why Redis?** ‼️ In a multi-server deployment, you need a shared store. In-memory rate limiting only works for a single server instance — each server would have its own count. Redis makes the count shared across all API instances.
 
 **What Steno would care about:**
 - Rate limit public API endpoints and integrations (Clio, Litify)
@@ -781,6 +781,18 @@ app.use('/api/login', rateLimit({
 <!-- **Directly relevant — Steno needs to search through transcripts.**
 
 "PostgreSQL has built-in full-text search that's surprisingly powerful before you need Elasticsearch.‼️
+
+**What is tsvector?**
+tsvector is PostgreSQL's way of turning text into a searchable format.
+It breaks text into words, removes filler words (the, is, a), and stems words to their root form:
+```sql
+SELECT to_tsvector('english', 'The cats are running quickly');
+-- Result: 'cat':2 'quick':5 'run':4
+-- "The"/"are" → removed (stop words)
+-- "cats" → "cat", "running" → "run", "quickly" → "quick" (stemmed)
+-- Numbers (:2, :4, :5) = word positions in original text
+-- Think of it like a book index — pre-built so searches are fast
+```
 
 **Basic setup:**
 ```sql
@@ -830,7 +842,7 @@ Start with PostgreSQL FTS — it's already in the stack and handles legal transc
 -- Traditional FTS for keyword search:
 WHERE search_vector @@ to_tsquery('accident on highway 101')
 
--- pgvector for semantic search (AI embeddings):
+-- pgvector for semantic search (AI embeddings):‼️
 ORDER BY embedding <=> query_embedding LIMIT 10
 
 -- Best of both: hybrid search combining keyword + semantic‼️
@@ -864,7 +876,7 @@ SELECT * FROM cases WHERE firm_id = $1 AND status = 'active';
 ```
 - Pros: simplest, cheapest, easy to maintain
 - Cons: risk of data leaks if you forget the WHERE clause; noisy neighbor (one firm's heavy queries affect others)‼️
-- Mitigation: use PostgreSQL Row Level Security (RLS) to enforce tenant isolation at the DB level
+- Mitigation: use PostgreSQL Row Level Security (RLS) to enforce tenant isolation at the DB level‼️
 
 **PostgreSQL Row Level Security:**
 ```sql
@@ -939,7 +951,7 @@ req.log.error({ err, orderId }, 'Failed to create order');
 - Tools: OpenTelemetry, Datadog APM, Jaeger
 
 **Alerting:**
-- Alert on symptoms, not causes (alert on 'error rate > 5%', not 'database CPU high')
+- Alert on symptoms, not causes (alert on 'error rate > 5%', not 'database CPU high')‼️
 - Use escalation tiers: Slack notification → PagerDuty → phone call‼️
 - Include runbook links in alerts so the on-call engineer knows what to do
 
@@ -961,10 +973,10 @@ We used structured JSON logging with request IDs, which made it possible to trac
 - A lookup = search the index → follow the pointer to the table row
 
 **Clustered index:**
-- The table data itself is physically reordered to match the index
+- The table data itself is physically reordered to match the index‼️
 - In PostgreSQL, `CLUSTER` reorders the table once (not maintained automatically)
 - In MySQL InnoDB, the primary key IS the clustered index (always maintained)
-- Only one clustered index per table (data can only be sorted one way on disk)
+- Only one clustered index per table (data can only be sorted one way on disk)‼️
 
 **PostgreSQL specifics:**
 ```sql
@@ -1032,7 +1044,7 @@ Also, I noticed you just raised $49M to accelerate Transcript Genius and remote 
 
 **My process:**
 1. **Listen first** — understand their position fully before arguing mine. Usually there's a concern I hadn't considered.
-2. **Focus on tradeoffs, not opinions** — 'I prefer X' is weak. 'X is better here because of Y tradeoff' is productive.
+2. **Focus on tradeoffs, not opinions** ‼️— 'I prefer X' is weak. 'X is better here because of Y tradeoff' is productive.
 3. **Use data** — can we prototype both approaches? Can we benchmark? Can we look at how other teams solved this?
 4. **Decide and commit** — once we've discussed, make a decision and move forward. Document the reasoning (ADR). Don't relitigate.
 5. **Revisit if needed** — if the chosen approach isn't working, it's okay to pivot. Changing course is a sign of good engineering, not failure.
