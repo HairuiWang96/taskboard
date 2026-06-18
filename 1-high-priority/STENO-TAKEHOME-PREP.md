@@ -1,6 +1,10 @@
 # Steno Take-Home Exercise — Prep Guide
 
 > POC-level TypeScript + Node.js app. 5 days. Submit to their GitHub repo.
+> // POC = Proof of Concept — a quick, minimal version of an app to prove the idea works.
+> // Not production-ready (no auth, no full error handling, no scaling).
+> // Just enough to show "this approach works."
+> // Steno expects to see your thinking, patterns, and design decisions — not a polished product.
 > **Critical**: They WILL quiz you on your code in the 90-min deep dive. Understand every line.
 
 ---
@@ -66,10 +70,10 @@ Then edit `tsconfig.json` to these key settings:
 **What each option means:**
 - `target: "ES2022"` — compile to modern JS (async/await, optional chaining work natively)
 - `module: "commonjs"` — use require/module.exports (Node.js standard)
-- `outDir: "./dist"` — compiled JS goes here
-- `rootDir: "./src"` — your TypeScript source lives here
+- `outDir: "./dist"` — compiled JS goes here‼️
+- `rootDir: "./src"` — your TypeScript source lives here‼️
 - `strict: true` — enables all strict type checking (shows you know TypeScript)
-- `esModuleInterop: true` — lets you `import express from 'express'` instead of `import * as express`
+- `esModuleInterop: true` — lets you `import express from 'express'` instead of `import * as express`‼️
 
 **Step 4: Create package.json scripts**
 ```json
@@ -93,7 +97,7 @@ touch src/index.ts
 ### Your First TypeScript Express Server
 
 <!-- ```ts
-// src/index.ts
+* src/index.ts
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 
@@ -102,12 +106,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware — parse JSON request bodies
+* Middleware — parse JSON request bodies
 app.use(express.json());
 
-// A simple route
+* A simple route
 app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok' });‼️
 });
 
 app.listen(PORT, () => {
@@ -118,9 +122,9 @@ export default app;  // export for testing
 ```
 
 **What's different from plain JavaScript:**
-1. `import` instead of `require` (with esModuleInterop)
+1. `import` instead of `require` (with esModuleInterop)‼️
 2. You type the parameters: `req: Request, res: Response`
-3. `_req` — the underscore tells TypeScript "I know I'm not using this parameter"
+3. `_req` — the underscore tells TypeScript "I know I'm not using this parameter"‼️
 4. The `@types/express` package provides all the type definitions
 
 **Run it:**
@@ -134,38 +138,44 @@ npm run dev
 ### TypeScript Types You'll Use Constantly
 
 <!-- ```ts
-// Request and Response from Express:
+* Request and Response from Express:‼️
 import { Request, Response, NextFunction } from 'express';
 
-// Typing request params, query, and body:
+* Typing request params, query, and body:
 interface CreateUserBody {
   name: string;
   email: string;
 }
 
-// req.body is typed:
+* req.body is typed:‼️
+* Request generic has 4 type params: Request<Params, ResBody, ReqBody, Query>
+* So Request<{}, {}, CreateUserBody> means:
+*   {} = route params (e.g. :id) — none here
+*   {} = response body type — default/any
+*   CreateUserBody = req.body is typed as CreateUserBody
+* This gives you autocomplete and type checking on req.body
 app.post('/users', (req: Request<{}, {}, CreateUserBody>, res: Response) => {
   const { name, email } = req.body;  // TypeScript knows these are strings
-  // ...
+  * ...
 });
 
-// Simpler approach — just type inside the handler:
+* Simpler approach — just type inside the handler:‼️
 app.post('/users', (req: Request, res: Response) => {
-  const { name, email } = req.body as CreateUserBody;
-  // ...
+  const { name, email } = req.body as CreateUserBody;‼️
+  * ...
 });
 
-// Typing route params:
+* Typing route params:
 interface UserParams {
   id: string;  // route params are always strings
 }
 
 app.get('/users/:id', (req: Request<UserParams>, res: Response) => {
   const userId = req.params.id;  // TypeScript knows this is a string
-  // ...
+  * ...
 });
 
-// Typing query parameters:
+* Typing query parameters:
 interface SearchQuery {
   q?: string;
   page?: string;
@@ -175,10 +185,10 @@ interface SearchQuery {
 app.get('/search', (req: Request<{}, {}, {}, SearchQuery>, res: Response) => {
   const query = req.query.q;       // string | undefined
   const page = req.query.page;     // string | undefined
-  // ...
+  * ...
 });
 
-// Custom interfaces for your data:
+* Custom interfaces for your data:
 interface Transcript {
   id: string;
   caseId: string;
@@ -188,9 +198,9 @@ interface Transcript {
   createdAt: Date;
 }
 
-// Function return types:
+* Function return types:
 async function getTranscript(id: string): Promise<Transcript | null> {
-  // ...
+  * ...
 }
 ``` -->
 
@@ -201,22 +211,55 @@ async function getTranscript(id: string): Promise<Transcript | null> {
 <!-- ```ts
 import { Request, Response, NextFunction } from 'express';
 
-// Basic middleware:
+* Basic middleware:
 function logger(req: Request, res: Response, next: NextFunction): void {
   console.log(`${req.method} ${req.path}`);
-  next();  // MUST call next() or the request hangs
+  next();  // MUST call next() or the request hangs‼️
 }
 
 app.use(logger);
 
-// Async middleware (for database calls, auth checks):
+* Async middleware (for database calls, auth checks):
+*
+* This is a higher-order function — a function that takes a function and returns a new function.
+*
+* The problem it solves: Express doesn't catch errors from async handlers.‼️
+* If you throw or a promise rejects, the request just hangs:
+*
+*   ❌ If getUser() rejects, Express never sends an error response
+*   app.get('/users/:id', async (req, res) => {
+*     const user = await getUser(req.params.id); * throws → request hangs forever
+*     res.json(user);
+*   });
+*
+* How it works, step by step:
+*   1. fn is your async route handler (the function you pass in)
+*   2. asyncHandler returns a new non-async function that Express understands‼️
+*   3. Inside, it calls your fn(req, res, next) which returns a Promise
+*   4. .catch(next) — if the Promise rejects, it calls next(error),
+*      which triggers Express's error handler
+*
+*   * ✅ Now if getUser() rejects, Express gets the error and sends 500
+*   app.get('/users/:id', asyncHandler(async (req, res) => {
+*     const user = await getUser(req.params.id);  // throws → .catch(next) → error handler
+*     res.json(user);
+*   }));
+*
+* Think of it as wrapping every async handler in a try/catch automatically:‼️
+*
+*   try {
+*     await fn(req, res, next);
+*   } catch (error) {
+*     next(error);  * sends to Express error-handling middleware
+*   }
+*
 function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
   return (req: Request, res: Response, next: NextFunction) => {
-    fn(req, res, next).catch(next);  // catches async errors and passes to error handler
+    fn(req, res, next).catch(next);  * catches async errors and passes to error handler
   };
 }
 
-// Usage:
+* Usage:
 app.get('/users/:id', asyncHandler(async (req, res) => {
   const user = await db.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
   if (!user.rows[0]) {
@@ -226,7 +269,7 @@ app.get('/users/:id', asyncHandler(async (req, res) => {
   res.json({ data: user.rows[0] });
 }));
 
-// Error handling middleware (4 parameters — Express recognizes this signature):
+* Error handling middleware (4 parameters — Express recognizes this signature):
 function errorHandler(err: Error, req: Request, res: Response, next: NextFunction): void {
   console.error(err.stack);
   res.status(500).json({ error: 'Internal server error' });
@@ -240,38 +283,38 @@ app.use(errorHandler);  // register LAST
 ### Routing — Organizing Your Endpoints
 
 <!-- ```ts
-// src/routes/users.ts
+* src/routes/users.ts
 import { Router, Request, Response } from 'express';
 
 const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
-  // GET /api/users
+  * GET /api/users
   res.json({ data: [] });
 });
 
 router.get('/:id', async (req: Request, res: Response) => {
-  // GET /api/users/123
+  * GET /api/users/123
   const { id } = req.params;
   res.json({ data: { id } });
 });
 
 router.post('/', async (req: Request, res: Response) => {
-  // POST /api/users
+  * POST /api/users
   const { name, email } = req.body;
   res.status(201).json({ data: { name, email } });
 });
 
 export default router;
 
-// src/index.ts — mount the router:
+* src/index.ts — mount the router:
 import userRoutes from './routes/users';
 
 app.use('/api/users', userRoutes);
-// Now:
-//   GET  /api/users       → router.get('/')
-//   GET  /api/users/123   → router.get('/:id')
-//   POST /api/users       → router.post('/')
+* Now:
+*   GET  /api/users       → router.get('/')
+*   GET  /api/users/123   → router.get('/:id')
+*   POST /api/users       → router.post('/')
 ``` -->
 
 ---
@@ -279,27 +322,27 @@ app.use('/api/users', userRoutes);
 ### Connecting to PostgreSQL
 
 <!-- ```ts
-// src/db.ts
+* src/db.ts
 import { Pool } from 'pg';
 
-// The Pool manages multiple connections — you don't open/close per query
+* The Pool manages multiple connections — you don't open/close per query
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // OR individual fields:
-  // host: process.env.DB_HOST,
-  // port: parseInt(process.env.DB_PORT || '5432'),
-  // database: process.env.DB_NAME,
-  // user: process.env.DB_USER,
-  // password: process.env.DB_PASSWORD,
+  * OR individual fields:
+  * host: process.env.DB_HOST,
+  * port: parseInt(process.env.DB_PORT || '5432'),
+  * database: process.env.DB_NAME,
+  * user: process.env.DB_USER,
+  * password: process.env.DB_PASSWORD,
 });
 
-// Helper to run queries:
+* Helper to run queries:
 export async function query(text: string, params?: any[]) {
   const result = await pool.query(text, params);
   return result;
 }
 
-// For transactions:
+* For transactions:
 export async function getClient() {
   const client = await pool.connect();
   return client;
@@ -333,12 +376,12 @@ router.post('/', async (req: Request, res: Response) => {
 });
 ```
 
-**IMPORTANT — always use parameterized queries ($1, $2):**
+**IMPORTANT — always use parameterized queries ($1, $2):**‼️
 ```ts
-// GOOD — safe from SQL injection:
+* GOOD — safe from SQL injection:
 query('SELECT * FROM users WHERE id = $1', [userId]);
 
-// BAD — SQL injection vulnerability:
+* BAD — SQL injection vulnerability:
 query(`SELECT * FROM users WHERE id = '${userId}'`);
 ```
 
@@ -357,8 +400,8 @@ PORT=3000
 ```
 steno-takehome/
 ├── src/
-│   ├── index.ts              # Entry point — starts the server
-│   ├── app.ts                # Express app setup (separate from server start for testing)
+│   ├── index.ts              # Entry point — starts the server‼️
+│   ├── app.ts                # Express app setup (separate from server start for testing)‼️
 │   ├── db.ts                 # Database connection pool
 │   ├── routes/
 │   │   └── [resource].ts     # Route handlers grouped by resource
@@ -377,9 +420,26 @@ steno-takehome/
 └── README.md                 # HOW TO RUN + design decisions
 ```
 
-**Separate app.ts from index.ts — this is a key pattern:**
+**Why separate app.ts from index.ts? This is a key pattern:**
+
+* If you put everything in one file (index.ts), the server starts
+* the moment you import it — because app.listen() runs immediately:
+*
+*   ❌ Everything in index.ts
+*   const app = express();
+*   app.use(express.json());
+*   app.get('/users', ...);
+*   app.listen(3000);  // server starts immediately when you import this file
+*
+* Now if your test does `import app from './index'`, it starts listening
+* on port 3000 — you get port conflicts, hanging test processes, etc.
+*
+* The fix: separate them into two files.‼️
+*   app.ts  = the app config & routes (no listening) — the "what"
+*   index.ts = imports app and calls app.listen() — the "start button"
+
 ```ts
-// src/app.ts — creates and configures the Express app
+* src/app.ts — just the Express app, no listening
 import express from 'express';
 import userRoutes from './routes/users';
 
@@ -388,24 +448,36 @@ app.use(express.json());
 app.use('/api/users', userRoutes);
 
 export default app;
+* That's it — no app.listen() here. This file just defines the app.
 
-// src/index.ts — starts the server (not imported in tests)
+* src/index.ts — only starts the server
 import app from './app';
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+* This is the only file that calls app.listen().
+* In production, you run: node dist/index.js → this file runs → server starts.
+* In tests, you never import this file.
 ```
 
-Why separate? In tests, you import `app` directly without starting the server:
-```ts
-import request from 'supertest';
-import app from '../src/app';
+* Now in tests you can import just the app without starting a server:
+*
+*   import request from 'supertest';
+*   import app from '../src/app';  // no server starts! just the app object
+*
+*   test('GET /api/users returns 200', async () => {
+*     const res = await request(app).get('/api/users');
+*     // supertest handles it in-memory — no real port, no conflicts‼️
+*     expect(res.status).toBe(200);
+*   });
+*
+* supertest creates a temporary in-memory server for each test,‼️
+* so you can run tests in parallel without port conflicts.
+*
+* TL;DR: app.ts = the app config/routes, index.ts = the "start" button.
+* Tests need the app but not the start button.‼️
 
-test('GET /api/users returns 200', async () => {
-  const res = await request(app).get('/api/users');
-  expect(res.status).toBe(200);
-});
-``` -->
+-->
 
 ---
 
@@ -416,19 +488,19 @@ test('GET /api/users returns 200', async () => {
 ### CRUD API Pattern (you'll likely need this)
 
 <!-- ```ts
-// src/routes/items.ts — a complete CRUD resource
+* src/routes/items.ts — a complete CRUD resource
 import { Router, Request, Response } from 'express';
 import { query } from '../db';
 
 const router = Router();
 
-// LIST — GET /api/items
+* LIST — GET /api/items
 router.get('/', async (req: Request, res: Response) => {
   const result = await query('SELECT * FROM items ORDER BY created_at DESC');
-  res.json({ data: result.rows });
+  res.json({ data: result.rows });‼️
 });
 
-// GET ONE — GET /api/items/:id
+* GET ONE — GET /api/items/:id
 router.get('/:id', async (req: Request, res: Response) => {
   const result = await query('SELECT * FROM items WHERE id = $1', [req.params.id]);
   if (!result.rows[0]) {
@@ -438,7 +510,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   res.json({ data: result.rows[0] });
 });
 
-// CREATE — POST /api/items
+* CREATE — POST /api/items
 router.post('/', async (req: Request, res: Response) => {
   const { name, description } = req.body;
 
@@ -448,13 +520,26 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   const result = await query(
-    'INSERT INTO items (name, description) VALUES ($1, $2) RETURNING *',
+    'INSERT INTO items (name, description) VALUES ($1, $2) RETURNING *',‼️
     [name, description]
   );
   res.status(201).json({ data: result.rows[0] });
 });
 
-// UPDATE — PATCH /api/items/:id
+* UPDATE — PATCH /api/items/:id
+* COALESCE picks the first non-null value from its arguments.
+*   COALESCE($1, name) means: use $1 (new value from request) if provided,
+*   otherwise keep the existing `name` in the database.
+*
+* This is the trick for partial updates — user only sends fields they want to change:
+*   User sends: { name: "New Name" }  (no description)
+*   $1 = "New Name", $2 = undefined (becomes NULL in SQL)
+*
+*   name = COALESCE('New Name', name)        → 'New Name' is not null → use it
+*   description = COALESCE(NULL, description) → NULL → keep existing description
+*
+* Without COALESCE, sending PATCH with only { name: "New Name" } would
+* overwrite description to NULL — wiping out existing data.
 router.patch('/:id', async (req: Request, res: Response) => {
   const { name, description } = req.body;
   const result = await query(
@@ -468,7 +553,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
   res.json({ data: result.rows[0] });
 });
 
-// DELETE — DELETE /api/items/:id
+* DELETE — DELETE /api/items/:id
 router.delete('/:id', async (req: Request, res: Response) => {
   const result = await query('DELETE FROM items WHERE id = $1 RETURNING *', [req.params.id]);
   if (!result.rows[0]) {
@@ -537,10 +622,10 @@ psql -d steno_takehome -f src/db/schema.sql
 <!-- For a POC, you don't need zod or joi. Simple validation is fine:
 
 ```ts
-// src/middleware/validate.ts
+* src/middleware/validate.ts
 import { Request, Response, NextFunction } from 'express';
 
-// Generic validation middleware factory:
+* Generic validation middleware factory:
 function validate(schema: Record<string, (val: any) => boolean>) {
   return (req: Request, res: Response, next: NextFunction) => {
     const errors: string[] = [];
@@ -559,14 +644,14 @@ function validate(schema: Record<string, (val: any) => boolean>) {
   };
 }
 
-// Usage:
+* Usage:
 router.post('/',
   validate({
     name: (v) => typeof v === 'string' && v.trim().length > 0,
     email: (v) => typeof v === 'string' && v.includes('@'),
   }),
   async (req: Request, res: Response) => {
-    // req.body is validated at this point
+    * req.body is validated at this point
   }
 );
 ```
@@ -580,7 +665,7 @@ router.post('/', async (req: Request, res: Response) => {
     res.status(400).json({ error: 'name is required and must be a string' });
     return;
   }
-  // ... proceed
+  * ... proceed
 });
 ``` -->
 
@@ -606,7 +691,7 @@ Brief description of what this does and the approach you took.
 - Add authentication middleware (JWT)
 - Add comprehensive error handling with custom error classes
 - Add database migrations (instead of raw SQL schema file)
-- Add request logging (pino or morgan)
+- Add request logging (pino or morgan)‼️
 - Add rate limiting
 - Add pagination for list endpoints
 - Add CI/CD pipeline
@@ -685,7 +770,7 @@ npm test
    - Return total count for frontend pagination
 
 6. **"What would you test and how?"**
-   - Supertest for API integration tests
+   - Supertest for API integration tests‼️
    - What edge cases you'd cover
 
 7. **"What trade-offs did you make for the POC?"**
@@ -711,7 +796,7 @@ mkdir project && cd project && npm init -y
 npm install express pg dotenv
 npm install -D typescript ts-node @types/node @types/express @types/pg nodemon
 
-# Init TypeScript
+# Init TypeScript‼️
 npx tsc --init
 
 # Create folder structure
@@ -732,7 +817,7 @@ psql -d steno_takehome -f src/db/schema.sql
 # Run tests
 npm test
 
-# Check TypeScript errors without compiling
+# Check TypeScript errors without compiling‼️
 npx tsc --noEmit
 ```
 
@@ -753,7 +838,7 @@ PORT=3000
 
 ## Key Reminders
 
-<!-- 
+<!--
 1. **Understand every line** — they WILL ask you to explain your code in the 90-min deep dive
 2. **POC, not production** — don't over-engineer, but show you KNOW what production would look like (comments, README)
 3. **README matters** — clear setup instructions, design decisions, what you'd improve
