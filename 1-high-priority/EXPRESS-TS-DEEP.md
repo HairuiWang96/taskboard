@@ -128,9 +128,9 @@ app.listen(3000, (): void => console.log('Server running on port 3000'));
 ```
 
 ```text
-Key tsconfig options for Express:‼️
+Key tsconfig options for Express:
 
-  esModuleInterop: true
+  esModuleInterop: true‼️
     → Lets you write: import express from 'express'
     → Without it you'd need: import * as express from 'express'
 
@@ -143,10 +143,10 @@ Key tsconfig options for Express:‼️
     → rootDir: where your source TS lives (src/)
 
   declaration: true
-    → Generates .d.ts files — useful if you're building a library
+    → Generates .d.ts files — useful if you're building a library‼️
 ```
 
-### Extending Express Request interface (declare global namespace Express)
+### Extending Express Request interface (declare global namespace Express)‼️
 
 ```ts
 // types/express.d.ts
@@ -189,16 +189,16 @@ import { Request } from 'express';
 // Given a handler with req typed as Request:
 function showReqProperties(req: Request): void {
     req.params; // { id: '123' } — from route params like /users/:id
-    req.query; // { page: '1', sort: 'name' } — from ?page=1&sort=name‼️
+    req.query; // { page: '1', sort: 'name' } — from ?page=1&sort=name
     req.body; // parsed body — ONLY available after body-parser middleware‼️
     req.ip; // client IP (respects X-Forwarded-For if trust proxy set)‼️
     req.path; // '/users/123' — URL path without query string‼️
     req.method; // 'GET', 'POST', etc.
     req.hostname; // 'example.com' (respects X-Forwarded-Host if trust proxy set)
     req.protocol; // 'http' or 'https' (respects X-Forwarded-Proto if trust proxy set)
-    req.secure; // true if req.protocol === 'https'
+    req.secure; // true if req.protocol === 'https'‼️
     req.originalUrl; // '/api/users/123?page=1' — full URL with query string
-    req.baseUrl; // '/api/users' — the prefix the router was mounted on
+    req.baseUrl; // '/api/users' — the prefix the router was mounted on‼️
     req.cookies; // { session: 'abc' } — only available with cookie-parser middleware‼️
     req.signedCookies; // cookies that were signed with a secret‼️
     req.fresh; // true if the client's cached version is still valid (ETag/Last-Modified)‼️
@@ -207,7 +207,7 @@ function showReqProperties(req: Request): void {
 
     // Methods
     req.get('Content-Type'); // get a request header (case-insensitive)
-    req.accepts('json'); // content negotiation — does client accept JSON?
+    req.accepts('json'); // content negotiation — does client accept JSON?‼️
     req.is('application/json'); // check if Content-Type matches
 }
 ```
@@ -222,7 +222,7 @@ import { Request, Response } from 'express';
 function showResMethods(req: Request, res: Response): void {
     // Sending responses (use ONE per request — calling two = error)‼️
     res.json({ key: 'val' }); // sets Content-Type: application/json + JSON.stringify‼️
-    res.send('text'); // sends string, Buffer, or object (auto-sets Content-Type)
+    res.send('text'); // sends string, Buffer, or object (auto-sets Content-Type)‼️
     res.sendStatus(204); // sends status code with status text as body
     res.end(); // end response with no body (vanilla Node method)‼️
 
@@ -245,13 +245,13 @@ function showResMethods(req: Request, res: Response): void {
         httpOnly: true, // no JS access — XSS protection‼️
         secure: true, // HTTPS only
         sameSite: 'strict', // CSRF protection
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in MILLISECONDS (Express uses ms)‼️
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in MILLISECONDS (Express uses ms)
     });
     res.clearCookie('session'); // delete a cookie
 
     // File responses
     res.sendFile('/absolute/path/to/file.pdf'); // must be absolute path‼️
-    res.download('/path/file.pdf', 'report.pdf'); // triggers download with custom filename
+    res.download('/path/file.pdf', 'report.pdf'); // triggers download with custom filename‼️
     res.attachment('report.pdf'); // sets Content-Disposition: attachment
 
     // Content negotiation
@@ -269,11 +269,11 @@ function showResMethods(req: Request, res: Response): void {
 
     // Locals — pass data to templates or downstream middleware‼️
     res.locals.user = { id: 1, name: 'Alice' };
-    // res.locals persists for the ENTIRE request lifecycle — great for template rendering
+    // res.locals persists for the ENTIRE request lifecycle — great for template rendering‼️
 }
 ```
 
-### Trust Proxy — critical for production‼️
+### Trust Proxy — critical for production
 
 ```ts
 import express from 'express';
@@ -293,12 +293,12 @@ app.set('trust proxy', 1); // trust first hop‼️
 //   req.protocol → 'https' if X-Forwarded-Proto: https
 //   req.hostname → real hostname from X-Forwarded-Host
 
-// Values:‼️
+// Values:
 app.set('trust proxy', true); // trust all proxies (dangerous — IP spoofing)‼️
 app.set('trust proxy', 1); // trust first proxy (ALB, Nginx)
 app.set('trust proxy', 2); // trust first two proxies (Cloudflare → ALB)
-app.set('trust proxy', 'loopback'); // trust 127.0.0.1 only
-app.set('trust proxy', '10.0.0.0/8'); // trust IPs in this subnet
+app.set('trust proxy', 'loopback'); // trust 127.0.0.1 only‼️
+app.set('trust proxy', '10.0.0.0/8'); // trust IPs in this subnet‼️
 
 // ‼️ AWS ALB / ECS:   trust proxy = 1
 // ‼️ Cloudflare → ALB: trust proxy = 2
@@ -312,15 +312,15 @@ app.set('trust proxy', '10.0.0.0/8'); // trust IPs in this subnet
 ### How middleware works
 
 ```text
-Every middleware is a function: (req, res, next) => void‼️
+Every middleware is a function: (req, res, next) => void
 
 Express maintains an internal stack of middleware functions.
 When a request comes in, Express walks the stack IN ORDER:
   → middleware 1 runs → calls next() → middleware 2 runs → ...
   → route handler runs → sends response → done
 
-If next() is never called AND no response is sent → the request HANGS forever.‼️
-If next(err) is called → Express SKIPS all regular middleware, jumps to error handlers.‼️
+If next() is never called AND no response is sent → the request HANGS forever.
+If next(err) is called → Express SKIPS all regular middleware, jumps to error handlers.
 
 ‼️ ORDER MATTERS — middleware runs in the ORDER it was registered with app.use()
 
@@ -338,7 +338,7 @@ const app: express.Express = express();
 // 1. Logger — runs for EVERY request (no path = matches all)
 app.use((req: Request, res: Response, next: NextFunction): void => {
     console.log(`${req.method} ${req.url}`);
-    next(); // MUST call next() or the request hangs‼️
+    next(); // MUST call next() or the request hangs
 });
 
 // 2. Body parser — parse JSON bodies; populates req.body
@@ -358,7 +358,7 @@ app.use((req: Request, res: Response): void => {
     res.status(404).json({ error: 'Not found' });
 });
 
-// 6. Error handler — MUST have 4 params for Express to recognize it‼️
+// 6. Error handler — MUST have 4 params for Express to recognize it
 const errorHandler: ErrorRequestHandler = (err: Error, req: Request, res: Response, next: NextFunction): void => {
     res.status(500).json({ error: err.message });
 };
@@ -400,7 +400,7 @@ express.static('public'); // serve static files from /public directory
 // cors, helmet, morgan, compression, cookie-parser, express-rate-limit, etc.
 ```
 
-### next() — the three behaviors‼️
+### next() — the three behaviors
 
 ```ts
 import { Request, Response, NextFunction } from 'express';
@@ -422,11 +422,11 @@ app.get(
 );
 
 app.get('/user/:id', (req: Request, res: Response): void => {
-    res.send('Admin user'); // only runs if next('route') was called above
+    res.send('Admin user'); // only runs if next('route') was called above‼️
 });
 ```
 
-### Common middleware ordering pattern‼️
+### Common middleware ordering pattern
 
 ```ts
 import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
@@ -438,7 +438,7 @@ import compression from 'compression';
 
 const app: express.Express = express();
 
-// ‼️ Order matters. This is the recommended order:
+// Order matters. This is the recommended order:
 
 // 1. Security headers (run first — apply to all responses including errors)
 app.use(helmet());
@@ -446,7 +446,7 @@ app.use(helmet());
 // 2. CORS (must be before routes so preflight OPTIONS requests get handled)
 app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
 
-// 3. Request logging (log all requests, including ones that fail)
+// 3. Request logging (log all requests, including ones that fail)‼️
 app.use(morgan('combined'));
 
 // 4. Body parsing (must be before any route that reads req.body)
@@ -454,7 +454,7 @@ app.use(express.json({ limit: '10kb' })); // limit body size‼️
 app.use(express.urlencoded({ extended: true }));
 
 // 5. Cookie parsing (must be before routes that read req.cookies)
-app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(cookieParser(process.env.COOKIE_SECRET));‼️
 
 // 6. Compression (compress responses — after parsing, before routes)
 app.use(compression());
@@ -498,7 +498,7 @@ app.post('/users', createUser); // POST   /users
 app.put('/users/:id', updateUser); // PUT    /users/123
 app.patch('/users/:id', patchUser); // PATCH  /users/123
 app.delete('/users/:id', delUser); // DELETE /users/123
-app.all('/secret', requireAuth); // ALL methods — useful for shared middleware
+app.all('/secret', requireAuth); // ALL methods — useful for shared middleware‼️
 
 // Route parameters
 app.get('/users/:id', (req: Request<{ id: string }>, res: Response): void => {
@@ -506,13 +506,10 @@ app.get('/users/:id', (req: Request<{ id: string }>, res: Response): void => {
 });
 
 // Multiple parameters
-app.get(
-    '/users/:userId/posts/:postId',
-    (req: Request<{ userId: string; postId: string }>, res: Response): void => {
-        req.params.userId; // '123'
-        req.params.postId; // '456'
-    },
-);
+app.get('/users/:userId/posts/:postId', (req: Request<{ userId: string; postId: string }>, res: Response): void => {
+    req.params.userId; // '123'
+    req.params.postId; // '456'
+});
 
 // Optional parameters (regex)
 app.get('/users/:id(\\d+)', (req: Request<{ id: string }>, res: Response): void => {
@@ -520,10 +517,10 @@ app.get('/users/:id(\\d+)', (req: Request<{ id: string }>, res: Response): void 
 });
 ```
 
-### express.Router() — modular route grouping‼️
+### express.Router() — modular route grouping
 
 ```ts
-// ‼️ Key pattern: NEVER define all routes on app — split into Router files
+// Key pattern: NEVER define all routes on app — split into Router files
 
 // routes/users.ts
 import { Router, Request, Response, RequestHandler } from 'express';
@@ -565,7 +562,7 @@ app.use(publicRouter);
 
 // Protected routes — require authentication
 const protectedRouter: Router = Router();
-protectedRouter.use(authenticate); // all routes below need auth‼️
+protectedRouter.use(authenticate); // all routes below need auth
 protectedRouter.use('/api/users', userRouter);
 protectedRouter.use('/api/tasks', taskRouter);
 app.use(protectedRouter);
@@ -573,7 +570,7 @@ app.use(protectedRouter);
 // Admin routes — require auth + admin role
 const adminRouter: Router = Router();
 adminRouter.use(authenticate);
-adminRouter.use(requireRole('admin')); // all routes below need admin‼️
+adminRouter.use(requireRole('admin')); // all routes below need admin
 adminRouter.get('/api/admin/stats', getStats);
 adminRouter.get('/api/admin/users', getAllUsers);
 app.use(adminRouter);
@@ -587,7 +584,7 @@ import express, { Request, Response } from 'express';
 const app: express.Express = express();
 
 // Cleaner syntax when multiple methods share the same path
-app.route('/users/:id').get(getUser).put(updateUser).patch(patchUser).delete(deleteUser);
+app.route('/users/:id').get(getUser).put(updateUser).patch(patchUser).delete(deleteUser);‼️
 ```
 
 ### Router.param() — pre-processing route params
@@ -597,7 +594,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 
 const router: Router = Router();
 
-// Runs BEFORE any route handler that uses :id‼️
+// Runs BEFORE any route handler that uses :id
 router.param('id', async (req: Request, res: Response, next: NextFunction, id: string): Promise<void> => {
     const user = await db.findUser(id);
     if (!user) {
@@ -608,7 +605,7 @@ router.param('id', async (req: Request, res: Response, next: NextFunction, id: s
     next();
 });
 
-// Now every route with :id automatically has req.user populated
+// Now every route with :id automatically has req.user populated‼️
 router.get('/:id', (req: Request, res: Response): void => {
     res.json(req.user);
 });
@@ -624,12 +621,12 @@ router.delete('/:id', (req: Request, res: Response): void => {
 
 ## 6. Error Handling
 
-### The biggest Express gotcha — async errors‼️
+### The biggest Express gotcha — async errors
 
 ```ts
 import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 
-// Express was built before async/await — it does NOT catch async errors!‼️
+// Express was built before async/await — it does NOT catch async errors!
 
 // ✗ BROKEN — if db.getUsers() rejects, Express hangs or crashes
 app.get('/users', async (req: Request, res: Response): Promise<void> => {
@@ -647,10 +644,11 @@ app.get('/users', async (req: Request, res: Response, next: NextFunction): Promi
     }
 });
 
-// ✓ FIX 2: asyncHandler wrapper (recommended for Express 4)‼️
-const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>): RequestHandler =>
+// ✓ FIX 2: asyncHandler wrapper (recommended for Express 4)
+const asyncHandler =
+    (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>): RequestHandler =>
     (req: Request, res: Response, next: NextFunction): void => {
-        Promise.resolve(fn(req, res, next)).catch(next);
+        Promise.resolve(fn(req, res, next)).catch(next);‼️
     };
 // This takes your async function, and if it rejects, automatically calls next(err)
 // which forwards the error to the centralized error handler
@@ -670,7 +668,7 @@ import 'express-async-errors'; // just import at top of app — async errors now
 // ✓ FIX 4: Express 5 handles async errors natively — no fix needed‼️
 ```
 
-### How asyncHandler works — line by line‼️
+### How asyncHandler works — line by line
 
 ```ts
 import { Request, Response, NextFunction, RequestHandler } from 'express';
@@ -710,7 +708,7 @@ class AppError extends Error {
     public readonly code?: string;
 
     constructor(statusCode: number, message: string, code?: string) {
-        super(message);
+        super(message);‼️
         this.statusCode = statusCode;
         this.code = code;
     }
@@ -775,12 +773,7 @@ interface ZodErrorLike extends Error {
     flatten: () => unknown;
 }
 
-const centralErrorHandler: ErrorRequestHandler = (
-    err: AppErrorLike & { code?: string },
-    req: Request,
-    res: Response,
-    next: NextFunction,
-): void => {
+const centralErrorHandler: ErrorRequestHandler = (err: AppErrorLike & { code?: string }, req: Request, res: Response, next: NextFunction): void => {
     // Zod validation errors
     if (err.name === 'ZodError') {
         res.status(400).json({
@@ -815,7 +808,7 @@ const centralErrorHandler: ErrorRequestHandler = (
         return;
     }
 
-    // Unexpected errors — NEVER leak internals to client‼️
+    // Unexpected errors — NEVER leak internals to client
     console.error('UNEXPECTED ERROR:', err);
     res.status(500).json({
         error: 'Internal Server Error',
@@ -845,7 +838,7 @@ Route handler runs
   ↓
 If handler throws / calls next(err):
   ↓
-  Express SKIPS all regular middleware‼️
+  Express SKIPS all regular middleware
   ↓
   Jumps to first (err, req, res, next) middleware‼️
   ↓
@@ -855,7 +848,7 @@ Done
 
 If no route matches:
   ↓
-  Falls through to 404 handler (the last regular middleware)
+  Falls through to 404 handler (the last regular middleware)‼️
 ```
 
 ---
@@ -872,13 +865,13 @@ const app: express.Express = express();
 // express.json() — parse application/json
 app.use(
     express.json({
-        limit: '10kb', // max body size (prevent DoS)‼️
-        strict: true, // only accept arrays and objects (default)
+        limit: '10kb', // max body size (prevent DoS)
+        strict: true, // only accept arrays and objects (default)‼️
         type: 'application/json', // Content-Type to match
     }),
 );
 
-// express.urlencoded() — parse HTML form submissions (application/x-www-form-urlencoded)
+// express.urlencoded() — parse HTML form submissions (application/x-www-form-urlencoded)‼️
 app.use(
     express.urlencoded({
         extended: true, // true = use qs library (nested objects: user[name]=Alice)
@@ -887,7 +880,7 @@ app.use(
     }),
 );
 
-// express.raw() — parse body as Buffer (for webhooks, binary data)
+// express.raw() — parse body as Buffer (for webhooks, binary data)‼️
 app.use('/webhook', express.raw({ type: 'application/json' }));
 // req.body is a Buffer — parse yourself: JSON.parse(req.body.toString())
 
@@ -911,7 +904,7 @@ import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 interface StripeWebhookRequest extends Request {
-    body: Buffer; // raw body for signature verification
+    body: Buffer; // raw body for signature verification‼️
 }
 
 // Use express.raw() for the webhook route only
@@ -919,16 +912,12 @@ app.post(
     '/webhook/stripe',
     express.raw({ type: 'application/json' }), // raw Buffer, not parsed JSON‼️
     async (req: StripeWebhookRequest, res: Response): Promise<void> => {
-        const sig: string | undefined = req.headers['stripe-signature'] as string | undefined;
+        const sig: string | undefined = req.headers['stripe-signature'] as string | undefined;‼️
         let event: Stripe.Event;
 
         try {
-            event = stripe.webhooks.constructEvent(
-                req.body,
-                sig as string,
-                process.env.STRIPE_WEBHOOK_SECRET as string,
-            );
-            // req.body is a Buffer here — Stripe SDK needs the raw bytes to verify
+            event = stripe.webhooks.constructEvent(req.body, sig as string, process.env.STRIPE_WEBHOOK_SECRET as string);
+            // req.body is a Buffer here — Stripe SDK needs the raw bytes to verify‼️
         } catch (err) {
             res.status(400).json({ error: 'Invalid signature' });
             return;
@@ -950,10 +939,10 @@ app.post(
 
 ## 8. Validation Patterns
 
-### Express has NO built-in validation‼️
+### Express has NO built-in validation
 
 ```text
-Express has NO built-in validation — you pick your own library.‼️
+Express has NO built-in validation — you pick your own library.
 This is different from Fastify (JSON Schema / ajv) or NestJS (class-validator).
 
 Popular choices:
@@ -962,7 +951,7 @@ Popular choices:
   express-validator — built on validator.js, middleware-style
 ```
 
-### Zod validation middleware (recommended)‼️
+### Zod validation middleware (recommended)
 
 ```ts
 import { z, ZodSchema } from 'zod';
@@ -970,7 +959,8 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 
 // ‼️ Reusable middleware factory — validates body, query, or params
 
-const validate = (schema: ZodSchema): RequestHandler =>
+const validate =
+    (schema: ZodSchema): RequestHandler =>
     (req: Request, res: Response, next: NextFunction): void => {
         const result = schema.safeParse(req.body);
         if (!result.success) {
@@ -1021,7 +1011,8 @@ interface ValidationSchemas {
     query?: ZodSchema;
 }
 
-const validateRequest = ({ body, params, query }: ValidationSchemas): RequestHandler =>
+const validateRequest =
+    ({ body, params, query }: ValidationSchemas): RequestHandler =>
     (req: Request, res: Response, next: NextFunction): void => {
         if (body) {
             const result = body.safeParse(req.body);
@@ -1154,15 +1145,11 @@ app.post(
         if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
             res.status(401).json({ error: 'Invalid credentials' });
             return;
-            // ‼️ Don't say "user not found" or "wrong password" — helps attackers
+            // Don't say "user not found" or "wrong password" — helps attackers
         }
 
         // Access token — short-lived, sent in response body
-        const accessToken: string = jwt.sign(
-            { sub: user.id, role: user.role } as TokenPayload,
-            process.env.JWT_SECRET as string,
-            { expiresIn: '15m' },
-        );
+        const accessToken: string = jwt.sign({ sub: user.id, role: user.role } as TokenPayload, process.env.JWT_SECRET as string, { expiresIn: '15m' });
 
         // Refresh token — long-lived, stored in httpOnly cookie
         const refreshToken: string = crypto.randomBytes(64).toString('hex');
@@ -1203,7 +1190,7 @@ const authenticate = (req: Request, res: Response, next: NextFunction): void => 
     try {
         const decoded: TokenPayload = jwt.verify(token, process.env.JWT_SECRET as string) as TokenPayload;
         req.user = decoded;
-        // req.user = { sub: '123', role: 'admin', iat: ..., exp: ... }
+        // req.user = { sub: '123', role: 'admin', iat: ..., exp: ... }‼️
         next();
     } catch (err) {
         if ((err as Error).name === 'TokenExpiredError') {
@@ -1225,7 +1212,7 @@ protectedRouter.get('/tasks', getTasks);
 app.use('/api', protectedRouter);
 ```
 
-### RBAC — Role-Based Access Control‼️
+### RBAC — Role-Based Access Control
 
 ```ts
 import { Request, Response, NextFunction, RequestHandler } from 'express';
@@ -1289,16 +1276,12 @@ app.post(
             return;
         }
 
-        // ‼️ Token rotation: invalidate old, issue new (prevents stolen token reuse)
+        // Token rotation: invalidate old, issue new (prevents stolen token reuse)
         await revokeRefreshToken(refreshToken);
         const newRefreshToken: string = crypto.randomBytes(64).toString('hex');
         await storeRefreshToken(tokenRecord.userId, newRefreshToken);
 
-        const accessToken: string = jwt.sign(
-            { sub: tokenRecord.userId },
-            process.env.JWT_SECRET as string,
-            { expiresIn: '15m' },
-        );
+        const accessToken: string = jwt.sign({ sub: tokenRecord.userId }, process.env.JWT_SECRET as string, { expiresIn: '15m' });
 
         res.cookie('refreshToken', newRefreshToken, {
             httpOnly: true,
@@ -1316,7 +1299,7 @@ app.post(
 
 ## 10. Security Hardening
 
-### Helmet — security headers‼️
+### Helmet — security headers
 
 ```ts
 import express from 'express';
@@ -1335,7 +1318,7 @@ app.use(
                 imgSrc: ["'self'", 'data:', 'https:'],
             },
         },
-        hsts: { maxAge: 31536000, includeSubDomains: true }, // force HTTPS for 1 year
+        hsts: { maxAge: 31536000, includeSubDomains: true }, // force HTTPS for 1 year‼️
     }),
 );
 
@@ -1348,7 +1331,7 @@ app.use(
 // Referrer-Policy: no-referrer            — don't leak referrer info
 ```
 
-### CORS configuration‼️
+### CORS configuration
 
 ```ts
 import express from 'express';
@@ -1360,7 +1343,7 @@ const app: express.Express = express();
 app.use(
     cors({
         origin: 'http://localhost:5173',
-        credentials: true, // allow cookies cross-origin
+        credentials: true, // allow cookies cross-origin‼️
     } as CorsOptions),
 );
 
@@ -1388,7 +1371,7 @@ app.use(cors(corsOptionsDelegate));
 // The browser blocks this combination for security
 ```
 
-### Rate limiting‼️
+### Rate limiting
 
 ```ts
 import express, { Request, Response } from 'express';
@@ -1416,7 +1399,7 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// Stricter limiter for auth endpoints (prevent brute force)‼️
+// Stricter limiter for auth endpoints (prevent brute force)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5, // only 5 attempts
@@ -1437,7 +1420,7 @@ import xss from 'xss';
 const app: express.Express = express();
 
 // Prevent NoSQL injection (MongoDB)
-app.use(mongoSanitize()); // strips $ and . from req.body, req.query, req.params
+app.use(mongoSanitize()); // strips $ and . from req.body, req.query, req.params‼️
 
 // Prevent XSS in user input (if you're rendering HTML)
 const userInput: string = '<script>alert("xss")</script>';
@@ -1452,7 +1435,7 @@ const clean: string = xss(userInput); // strips <script> tags, event handlers, e
 
 ## 11. Logging & Observability
 
-### Morgan — HTTP request logging
+### Morgan — HTTP request logging‼️
 
 ```ts
 import express from 'express';
@@ -1495,10 +1478,7 @@ const app: express.Express = express();
 
 const logger: Logger = pino({
     level: process.env.LOG_LEVEL ?? 'info',
-    transport:
-        process.env.NODE_ENV === 'development'
-            ? { target: 'pino-pretty', options: { colorize: true } }
-            : undefined, // production: raw JSON (for log aggregators like Datadog, ELK)
+    transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty', options: { colorize: true } } : undefined, // production: raw JSON (for log aggregators like Datadog, ELK)
 });
 
 app.use(pinoHttp({ logger })); // adds req.log to every request
@@ -1632,7 +1612,7 @@ app.use(
         etag: true, // enable ETag for conditional requests
         lastModified: true, // enable Last-Modified header
         immutable: true, // for content-hashed files (bundle.a1b2c3.js)
-        index: false, // don't serve index.html for directories
+        index: false, // don't serve index.html for directories‼️
     }),
 );
 ```
@@ -1786,7 +1766,7 @@ app.get(
 
 ## 14. Testing with Supertest
 
-### Integration testing pattern‼️
+### Integration testing pattern
 
 ```ts
 // Express uses "supertest" — sends HTTP requests to your app WITHOUT starting a server‼️
@@ -1803,9 +1783,7 @@ describe('Task API', (): void => {
         app = createApp(); // create Express app (DON'T call .listen())‼️
 
         // Seed test user and get token
-        const res: SupertestResponse = await request(app)
-            .post('/auth/login')
-            .send({ email: 'test@test.com', password: 'password' });
+        const res: SupertestResponse = await request(app).post('/auth/login').send({ email: 'test@test.com', password: 'password' });
         authToken = res.body.accessToken as string;
     });
 
@@ -1878,7 +1856,7 @@ request(app)
     // Send body
     .send({ key: 'value' }) // JSON body
     .send('raw string body') // text body
-    .field('name', 'value') // form field (multipart)
+    .field('name', 'value') // form field (multipart)‼️
     .attach('avatar', './test/photo.jpg') // file upload
 
     // Query string
@@ -1911,7 +1889,7 @@ const app: express.Express = express();
 
 app.use(
     compression({
-        threshold: 1024, // only compress responses > 1KB
+        threshold: 1024, // only compress responses > 1KB‼️
         level: 6, // gzip level (1=fast, 9=best compression, 6=default)
         filter: (req: Request, res: Response): boolean => {
             // Don't compress SSE streams
@@ -1947,7 +1925,7 @@ const cacheMiddleware = (ttl: number = 300) =>
         }
 
         // Override res.json to intercept and cache the response
-        const originalJson = res.json.bind(res) as (body: unknown) => Response;
+        const originalJson = res.json.bind(res) as (body: unknown) => Response;‼️
         res.json = ((body: unknown): Response => {
             redis.setex(key, ttl, JSON.stringify(body)); // cache for ttl seconds
             res.setHeader('X-Cache', 'MISS');
@@ -2012,13 +1990,13 @@ if (cluster.isPrimary) {
    const [users, tasks] = await Promise.all([getUsers(), getTasks()]);
    // Instead of: const users = await getUsers(); const tasks = await getTasks();
 
-4. Avoid sync operations in request handlers:
+4. Avoid sync operations in request handlers:‼️
    ✗ fs.readFileSync()   → blocks event loop, all requests stall
    ✓ fs.readFile() or fs/promises
 
 5. Let Nginx handle static files and SSL:
    Node.js is slower at serving static files than Nginx.
-   Nginx can also handle gzip, rate limiting, and SSL termination.
+   Nginx can also handle gzip, rate limiting, and SSL termination.‼️
 
 6. Use connection pooling for databases:
    Don't open a new connection per request — use a pool (pg.Pool, Drizzle).
@@ -2127,7 +2105,7 @@ interface ReadinessResponse {
 app.get('/health', (req: Request, res: Response<HealthResponse>): void => {
     res.json({
         status: 'ok',
-        uptime: process.uptime(),
+        uptime: process.uptime(),‼️
         timestamp: new Date().toISOString(),
     });
 });
@@ -2136,10 +2114,7 @@ app.get('/health', (req: Request, res: Response<HealthResponse>): void => {
 app.get(
     '/ready',
     asyncHandler(async (req: Request, res: Response<ReadinessResponse>): Promise<void> => {
-        const checks: PromiseSettledResult<unknown>[] = await Promise.allSettled([
-            pool.query('SELECT 1'),
-            redis.ping(),
-        ]);
+        const checks: PromiseSettledResult<unknown>[] = await Promise.allSettled([pool.query('SELECT 1'), redis.ping()]);
 
         const dbOk: boolean = checks[0].status === 'fulfilled';
         const redisOk: boolean = checks[1].status === 'fulfilled';
@@ -2182,7 +2157,7 @@ Express 5 (released 2024 — first major update in 10+ years):
 
 ✅ Path route matching changes:
    - Regex-like patterns in paths are stricter
-   - Optional params: /users/:id? no longer works — use /users{/:id}
+   - Optional params: /users/:id? no longer works — use /users{/:id}‼️
 
 ✅ res.render() returns a Promise (can await it)
 
@@ -2209,7 +2184,7 @@ src/
   middleware/
     authenticate.ts   ← JWT verification middleware
     authorize.ts      ← Role-based access control
-    validate.ts       ← Zod validation middleware factory
+    validate.ts       ← Zod validation middleware factory‼️
     errorHandler.ts   ← Centralized error handler
     rateLimiter.ts    ← Rate limiting config
   routes/
@@ -2220,7 +2195,7 @@ src/
   controllers/        ← Route handlers (thin — delegate to services)
     userController.ts
     taskController.ts
-  services/           ← Business logic (testable without Express)
+  services/           ← Business logic (testable without Express)‼️
     userService.ts
     taskService.ts
   repositories/       ← Database queries (SQL / ORM)
@@ -2229,7 +2204,7 @@ src/
   errors/
     AppError.ts       ← Custom error classes
   types/
-    express.d.ts      ← Extend Express Request type (req.user, req.correlationId)
+    express.d.ts      ← Extend Express Request type (req.user, req.correlationId)‼️
   utils/
     asyncHandler.ts   ← asyncHandler wrapper (Express 4 only)
 
@@ -2277,7 +2252,7 @@ export {};
 
 ### "What is the difference between app.use() and app.get()?"
 
-> `app.use()` matches ALL HTTP methods and matches any path that STARTS WITH the given prefix. `app.get()` only matches GET requests to the exact path (or path with params). `app.use('/api')` matches `/api`, `/api/users`, `/api/anything`. `app.get('/api')` only matches `GET /api`. Use `app.use()` for middleware, `app.get/post/put/delete()` for route handlers.
+> `app.use()` matches ALL HTTP methods and matches any path that STARTS WITH the given prefix. ‼️ `app.get()` only matches GET requests to the exact path (or path with params). `app.use('/api')` matches `/api`, `/api/users`, `/api/anything`. `app.get('/api')` only matches `GET /api`. Use `app.use()` for middleware, `app.get/post/put/delete()` for route handlers.
 
 ### "What is express.Router() and why use it?"
 
@@ -2285,15 +2260,15 @@ export {};
 
 ### "What is the difference between req.params, req.query, and req.body?"
 
-> `req.params` — values from URL path parameters. `GET /users/:id` → `req.params.id = '123'`. `req.query` — values from the query string. `GET /users?page=2` → `req.query.page = '2'`. `req.body` — the parsed request body (POST/PUT/PATCH). Requires `express.json()` middleware — without it, `req.body` is undefined. Params and query are always strings; body can be any parsed type.
+> `req.params` — values from URL path parameters. `GET /users/:id` → `req.params.id = '123'`. `req.query` — values from the query string. `GET /users?page=2` → `req.query.page = '2'`. `req.body` — the parsed request body (POST/PUT/PATCH). Requires `express.json()` middleware — without it, `req.body` is undefined. ‼️Params and query are always strings; body can be any parsed type.
 
 ### "How would you structure a large Express application?"
 
-> Separate concerns: `app.ts` sets up middleware and mounts routers. `server.ts` calls `app.listen()` (separate so tests can import app without starting the server). Routes go in `routes/` as Router files. Business logic goes in `services/`. Database queries go in `repositories/`. Middleware (auth, validation, error handling) gets its own directory. Custom error classes in `errors/`. Environment validation in `config/`. The key principle: route handlers should be thin — they validate input, call a service, and send the response.
+> Separate concerns: `app.ts` sets up middleware and mounts routers. `server.ts` calls `app.listen()` (separate so tests can import app without starting the server). Routes go in `routes/` as Router files. Business logic goes in `services/`. Database queries go in `repositories/`. Middleware (auth, validation, error handling) gets its own directory. Custom error classes in `errors/`. Environment validation in `config/`. ‼️ The key principle: route handlers should be thin — they validate input, call a service, and send the response.
 
 ### "How do you handle authentication in Express?"
 
-> JWT-based: Login endpoint verifies credentials and returns an access token (short-lived, 15min) in the response body and a refresh token (long-lived, 7 days) in an httpOnly cookie. An auth middleware extracts the Bearer token from the Authorization header, verifies it with `jwt.verify()`, and attaches the decoded payload to `req.user`. Protected routes use this middleware: `app.get('/profile', authenticate, handler)`. Role-based access adds a second middleware: `requireRole('admin')`. Refresh tokens enable silent re-authentication without re-entering credentials.
+> JWT-based: Login endpoint verifies credentials and returns an access token (short-lived, 15min) in the response body and a refresh token (long-lived, 7 days) in an httpOnly cookie.‼️ An auth middleware extracts the Bearer token from the Authorization header, verifies it with `jwt.verify()`, ‼️ and attaches the decoded payload to `req.user`. Protected routes use this middleware: `app.get('/profile', authenticate, handler)`. Role-based access adds a second middleware: `requireRole('admin')`. Refresh tokens enable silent re-authentication without re-entering credentials.
 
 ### "What is the difference between Express and Fastify?"
 
@@ -2304,10 +2279,10 @@ Express:
   - ~15,000 req/s
   - Massive ecosystem (10+ years, thousands of packages)
   - Async errors NOT caught (Express 4) — need wrapper
-  - TypeScript: bolted on (@types/express)
+  - TypeScript: bolted on (@types/express)‼️
 
 Fastify:
-  - Plugin system with encapsulation (plugins don't leak)
+  - Plugin system with encapsulation (plugins don't leak)‼️
   - Built-in: JSON Schema validation (ajv), serialization (fast-json-stringify), Pino logging
   - ~75,000 req/s (5x faster)
   - Async errors caught automatically
@@ -2320,7 +2295,7 @@ Express overhead: ~0.07ms per request. DB query: 5-50ms.
 
 ### "What security middleware should every Express app have?"
 
-> At minimum: (1) `helmet` — sets security headers (CSP, HSTS, X-Content-Type-Options, etc.). (2) `cors` — configure allowed origins, never use `*` with credentials. (3) `express-rate-limit` — prevent brute force and DDoS, stricter limits on auth endpoints. (4) `express.json({ limit: '10kb' })` — limit body size to prevent payload DoS. (5) Always use parameterized queries (never string interpolation in SQL). (6) Store tokens in httpOnly cookies, not localStorage (XSS protection). (7) Set `trust proxy` correctly if behind a reverse proxy.
+> At minimum: (1) `helmet` — sets security headers (CSP, HSTS, X-Content-Type-Options, etc.). (2) `cors` — configure allowed origins, never use `*` with credentials. (3) `express-rate-limit` — prevent brute force and DDoS, stricter limits on auth endpoints. (4) `express.json({ limit: '10kb' })` — limit body size to prevent payload DoS. (5) Always use parameterized queries (never string interpolation in SQL). (6) Store tokens in httpOnly cookies, not localStorage (XSS protection). ‼️(7) Set `trust proxy` correctly if behind a reverse proxy.
 
 ### "How does TypeScript improve Express development?"
 
