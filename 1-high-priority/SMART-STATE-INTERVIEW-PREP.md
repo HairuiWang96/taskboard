@@ -363,6 +363,267 @@ Practice these in a local Node.js environment:
 
 ## 6. NestJS Interview Questions (High Priority)
 
+### NestJS Basics — What It Is and How It Works
+
+// NestJS is a framework for building server-side Node.js applications.
+// It is built on top of Express (default) or Fastify, and adds a structured,
+// opinionated architecture inspired by Angular.‼️
+// It uses TypeScript by default and is designed for building scalable, maintainable backend apps.
+
+**Why NestJS exists (the problem it solves):**
+
+// Express is minimal — it gives you req, res, next and nothing else.
+// As projects grow, you end up inventing your own patterns for:
+// - How to organize files and folders
+// - How to share services between routes
+// - How to validate input
+// - How to handle auth consistently
+// NestJS solves this by giving you a standard architecture out of the box.
+
+**The 3 core building blocks:**
+
+// 1. MODULES — containers that group related code together
+// 2. CONTROLLERS — handle incoming HTTP requests (like Express route handlers)
+// 3. PROVIDERS/SERVICES — business logic, reusable across controllers
+
+// Think of it like this:
+// Module = a folder/feature boundary (e.g., UsersModule, OrdersModule)
+// Controller = the route handler (e.g., GET /users, POST /users)
+// Service = the actual logic (e.g., query DB, send email, calculate price)
+
+**1. Modules — how NestJS organizes code:**
+
+```typescript
+// Every NestJS app has a root module: AppModule
+// Each feature gets its own module
+
+// app.module.ts — the root module
+@Module({
+    imports: [UsersModule, OrdersModule], // bring in other modules
+    controllers: [AppController], // route handlers for this module
+    providers: [AppService], // services for this module
+})
+export class AppModule {}
+
+// users.module.ts — a feature module
+@Module({
+    controllers: [UsersController], // handles /users routes
+    providers: [UsersService], // business logic for users
+    exports: [UsersService], // makes UsersService available to OTHER modules that import this one
+})
+export class UsersModule {}
+
+// Key points:
+// - imports: modules this module DEPENDS ON (pulls in their exported providers)
+// - controllers: route handlers that belong to this module
+// - providers: services/logic that belong to this module (private by default)‼️
+// - exports: providers that OTHER modules can use when they import this module
+// - If you don't export a provider, it stays private to this module‼️
+```
+
+**2. Controllers — handling HTTP requests:**
+
+```typescript
+// Controllers are similar to Express route handlers, but decorated with metadata
+
+@Controller('users') // base route: /users
+export class UsersController {
+    // NestJS injects UsersService automatically (dependency injection)
+    constructor(private readonly usersService: UsersService) {}
+
+    @Get() // GET /users
+    findAll() {
+        return this.usersService.findAll();
+    }
+
+    @Get(':id') // GET /users/123
+    findOne(@Param('id') id: string) {
+        return this.usersService.findOne(id);
+    }
+
+    @Post() // POST /users
+    create(@Body() createUserDto: CreateUserDto) {
+        return this.usersService.create(createUserDto);
+    }
+
+    @Put(':id') // PUT /users/123
+    update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+        return this.usersService.update(id, updateUserDto);
+    }
+
+    @Delete(':id') // DELETE /users/123
+    remove(@Param('id') id: string) {
+        return this.usersService.remove(id);
+    }
+}
+
+// Compare with Express:
+// Express:   router.get('/users/:id', (req, res) => { ... })
+// NestJS:    @Get(':id') findOne(@Param('id') id: string) { ... }
+//
+// Key decorators for parameters:
+// @Param('id')   — route params (like req.params.id)
+// @Body()        — request body (like req.body)
+// @Query('page') — query string (like req.query.page)
+// @Headers()     — request headers (like req.headers)
+// @Req()         — raw Express request object (avoid if possible — breaks platform independence)
+```
+
+**3. Providers/Services — where the logic lives:**
+
+```typescript
+// Services are plain classes marked with @Injectable()
+// NestJS creates ONE instance and shares it everywhere (singleton by default)
+
+@Injectable()
+export class UsersService {
+    constructor(
+        @InjectRepository(User)
+        private usersRepo: Repository<User>, // TypeORM repository injected by NestJS
+    ) {}
+
+    findAll(): Promise<User[]> {
+        return this.usersRepo.find();
+    }
+
+    findOne(id: string): Promise<User> {
+        return this.usersRepo.findOneBy({ id });
+    }
+
+    create(dto: CreateUserDto): Promise<User> {
+        const user = this.usersRepo.create(dto);
+        return this.usersRepo.save(user);
+    }
+}
+
+// Why @Injectable()?
+// It tells NestJS: "this class can be injected into other classes"
+// NestJS reads the constructor parameters, finds the matching providers,
+// and passes them in automatically. You never do `new UsersService(...)` yourself.
+```
+
+**Dependency Injection — the key concept:**
+
+```typescript
+// In Express you might do:
+//   const usersService = new UsersService(new DatabaseConnection());
+//   router.get('/users', (req, res) => usersService.findAll());
+//
+// In NestJS, you NEVER use `new` for services. The framework does it for you:
+
+@Controller('users')
+export class UsersController {
+    // NestJS sees "UsersService" in the constructor → looks it up in the IoC container → injects it
+    constructor(private readonly usersService: UsersService) {}
+}
+
+// Why this matters:
+// 1. You don't manually wire up dependencies — NestJS handles the whole chain
+// 2. Easy to test — swap real services with mocks
+// 3. Singleton by default — one instance shared across the app (efficient)
+// 4. Loose coupling — controller doesn't know HOW UsersService works, just that it exists
+```
+
+**DTOs (Data Transfer Objects) and Validation:**
+
+```typescript
+// DTOs define the shape of incoming data — like a TypeScript interface but as a class
+// Using a class (not interface) because NestJS validation pipes need runtime metadata
+
+import { IsString, IsEmail, MinLength } from 'class-validator';
+
+export class CreateUserDto {
+    @IsString()
+    name: string;
+
+    @IsEmail()
+    email: string;
+
+    @MinLength(8)
+    password: string;
+}
+
+// In main.ts, enable global validation:
+app.useGlobalPipes(
+    new ValidationPipe({
+        whitelist: true, // strips properties not in the DTO
+        transform: true, // auto-transform payloads to DTO instances
+    }),
+);
+
+// Now if someone sends { name: 123, email: "bad" }, NestJS automatically returns:
+// 400 Bad Request with detailed validation errors
+// You don't write any if/else validation logic yourself
+```
+
+**How a request flows through NestJS (simplified):**
+
+```
+Client sends: POST /users { name: "Alice", email: "alice@example.com" }
+
+1. NestJS receives the request
+2. Middleware runs (if any) — e.g., logging, CORS
+3. Guards check (if any) — e.g., is the user authenticated?
+4. Pipes validate/transform — ValidationPipe checks the body against CreateUserDto
+5. Controller method runs — UsersController.create() is called
+6. Service does the work — UsersService.create() queries the database
+7. Response is sent back — NestJS serializes the return value to JSON automatically
+```
+
+**NestJS project structure (typical):**
+
+```
+src/
+├── app.module.ts          // Root module — imports all feature modules
+├── app.controller.ts      // Root controller (health checks, etc.)
+├── app.service.ts         // Root service
+├── main.ts                // Entry point — creates the NestJS app and starts listening
+│
+├── users/                 // Feature module
+│   ├── users.module.ts    // Module definition
+│   ├── users.controller.ts // Route handlers
+│   ├── users.service.ts   // Business logic
+│   ├── dto/
+│   │   ├── create-user.dto.ts
+│   │   └── update-user.dto.ts
+│   └── entities/
+│       └── user.entity.ts // Database entity (TypeORM/Prisma model)
+│
+├── orders/                // Another feature module
+│   ├── orders.module.ts
+│   ├── orders.controller.ts
+│   └── orders.service.ts
+│
+└── common/                // Shared utilities
+    ├── guards/
+    ├── pipes/
+    ├── interceptors/
+    └── filters/
+```
+
+**NestJS vs Express — quick comparison:**
+
+```
+| Feature              | Express                        | NestJS                              |
+|----------------------|--------------------------------|-------------------------------------|
+| Structure            | No opinion — you decide        | Opinionated — modules/ctrl/service  |
+| TypeScript           | Manual setup                   | Built-in, first-class               |
+| Dependency Injection | None — wire it yourself        | Built-in IoC container              |
+| Validation           | Manual or middleware            | Decorators + ValidationPipe         |
+| Testing              | Manual mocking                 | Built-in testing module with DI     |
+| Learning curve       | Low                            | Medium (decorators, DI, modules)    |
+| Best for             | Small apps, APIs, prototypes   | Large apps, teams, enterprise       |
+```
+
+// Summary — the NestJS mental model:
+// 1. Modules group related features (like Angular modules)
+// 2. Controllers handle routes (decorated Express handlers)
+// 3. Services hold business logic (injected automatically via DI)
+// 4. Decorators (@Get, @Body, @Injectable) replace manual wiring
+// 5. Everything flows through a predictable lifecycle: Middleware → Guards → Pipes → Handler → Interceptors → Filters
+
+---
+
 ### Architecture & Core Concepts
 
 **Q: How does dependency injection work in NestJS?**
@@ -519,11 +780,11 @@ Practice these in a local Node.js environment:
 
 **Q: How do you handle memory leaks in Node.js?**
 
-> - Use `--inspect` flag and Chrome DevTools for heap snapshots
-> - Monitor with `process.memoryUsage()` — watch `heapUsed` growth over time
+> - Use `--inspect` flag and Chrome DevTools for heap snapshots‼️
+> - Monitor with `process.memoryUsage()` — watch `heapUsed` growth over time‼️
 > - Common causes: global variables, unclosed event listeners, closures retaining references, unbounded caches
-> - Use WeakMap/WeakSet for caches that should be GC'd
-> - Set max listeners with `emitter.setMaxListeners()` to detect leaks early
+> - Use WeakMap/WeakSet for caches that should be GC'd‼️
+> - Set max listeners with `emitter.setMaxListeners()` to detect leaks early‼️
 
 **Q: Streams in Node.js — when and why?**
 
@@ -534,13 +795,13 @@ Practice these in a local Node.js environment:
 > - Database result streaming
 > - Real-time data pipelines
 >
-> Four types: Readable, Writable, Duplex, Transform. Use `pipeline()` from `stream/promises` for proper error handling and backpressure.
+> ‼️ Four types: Readable, Writable, Duplex, Transform. ‼️ Use `pipeline()` from `stream/promises` for proper error handling and backpressure.
 
 **Q: Worker Threads vs Child Processes vs Cluster?**
 
 > - **Worker Threads:** Share memory (via SharedArrayBuffer), good for CPU-intensive tasks within one process. Lower overhead than child processes.
-> - **Child Processes:** Separate processes, communicate via IPC. Use for running external commands or isolating untrusted code.
-> - **Cluster:** Forks the main process to utilize multiple CPU cores. Each worker handles incoming connections. Use for horizontal scaling of HTTP servers.
+> - **Child Processes:** Separate processes, ‼️ communicate via IPC. Use for running external commands or isolating untrusted code.
+> - **Cluster:** Forks the main process to utilize multiple CPU cores. Each worker handles incoming connections. ‼️ Use for horizontal scaling of HTTP servers.
 
 **Q: libuv thread pool vs Worker Threads — what's the difference?**
 
@@ -610,14 +871,14 @@ Practice these in a local Node.js environment:
 
 **Q: When would you use MongoDB vs MySQL?**
 
-> - **MongoDB:** Flexible schema, document model, good for rapidly changing data structures, nested/hierarchical data, high write throughput. Common in iGaming for user activity logs, game state, session data.
+> - **MongoDB:** Flexible schema, document model, ‼️good for rapidly changing data structures, nested/hierarchical data, high write throughput. ‼️Common in iGaming for user activity logs, game state, session data.
 > - **MySQL:** ACID transactions, relational data with complex joins, strict data integrity requirements. Common in iGaming for financial transactions, user accounts, regulatory reporting.
 > - **Hybrid approach:** Use MySQL for transactional data (deposits, withdrawals, bets) and MongoDB for analytics, game history, and user behavior tracking.
 
-**Q: How do you use Redis beyond simple caching?**
+**Q: How do you use Redis beyond simple caching?**‼️
 
-> - **Pub/Sub:** Real-time messaging between microservices (live game updates, odds changes)
-> - **Sorted Sets:** Leaderboards, ranking systems
+> - **Pub/Sub:** Real-time messaging between microservices (live game updates, odds changes)‼️
+> - **Sorted Sets:** Leaderboards, ranking systems‼️
 > - **Rate Limiting:** Token bucket or sliding window using `INCR` + `EXPIRE`
 > - **Session Store:** Centralized session management across instances
 > - **Distributed Locks:** Using `SET key value NX EX` (or Redlock for multi-node)
@@ -647,11 +908,11 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     balance: { type: Number, default: 0 },
     role: { type: String, enum: ['player', 'admin'], default: 'player' },
-    bets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Bet' }], // Reference to another collection
+    bets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Bet' }], // Reference to another collection‼️
     createdAt: { type: Date, default: Date.now },
 });
 
-// Create a Model — gives you CRUD methods for the "users" collection
+// Create a Model — gives you CRUD methods for the "users" collection‼️
 const User = mongoose.model('User', userSchema);
 ```
 
@@ -693,7 +954,7 @@ const names2 = await User.find().select('name email');
 
 // Sorting, limiting, skipping (for pagination)
 const page2 = await User.find()
-    .sort({ createdAt: -1 }) // -1 = descending, 1 = ascending
+    .sort({ createdAt: -1 }) // -1 = descending, 1 = ascending‼️
     .skip(10) // skip first 10 results
     .limit(10); // return 10 results
 
@@ -807,7 +1068,7 @@ const stats = await Bet.aggregate([
     // Stage 4: Limit — top 10
     { $limit: 10 },
 
-    // Stage 5: Lookup — join with users collection (like SQL JOIN)
+    // Stage 5: Lookup — join with users collection (like SQL JOIN)‼️
     {
         $lookup: {
             from: 'users', // collection to join
@@ -817,7 +1078,7 @@ const stats = await Bet.aggregate([
         },
     },
 
-    // Stage 6: Unwind — flatten the userInfo array into an object
+    // Stage 6: Unwind — flatten the userInfo array into an object‼️
     { $unwind: '$userInfo' },
 
     // Stage 7: Project — reshape the output (like SELECT in SQL)
@@ -835,14 +1096,14 @@ const stats = await Bet.aggregate([
 // Result: [{ userName: "Alice", totalBet: 5000, betCount: 42, avgBet: 119.05 }, ...]
 
 // Common aggregation stages:
-// $match   → filter (like WHERE)
+// $match   → filter (like WHERE)‼️
 // $group   → group + aggregate (like GROUP BY)
 // $sort    → sort results (like ORDER BY)
 // $limit   → limit results (like LIMIT)
 // $skip    → skip results (like OFFSET)
-// $lookup  → join collections (like JOIN)
-// $unwind  → flatten arrays
-// $project → reshape / select fields (like SELECT)
+// $lookup  → join collections (like JOIN)‼️
+// $unwind  → flatten arrays‼️
+// $project → reshape / select fields (like SELECT)‼️
 // $addFields → add computed fields
 ```
 
@@ -895,14 +1156,14 @@ const Bet = mongoose.model('Bet', betSchema);
 const bet = await Bet.findById(betId);
 // { userId: "60d5ec...", gameId: "60d5ed...", amount: 50 }
 
-// With populate — resolves the reference and returns the full document
+// With populate — resolves the reference and returns the full document‼️
 const bet = await Bet.findById(betId)
     .populate('userId', 'name email') // only get name and email from user
     .populate('gameId', 'name category'); // only get name and category from game
 // { userId: { name: "Alice", email: "..." }, gameId: { name: "Poker", category: "cards" }, amount: 50 }
 
 // Populate is like a LEFT JOIN — but it makes separate queries under the hood
-// For performance-critical code, use $lookup in aggregation pipeline instead
+// For performance-critical code, use $lookup in aggregation pipeline instead‼️
 ```
 
 ---
@@ -933,13 +1194,13 @@ const bet = await Bet.findById(betId)
 
 **Q: RabbitMQ vs Kafka — when do you use which? (ASKED IN BRAINROCKET INTERVIEW)**
 
-> This was a specific question in a May 2026 BrainRocket Senior Backend Developer interview.
+> This was a specific question in a May 2026 BrainRocket Senior Backend Developer interview.🅰️
 >
 > |                       | RabbitMQ                                         | Kafka                                                                                |
 > | --------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------ |
 > | **Model**             | Message broker (smart broker, dumb consumers)    | Distributed log (dumb broker, smart consumers)                                       |
 > | **Message lifecycle** | Messages are deleted after consumer acknowledges | Messages are retained for a configurable period (days/weeks) — consumers can re-read |
-> | **Ordering**          | Per-queue ordering                               | Per-partition ordering (stronger guarantees)                                         |
+> | **Ordering**          | Per-queue ordering                               | Per-partition ordering (stronger guarantees) ‼️                                      |
 > | **Throughput**        | ~10K–50K msgs/sec                                | ~100K–1M+ msgs/sec                                                                   |
 > | **Delivery**          | Push-based — broker pushes to consumers          | Pull-based — consumers pull at their own pace                                        |
 > | **Use case**          | Task queues, RPC, complex routing (exchanges)    | Event streaming, event sourcing, real-time analytics, log aggregation                |
@@ -962,7 +1223,7 @@ const bet = await Bet.findById(betId)
 > - Multiple consumers need to independently read the same events
 > - Log aggregation across microservices
 >
-> **In iGaming context (what to say in the interview):**
+> **In iGaming context (what to say in the interview):**‼️
 > "For a platform like Soft2Bet's, I'd use RabbitMQ for transactional workflows — bet placement, payment processing, notification delivery — where each message needs reliable processing and acknowledgment. I'd use Kafka for the event streaming side — live odds feeds, user activity tracking, and audit logs — where we need high throughput, event replay for compliance, and multiple consumers reading the same stream independently."
 
 ---
@@ -973,14 +1234,162 @@ const bet = await Bet.findById(betId)
 
 > Key components:
 >
-> - **WebSocket Gateway** — pushes live odds updates to clients
-> - **Odds Engine Service** — calculates odds based on external feeds and internal models
+> - **WebSocket Gateway** — pushes live odds updates to clients‼️
+> - **Odds Engine Service** — calculates odds based on external feeds and internal models‼️
 > - **Redis Pub/Sub** — distributes odds changes across all WebSocket server instances
 > - **Rate limiting** — prevent abuse on bet placement endpoints
 > - **Event sourcing** — every odds change is an immutable event for audit trail
 > - **CQRS** — separate read model (fast odds queries) from write model (bet placement)
 >
 > Scale considerations: Spike traffic during popular live events (Super Bowl, World Cup). Use auto-scaling groups, pre-warm instances before known events, Redis cluster for cache layer.
+
+**Detailed Design — Real-Time Betting/Odds System:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        HIGH-LEVEL ARCHITECTURE                       │
+│                                                                      │
+│  External Odds      ┌──────────┐     ┌──────────────┐              │
+│  Feeds (3rd party)──>│ Odds     │────>│ Redis Cluster │              │
+│                      │ Ingestion│     │ (Pub/Sub +    │              │
+│                      │ Service  │     │  Cache)       │              │
+│                      └──────────┘     └──────┬───────┘              │
+│                                              │                       │
+│                      ┌──────────┐     ┌──────▼───────┐              │
+│  Client (Browser) <──│ WebSocket│<────│ Odds Engine  │              │
+│  via WebSocket       │ Gateway  │     │ Service      │              │
+│                      │ (NestJS) │     └──────────────┘              │
+│                      └──────────┘                                    │
+│                                                                      │
+│  Client (Browser) ──>┌──────────┐     ┌──────────────┐              │
+│  POST /bets          │ Bet      │────>│ MySQL (ACID) │              │
+│                      │ Placement│     │ balances +   │              │
+│                      │ Service  │     │ bet records  │              │
+│                      └────┬─────┘     └──────────────┘              │
+│                           │                                          │
+│                      ┌────▼─────┐     ┌──────────────┐              │
+│                      │ RabbitMQ │────>│ Settlement   │              │
+│                      │ (queues) │     │ Service      │              │
+│                      └──────────┘     └──────────────┘              │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+// COMPONENT 1: Odds Ingestion Service
+// - Connects to external odds providers via WebSocket/REST feeds
+// - Receives raw odds data (e.g., "Team A: 1.85, Team B: 2.10, Draw: 3.40")
+// - Normalizes data from multiple providers into a unified format
+// - Publishes normalized odds to Redis Pub/Sub channel "odds:updates"
+// - Stores every odds change as an immutable event in an event store (Kafka or append-only DB table)
+// WHY event sourcing? Regulatory requirement — auditors need to see every odds change with timestamp
+
+// COMPONENT 2: Odds Engine Service
+// - Subscribes to Redis Pub/Sub "odds:updates" channel
+// - Applies internal business rules:
+// - Margin calculation (the house edge)
+// - Liability limits (if too many bets on one side, adjust odds)
+// - Suspension rules (auto-suspend market if odds change too fast — possible match fixing)
+// - Writes final calculated odds to Redis cache (key: "odds:match:{matchId}")
+// - Publishes to Redis Pub/Sub "odds:final" for WebSocket servers to pick up
+
+// COMPONENT 3: WebSocket Gateway (NestJS)
+// - Client connects via WebSocket and subscribes to specific matches:
+// ws.send({ event: "subscribe", data: { matchIds: ["match_123", "match_456"] } })
+// - Server subscribes to Redis Pub/Sub "odds:final"
+// - When new odds arrive, pushes ONLY to clients subscribed to that match
+// - Heartbeat every 30s to detect dead connections
+// - Multiple WebSocket server instances behind a load balancer
+// WHY Redis Pub/Sub? If client connects to Server A, but odds update hits Server B,
+// Redis Pub/Sub ensures Server B publishes and Server A receives and forwards to client
+
+```typescript
+// NestJS WebSocket Gateway example:
+@WebSocketGateway({ cors: true })
+export class OddsGateway implements OnGatewayConnection, OnGatewayDisconnection {
+    @WebSocketServer() server: Server;
+
+    // Track which clients are subscribed to which matches
+    private subscriptions = new Map<string, Set<string>>(); // matchId -> Set<clientId>
+
+    handleConnection(client: Socket) {
+        // Client connected — wait for subscribe events
+    }
+
+    @SubscribeMessage('subscribe')
+    handleSubscribe(client: Socket, payload: { matchIds: string[] }) {
+        for (const matchId of payload.matchIds) {
+            if (!this.subscriptions.has(matchId)) {
+                this.subscriptions.set(matchId, new Set());
+            }
+            this.subscriptions.get(matchId).add(client.id);
+        }
+    }
+
+    // Called when Redis Pub/Sub receives new odds
+    broadcastOddsUpdate(matchId: string, odds: OddsData) {
+        const subscribers = this.subscriptions.get(matchId);
+        if (subscribers) {
+            for (const clientId of subscribers) {
+                this.server.to(clientId).emit('oddsUpdate', { matchId, odds });
+            }
+        }
+    }
+}
+```
+
+// COMPONENT 4: Bet Placement Service
+// - REST API: POST /bets { matchId, selection, amount, oddsAtPlacement }
+// - Flow:
+// 1. Validate request (user authenticated, amount > 0, market is open)
+// 2. CHECK current odds in Redis — if odds changed since client saw them:
+// - If change is within tolerance (e.g., < 5%), accept at new odds
+// - If change is large, reject and tell client "odds have changed, please review"
+// 3. START MySQL transaction:
+// a. Lock user's balance row (SELECT ... FOR UPDATE)
+// b. Check balance >= bet amount
+// c. Deduct balance
+// d. Insert bet record with status "PENDING"
+// e. COMMIT
+// 4. Publish bet event to RabbitMQ queue "bets:placed"
+// 5. Return bet confirmation to client
+//
+// WHY MySQL transaction with row locking?
+// - Prevents double-spending (two bets at the same time exceeding balance)
+// - ACID guarantees: balance deduction and bet creation are atomic
+//
+// WHY idempotency token?
+// - Client sends a unique betId with each request
+// - If network fails and client retries, same betId won't create duplicate bets
+
+// COMPONENT 5: Settlement Service
+// - Listens to match result events (from external feed or admin panel)
+// - Queries all bets for that match from MySQL
+// - For each winning bet:
+// a. Calculate payout = amount \* odds
+// b. Credit user's balance in a transaction
+// c. Update bet status to "WON"
+// - For losing bets: Update status to "LOST"
+// - Publish settlement events for downstream (notifications, analytics)
+
+// SCALING FOR LIVE EVENTS (Super Bowl, World Cup):
+// - Pre-warm: Spin up extra WebSocket + Bet Placement instances 1 hour before kickoff
+// - Redis Cluster: 3+ nodes with read replicas for odds cache reads
+// - Connection limits: Each WebSocket server handles ~50K connections
+// For 500K concurrent users → 10 WebSocket instances behind ALB
+// - Circuit breaker: If odds feed goes down, suspend all markets rather than serving stale odds
+// - Auto-scaling: CPU/connection-based scaling policies on ECS/Kubernetes
+
+// DATABASE SCHEMA (simplified):
+// bets table:
+// id (UUID), user_id, match_id, selection, amount, odds_at_placement,
+// potential_payout, status (PENDING/WON/LOST/CANCELLED/VOID),
+// idempotency_key (UNIQUE), created_at, settled_at
+//
+// user_balances table:
+// user_id (PK), balance (DECIMAL), version (INT for optimistic locking), updated_at
+//
+// odds_events table (event sourcing):
+// id, match_id, market_type, odds_data (JSON), source, timestamp
+// — append-only, never updated or deleted
 
 **Q: Design a notification system for a gaming platform.**
 
@@ -991,6 +1400,221 @@ const bet = await Bet.findById(betId)
 > - **Deduplication:** Idempotency keys prevent sending the same notification twice
 > - **Priority queues:** Urgent notifications (withdrawal confirmed) vs marketing (new game available)
 
+**Detailed Design — Gaming Platform Notification System:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        HIGH-LEVEL ARCHITECTURE                       │
+│                                                                      │
+│  Game Events ──────>┌──────────┐                                    │
+│  Bet Settled ──────>│ RabbitMQ │                                    │
+│  Payment Done ─────>│ Exchange │                                    │
+│  Admin Trigger ────>│ (topic)  │                                    │
+│                      └────┬─────┘                                    │
+│                           │                                          │
+│              ┌────────────┼────────────┐                            │
+│              │            │            │                              │
+│         ┌────▼───┐  ┌────▼───┐  ┌────▼───┐                        │
+│         │Priority │  │Priority │  │Priority │                        │
+│         │HIGH     │  │MEDIUM  │  │LOW     │                        │
+│         │Queue    │  │Queue   │  │Queue   │                        │
+│         └────┬────┘  └────┬───┘  └────┬───┘                        │
+│              │            │           │                               │
+│              └────────────┼───────────┘                              │
+│                           │                                          │
+│                    ┌──────▼──────┐                                   │
+│                    │ Notification │                                   │
+│                    │ Orchestrator │                                   │
+│                    └──────┬──────┘                                   │
+│                           │                                          │
+│            ┌──────────────┼──────────────┐                          │
+│            │              │              │                            │
+│       ┌────▼───┐    ┌────▼───┐    ┌────▼───┐    ┌─────────┐       │
+│       │ Push   │    │ Email  │    │ SMS    │    │ In-App  │        │
+│       │ Service│    │ Service│    │ Service│    │ Service │        │
+│       │(FCM/   │    │(SES/   │    │(Twilio)│    │(WebSocket│       │
+│       │ APNs)  │    │Mailgun)│    │        │    │ + DB)   │        │
+│       └────────┘    └────────┘    └────────┘    └─────────┘       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+// HOW IT WORKS END-TO-END:
+//
+// Step 1: An event happens somewhere in the platform
+// - A bet settles (user won $500)
+// - A withdrawal is approved
+// - A new promotion launches
+// - A user's KYC verification completes
+//
+// Step 2: The originating service publishes an event to RabbitMQ
+// { event: "bet.settled", userId: "u_123", data: { betId: "b_456", result: "won", payout: 500 } }
+//
+// Step 3: RabbitMQ routes the event based on type
+// - Topic exchange routes "bet.settled" to the notification queue
+// - Priority assignment: bet.settled → MEDIUM, withdrawal.approved → HIGH, promo.new → LOW
+//
+// Step 4: Notification Orchestrator picks up the event and:
+// a. Looks up user preferences in MongoDB:
+// { userId: "u_123", channels: { push: true, email: true, sms: false, inApp: true } }
+// b. Checks notification rules:
+// - Is this notification type enabled for this user?
+// - Is this within rate limits? (no more than 5 push notifications per hour)
+// - Is this a duplicate? (check idempotency key in Redis)
+// c. Selects the template and renders it:
+// Template: "Congratulations! Your bet on {{matchName}} won {{currency}}{{payout}}!"
+// Rendered: "Congratulations! Your bet on Real Madrid vs Barcelona won $500!"
+// d. Dispatches to each enabled channel
+
+// COMPONENT DETAILS:
+
+// 1. EVENT PRODUCER (any service in the platform)
+
+```typescript
+// Any service can send a notification event — it doesn't need to know about channels or templates
+// It just publishes what happened
+
+@Injectable()
+export class BetSettlementService {
+    constructor(@Inject('RABBITMQ_SERVICE') private rabbitMQ: ClientProxy) {}
+
+    async settleBet(betId: string) {
+        // ... settle the bet in the database ...
+
+        // Publish event — notification system handles the rest
+        this.rabbitMQ.emit('notification.send', {
+            event: 'bet.settled',
+            userId: bet.userId,
+            priority: 'MEDIUM',
+            data: {
+                betId: bet.id,
+                matchName: bet.matchName,
+                result: bet.result,
+                payout: bet.payout,
+            },
+            idempotencyKey: `bet-settled-${bet.id}`, // prevents duplicate notifications
+        });
+    }
+}
+```
+
+// 2. NOTIFICATION ORCHESTRATOR (the brain)
+
+```typescript
+@Injectable()
+export class NotificationOrchestrator {
+    constructor(
+        private userPrefsService: UserPreferencesService,
+        private templateService: TemplateService,
+        private deduplicationService: DeduplicationService,
+        private rateLimiter: RateLimiterService,
+        private pushService: PushNotificationService,
+        private emailService: EmailService,
+        private smsService: SMSService,
+        private inAppService: InAppNotificationService,
+    ) {}
+
+    @EventPattern('notification.send')
+    async handleNotification(event: NotificationEvent) {
+        // Step 1: Deduplicate — have we already processed this?
+        const isDuplicate = await this.deduplicationService.check(event.idempotencyKey);
+        if (isDuplicate) return; // already sent, skip
+
+        // Step 2: Get user preferences
+        const prefs = await this.userPrefsService.getPreferences(event.userId);
+
+        // Step 3: Render the template
+        const content = await this.templateService.render(event.event, event.data);
+        // content = { title: "Bet Won!", body: "Your bet on Real Madrid vs Barcelona won $500!", ... }
+
+        // Step 4: Dispatch to each enabled channel
+        const dispatches = [];
+
+        if (prefs.push && (await this.rateLimiter.allow(event.userId, 'push'))) {
+            dispatches.push(this.pushService.send(event.userId, content));
+        }
+        if (prefs.email) {
+            dispatches.push(this.emailService.send(event.userId, content));
+        }
+        if (prefs.sms && event.priority === 'HIGH') {
+            // SMS only for high priority (costs money)
+            dispatches.push(this.smsService.send(event.userId, content));
+        }
+        if (prefs.inApp) {
+            dispatches.push(this.inAppService.send(event.userId, content));
+        }
+
+        // Step 5: Send all channels in parallel
+        const results = await Promise.allSettled(dispatches);
+
+        // Step 6: Log results, retry failures
+        for (const result of results) {
+            if (result.status === 'rejected') {
+                // Push to retry queue with exponential backoff
+            }
+        }
+
+        // Step 7: Mark as processed (deduplication)
+        await this.deduplicationService.markProcessed(event.idempotencyKey);
+    }
+}
+```
+
+// 3. TEMPLATE SERVICE
+// - Templates stored in MongoDB or a config file
+// - Each event type maps to a template per channel:
+// "bet.settled" → {
+// push: { title: "Bet Won!", body: "Your bet on {{matchName}} won {{currency}}{{payout}}!" },
+// email: { subject: "You won!", htmlTemplate: "bet-won.hbs" },
+// sms: { body: "You won {{currency}}{{payout}} on {{matchName}}! Check your account." },
+// inApp: { title: "Bet Won!", body: "...", action: { type: "navigate", target: "/bets/{{betId}}" } }
+// }
+// - Uses Handlebars for rendering: replace {{matchName}} with actual data
+// - Supports localization: template per language (en, es, de, etc.)
+
+// 4. PRIORITY QUEUES — WHY THREE?
+// HIGH priority: withdrawal approved, account locked, KYC required
+// → processed immediately, more worker instances assigned
+// MEDIUM priority: bet settled, deposit confirmed, game result
+// → processed within seconds, standard workers
+// LOW priority: new promotions, weekly summaries, marketing
+// → processed during low-traffic periods, rate-limited to avoid spam
+//
+// In RabbitMQ: use x-max-priority on the queue or separate queues with different consumer counts
+
+// 5. IN-APP NOTIFICATIONS (special case)
+// - Stored in database: notifications table (userId, title, body, read, createdAt)
+// - Delivered in real-time via WebSocket if user is online
+// - Available via REST API for notification history: GET /notifications?unread=true
+// - Badge count pushed via WebSocket: { event: "badge", count: 3 }
+
+// 6. DEDUPLICATION & RATE LIMITING
+// - Deduplication: Store idempotencyKey in Redis with TTL (e.g., 24 hours)
+// Before sending, check: EXISTS idempotency:{key} → if yes, skip
+// After sending: SET idempotency:{key} EX 86400
+// - Rate limiting: Per-user, per-channel limits in Redis
+// Key: ratelimit:{userId}:{channel} → increment, check against threshold
+// Example: max 5 push notifications per hour, max 3 emails per day
+
+// 7. FAILURE HANDLING
+// - If Push/Email/SMS provider fails → message goes to a dead letter queue (DLQ)
+// - Retry with exponential backoff: 1s, 5s, 30s, 5min
+// - After max retries (e.g., 5), log failure and alert ops team
+// - For critical notifications (withdrawal, account security): fallback to next channel
+// Push failed → try SMS → try email → store in-app (guaranteed)
+
+// DATABASE SCHEMA:
+// user_preferences (MongoDB):
+// { userId, channels: { push: bool, email: bool, sms: bool, inApp: bool },
+// quietHours: { start: "22:00", end: "08:00", timezone: "UTC+2" },
+// language: "en", unsubscribed: ["marketing"] }
+//
+// notifications (MySQL/MongoDB):
+// id, userId, type, title, body, channel, status (sent/failed/read),
+// idempotencyKey, createdAt, readAt
+//
+// notification_templates (MongoDB):
+// eventType, channel, language, template, subject (for email)
+
 **Q: How would you ensure data consistency for financial transactions in a distributed system?**
 
 > - Use MySQL with ACID transactions for the source of truth on balances
@@ -999,6 +1623,224 @@ const bet = await Bet.findById(betId)
 > - Event sourcing for complete audit trail (regulatory requirement in iGaming)
 > - Reconciliation jobs to detect and alert on inconsistencies
 > - Idempotency tokens on all mutation endpoints
+
+**Detailed Design — Financial Transaction Consistency in Distributed Systems:**
+
+// THE CORE PROBLEM:
+// In a betting platform, a single user action like "place a bet" touches multiple services:
+// 1. Wallet Service — deduct $50 from user balance
+// 2. Bet Service — create the bet record
+// 3. Risk Service — update liability calculations
+// 4. Notification Service — confirm the bet
+// If step 2 fails after step 1 succeeds, the user loses $50 with no bet.
+// You CANNOT use a single database transaction because each service has its own database.
+
+// SOLUTION 1: SAGA PATTERN (Orchestration)
+// A Saga is a sequence of local transactions where each step has a compensating action.
+// If any step fails, you run the compensating actions in reverse order.
+
+```
+Bet Placement Saga — Happy Path:
+┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+│ 1. Wallet │───>│ 2. Bet   │───>│ 3. Risk  │───>│ 4. Notify│
+│ Deduct   │    │ Create   │    │ Update   │    │ Confirm  │
+│ $50      │    │ record   │    │ exposure │    │ to user  │
+└──────────┘    └──────────┘    └──────────┘    └──────────┘
+
+Bet Placement Saga — Step 2 Fails:
+┌──────────┐    ┌──────────┐
+│ 1. Wallet │───>│ 2. Bet   │ ✗ FAILS
+│ Deduct   │    │ Create   │
+│ $50      │    │          │
+└────┬─────┘    └──────────┘
+     │
+     │ COMPENSATE: Wallet.refund($50)
+     ▼
+┌──────────┐
+│ 1c. Wallet│
+│ Refund   │
+│ $50      │
+└──────────┘
+```
+
+```typescript
+// Saga Orchestrator — controls the entire flow
+@Injectable()
+export class BetPlacementSaga {
+    constructor(
+        private walletService: WalletServiceClient,
+        private betService: BetServiceClient,
+        private riskService: RiskServiceClient,
+    ) {}
+
+    async execute(command: PlaceBetCommand): Promise<BetResult> {
+        const sagaLog = []; // track what succeeded for compensation
+
+        try {
+            // Step 1: Deduct balance
+            const deduction = await this.walletService.deduct({
+                userId: command.userId,
+                amount: command.amount,
+                idempotencyKey: `deduct-${command.betId}`,
+            });
+            sagaLog.push({ step: 'wallet.deduct', data: deduction });
+
+            // Step 2: Create bet
+            const bet = await this.betService.create({
+                betId: command.betId,
+                userId: command.userId,
+                matchId: command.matchId,
+                amount: command.amount,
+                odds: command.odds,
+            });
+            sagaLog.push({ step: 'bet.create', data: bet });
+
+            // Step 3: Update risk exposure
+            await this.riskService.updateExposure({
+                matchId: command.matchId,
+                selection: command.selection,
+                amount: command.amount,
+            });
+            sagaLog.push({ step: 'risk.update' });
+
+            return { success: true, betId: command.betId };
+        } catch (error) {
+            // COMPENSATE — undo everything in reverse order
+            await this.compensate(sagaLog, command);
+            throw new BetPlacementFailedException(error.message);
+        }
+    }
+
+    private async compensate(sagaLog: SagaStep[], command: PlaceBetCommand) {
+        // Reverse order compensation
+        for (const step of sagaLog.reverse()) {
+            switch (step.step) {
+                case 'risk.update':
+                    await this.riskService.rollbackExposure(/* ... */);
+                    break;
+                case 'bet.create':
+                    await this.betService.cancel(command.betId);
+                    break;
+                case 'wallet.deduct':
+                    await this.walletService.refund({
+                        userId: command.userId,
+                        amount: command.amount,
+                        idempotencyKey: `refund-${command.betId}`,
+                    });
+                    break;
+            }
+        }
+    }
+}
+```
+
+// SOLUTION 2: OPTIMISTIC LOCKING (prevents double-spending within one service)
+// The wallet service must prevent this scenario:
+// - User has $100 balance
+// - Two concurrent requests each try to bet $70
+// - Without locking, both could succeed → balance goes to -$40
+
+```typescript
+// Wallet Service — uses version number to prevent concurrent overwrites
+@Injectable()
+export class WalletService {
+    async deduct(userId: string, amount: number, idempotencyKey: string): Promise<void> {
+        // Check idempotency first — was this already processed?
+        const existing = await this.idempotencyRepo.findOne({ key: idempotencyKey });
+        if (existing) return existing.result; // already done, return cached result
+
+        // Retry loop for optimistic locking conflicts
+        for (let attempt = 0; attempt < 3; attempt++) {
+            const wallet = await this.walletRepo.findOne({ userId });
+
+            if (wallet.balance < amount) {
+                throw new InsufficientFundsError();
+            }
+
+            // UPDATE wallets SET balance = balance - $amount, version = version + 1
+            // WHERE user_id = $userId AND version = $currentVersion
+            const result = await this.walletRepo.update(
+                { userId, version: wallet.version }, // WHERE clause includes version
+                { balance: wallet.balance - amount, version: wallet.version + 1 },
+            );
+
+            if (result.affected === 1) {
+                // Success — version matched, no one else modified it
+                await this.idempotencyRepo.save({ key: idempotencyKey, result: 'ok' });
+                return;
+            }
+            // result.affected === 0 means someone else changed the row — retry
+        }
+        throw new ConcurrencyConflictError('Balance was modified concurrently, try again');
+    }
+}
+```
+
+// WHY optimistic locking instead of pessimistic (SELECT ... FOR UPDATE)?
+// - Optimistic: reads don't block, conflicts are rare, better throughput for high-traffic
+// - Pessimistic: guarantees success but creates lock contention under load
+// - For a betting platform with thousands of concurrent bets: optimistic is usually better
+// - Exception: for extremely high-volume single users (bot accounts), pessimistic may be safer
+
+// SOLUTION 3: EVENT SOURCING (audit trail for compliance)
+// Instead of updating a balance field, store every transaction as an immutable event:
+
+```
+events table (append-only, never update or delete):
+| id  | user_id | type       | amount | balance_after | metadata          | timestamp           |
+|-----|---------|------------|--------|---------------|-------------------|---------------------|
+| 1   | u_123   | DEPOSIT    | +100   | 100           | { txId: "..." }   | 2024-01-15 10:00:00 |
+| 2   | u_123   | BET_PLACED | -50    | 50            | { betId: "..." }  | 2024-01-15 10:05:00 |
+| 3   | u_123   | BET_WON    | +92.50 | 142.50        | { betId: "..." }  | 2024-01-15 11:30:00 |
+| 4   | u_123   | WITHDRAWAL | -100   | 42.50         | { txId: "..." }   | 2024-01-15 12:00:00 |
+```
+
+// Current balance = sum of all events for that user (or maintained in a materialized view)
+// WHY? Regulatory requirement in iGaming — auditors can reconstruct any balance at any point in time
+// You can answer: "What was user X's balance at 10:06 on Jan 15?" → $50
+
+// SOLUTION 4: RECONCILIATION (safety net)
+// Even with sagas + locking + event sourcing, things can go wrong (network partitions, bugs)
+// Run periodic reconciliation jobs:
+
+// Job 1: Balance reconciliation (every hour)
+// - Calculate balance from events: SUM(amount) WHERE user_id = X
+// - Compare with cached balance in wallets table
+// - If mismatch → alert ops team, freeze account if significant
+
+// Job 2: Bet-wallet reconciliation (every hour)
+// - For every bet with status PENDING/CONFIRMED, verify a matching wallet deduction event exists
+// - For every wallet deduction with bet metadata, verify the bet record exists
+// - Orphaned records → alert and investigate
+
+// Job 3: Settlement reconciliation (daily)
+// - For every settled bet, verify payout was credited to wallet
+// - For every bet.won event, verify matching wallet credit event
+
+// IDEMPOTENCY — WHY IT'S CRITICAL:
+// Network failures cause retries. Without idempotency:
+// Client sends "place bet $50" → Server processes it, deducts $50
+// Response is lost due to network error
+// Client retries "place bet $50" → Server processes again, deducts another $50
+// User lost $100 instead of $50
+//
+// With idempotency:
+// Client sends "place bet $50" with idempotencyKey: "bet_abc123"
+// Server processes it, stores idempotencyKey in Redis/DB
+// Response is lost
+// Client retries with same idempotencyKey: "bet_abc123"
+// Server checks: "bet_abc123" already processed → returns cached result
+// User correctly lost only $50
+
+// WHAT TO SAY IN THE INTERVIEW:
+// "For financial consistency in a distributed betting platform, I use a layered approach:
+// 1. Saga pattern for multi-service transactions with compensation on failure
+// 2. Optimistic locking on the wallet to prevent double-spending
+// 3. Idempotency keys on every mutation to handle retries safely
+// 4. Event sourcing for a complete, immutable audit trail — required for iGaming compliance
+// 5. Reconciliation jobs as a safety net to catch any edge cases
+// The key principle: design for failure. Assume any step can fail, any message can be duplicated,
+// and any service can be temporarily unavailable."
 
 ---
 
@@ -1012,7 +1854,7 @@ const bet = await Bet.findById(betId)
 
 **Q: How do you handle N+1 problems in GraphQL?**
 
-> Use **DataLoader** — batches and caches database requests within a single request lifecycle. Instead of N individual queries for related data, DataLoader collects all IDs and makes one batched query.
+> ‼️ Use **DataLoader** — batches and caches database requests within a single request lifecycle. Instead of N individual queries for related data, DataLoader collects all IDs and makes one batched query.
 
 ---
 
@@ -3662,7 +4504,7 @@ console.log(x); // 10 — primitives are passed by value
 3. "Design a notification system for a gaming platform" → See Section 10
 4. "How would you scale this service to handle 10x traffic during a major sporting event?"
 
-**For prompt #4, here's a strong answer:**
+**For prompt #4, here's a strong answer:**‼️
 
 ```
 Scale strategy for a live sporting event (e.g., Super Bowl):
