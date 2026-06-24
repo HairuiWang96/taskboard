@@ -2620,7 +2620,7 @@ async function topArticles(limit: number): Promise<string[]> {
             num_comments: article.num_comments ?? 0, // default to 0 if null
         }))
         .filter(article => article.title !== null && article.title !== undefined);
-        // ^^ Skip articles where BOTH title and story_title are null
+    // ^^ Skip articles where BOTH title and story_title are null
 
     // Step 4: Sort by num_comments DESC, then title ASC (alphabetical)
     processed.sort((a, b) => {
@@ -2684,9 +2684,9 @@ async function getCapitalCity(country: string): Promise<string> {
 }
 
 // Usage
-console.log(await getCapitalCity('Germany'));       // "Berlin"
-console.log(await getCapitalCity('Afghanistan'));   // "Kabul"
-console.log(await getCapitalCity('Nonexistent'));   // "-1"
+console.log(await getCapitalCity('Germany')); // "Berlin"
+console.log(await getCapitalCity('Afghanistan')); // "Kabul"
+console.log(await getCapitalCity('Nonexistent')); // "-1"
 
 // This is a warm-up problem — usually the easier of the two coding tasks
 // Key points:
@@ -2727,8 +2727,8 @@ async function getDiscountedPrice(barcode: number): Promise<string | number> {
 }
 
 // Usage
-console.log(await getDiscountedPrice(74002314));  // e.g., 89.10
-console.log(await getDiscountedPrice(99999999));  // "Item not found"
+console.log(await getDiscountedPrice(74002314)); // e.g., 89.10
+console.log(await getDiscountedPrice(99999999)); // "Item not found"
 
 // Key patterns:
 // - Business logic: discount calculation is simple but easy to mess up
@@ -2969,9 +2969,7 @@ import { EventEmitter } from 'events';
 async function countMatches(searchTerm: string): Promise<number> {
     // In real HackerRank, this function is provided — you don't implement it
     // It might call an API or search a database
-    const response = await fetch(
-        `https://jsonmock.hackerrank.com/api/movies/search/?Title=${encodeURIComponent(searchTerm)}`,
-    );
+    const response = await fetch(`https://jsonmock.hackerrank.com/api/movies/search/?Title=${encodeURIComponent(searchTerm)}`);
     const data = await response.json();
     return data.total;
 }
@@ -3009,15 +3007,15 @@ class Search extends EventEmitter {
 // Usage — how the test file typically uses it:
 const search = new Search();
 
-search.on('SEARCH_STARTED', (data) => {
+search.on('SEARCH_STARTED', data => {
     console.log(`Search started for: ${data.searchTerm}`);
 });
 
-search.on('SEARCH_SUCCESS', (data) => {
+search.on('SEARCH_SUCCESS', data => {
     console.log(`Found ${data.count} results for: ${data.searchTerm}`);
 });
 
-search.on('SEARCH_ERROR', (data) => {
+search.on('SEARCH_ERROR', data => {
     console.log(`Search failed for: ${data.searchTerm} — ${data.error}`);
 });
 
@@ -3115,9 +3113,7 @@ async function getStatement(userId: number): Promise<Statement> {
     for (const tx of transactions) {
         // GOTCHA: amount might come as a string like "$1,234.56" from some APIs
         // Parse it properly:
-        const amount = typeof tx.amount === 'string'
-            ? parseFloat((tx.amount as string).replace(/[$,]/g, ''))
-            : tx.amount;
+        const amount = typeof tx.amount === 'string' ? parseFloat((tx.amount as string).replace(/[$,]/g, '')) : tx.amount;
 
         if (tx.type === 'credit') {
             totalCredits += amount;
@@ -3247,8 +3243,8 @@ const validTransitions: Record<OrderStatus, OrderStatus[]> = {
     PENDING: ['PROCESSING', 'CANCELLED'],
     PROCESSING: ['SHIPPED', 'CANCELLED'],
     SHIPPED: ['DELIVERED'],
-    DELIVERED: [],      // terminal state — no transitions allowed
-    CANCELLED: [],      // terminal state — no transitions allowed
+    DELIVERED: [], // terminal state — no transitions allowed
+    CANCELLED: [], // terminal state — no transitions allowed
 };
 
 function transitionOrder(order: Order, newStatus: OrderStatus): Order {
@@ -3258,10 +3254,7 @@ function transitionOrder(order: Order, newStatus: OrderStatus): Order {
     const allowedNextStates = validTransitions[currentStatus];
 
     if (!allowedNextStates || !allowedNextStates.includes(newStatus)) {
-        throw new Error(
-            `Invalid transition: cannot move from ${currentStatus} to ${newStatus}. ` +
-            `Allowed transitions from ${currentStatus}: [${allowedNextStates.join(', ')}]`,
-        );
+        throw new Error(`Invalid transition: cannot move from ${currentStatus} to ${newStatus}. ` + `Allowed transitions from ${currentStatus}: [${allowedNextStates.join(', ')}]`);
     }
 
     // Apply the transition
@@ -3280,11 +3273,11 @@ const order: Order = {
     history: [{ status: 'PENDING', timestamp: new Date() }],
 };
 
-transitionOrder(order, 'PROCESSING');  // ✅ OK
-console.log(order.status);             // "PROCESSING"
+transitionOrder(order, 'PROCESSING'); // ✅ OK
+console.log(order.status); // "PROCESSING"
 
-transitionOrder(order, 'SHIPPED');     // ✅ OK
-console.log(order.status);             // "SHIPPED"
+transitionOrder(order, 'SHIPPED'); // ✅ OK
+console.log(order.status); // "SHIPPED"
 
 try {
     transitionOrder(order, 'PENDING'); // ❌ ERROR: cannot go backwards
@@ -3293,7 +3286,7 @@ try {
     // "Invalid transition: cannot move from SHIPPED to PENDING. Allowed: [DELIVERED]"
 }
 
-transitionOrder(order, 'DELIVERED');   // ✅ OK
+transitionOrder(order, 'DELIVERED'); // ✅ OK
 
 try {
     transitionOrder(order, 'SHIPPED'); // ❌ ERROR: DELIVERED is terminal
@@ -3469,7 +3462,7 @@ function upperBound(sorted: number[], target: number): number {
         if (sorted[mid] <= target) {
             // sorted[mid] qualifies — everything at or before mid is ≤ target
             result = mid + 1; // mid is 0-indexed, count is 1-indexed
-            left = mid + 1;   // look for more qualifying elements to the right
+            left = mid + 1; // look for more qualifying elements to the right
         } else {
             // sorted[mid] > target — look left
             right = mid - 1;
@@ -3545,9 +3538,7 @@ async function getMaxTransferAmount(city: string): Promise<number> {
     for (const tx of allTransactions) {
         if (tx.location?.city === city) {
             // Parse amount — might be "$1,234.56" format
-            const amount = typeof tx.amount === 'string'
-                ? parseFloat(tx.amount.replace(/[$,]/g, ''))
-                : tx.amount;
+            const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount.replace(/[$,]/g, '')) : tx.amount;
 
             if (amount > maxAmount) {
                 maxAmount = amount;
@@ -3573,9 +3564,7 @@ async function getMaxTransferByCity(): Promise<{ city: string; amount: number }>
         const city = tx.location?.city;
         if (!city) continue;
 
-        const amount = typeof tx.amount === 'string'
-            ? parseFloat(tx.amount.replace(/[$,]/g, ''))
-            : tx.amount;
+        const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount.replace(/[$,]/g, '')) : tx.amount;
 
         const currentMax = cityMaxMap.get(city) ?? 0;
         if (amount > currentMax) {
@@ -3611,26 +3600,26 @@ async function getMaxTransferByCity(): Promise<{ city: string; amount: number }>
 // After solving all 19 problems, you'll notice the same patterns appear over and over:
 //
 // 1. PAGINATION PATTERN (Problems 2, 7, 8, 14, 15, 19):
-//    - Fetch page 1 → get total_pages → fetch remaining pages with Promise.all
-//    - This is the #1 most common HackerRank backend pattern
+// - Fetch page 1 → get total_pages → fetch remaining pages with Promise.all
+// - This is the #1 most common HackerRank backend pattern
 //
 // 2. API + FILTER + SORT (Problems 7, 8, 15):
-//    - Fetch all data → filter by criteria → sort by one or more fields → return
+// - Fetch all data → filter by criteria → sort by one or more fields → return
 //
 // 3. DATA AGGREGATION (Problems 1, 2, 14, 19):
-//    - Fetch data → reduce/sum/count/group → return computed result
+// - Fetch data → reduce/sum/count/group → return computed result
 //
 // 4. EXPRESS CRUD (Problems 3, 11, 12):
-//    - Routes + status codes + input validation + error handling
+// - Routes + status codes + input validation + error handling
 //
 // 5. MIDDLEWARE PATTERN (Problems 11, 17):
-//    - Factory function that returns middleware → attach data to req → call next()
+// - Factory function that returns middleware → attach data to req → call next()
 //
 // 6. BINARY SEARCH (Problem 18):
-//    - "Count elements ≤ X" or "Find first/last element matching criteria" → sort + binary search
+// - "Count elements ≤ X" or "Find first/last element matching criteria" → sort + binary search
 //
 // 7. STATE MACHINE (Problem 16):
-//    - Define valid transitions in a map → validate before applying → track history
+// - Define valid transitions in a map → validate before applying → track history
 //
 // If you can write these 7 patterns from memory, you can solve
 // virtually any HackerRank backend problem they throw at you.
@@ -3948,6 +3937,96 @@ function numIslands(grid: string[][]): number {
 
 console.log(
     numIslands([
+        ['1', '1', '0', '0', '0'],
+        ['1', '1', '0', '0', '0'],
+        ['0', '0', '1', '0', '0'],
+        ['0', '0', '0', '1', '1'],
+    ]),
+); // 3
+```
+
+**DFS Method (same problem, different traversal):**
+
+```typescript
+// DFS uses recursion (call stack) instead of a queue
+// Same idea: find a '1', sink the entire island, count it
+
+function numIslandsDFS(grid: string[][]): number {
+    if (!grid.length || !grid[0].length) return 0;
+
+    const rows = grid.length;
+    const cols = grid[0].length;
+    let islands = 0;
+
+    // DFS to mark all connected land cells as visited
+    function dfs(row: number, col: number): void {
+        // Base case: out of bounds OR water → stop
+        if (row < 0 || row >= rows || col < 0 || col >= cols || grid[row][col] === '0') {
+            return;
+        }
+
+        // Mark current cell as visited (sink it)
+        grid[row][col] = '0';
+
+        // Explore all 4 directions recursively
+        dfs(row - 1, col); // up
+        dfs(row + 1, col); // down
+        dfs(row, col - 1); // left
+        dfs(row, col + 1); // right
+    }
+
+    // Scan every cell in the grid
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (grid[r][c] === '1') {
+                islands++; // Found a new island
+                dfs(r, c); // Sink the entire island
+            }
+        }
+    }
+
+    return islands;
+}
+
+// Walkthrough with the example grid:
+// [["1","1","0","0","0"],
+//  ["1","1","0","0","0"],
+//  ["0","0","1","0","0"],
+//  ["0","0","0","1","1"]]
+//
+// Step 1: grid[0][0] = '1' → islands = 1
+//   dfs(0,0) → marks '0', calls dfs(up)=OOB, dfs(down)=dfs(1,0), dfs(left)=OOB, dfs(right)=dfs(0,1)
+//   dfs(1,0) → marks '0', calls dfs(2,0)='0' stop, dfs(0,0)='0' stop, ..., dfs(1,1)
+//   dfs(1,1) → marks '0', calls dfs(0,1)
+//   dfs(0,1) → marks '0', all neighbors are '0' now → stop
+//   Island 1 fully sunk: top-left 2x2 block
+//
+// Step 2: grid[0][1..4] all '0' now, grid[1][0..4] all '0', grid[2][0..1] = '0'
+//   grid[2][2] = '1' → islands = 2
+//   dfs(2,2) → marks '0', no neighbors are '1' → stop
+//   Island 2: single cell
+//
+// Step 3: grid[3][3] = '1' → islands = 3
+//   dfs(3,3) → marks '0', dfs(3,4) → marks '0', no more '1' neighbors → stop
+//   Island 3: two cells
+//
+// Result: 3
+
+// Time: O(rows * cols) — same as BFS, visit each cell at most once
+// Space: O(rows * cols) — worst case recursion depth (entire grid is one island)
+//        vs BFS which is O(min(rows, cols)) — BFS is better for space in worst case
+
+// BFS vs DFS comparison for this problem:
+// - BFS: uses queue (array + shift), iterative, O(min(rows,cols)) space
+// - DFS: uses call stack (recursion), cleaner/shorter code, O(rows*cols) space worst case‼️
+// - Both are O(rows*cols) time
+// - DFS is easier to write in interviews (fewer lines, no queue management)
+// - BFS is safer for very large grids (no stack overflow risk)‼️
+// - Interview tip: mention both, implement whichever you're more comfortable with,
+//   then explain the trade-off if asked
+
+console.log(
+    numIslandsDFS([
         ['1', '1', '0', '0', '0'],
         ['1', '1', '0', '0', '0'],
         ['0', '0', '1', '0', '0'],
