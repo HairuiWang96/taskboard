@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.glassdoor.com)",
+      "WebFetch(domain:www.glassdoor.com.hk)",
+      "WebFetch(domain:www.glassdoor.co.in)",
+      "WebFetch(domain:job-boards.eu.greenhouse.io)"
+    ]
+  }
+}
