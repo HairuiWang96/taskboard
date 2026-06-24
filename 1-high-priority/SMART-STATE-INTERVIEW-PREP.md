@@ -542,6 +542,68 @@ Practice these in a local Node.js environment:
 > - **Child Processes:** Separate processes, communicate via IPC. Use for running external commands or isolating untrusted code.
 > - **Cluster:** Forks the main process to utilize multiple CPU cores. Each worker handles incoming connections. Use for horizontal scaling of HTTP servers.
 
+**Q: libuv thread pool vs Worker Threads — what's the difference?**
+
+> These are two completely different things that people often confuse.
+>
+> **libuv Thread Pool (internal, automatic):**
+>
+> - Built into Node.js — you don't create or manage it
+> - Default size: 4 threads (configurable via `UV_THREADPOOL_SIZE`, max 1024)
+> - Handles operations that can't be done asynchronously by the OS:
+>     - File system operations (`fs.readFile`, `fs.writeFile`)
+>     - DNS lookups (`dns.lookup()`)
+>     - Crypto operations (`crypto.pbkdf2`, `crypto.randomBytes`)
+>     - Compression (`zlib`)
+> - You never interact with these threads directly — Node.js uses them behind the scenes and returns results to the event loop
+>
+> ```typescript
+> // You write this — looks async and single-threaded:
+> const data = await fs.promises.readFile('big-file.txt');
+>
+> // But internally, libuv sends this to its thread pool
+> // because the OS doesn't have a good async file I/O API
+> // A thread pool worker does the blocking read, then
+> // notifies the event loop when done
+> ```
+>
+> **Worker Threads (explicit, you create them):**
+>
+> - You create and manage them via `worker_threads` module
+> - Used for CPU-intensive JavaScript that would block the event loop
+> - Each worker has its own V8 instance and event loop
+> - Can share memory via `SharedArrayBuffer`
+> - You decide what code runs in them
+>
+> ```typescript
+> import { Worker, isMainThread, workerData, parentPort } from 'worker_threads';
+>
+> if (isMainThread) {
+>     // Main thread — spawn a worker for heavy computation
+>     const worker = new Worker(__filename, { workerData: { n: 1000000 } });
+>     worker.on('message', result => console.log('Result:', result));
+> } else {
+>     // Worker thread — do CPU-heavy work without blocking main event loop
+>     const sum = heavyComputation(workerData.n);
+>     parentPort!.postMessage(sum);
+> }
+> ```
+>
+> **Side-by-side comparison:**
+>
+> |                        | libuv Thread Pool                   | Worker Threads                              |
+> | ---------------------- | ----------------------------------- | ------------------------------------------- |
+> | **Created by**         | Node.js automatically               | You, explicitly                             |
+> | **Purpose**            | Async I/O that OS can't do natively | CPU-intensive JavaScript                    |
+> | **Default count**      | 4                                   | 0 (you create as needed)                    |
+> | **Runs JavaScript?**   | No — runs C/C++ code                | Yes — full V8 instance                      |
+> | **Shares event loop?** | Returns results to main event loop  | Has its own event loop                      |
+> | **Communication**      | Transparent (callback/promise)      | `postMessage` / `SharedArrayBuffer`         |
+> | **Example use**        | `fs.readFile`, `crypto.pbkdf2`      | Image processing, parsing huge CSV, hashing |
+>
+> **The key insight for the interview:**
+> "libuv threads handle I/O that the OS can't do async — the developer never sees them. Worker threads handle CPU-heavy JavaScript — the developer creates and manages them explicitly. They solve completely different problems."
+
 ---
 
 ## 8. Database Questions (MongoDB + MySQL + Redis)
@@ -569,6 +631,280 @@ Practice these in a local Node.js environment:
 > - Never run destructive migrations during peak hours
 > - Test migrations against production-sized datasets in staging
 
+### MongoDB Basics — Quick Reference
+
+**Connecting with Mongoose (most common in Node.js/NestJS):**
+
+```typescript
+import mongoose from 'mongoose';
+
+// Connect to MongoDB
+await mongoose.connect('mongodb://localhost:27017/igaming_db');
+
+// Define a Schema — describes the shape of documents in a collection
+const userSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    balance: { type: Number, default: 0 },
+    role: { type: String, enum: ['player', 'admin'], default: 'player' },
+    bets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Bet' }], // Reference to another collection
+    createdAt: { type: Date, default: Date.now },
+});
+
+// Create a Model — gives you CRUD methods for the "users" collection
+const User = mongoose.model('User', userSchema);
+```
+
+**CRUD Operations:**
+
+```typescript
+// ========================
+// CREATE
+// ========================
+const newUser = await User.create({
+    name: 'Alice',
+    email: 'alice@example.com',
+    balance: 100,
+});
+// Or:
+const user = new User({ name: 'Bob', email: 'bob@example.com' });
+await user.save();
+
+// ========================
+// READ — find documents
+// ========================
+
+// Find all
+const allUsers = await User.find();
+
+// Find with filter
+const players = await User.find({ role: 'player' });
+
+// Find one by condition
+const alice = await User.findOne({ email: 'alice@example.com' });
+
+// Find by ID (MongoDB's _id field)
+const user = await User.findById('60d5ec49f1b2c72b9c8e4d3a');
+
+// Select specific fields (projection) — only return name and email
+const names = await User.find({}, 'name email');
+// Or:
+const names2 = await User.find().select('name email');
+
+// Sorting, limiting, skipping (for pagination)
+const page2 = await User.find()
+    .sort({ createdAt: -1 }) // -1 = descending, 1 = ascending
+    .skip(10) // skip first 10 results
+    .limit(10); // return 10 results
+
+// ========================
+// UPDATE
+// ========================
+
+// Update one document
+await User.updateOne(
+    { email: 'alice@example.com' }, // filter
+    { $set: { balance: 200 } }, // update
+);
+
+// Find and update (returns the updated document)
+const updated = await User.findOneAndUpdate(
+    { email: 'alice@example.com' },
+    { $inc: { balance: 50 } }, // increment balance by 50
+    { new: true }, // return the updated doc, not the old one
+);
+
+// Update many
+await User.updateMany({ role: 'player' }, { $set: { status: 'active' } });
+
+// ========================
+// DELETE
+// ========================
+
+await User.deleteOne({ email: 'alice@example.com' });
+await User.deleteMany({ role: 'banned' });
+const deleted = await User.findByIdAndDelete('60d5ec49f1b2c72b9c8e4d3a');
+```
+
+**MongoDB Query Operators (must know for interviews):**
+
+```typescript
+// Comparison operators
+await User.find({ balance: { $gt: 100 } }); // greater than
+await User.find({ balance: { $gte: 100 } }); // greater than or equal
+await User.find({ balance: { $lt: 50 } }); // less than
+await User.find({ balance: { $lte: 50 } }); // less than or equal
+await User.find({ balance: { $ne: 0 } }); // not equal
+await User.find({ role: { $in: ['admin', 'moderator'] } }); // in array
+await User.find({ role: { $nin: ['banned'] } }); // not in array
+
+// Logical operators
+await User.find({ $and: [{ balance: { $gt: 0 } }, { role: 'player' }] });
+await User.find({ $or: [{ role: 'admin' }, { balance: { $gt: 1000 } }] });
+
+// Element operators
+await User.find({ phone: { $exists: true } }); // field exists
+
+// Regex (string search)
+await User.find({ name: { $regex: /^ali/i } }); // starts with "ali", case-insensitive
+```
+
+**Update Operators (used in the race condition solutions):**
+
+```typescript
+// $set — set a field's value
+await User.updateOne({ _id: id }, { $set: { name: 'New Name' } });
+
+// $inc — increment a field (can be negative to decrement)
+await User.updateOne({ _id: id }, { $inc: { balance: -50 } }); // deduct 50
+await User.updateOne({ _id: id }, { $inc: { loginCount: 1 } }); // increment by 1
+
+// $push — add to an array
+await User.updateOne({ _id: id }, { $push: { bets: betId } });
+
+// $pull — remove from an array
+await User.updateOne({ _id: id }, { $pull: { bets: betId } });
+
+// $unset — remove a field entirely
+await User.updateOne({ _id: id }, { $unset: { temporaryField: '' } });
+
+// Combine multiple operators in one call
+await User.updateOne(
+    { _id: id },
+    {
+        $set: { lastLogin: new Date() },
+        $inc: { loginCount: 1 },
+        $push: { loginHistory: new Date() },
+    },
+);
+```
+
+**Aggregation Pipeline (powerful data processing):**
+
+```typescript
+// Aggregation = multi-step data transformation pipeline
+// Each stage transforms the data and passes it to the next stage
+
+// Example: Get total amount bet per user, sorted by highest
+const stats = await Bet.aggregate([
+    // Stage 1: Filter — only completed bets
+    { $match: { status: 'completed' } },
+
+    // Stage 2: Group — sum amounts per user
+    {
+        $group: {
+            _id: '$userId', // group by userId
+            totalBet: { $sum: '$amount' }, // sum of all amounts
+            betCount: { $sum: 1 }, // count of bets
+            avgBet: { $avg: '$amount' }, // average bet amount
+            maxBet: { $max: '$amount' }, // largest single bet
+        },
+    },
+
+    // Stage 3: Sort — highest total first
+    { $sort: { totalBet: -1 } },
+
+    // Stage 4: Limit — top 10
+    { $limit: 10 },
+
+    // Stage 5: Lookup — join with users collection (like SQL JOIN)
+    {
+        $lookup: {
+            from: 'users', // collection to join
+            localField: '_id', // field from current pipeline (the userId we grouped by)
+            foreignField: '_id', // field in users collection
+            as: 'userInfo', // output array field name
+        },
+    },
+
+    // Stage 6: Unwind — flatten the userInfo array into an object
+    { $unwind: '$userInfo' },
+
+    // Stage 7: Project — reshape the output (like SELECT in SQL)
+    {
+        $project: {
+            _id: 0,
+            userName: '$userInfo.name',
+            totalBet: 1,
+            betCount: 1,
+            avgBet: { $round: ['$avgBet', 2] },
+        },
+    },
+]);
+
+// Result: [{ userName: "Alice", totalBet: 5000, betCount: 42, avgBet: 119.05 }, ...]
+
+// Common aggregation stages:
+// $match   → filter (like WHERE)
+// $group   → group + aggregate (like GROUP BY)
+// $sort    → sort results (like ORDER BY)
+// $limit   → limit results (like LIMIT)
+// $skip    → skip results (like OFFSET)
+// $lookup  → join collections (like JOIN)
+// $unwind  → flatten arrays
+// $project → reshape / select fields (like SELECT)
+// $addFields → add computed fields
+```
+
+**Indexing (critical for performance):**
+
+```typescript
+// Without an index, MongoDB scans EVERY document (collection scan) — O(n)
+// With an index, it's O(log n) — like a book's table of contents
+
+// Single field index
+userSchema.index({ email: 1 }); // 1 = ascending, -1 = descending
+
+// Compound index (multiple fields)
+betSchema.index({ userId: 1, createdAt: -1 }); // queries on userId + createdAt are fast
+
+// Unique index (enforces uniqueness)
+userSchema.index({ email: 1 }, { unique: true });
+
+// Text index (for full-text search)
+gameSchema.index({ name: 'text', description: 'text' });
+
+// TTL index (auto-delete documents after time — great for sessions)
+sessionSchema.index({ createdAt: 1 }, { expireAfterSeconds: 3600 }); // delete after 1 hour
+
+// Check what indexes exist
+await User.collection.getIndexes();
+
+// When to index:
+// ✓ Fields you filter on frequently (find, match)
+// ✓ Fields you sort on
+// ✓ Fields used in unique constraints
+// ✗ Don't index everything — indexes slow down writes and use memory
+// ✗ Don't index fields with low cardinality (e.g., boolean with only true/false)
+```
+
+**Populate (joining references between collections):**
+
+```typescript
+// Define schemas with references
+const betSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    gameId: { type: mongoose.Schema.Types.ObjectId, ref: 'Game' },
+    amount: Number,
+    outcome: { type: String, enum: ['win', 'loss', 'pending'] },
+});
+
+const Bet = mongoose.model('Bet', betSchema);
+
+// Without populate — just returns the ObjectId
+const bet = await Bet.findById(betId);
+// { userId: "60d5ec...", gameId: "60d5ed...", amount: 50 }
+
+// With populate — resolves the reference and returns the full document
+const bet = await Bet.findById(betId)
+    .populate('userId', 'name email') // only get name and email from user
+    .populate('gameId', 'name category'); // only get name and category from game
+// { userId: { name: "Alice", email: "..." }, gameId: { name: "Poker", category: "cards" }, amount: 50 }
+
+// Populate is like a LEFT JOIN — but it makes separate queries under the hood
+// For performance-critical code, use $lookup in aggregation pipeline instead
+```
+
 ---
 
 ## 9. Message Queues / RabbitMQ Questions
@@ -581,7 +917,7 @@ Practice these in a local Node.js environment:
 > - **Guaranteed delivery:** At-least-once or exactly-once semantics
 > - In iGaming: bet placement -> payment processing -> notification can all be async via queues
 
-**Q: RabbitMQ exchange types and when to use each?**
+**Q: RabbitMQ exchange types and when to use each?**‼️
 
 > - **Direct:** Routes to queues matching exact routing key. Use for specific task routing.
 > - **Fanout:** Broadcasts to all bound queues. Use for notifications (all services need to know about an event).
@@ -2704,7 +3040,7 @@ app.listen(3000, () => console.log('Server running on port 3000'));
 │  │       idle, prepare       │ ← internal use only
 │  └───────────┬───────────────┘
 │  ┌───────────┴───────────────┐
-│  │          poll             │ ← retrieve new I/O events, execute I/O callbacks
+│  │          poll             │ ← retrieve new I/O events, execute I/O callbacks‼️
 │  └───────────┬───────────────┘
 │  ┌───────────┴───────────────┐
 │  │          check            │ ← setImmediate() callbacks
@@ -2736,6 +3072,7 @@ Loop iteration 2:
 ```
 
 What kind of callbacks end up here:
+
 - Certain system-level I/O errors (e.g., `ECONNREFUSED` from a TCP socket)
 - I/O callbacks that the OS reports as ready but missed their window in the previous poll phase
 
@@ -2788,11 +3125,11 @@ console.log('6: end');
 
 ---
 
-### Q2: How do you handle race conditions? (SPECIFICALLY ASKED)
+### Q2: How do you handle race conditions? (SPECIFICALLY ASKED)‼️
 
 **What is a race condition?**
 
-> A race condition occurs when two or more operations try to access/modify shared state concurrently, and the final result depends on the timing/order of execution. In Node.js, even though JS is single-threaded, race conditions happen with:
+> ‼️ A race condition occurs when two or more operations try to access/modify shared state concurrently, and the final result depends on the timing/order of execution. In Node.js, even though JS is single-threaded, race conditions happen with:
 >
 > - Multiple async operations writing to the same database record
 > - Two API requests trying to deduct from the same user balance
@@ -2833,12 +3170,12 @@ app.post('/place-bet', async (req, res) => {
         return res.status(400).json({ error: 'Insufficient balance' });
     }
 
-    // Atomic update: only succeeds if version hasn't changed since we read it
+    // Atomic update: only succeeds if version hasn't changed since we read it‼️
     const result = await db.updateOne(
         { id: userId, version: user.version }, // WHERE id = X AND version = Y
         {
             $set: { balance: user.balance - amount },
-            $inc: { version: 1 }, // Increment version
+            $inc: { version: 1 }, // Increment version‼️
         },
     );
 
@@ -2850,7 +3187,7 @@ app.post('/place-bet', async (req, res) => {
     res.json({ success: true, newBalance: user.balance - amount });
 });
 
-// How it prevents the race condition:
+// How it prevents the race condition:‼️
 // Request A reads: balance=100, version=1
 // Request B reads: balance=100, version=1
 // Request A updates WHERE version=1 → succeeds, version becomes 2
@@ -2865,10 +3202,10 @@ app.post('/place-bet', async (req, res) => {
 app.post('/place-bet', async (req, res) => {
     const { userId, amount } = req.body;
 
-    // Single atomic operation: only decrements if balance >= amount
+    // Single atomic operation: only decrements if balance >= amount‼️
     const result = await db.updateOne(
-        { id: userId, balance: { $gte: amount } }, // Check AND update atomically
-        { $inc: { balance: -amount } }, // Decrement atomically
+        { id: userId, balance: { $gte: amount } }, // Check AND update atomically‼️
+        { $inc: { balance: -amount } }, // Decrement atomically‼️
     );
 
     if (result.modifiedCount === 0) {
@@ -2878,7 +3215,7 @@ app.post('/place-bet', async (req, res) => {
     res.json({ success: true });
 });
 
-// MongoDB's $inc is atomic — no race condition possible
+// MongoDB's $inc is atomic — no race condition possible‼️
 // No need for version fields or retries
 ```
 
@@ -2886,7 +3223,7 @@ app.post('/place-bet', async (req, res) => {
 
 ```typescript
 // For multi-step operations that can't be done in a single atomic query
-// Use Redis distributed lock (SET NX EX pattern)
+// Use Redis distributed lock (SET NX EX pattern)‼️
 
 import Redis from 'ioredis';
 const redis = new Redis();
@@ -2938,7 +3275,7 @@ app.post('/place-bet', async (req, res) => {
 
 // When to use which:
 // Atomic operations → simplest, use when possible (single DB operation)
-// Optimistic locking → when you need to read-then-write but conflicts are rare
+// Optimistic locking → when you need to read-then-write but conflicts are rare‼️
 // Distributed lock → when you have multi-step operations across services/DBs
 ```
 
@@ -2958,22 +3295,22 @@ app.post('/place-bet', async (req, res) => {
 >
 > In practice, network partitions WILL happen, so you're really choosing between **CP** (consistent but may reject requests) or **AP** (available but may serve stale data).
 >
-> "In iGaming, financial transactions like bets and withdrawals need CP — we can't risk showing a wrong balance. But for leaderboards or game history, AP is fine — slightly stale data is acceptable."
+> ‼️"In iGaming, financial transactions like bets and withdrawals need CP — we can't risk showing a wrong balance. ‼️But for leaderboards or game history, AP is fine — slightly stale data is acceptable."
 
 **Eventual Consistency:**
 
-> Instead of all nodes having the same data at all times (strong consistency), changes propagate gradually. All nodes will eventually reach the same state. Used by: DynamoDB, Cassandra, DNS, Redis replication.
+> Instead of all nodes having the same data at all times (strong consistency), changes propagate gradually. All nodes will eventually reach the same state. ‼️ Used by: DynamoDB, Cassandra, DNS, Redis replication.
 >
 > "When a user places a bet, we use strong consistency for the balance update (MySQL transaction). But the bet history feed for other users? That can be eventually consistent via an event published to Kafka."
 
 **Service Discovery:**
 
-> How do microservices find each other?
+> How do microservices find each other?‼️
 >
 > - **DNS-based** — services register with a DNS server (e.g., Consul, Route 53)
-> - **Client-side** — service queries a registry and picks an instance (e.g., Eureka)
+> - **Client-side** — service queries a registry and picks an instance (e.g., Eureka)‼️
 > - **Server-side** — load balancer routes to healthy instances (e.g., Kubernetes Service, AWS ALB)
-> - In Kubernetes: services get a stable DNS name automatically (`my-service.default.svc.cluster.local`)
+> - In Kubernetes: services get a stable DNS name automatically (`my-service.default.svc.cluster.local`)‼️
 
 **Idempotency:**
 
@@ -3007,7 +3344,7 @@ app.post('/place-bet', async (req, res) => {
 
 **Health Checks & Circuit Breaker:**
 
-> - **Health checks:** Each service exposes `/health` endpoint. Orchestrator (K8s) checks it to route traffic only to healthy instances.
+> - **Health checks:** ‼️ Each service exposes `/health` endpoint. Orchestrator (K8s) checks it to route traffic only to healthy instances.
 > - **Circuit breaker:** If a downstream service fails repeatedly, stop calling it temporarily (open circuit). Try again after a timeout (half-open). If it works, close the circuit. Prevents cascading failures.
 
 ```typescript
@@ -3079,22 +3416,22 @@ app.post('/withdraw', async (req, res) => {
 > - You need technology diversity (e.g., Python for ML model, Node.js for API)
 > - Domain boundaries are well understood
 >
-> "I'd start with a modular monolith — clean separation into modules that COULD become services later. Only split when you have a clear need: independent scaling, independent deployment, or different technology requirements."
+> "I'd start with a modular monolith — ‼️ clean separation into modules that COULD become services later. Only split when you have a clear need: independent scaling, independent deployment, or different technology requirements."
 
 **Q: How do microservices communicate?**
 
 > **Synchronous (request-response):**
 >
-> - **REST/HTTP** — simple, widely understood, good for CRUD. Downside: tight coupling, cascading failures.
+> - **REST/HTTP** — simple, widely understood, good for CRUD. ‼️ Downside: tight coupling, cascading failures.
 > - **gRPC** — binary protocol, faster than REST, strongly typed with Protobuf. Good for internal service-to-service calls.
 >
 > **Asynchronous (event-driven):**
 >
-> - **Message queues (RabbitMQ)** — task-based: "process this bet," "send this email." One producer, one consumer per message.
-> - **Event streaming (Kafka)** — event-based: "bet was placed." Multiple consumers can independently read the same event.
-> - **NATS** — lightweight pub/sub, great for real-time notifications. Fire-and-forget unless using JetStream.
+> - **Message queues (RabbitMQ)** — task-based: "process this bet," "send this email." ‼️ One producer, one consumer per message.
+> - **Event streaming (Kafka)** — event-based: "bet was placed." ‼️ Multiple consumers can independently read the same event.
+> - **NATS** — ‼️ lightweight pub/sub, great for real-time notifications. Fire-and-forget unless using JetStream.
 >
-> "For the iGaming platform, I'd use REST for client-to-service communication, gRPC for internal service-to-service calls where performance matters, and RabbitMQ/Kafka for async workflows like bet processing and notification delivery."
+> "For the iGaming platform, I'd use REST for client-to-service communication, gRPC for internal service-to-service calls where performance matters,‼️ and RabbitMQ/Kafka for async workflows like bet processing and notification delivery."
 
 **Q: How do you handle data consistency across microservices?**
 
@@ -3105,7 +3442,7 @@ app.post('/withdraw', async (req, res) => {
 > - **Saga pattern** — a sequence of local transactions. If step 3 fails, execute compensating transactions for steps 2 and 1. Two styles:
 >     - _Choreography:_ each service listens for events and acts (simpler, but harder to track)
 >     - _Orchestration:_ a central orchestrator tells each service what to do (easier to debug)
-> - **Outbox pattern** — write the event to a local "outbox" table in the same transaction as the data change. A separate process polls the outbox and publishes events. Guarantees at-least-once delivery.
+> - **Outbox pattern** — write the event to a local "outbox" table in the same transaction as the data change. A separate process polls the outbox and publishes events. ‼️ Guarantees at-least-once delivery.
 > - **CQRS** — Command Query Responsibility Segregation. Separate write model (commands) from read model (queries). Write to MySQL, project to a denormalized read model in MongoDB/Redis for fast queries.
 
 ---
@@ -3121,7 +3458,7 @@ for (var i = 0; i < 3; i++) {
     setTimeout(() => console.log(i), 0);
 }
 // Output: 3, 3, 3
-// Why: `var` is function-scoped, not block-scoped. By the time setTimeout
+// Why: `var` is function-scoped, not block-scoped. ‼️ By the time setTimeout
 // callbacks run, the loop has finished and i = 3. All closures reference
 // the same `i` variable.
 
@@ -3136,8 +3473,8 @@ for (let i = 0; i < 3; i++) {
 **Snippet 2: Hoisting**
 
 ```javascript
-console.log(a); // undefined (var is hoisted but not initialized)
-console.log(b); // ReferenceError: Cannot access 'b' before initialization
+console.log(a); // undefined (var is hoisted but not initialized)‼️
+console.log(b); // ReferenceError: Cannot access 'b' before initialization‼️
 var a = 1;
 let b = 2;
 
@@ -3163,7 +3500,7 @@ obj.greetArrow(); // undefined — arrow functions don't have their own `this`,
 //   they inherit from the enclosing scope (module/global)
 
 const greetFn = obj.greet;
-greetFn(); // undefined — `this` is now global/undefined (lost context)
+greetFn(); ‼️ // undefined — `this` is now global/undefined (lost context)‼️
 ```
 
 **Snippet 4: Promise execution order**
@@ -3189,28 +3526,28 @@ console.log('F');
 // 1. A, F — synchronous, run immediately
 // 2. C — first microtask (first Promise.then)
 // 3. E — second microtask (second Promise chain, same microtask batch)
-// 4. D — C's .then returned a Promise, so D is queued in the NEXT microtask batch
+// 4. D — C's .then returned a Promise, so D is queued in the NEXT microtask batch‼️
 // 5. B — setTimeout is a macrotask, runs after all microtasks are drained
 ```
 
 **Snippet 5: typeof and equality quirks**
 
 ```javascript
-console.log(typeof null); // "object" (infamous JS bug, kept for compatibility)
+console.log(typeof null); // "object" (infamous JS bug, kept for compatibility)‼️
 console.log(typeof undefined); // "undefined"
 console.log(null == undefined); // true (loose equality, both are "empty" values)
 console.log(null === undefined); // false (strict equality, different types)
-console.log(NaN === NaN); // false (NaN is not equal to anything, including itself)
-console.log(Number.isNaN(NaN)); // true (use this instead of ===)
+console.log(NaN === NaN); // false (NaN is not equal to anything, including itself)‼️
+console.log(Number.isNaN(NaN)); // true (use this instead of ===)‼️
 ```
 
-**Snippet 6: Async/Await execution order**
+**Snippet 6: Async/Await execution order**‼️
 
 ```javascript
 async function foo() {
     console.log('1: foo start');
     await bar();
-    console.log('2: foo after await'); // This runs as a microtask after bar resolves
+    console.log('2: foo after await'); // This runs as a microtask after bar resolves‼️
 }
 
 async function bar() {
@@ -3221,8 +3558,8 @@ console.log('4: script start');
 foo();
 console.log('5: script end');
 
-// Output: 4: script start, 1: foo start, 3: bar start, 5: script end, 2: foo after await
-// Why:
+// Output: 4: script start, 1: foo start, 3: bar start, 5: script end, 2: foo after await‼️
+// Why:‼️
 // - "4: script start" — synchronous
 // - foo() is called — "1: foo start" — synchronous part of foo
 // - await bar() — calls bar synchronously — "3: bar start"
@@ -3230,6 +3567,63 @@ console.log('5: script end');
 // - "5: script end" — synchronous
 // - microtask queue: resume foo after await — "2: foo after await"
 ```
+
+**How async/await execution order works (theory):**
+
+// JavaScript has ONE thread and TWO queues:
+// 1. Call stack — where synchronous code runs, one frame at a time
+// 2. Microtask queue — where resolved promise callbacks (and code after `await`) wait‼️
+// 3. Macrotask queue — where `setTimeout`, I/O callbacks, etc. wait
+//
+// The rule: the call stack must be completely empty before anything from the microtask queue runs.‼️
+//
+// What `async` and `await` actually do:
+// - `async function` — wraps the return value in a Promise automatically.
+// The function body runs SYNCHRONOUSLY until it hits the first `await`.
+// - `await x` — does two things:
+// 1. Evaluates `x` synchronously (if `x` is a function call, it calls it right now)
+// 2. PAUSES the function and schedules everything after the `await` as a microtask (like `.then())
+//   Think of `await`as a "pause point" — everything above it is sync, everything below it gets deferred.
+//
+// Walking through the snippet step by step:
+//
+// Step 1: console.log('4: script start') — sync, prints immediately → 4
+//
+// Step 2: foo() is called, enters foo:
+//   - console.log('1: foo start') — sync → 1
+//   - hits`await bar()`— calls bar() SYNCHRONOUSLY FIRST
+//     - enters bar: console.log('3: bar start') → 3
+//     - bar returns (implicitly Promise<undefined>)‼️
+//   - NOW`await`kicks in: PAUSES foo, schedules the rest of foo
+//     (the console.log('2:...')) into the microtask queue
+//   - returns control back to the caller (the global script)
+//
+// Step 3: Back in global script: console.log('5: script end') — sync → 5
+//
+// Step 4: Call stack is now EMPTY. JS engine checks the microtask queue
+//   → finds the continuation of foo → runs console.log('2: foo after await') → 2
+//
+// Result: 4, 1, 3, 5, 2
+//
+// The simple rule to remember:
+//`await` = "run the thing on the right synchronously, then yield.
+// Everything below me becomes a .then() callback."
+//
+// So this:
+// async function foo() {
+// A();
+// await B();
+// C();
+// }
+// Is essentially:
+// function foo() {
+// A();
+// return B().then(() => {
+// C(); // C runs as a microtask, not immediately
+// });
+// }
+// That .then() transformation is why C() always waits until the current
+// synchronous call stack finishes.‼️
 
 **Snippet 7: Object reference vs value**
 
