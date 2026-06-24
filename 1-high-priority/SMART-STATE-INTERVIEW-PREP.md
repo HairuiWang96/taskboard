@@ -424,7 +424,7 @@ export class UsersModule {}
 **2. Controllers — handling HTTP requests:**
 
 ```typescript
-// Controllers are similar to Express route handlers, but decorated with metadata
+// Controllers are similar to Express route handlers, but decorated with metadata‼️
 
 @Controller('users') // base route: /users
 export class UsersController {
@@ -461,7 +461,7 @@ export class UsersController {
 // Express:   router.get('/users/:id', (req, res) => { ... })
 // NestJS:    @Get(':id') findOne(@Param('id') id: string) { ... }
 //
-// Key decorators for parameters:
+// Key decorators for parameters:‼️
 // @Param('id')   — route params (like req.params.id)
 // @Body()        — request body (like req.body)
 // @Query('page') — query string (like req.query.page)
@@ -472,7 +472,7 @@ export class UsersController {
 **3. Providers/Services — where the logic lives:**
 
 ```typescript
-// Services are plain classes marked with @Injectable()
+// Services are plain classes marked with @Injectable()‼️
 // NestJS creates ONE instance and shares it everywhere (singleton by default)
 
 @Injectable()
@@ -496,7 +496,7 @@ export class UsersService {
     }
 }
 
-// Why @Injectable()?
+// Why @Injectable()?‼️
 // It tells NestJS: "this class can be injected into other classes"
 // NestJS reads the constructor parameters, finds the matching providers,
 // and passes them in automatically. You never do `new UsersService(...)` yourself.
@@ -520,7 +520,7 @@ export class UsersController {
 // Why this matters:
 // 1. You don't manually wire up dependencies — NestJS handles the whole chain
 // 2. Easy to test — swap real services with mocks
-// 3. Singleton by default — one instance shared across the app (efficient)
+// 3. Singleton by default — one instance shared across the app (efficient)‼️
 // 4. Loose coupling — controller doesn't know HOW UsersService works, just that it exists
 ```
 
@@ -528,7 +528,7 @@ export class UsersController {
 
 ```typescript
 // DTOs define the shape of incoming data — like a TypeScript interface but as a class
-// Using a class (not interface) because NestJS validation pipes need runtime metadata
+// Using a class (not interface) because NestJS validation pipes need runtime metadata‼️
 
 import { IsString, IsEmail, MinLength } from 'class-validator';
 
@@ -567,7 +567,7 @@ Client sends: POST /users { name: "Alice", email: "alice@example.com" }
 4. Pipes validate/transform — ValidationPipe checks the body against CreateUserDto
 5. Controller method runs — UsersController.create() is called
 6. Service does the work — UsersService.create() queries the database
-7. Response is sent back — NestJS serializes the return value to JSON automatically
+7. Response is sent back — NestJS serializes the return value to JSON automatically‼️
 ```
 
 **NestJS project structure (typical):**
@@ -609,7 +609,7 @@ src/
 | Structure            | No opinion — you decide        | Opinionated — modules/ctrl/service  |
 | TypeScript           | Manual setup                   | Built-in, first-class               |
 | Dependency Injection | None — wire it yourself        | Built-in IoC container              |
-| Validation           | Manual or middleware            | Decorators + ValidationPipe         |
+| Validation           | Manual or middleware           | Decorators + ValidationPipe ‼️        |
 | Testing              | Manual mocking                 | Built-in testing module with DI     |
 | Learning curve       | Low                            | Medium (decorators, DI, modules)    |
 | Best for             | Small apps, APIs, prototypes   | Large apps, teams, enterprise       |
@@ -619,7 +619,7 @@ src/
 // 1. Modules group related features (like Angular modules)
 // 2. Controllers handle routes (decorated Express handlers)
 // 3. Services hold business logic (injected automatically via DI)
-// 4. Decorators (@Get, @Body, @Injectable) replace manual wiring
+// 4. Decorators (@Get, @Body, @Injectable) replace manual wiring‼️
 // 5. Everything flows through a predictable lifecycle: Middleware → Guards → Pipes → Handler → Interceptors → Filters
 
 ---
@@ -628,7 +628,7 @@ src/
 
 **Q: How does dependency injection work in NestJS?**
 
-> NestJS uses an ‼️ IoC (Inversion of Control) container. You mark classes with `@Injectable()` and register them as providers in a module. The framework resolves the dependency graph at startup and injects instances via constructor injection. Custom providers use `useFactory`, `useClass`, or `useValue` strategies.
+> NestJS uses an ‼️ IoC (Inversion of Control) container. You mark classes with `@Injectable()` and register them as providers in a module. The framework resolves the dependency graph at startup and injects instances via constructor injection. ‼️ Custom providers use `useFactory`, `useClass`, or `useValue` strategies.
 >
 > ```typescript
 > // Custom provider with factory
@@ -642,7 +642,7 @@ src/
 > }
 > ```
 
-**Q: Explain the NestJS request lifecycle / execution order.**
+**Q: Explain the NestJS request lifecycle / execution order.**‼️
 
 > 1. **Middleware** — runs first, similar to Express middleware (logging, CORS, compression)
 > 2. **Guards** — authorization checks (`CanActivate` interface), can access metadata via `Reflector`
@@ -656,7 +656,7 @@ src/
 
 **Q: What are Dynamic Modules and when would you use them?**
 
-> Dynamic modules allow runtime configuration via static methods like `register()` or `forRoot()`. They return a `DynamicModule` object with configured providers and exports. Use cases:
+> ‼️ Dynamic modules allow runtime configuration via static methods like `register()` or `forRoot()`. They return a `DynamicModule` object with configured providers and exports. Use cases:
 >
 > - Configuring database connections per environment
 > - Multi-tenant architecture (different config per tenant)
@@ -697,7 +697,7 @@ src/
 
 **Q: Guards vs Middleware vs Interceptors — when do you use each?**
 
-> - **Middleware:** Request preprocessing before routing — logging, body parsing, rate limiting. No access to handler metadata.
+> - **Middleware:** Request preprocessing before routing — logging, body parsing, rate limiting. ‼️No access to handler metadata.
 > - **Guards:** Authorization/authentication decisions. Has access to `ExecutionContext` and route metadata via `Reflector`. Returns boolean or throws.
 > - **Interceptors:** Cross-cutting concerns that wrap handler execution — response transformation, caching, timing, error mapping. Uses RxJS observables.
 
@@ -753,7 +753,7 @@ src/
 > Use the **Saga pattern** or **Outbox pattern**:
 >
 > - **Saga:** Orchestrate a sequence of local transactions across services. If one fails, execute compensating transactions to roll back previous steps.
-> - **Outbox:** Write events to a local outbox table within the same transaction as the data change, then publish events asynchronously. Ensures at-least-once delivery.
+> - **Outbox:** Write events to a local outbox table within the same transaction as the data change, then publish events asynchronously. ‼️Ensures at-least-once delivery.
 >
 > NestJS supports CQRS with `@nestjs/cqrs` — separate read and write models for complex domains.
 
@@ -1389,7 +1389,7 @@ export class OddsGateway implements OnGatewayConnection, OnGatewayDisconnection 
 //
 // odds_events table (event sourcing):
 // id, match_id, market_type, odds_data (JSON), source, timestamp
-// — append-only, never updated or deleted
+// — append-only, never updated or deleted‼️
 
 **Q: Design a notification system for a gaming platform.**
 
@@ -1599,7 +1599,7 @@ export class NotificationOrchestrator {
 // - If Push/Email/SMS provider fails → message goes to a dead letter queue (DLQ)
 // - Retry with exponential backoff: 1s, 5s, 30s, 5min
 // - After max retries (e.g., 5), log failure and alert ops team
-// - For critical notifications (withdrawal, account security): fallback to next channel
+// - For critical notifications (withdrawal, account security): fallback to next channel‼️
 // Push failed → try SMS → try email → store in-app (guaranteed)
 
 // DATABASE SCHEMA:
@@ -1749,7 +1749,7 @@ export class WalletService {
         const existing = await this.idempotencyRepo.findOne({ key: idempotencyKey });
         if (existing) return existing.result; // already done, return cached result
 
-        // Retry loop for optimistic locking conflicts
+        // Retry loop for optimistic locking conflicts‼️
         for (let attempt = 0; attempt < 3; attempt++) {
             const wallet = await this.walletRepo.findOne({ userId });
 
@@ -1769,7 +1769,7 @@ export class WalletService {
                 await this.idempotencyRepo.save({ key: idempotencyKey, result: 'ok' });
                 return;
             }
-            // result.affected === 0 means someone else changed the row — retry
+            // result.affected === 0 means someone else changed the row — retry‼️
         }
         throw new ConcurrencyConflictError('Balance was modified concurrently, try again');
     }
@@ -1777,8 +1777,8 @@ export class WalletService {
 ```
 
 // WHY optimistic locking instead of pessimistic (SELECT ... FOR UPDATE)?
-// - Optimistic: reads don't block, conflicts are rare, better throughput for high-traffic
-// - Pessimistic: guarantees success but creates lock contention under load
+// - Optimistic: reads don't block, conflicts are rare, better throughput for high-traffic‼️
+// - Pessimistic: guarantees success but creates lock contention under load‼️
 // - For a betting platform with thousands of concurrent bets: optimistic is usually better
 // - Exception: for extremely high-volume single users (bot accounts), pessimistic may be safer
 
@@ -1799,7 +1799,7 @@ events table (append-only, never update or delete):
 // WHY? Regulatory requirement in iGaming — auditors can reconstruct any balance at any point in time
 // You can answer: "What was user X's balance at 10:06 on Jan 15?" → $50
 
-// SOLUTION 4: RECONCILIATION (safety net)
+// SOLUTION 4: RECONCILIATION (safety net)‼️
 // Even with sagas + locking + event sourcing, things can go wrong (network partitions, bugs)
 // Run periodic reconciliation jobs:
 
@@ -1839,7 +1839,7 @@ events table (append-only, never update or delete):
 // 3. Idempotency keys on every mutation to handle retries safely
 // 4. Event sourcing for a complete, immutable audit trail — required for iGaming compliance
 // 5. Reconciliation jobs as a safety net to catch any edge cases
-// The key principle: design for failure. Assume any step can fail, any message can be duplicated,
+// The key principle: design for failure. Assume any step can fail, any message can be duplicated,‼️
 // and any service can be temporarily unavailable."
 
 ---
@@ -1860,9 +1860,9 @@ events table (append-only, never update or delete):
 
 ## 12. Testing Questions (TDD Focus)
 
-**Q: How do you approach TDD in NestJS?**
+**Q: How do you approach TDD in NestJS?**‼️
 
-> - Write test first, watch it fail, implement minimum code to pass, refactor
+> - Write test first, watch it fail, implement minimum code to pass, refactor‼️
 > - NestJS provides `@nestjs/testing` with `Test.createTestingModule()` for isolated unit tests
 > - Override providers with mocks using `.overrideProvider().useValue()`
 > - Integration tests: use in-memory databases (mongodb-memory-server, SQLite for MySQL)
@@ -1881,12 +1881,12 @@ events table (append-only, never update or delete):
 **Q: How do you implement CI/CD for microservices?**
 
 > - Separate pipelines per service (only build/deploy what changed)
-> - Automated test gates: unit -> integration -> E2E
-> - Docker multi-stage builds for small production images
-> - Health check endpoints for orchestrator readiness/liveness probes
+> - Automated test gates: unit -> integration -> E2E‼️
+> - Docker multi-stage builds for small production images‼️
+> - Health check endpoints for orchestrator readiness/liveness probes‼️
 > - Blue-green or canary deployments for zero-downtime releases
 
-**Q: How do you monitor a Node.js microservices system?**
+**Q: How do you monitor a Node.js microservices system?**‼️
 
 > - **Metrics:** Prometheus + Grafana for request rates, latency percentiles, error rates (RED method)
 > - **Logging:** Structured JSON logs with pino, correlation IDs across service hops
@@ -1966,9 +1966,9 @@ Since Smart State emphasizes "technical ownership" and "collaborative, internati
 async function countDrawnMatches(year: number): Promise<number> {
     // Key insight: instead of fetching ALL matches and filtering,
     // we only need to check goals 0-0, 1-1, 2-2, ... 10-10
-    // That's only 11 requests instead of potentially hundreds!
+    // That's only 11 requests instead of potentially hundreds!‼️
 
-    const requests: Promise<number>[] = [];
+    const requests: Promise<number>[] = [];‼️
 
     for (let goals = 0; goals <= 10; goals++) {
         const url = `https://jsonmock.hackerrank.com/api/football_matches?year=${year}&team1goals=${goals}&team2goals=${goals}`;
@@ -2045,13 +2045,13 @@ async function getTotalGoals(competition: string, year: number): Promise<number>
     const winner = compData.data[0].winner;
     console.log(`Winner: ${winner}`);
 
-    // Step 2: Get all matches where winner was team1 (home) and team2 (away)
+    // Step 2: Get all matches where winner was team1 (home) and team2 (away)‼️
     const [homeMatches, awayMatches] = await Promise.all([fetchAllPages(`${BASE}/football_matches?year=${year}&team1=${encodeURIComponent(winner)}`), fetchAllPages(`${BASE}/football_matches?year=${year}&team2=${encodeURIComponent(winner)}`)]);
 
     // Step 3: Sum goals
     // When winner is team1, their goals are in "team1goals"
     // When winner is team2, their goals are in "team2goals"
-    const homeGoals = homeMatches.reduce((sum, match) => sum + parseInt(match.team1goals), 0);
+    const homeGoals = homeMatches.reduce((sum, match) => sum + parseInt(match.team1goals), 0);‼️
     const awayGoals = awayMatches.reduce((sum, match) => sum + parseInt(match.team2goals), 0);
 
     return homeGoals + awayGoals;
@@ -2065,7 +2065,7 @@ console.log(`Total goals scored by winner: ${goals}`);
 // - Chaining async calls (competition → winner → matches)
 // - Handling paginated APIs (fetch page 1 for total_pages, then fetch rest in parallel)
 // - Data aggregation with reduce
-// - Using encodeURIComponent for query params with spaces
+// - Using encodeURIComponent for query params with spaces‼️
 ```
 
 ---
@@ -2095,7 +2095,7 @@ app.get('/todos', (req: Request, res: Response) => {
 
 // GET /todos/:id — Return one todo
 app.get('/todos/:id', (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id);‼️
     const todo = todos.find(t => t.id === id);
 
     if (!todo) {
@@ -2206,14 +2206,14 @@ const products: Product[] = Array.from({ length: 50 }, (_, i) => ({
 // GET /products?page=1&limit=10  (alternative style)
 app.get('/products', (req: Request, res: Response) => {
     // Parse query params with defaults
-    // offset/limit style (HackerRank typically uses this)
+    // offset/limit style (HackerRank typically uses this)‼️
     const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
 
-    // Slice the array — this is the core logic
+    // Slice the array — this is the core logic‼️
     const paginatedData = products.slice(offset, offset + limit);
 
-    // Return with metadata so the client knows about total and pagination state
+    // Return with metadata so the client knows about total and pagination state‼️
     res.status(200).json({
         data: paginatedData,
         pagination: {
@@ -2252,7 +2252,7 @@ app.get('/products/v2', (req: Request, res: Response) => {
 app.listen(3000, () => console.log('Server running on port 3000'));
 
 // Key things interviewers look for:
-// 1. Default values for missing params (don't crash on undefined)
+// 1. Default values for missing params (don't crash on undefined)‼️
 // 2. Input validation (non-negative offset, positive limit)
 // 3. Upper bound on limit (prevent client requesting 1 million items)
 // 4. Returning total count and hasMore/hasNext for client-side pagination UI
@@ -2320,7 +2320,7 @@ function lengthOfLongestSubstring(s: string): number {
 // Answer: 3
 
 // Time complexity: O(n) — each character is added and removed from the set at most once
-// Space complexity: O(min(n, m)) where m is the size of the character set
+// Space complexity: O(min(n, m)) where m is the size of the character set‼️
 
 // Optimized version using Map (stores index to jump left pointer directly):
 function lengthOfLongestSubstringOptimized(s: string): number {
@@ -2507,10 +2507,1133 @@ console.log(list.size); // 2
 // Space: O(1) for all operations (no extra data structures)
 //
 // Interview tip: if asked "how would you improve this?", mention:
-// - Add a "tail" pointer for O(1) insert at end
+// - Add a "tail" pointer for O(1) insert at end‼️
 // - Use a doubly linked list for O(1) delete if you have a reference to the node
-// - Use a hash map alongside for O(1) search (like LRU cache)
+// - Use a hash map alongside for O(1) search (like LRU cache)‼️
 ```
+
+---
+
+## 17B. Additional Real Interview Problems (HackerRank / Backend OAs)
+
+// These problems are reported from real HackerRank assessments and backend developer interviews
+// at BrainRocket, Soft2Bet, and similar companies. Sources: Glassdoor, LeetCode Discuss, GitHub.
+// Problems 1-6 above are already confirmed from BrainRocket interviews.
+// These additional problems come from HackerRank REST API certifications and backend OAs
+// that use the same jsonmock API infrastructure and Express.js patterns.
+
+---
+
+### Problem 7: Movie Search API — Paginated Search with Sorting
+
+```typescript
+// Given: A REST API at https://jsonmock.hackerrank.com/api/movies/search/?Title=substr
+// Response: { page, per_page, total, total_pages, data: [{ Title, Year, imdbID }] }
+// Task: Given a search substring, return ALL matching movie titles sorted alphabetically
+// Must handle pagination — fetch ALL pages, not just the first one
+// Source: HackerRank REST API Certification, reported by multiple backend candidates
+
+async function getMovieTitles(substr: string): Promise<string[]> {
+    const BASE = `https://jsonmock.hackerrank.com/api/movies/search/?Title=${encodeURIComponent(substr)}`;
+
+    // Step 1: Fetch first page to get total_pages
+    const firstRes = await fetch(`${BASE}&page=1`);
+    const firstData = await firstRes.json();
+    const totalPages: number = firstData.total_pages;
+
+    // Collect titles from first page
+    let allTitles: string[] = firstData.data.map((movie: any) => movie.Title);
+
+    // Step 2: Fetch remaining pages in parallel
+    if (totalPages > 1) {
+        const pagePromises: Promise<string[]>[] = [];
+        for (let page = 2; page <= totalPages; page++) {
+            pagePromises.push(
+                fetch(`${BASE}&page=${page}`)
+                    .then(res => res.json())
+                    .then(data => data.data.map((movie: any) => movie.Title)),
+            );
+        }
+
+        const remainingTitles = await Promise.all(pagePromises);
+        // Flatten: [[title1, title2], [title3]] → [title1, title2, title3]
+        remainingTitles.forEach(titles => allTitles.push(...titles));
+    }
+
+    // Step 3: Sort alphabetically and return
+    return allTitles.sort();
+}
+
+// Usage
+const titles = await getMovieTitles('spiderman');
+console.log(titles);
+// ["Amazing Spiderman", "Spiderman", "Spiderman 2", "Spiderman 3", ...]
+
+// Key patterns:
+// - Pagination handling (same pattern as Problem 2)
+// - encodeURIComponent for search terms with special characters
+// - Promise.all for parallel fetching
+// - Array.sort() for alphabetical ordering (default sort is fine for strings)
+// - map() to extract just the Title field from full movie objects
+```
+
+---
+
+### Problem 8: Top Articles by Comments — Null Handling + Multi-Criteria Sort
+
+```typescript
+// Given: A REST API at https://jsonmock.hackerrank.com/api/articles?page=N
+// Response: { data: [{ title, url, author, num_comments, story_title, story_url }], total_pages }
+// Task: Return article titles sorted by num_comments (desc), then alphabetically (asc)
+// CATCH: Some articles have title=null. Use story_title as fallback.
+//        If BOTH title AND story_title are null, SKIP that article entirely.
+// Source: HackerRank OA, reported by Dunzo and other backend candidates
+
+async function topArticles(limit: number): Promise<string[]> {
+    const BASE = 'https://jsonmock.hackerrank.com/api/articles';
+
+    // Step 1: Fetch first page to get total_pages
+    const firstRes = await fetch(`${BASE}?page=1`);
+    const firstData = await firstRes.json();
+    const totalPages: number = firstData.total_pages;
+    let allArticles: any[] = [...firstData.data];
+
+    // Step 2: Fetch remaining pages
+    if (totalPages > 1) {
+        const pagePromises = [];
+        for (let page = 2; page <= totalPages; page++) {
+            pagePromises.push(
+                fetch(`${BASE}?page=${page}`)
+                    .then(res => res.json())
+                    .then(data => data.data),
+            );
+        }
+        const pages = await Promise.all(pagePromises);
+        pages.forEach(pageData => allArticles.push(...pageData));
+    }
+
+    // Step 3: Process articles — resolve title, filter nulls
+    const processed = allArticles
+        .map(article => ({
+            // Use title if available, otherwise story_title
+            title: article.title || article.story_title,
+            num_comments: article.num_comments ?? 0, // default to 0 if null
+        }))
+        .filter(article => article.title !== null && article.title !== undefined);
+        // ^^ Skip articles where BOTH title and story_title are null
+
+    // Step 4: Sort by num_comments DESC, then title ASC (alphabetical)
+    processed.sort((a, b) => {
+        if (b.num_comments !== a.num_comments) {
+            return b.num_comments - a.num_comments; // descending by comments
+        }
+        return a.title.localeCompare(b.title); // ascending alphabetical
+    });
+
+    // Step 5: Return only the titles, limited to requested count
+    return processed.slice(0, limit).map(a => a.title);
+}
+
+// Usage
+const top5 = await topArticles(5);
+console.log(top5);
+// ["Most commented article", "Second most", ...]
+
+// Key patterns:
+// - Null coalescing: article.title || article.story_title (fallback logic)
+// - Nullish coalescing: ?? 0 for num_comments (treats null/undefined as 0)
+// - Multi-criteria sorting with localeCompare for proper string comparison
+// - .filter() to remove invalid entries BEFORE sorting
+// - .slice() for limiting results AFTER sorting
+//
+// WHY this is tricky:
+// - The null handling is the gotcha — many candidates forget story_title fallback
+// - Sorting by two criteria requires careful comparison function
+// - Must handle ALL pages, not just first page
+```
+
+---
+
+### Problem 9: REST API Capital City — Simple Fetch with Error Handling
+
+```typescript
+// Given: A REST API at https://jsonmock.hackerrank.com/api/countries?name=COUNTRY
+// Response: { data: [{ name, capital, ... }] }
+// Task: Return the capital city of the given country. Return "-1" if not found.
+// Source: HackerRank REST API Certification
+// WHY this is asked: Tests basic async/await, error handling, and edge cases
+
+async function getCapitalCity(country: string): Promise<string> {
+    const url = `https://jsonmock.hackerrank.com/api/countries?name=${encodeURIComponent(country)}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    // Edge case 1: Country not found — data array is empty
+    if (!data.data || data.data.length === 0) {
+        return '-1';
+    }
+
+    // Edge case 2: Country found but capital field is missing/null
+    const capital = data.data[0].capital;
+    if (!capital) {
+        return '-1';
+    }
+
+    return capital;
+}
+
+// Usage
+console.log(await getCapitalCity('Germany'));       // "Berlin"
+console.log(await getCapitalCity('Afghanistan'));   // "Kabul"
+console.log(await getCapitalCity('Nonexistent'));   // "-1"
+
+// This is a warm-up problem — usually the easier of the two coding tasks
+// Key points:
+// - Always check data.data.length before accessing data.data[0]
+// - Return the exact type the spec asks for ("-1" as string, not the number -1)
+// - encodeURIComponent for country names with spaces (e.g., "New Zealand")
+```
+
+---
+
+### Problem 10: Discounted Price API — Business Logic + API
+
+```typescript
+// Given: A REST API at https://jsonmock.hackerrank.com/api/inventory?barcode=BARCODE
+// Response: { data: [{ barcode, item, price, discount, quantity }] }
+// Task: Given a barcode, return the discounted price rounded to 2 decimal places.
+//       If item not found, return "Item not found"
+// discounted_price = price * (1 - discount / 100)
+// Source: HackerRank, used by Twilio and similar backend OAs
+
+async function getDiscountedPrice(barcode: number): Promise<string | number> {
+    const url = `https://jsonmock.hackerrank.com/api/inventory?barcode=${barcode}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.data || data.data.length === 0) {
+        return 'Item not found';
+    }
+
+    const item = data.data[0];
+    const discountedPrice = item.price * (1 - item.discount / 100);
+
+    // Round to 2 decimal places
+    // WHY Math.round and not toFixed? toFixed returns a string.
+    // But some HackerRank tests expect a number. Use whichever the spec requires.
+    return Math.round(discountedPrice * 100) / 100;
+}
+
+// Usage
+console.log(await getDiscountedPrice(74002314));  // e.g., 89.10
+console.log(await getDiscountedPrice(99999999));  // "Item not found"
+
+// Key patterns:
+// - Business logic: discount calculation is simple but easy to mess up
+//   WRONG: price - discount (that's not how percentages work)
+//   RIGHT: price * (1 - discount/100)
+// - Rounding: floating point math can produce 89.09999999... → round properly
+// - Return types: mixed return type (number | string) — match exactly what spec says
+```
+
+---
+
+### Problem 11: Express.js Authorization Middleware — Role-Based Access
+
+```typescript
+// Task: Build an Express.js app with role-based authorization middleware
+// Roles: "admin" (full access), "editor" (read + write), "viewer" (read only)
+// Routes:
+//   GET /tasks       — all roles can access
+//   POST /tasks      — admin and editor only
+//   PUT /tasks/:id   — admin and editor only
+//   DELETE /tasks/:id — admin only
+// Role is passed in the "x-role" header
+// Return 403 if role doesn't have permission, 401 if no role header
+// Source: HackerRank Node.js Intermediate Certification
+
+import express, { Request, Response, NextFunction } from 'express';
+
+const app = express();
+app.use(express.json());
+
+// In-memory store
+interface Task {
+    id: number;
+    title: string;
+    completed: boolean;
+}
+
+let tasks: Task[] = [];
+let nextId = 1;
+
+// Define permissions per role
+const rolePermissions: Record<string, string[]> = {
+    admin: ['tasks.read', 'tasks.create', 'tasks.update', 'tasks.delete'],
+    editor: ['tasks.read', 'tasks.create', 'tasks.update'],
+    viewer: ['tasks.read'],
+};
+
+// Authorization middleware factory — returns middleware for a specific permission
+function authorize(permission: string) {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const role = req.headers['x-role'] as string;
+
+        // No role header → 401 Unauthorized
+        if (!role) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        // Unknown role → 403 Forbidden
+        const permissions = rolePermissions[role.toLowerCase()];
+        if (!permissions) {
+            return res.status(403).json({ error: `Unknown role: ${role}` });
+        }
+
+        // Role doesn't have required permission → 403 Forbidden
+        if (!permissions.includes(permission)) {
+            return res.status(403).json({ error: `Role "${role}" lacks permission: ${permission}` });
+        }
+
+        // Role has permission → proceed
+        next();
+    };
+}
+
+// Routes with authorization
+app.get('/tasks', authorize('tasks.read'), (req: Request, res: Response) => {
+    res.json(tasks);
+});
+
+app.post('/tasks', authorize('tasks.create'), (req: Request, res: Response) => {
+    const { title } = req.body;
+    if (!title) return res.status(400).json({ error: 'title is required' });
+
+    const task: Task = { id: nextId++, title, completed: false };
+    tasks.push(task);
+    res.status(201).json(task);
+});
+
+app.put('/tasks/:id', authorize('tasks.update'), (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    const task = tasks.find(t => t.id === id);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+
+    const { title, completed } = req.body;
+    if (title !== undefined) task.title = title;
+    if (completed !== undefined) task.completed = completed;
+    res.json(task);
+});
+
+app.delete('/tasks/:id', authorize('tasks.delete'), (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    const index = tasks.findIndex(t => t.id === id);
+    if (index === -1) return res.status(404).json({ error: 'Task not found' });
+
+    tasks.splice(index, 1);
+    res.status(204).send();
+});
+
+app.listen(3000);
+
+// Key patterns:
+// - Middleware factory: authorize('tasks.create') returns a middleware function
+//   This is the "closure pattern" — the returned function closes over the permission string
+// - Role lookup from headers: req.headers['x-role']
+// - 401 vs 403: 401 = "who are you?" (no credentials), 403 = "I know who you are, but no" (insufficient permissions)
+// - Separation of concerns: authorization logic is reusable middleware, not duplicated in each route
+//
+// Interview follow-up questions they might ask:
+// - "How would you add a new role?" → Just add to rolePermissions object
+// - "How would you make this production-ready?" → Store roles in DB, use JWT tokens instead of headers,
+//   add role hierarchy (admin inherits editor permissions)
+// - "What about route-level vs resource-level permissions?" → This is route-level.
+//   Resource-level means "can user X edit THIS specific task?" (ownership check)
+```
+
+---
+
+### Problem 12: Product API — CRUD with Method Restrictions
+
+```typescript
+// Task: Build a /products REST endpoint with specific business rules:
+// - POST /products: Create product. ALWAYS set isPublished: false regardless of input
+// - GET /products: Return all products sorted by ID ascending
+// - GET /products/:id: Return single product, 404 if not found
+// - PUT /products: Return 405 Method Not Allowed
+// - DELETE /products: Return 405 Method Not Allowed
+// - Auto-increment IDs starting from 1
+// Source: HackerRank Node.js Intermediate Certification
+
+import express, { Request, Response } from 'express';
+
+const app = express();
+app.use(express.json());
+
+interface Product {
+    id: number;
+    name: string;
+    price: number;
+    isPublished: boolean;
+}
+
+let products: Product[] = [];
+let nextId = 1;
+
+// POST /products — Create (always unpublished)
+app.post('/products', (req: Request, res: Response) => {
+    const { name, price } = req.body;
+
+    if (!name || price === undefined) {
+        return res.status(400).json({ error: 'name and price are required' });
+    }
+
+    const product: Product = {
+        id: nextId++,
+        name,
+        price: Number(price),
+        isPublished: false, // ALWAYS false — ignore whatever the client sends‼️
+    };
+
+    products.push(product);
+    res.status(201).json(product);
+});
+
+// GET /products — List all, sorted by ID
+app.get('/products', (req: Request, res: Response) => {
+    // Sort by ID ascending (in case array order got mixed up)
+    const sorted = [...products].sort((a, b) => a.id - b.id);
+    res.status(200).json(sorted);
+});
+
+// GET /products/:id — Single product
+app.get('/products/:id', (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    const product = products.find(p => p.id === id);
+
+    if (!product) {
+        return res.status(404).json({ error: `Product with id ${id} not found` });
+    }
+
+    res.status(200).json(product);
+});
+
+// PUT and DELETE — Not allowed (405)
+app.put('/products', (req: Request, res: Response) => {
+    res.status(405).json({ error: 'Method Not Allowed' });
+});
+
+app.put('/products/:id', (req: Request, res: Response) => {
+    res.status(405).json({ error: 'Method Not Allowed' });
+});
+
+app.delete('/products', (req: Request, res: Response) => {
+    res.status(405).json({ error: 'Method Not Allowed' });
+});
+
+app.delete('/products/:id', (req: Request, res: Response) => {
+    res.status(405).json({ error: 'Method Not Allowed' });
+});
+
+app.listen(3000);
+
+// Key patterns:
+// - Business rule enforcement: isPublished is ALWAYS false on creation
+//   Even if client sends { isPublished: true }, we ignore it
+//   This tests whether you read the spec carefully
+// - 405 Method Not Allowed: a real HTTP status code that many developers forget exists
+//   Use it when the endpoint exists but the HTTP method is not supported
+// - Auto-increment: simple pattern with a module-level counter
+// - Defensive sorting: [...products].sort() creates a copy so we don't mutate the array
+```
+
+---
+
+### Problem 13: Async Search with EventEmitter
+
+```typescript
+// Task: Create a Search class that extends EventEmitter
+// - searchCount(searchTerm) method that:
+//   1. Emits 'SEARCH_STARTED' event immediately with { searchTerm }
+//   2. Calls an async countMatches(searchTerm) function
+//   3. On success: emits 'SEARCH_SUCCESS' with { searchTerm, count }
+//   4. On failure: emits 'SEARCH_ERROR' with { searchTerm, error }
+//   5. If searchTerm is undefined/null: emits 'SEARCH_ERROR' immediately
+// Source: HackerRank Node.js assessment — tests EventEmitter + async patterns
+
+import { EventEmitter } from 'events';
+
+// Simulated async API call
+async function countMatches(searchTerm: string): Promise<number> {
+    // In real HackerRank, this function is provided — you don't implement it
+    // It might call an API or search a database
+    const response = await fetch(
+        `https://jsonmock.hackerrank.com/api/movies/search/?Title=${encodeURIComponent(searchTerm)}`,
+    );
+    const data = await response.json();
+    return data.total;
+}
+
+class Search extends EventEmitter {
+    async searchCount(searchTerm: string | undefined | null): Promise<void> {
+        // Guard: undefined or null searchTerm → error immediately
+        if (searchTerm === undefined || searchTerm === null) {
+            this.emit('SEARCH_ERROR', {
+                searchTerm,
+                error: 'Invalid search term',
+            });
+            return;
+        }
+
+        // Step 1: Emit SEARCH_STARTED
+        this.emit('SEARCH_STARTED', { searchTerm });
+
+        try {
+            // Step 2: Call async function
+            const count = await countMatches(searchTerm);
+
+            // Step 3: Emit SEARCH_SUCCESS
+            this.emit('SEARCH_SUCCESS', { searchTerm, count });
+        } catch (error) {
+            // Step 4: Emit SEARCH_ERROR on failure
+            this.emit('SEARCH_ERROR', {
+                searchTerm,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+}
+
+// Usage — how the test file typically uses it:
+const search = new Search();
+
+search.on('SEARCH_STARTED', (data) => {
+    console.log(`Search started for: ${data.searchTerm}`);
+});
+
+search.on('SEARCH_SUCCESS', (data) => {
+    console.log(`Found ${data.count} results for: ${data.searchTerm}`);
+});
+
+search.on('SEARCH_ERROR', (data) => {
+    console.log(`Search failed for: ${data.searchTerm} — ${data.error}`);
+});
+
+await search.searchCount('spiderman');
+// Output:
+// Search started for: spiderman
+// Found 15 results for: spiderman
+
+await search.searchCount(undefined);
+// Output:
+// Search failed for: undefined — Invalid search term
+
+// Key patterns:
+// - Extending EventEmitter: class Search extends EventEmitter
+// - Event-driven async: emit events at each stage of an async operation
+// - Guard clauses: check for invalid input BEFORE starting the async work
+// - Error handling: try/catch around the async call, emit error events
+//
+// WHY this problem matters:
+// - EventEmitter is core to Node.js — used in streams, HTTP servers, WebSockets
+// - This pattern (emit start → do work → emit success/error) is exactly how
+//   real backend services handle async workflows
+// - In NestJS, this is similar to how @EventPattern works in microservices
+```
+
+---
+
+### Problem 14: Transaction Statement — Async Data Processing
+
+```typescript
+// Task: Given a user ID, fetch all transactions from a REST API
+// Each transaction has: userName, amount, location.city, type (credit/debit)
+// Calculate: total credits, total debits, net balance
+// Return a formatted statement object
+// Must use non-blocking API calls (async/await)
+// Source: HackerRank Node.js assessment — tests async + data aggregation
+
+interface Transaction {
+    id: number;
+    userId: number;
+    userName: string;
+    amount: number;
+    type: 'credit' | 'debit';
+    location: { city: string; country: string };
+    timestamp: string;
+}
+
+interface Statement {
+    userName: string;
+    totalCredits: number;
+    totalDebits: number;
+    netBalance: number;
+    transactionCount: number;
+    cities: string[];
+}
+
+async function fetchAllTransactions(userId: number): Promise<Transaction[]> {
+    const BASE = `https://jsonmock.hackerrank.com/api/transactions?userId=${userId}`;
+
+    // Fetch first page
+    const firstRes = await fetch(`${BASE}&page=1`);
+    const firstData = await firstRes.json();
+    const totalPages: number = firstData.total_pages;
+    let allTransactions: Transaction[] = [...firstData.data];
+
+    // Fetch remaining pages in parallel
+    if (totalPages > 1) {
+        const pagePromises = [];
+        for (let page = 2; page <= totalPages; page++) {
+            pagePromises.push(
+                fetch(`${BASE}&page=${page}`)
+                    .then(res => res.json())
+                    .then(data => data.data),
+            );
+        }
+        const pages = await Promise.all(pagePromises);
+        pages.forEach(pageData => allTransactions.push(...pageData));
+    }
+
+    return allTransactions;
+}
+
+async function getStatement(userId: number): Promise<Statement> {
+    const transactions = await fetchAllTransactions(userId);
+
+    if (transactions.length === 0) {
+        throw new Error(`No transactions found for user ${userId}`);
+    }
+
+    const userName = transactions[0].userName;
+    let totalCredits = 0;
+    let totalDebits = 0;
+    const citySet = new Set<string>();
+
+    for (const tx of transactions) {
+        // GOTCHA: amount might come as a string like "$1,234.56" from some APIs
+        // Parse it properly:
+        const amount = typeof tx.amount === 'string'
+            ? parseFloat((tx.amount as string).replace(/[$,]/g, ''))
+            : tx.amount;
+
+        if (tx.type === 'credit') {
+            totalCredits += amount;
+        } else {
+            totalDebits += amount;
+        }
+
+        if (tx.location?.city) {
+            citySet.add(tx.location.city);
+        }
+    }
+
+    return {
+        userName,
+        totalCredits: Math.round(totalCredits * 100) / 100,
+        totalDebits: Math.round(totalDebits * 100) / 100,
+        netBalance: Math.round((totalCredits - totalDebits) * 100) / 100,
+        transactionCount: transactions.length,
+        cities: [...citySet].sort(), // unique cities, sorted
+    };
+}
+
+// Usage
+const statement = await getStatement(1);
+console.log(statement);
+// {
+//   userName: "John Doe",
+//   totalCredits: 5430.50,
+//   totalDebits: 2150.00,
+//   netBalance: 3280.50,
+//   transactionCount: 25,
+//   cities: ["Chicago", "Los Angeles", "New York"]
+// }
+
+// Key patterns:
+// - Same pagination pattern as Problems 2, 7, 8 (it keeps coming up!)
+// - Set for unique values (cities) — much cleaner than array + indexOf
+// - String-to-number parsing: "$1,234.56" → 1234.56 (remove $, remove commas)
+// - Rounding: Math.round(x * 100) / 100 for 2 decimal places
+// - Aggregation: single pass through data to calculate multiple metrics
+//
+// Common mistakes:
+// - Not handling paginated responses (only processing page 1)
+// - Not parsing currency strings ("$500" is a string, not a number)
+// - Floating point errors: 0.1 + 0.2 = 0.30000000000000004 → always round
+```
+
+---
+
+### Problem 15: Countries with Population Filter — Paginated API + Filter
+
+```typescript
+// Task: Fetch all countries from the API where population > threshold
+// API: https://jsonmock.hackerrank.com/api/countries?page=N
+// Response: { data: [{ name, capital, population, ... }], total_pages }
+// Return: Array of country names, sorted alphabetically
+// Source: HackerRank REST API assessment
+
+async function getCountriesByPopulation(threshold: number): Promise<string[]> {
+    const BASE = 'https://jsonmock.hackerrank.com/api/countries';
+
+    // Fetch first page for total_pages
+    const firstRes = await fetch(`${BASE}?page=1`);
+    const firstData = await firstRes.json();
+    const totalPages: number = firstData.total_pages;
+
+    // Collect ALL data from all pages
+    let allCountries: any[] = [...firstData.data];
+
+    if (totalPages > 1) {
+        const promises = [];
+        for (let page = 2; page <= totalPages; page++) {
+            promises.push(
+                fetch(`${BASE}?page=${page}`)
+                    .then(res => res.json())
+                    .then(data => data.data),
+            );
+        }
+        const pages = await Promise.all(promises);
+        pages.forEach(pageData => allCountries.push(...pageData));
+    }
+
+    // Filter by population threshold and return sorted names
+    return allCountries
+        .filter(country => country.population > threshold)
+        .map(country => country.name)
+        .sort();
+}
+
+// Usage
+const bigCountries = await getCountriesByPopulation(100000000);
+console.log(bigCountries);
+// ["Bangladesh", "Brazil", "China", "India", "Indonesia", ...]
+
+// This is a simpler variant of the pagination pattern.
+// The trick is: you MUST fetch ALL pages before filtering.
+// You cannot just check page 1 — matching countries could be on any page.
+// The sorting is done client-side AFTER collecting all results.
+```
+
+---
+
+### Problem 16: Order State Machine — State Transitions with Validation
+
+```typescript
+// Task: Implement an order processing function that handles state transitions
+// Valid states: PENDING → PROCESSING → SHIPPED → DELIVERED
+// Rules:
+//   - Can only move forward (PENDING→PROCESSING is ok, SHIPPED→PENDING is not)
+//   - Cannot skip states (PENDING→SHIPPED is not allowed)
+//   - Once DELIVERED, no more transitions allowed
+//   - Return the updated order or throw an error for invalid transitions
+// Source: HackerRank Node.js Basic Certification
+
+interface Order {
+    id: string;
+    item: string;
+    quantity: number;
+    status: OrderStatus;
+    history: { status: OrderStatus; timestamp: Date }[];
+}
+
+type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+// Define valid transitions as a map
+const validTransitions: Record<OrderStatus, OrderStatus[]> = {
+    PENDING: ['PROCESSING', 'CANCELLED'],
+    PROCESSING: ['SHIPPED', 'CANCELLED'],
+    SHIPPED: ['DELIVERED'],
+    DELIVERED: [],      // terminal state — no transitions allowed
+    CANCELLED: [],      // terminal state — no transitions allowed
+};
+
+function transitionOrder(order: Order, newStatus: OrderStatus): Order {
+    const currentStatus = order.status;
+
+    // Check if transition is valid
+    const allowedNextStates = validTransitions[currentStatus];
+
+    if (!allowedNextStates || !allowedNextStates.includes(newStatus)) {
+        throw new Error(
+            `Invalid transition: cannot move from ${currentStatus} to ${newStatus}. ` +
+            `Allowed transitions from ${currentStatus}: [${allowedNextStates.join(', ')}]`,
+        );
+    }
+
+    // Apply the transition
+    order.status = newStatus;
+    order.history.push({ status: newStatus, timestamp: new Date() });
+
+    return order;
+}
+
+// Usage
+const order: Order = {
+    id: 'ORD-001',
+    item: 'Gaming Mouse',
+    quantity: 1,
+    status: 'PENDING',
+    history: [{ status: 'PENDING', timestamp: new Date() }],
+};
+
+transitionOrder(order, 'PROCESSING');  // ✅ OK
+console.log(order.status);             // "PROCESSING"
+
+transitionOrder(order, 'SHIPPED');     // ✅ OK
+console.log(order.status);             // "SHIPPED"
+
+try {
+    transitionOrder(order, 'PENDING'); // ❌ ERROR: cannot go backwards
+} catch (e) {
+    console.log(e.message);
+    // "Invalid transition: cannot move from SHIPPED to PENDING. Allowed: [DELIVERED]"
+}
+
+transitionOrder(order, 'DELIVERED');   // ✅ OK
+
+try {
+    transitionOrder(order, 'SHIPPED'); // ❌ ERROR: DELIVERED is terminal
+} catch (e) {
+    console.log(e.message);
+    // "Invalid transition: cannot move from DELIVERED to SHIPPED. Allowed: []"
+}
+
+// Key patterns:
+// - State machine: validTransitions map defines all legal transitions
+//   Adding a new state or transition = just update the map, no code logic changes
+// - History tracking: every transition is logged with timestamp (audit trail)
+// - Clear error messages: tell the user WHAT went wrong and WHAT is allowed
+//
+// WHY this pattern matters in iGaming:
+// - Bet states: PENDING → ACCEPTED → SETTLED → PAID (exactly this pattern)
+// - Payment states: INITIATED → PROCESSING → COMPLETED/FAILED
+// - KYC states: SUBMITTED → UNDER_REVIEW → APPROVED/REJECTED
+// - The state machine pattern prevents invalid operations on bets/payments
+```
+
+---
+
+### Problem 17: Recipes Pagination Middleware — Custom Express Middleware
+
+```typescript
+// Task: Build pagination middleware for a /recipes endpoint
+// Query params: ?page=1&limit=3&search=chicken
+// Middleware should:
+//   1. Parse page (default 1) and limit (default 3) from query params
+//   2. If search param exists, filter recipes by name (case-insensitive)
+//   3. Attach pagination context to req object
+//   4. Handler uses the context to return paginated results
+// Source: HackerRank Node.js Basic Certification
+
+import express, { Request, Response, NextFunction } from 'express';
+
+const app = express();
+
+// Sample data
+const recipes = [
+    { id: 1, name: 'Chicken Tikka Masala', cuisine: 'Indian', time: 45 },
+    { id: 2, name: 'Spaghetti Carbonara', cuisine: 'Italian', time: 30 },
+    { id: 3, name: 'Chicken Caesar Salad', cuisine: 'American', time: 15 },
+    { id: 4, name: 'Pad Thai', cuisine: 'Thai', time: 25 },
+    { id: 5, name: 'Grilled Chicken Sandwich', cuisine: 'American', time: 20 },
+    { id: 6, name: 'Beef Tacos', cuisine: 'Mexican', time: 20 },
+    { id: 7, name: 'Mushroom Risotto', cuisine: 'Italian', time: 40 },
+    { id: 8, name: 'Fish and Chips', cuisine: 'British', time: 35 },
+    { id: 9, name: 'Chicken Fried Rice', cuisine: 'Chinese', time: 20 },
+    { id: 10, name: 'Veggie Burger', cuisine: 'American', time: 25 },
+];
+
+// Extend Request type to include pagination context
+interface PaginatedRequest extends Request {
+    pagination?: {
+        page: number;
+        limit: number;
+        search?: string;
+        filteredData: typeof recipes;
+        paginatedData: typeof recipes;
+        totalItems: number;
+        totalPages: number;
+    };
+}
+
+// Pagination middleware
+function paginationMiddleware(data: typeof recipes) {
+    return (req: PaginatedRequest, res: Response, next: NextFunction) => {
+        // Parse query params with defaults
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.max(1, parseInt(req.query.limit as string) || 3);
+        const search = req.query.search as string | undefined;
+
+        // Filter by search term (case-insensitive)
+        let filteredData = data;
+        if (search) {
+            const searchRegex = new RegExp(search, 'i'); // 'i' flag = case-insensitive
+            filteredData = data.filter(item => searchRegex.test(item.name));
+        }
+
+        // Calculate pagination
+        const totalItems = filteredData.length;
+        const totalPages = Math.ceil(totalItems / limit);
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedData = filteredData.slice(startIndex, endIndex);
+
+        // Attach to request object for handler to use
+        req.pagination = {
+            page,
+            limit,
+            search,
+            filteredData,
+            paginatedData,
+            totalItems,
+            totalPages,
+        };
+
+        next(); // Pass control to the route handler
+    };
+}
+
+// Route using the middleware
+app.get('/recipes', paginationMiddleware(recipes), (req: PaginatedRequest, res: Response) => {
+    const p = req.pagination!;
+
+    res.json({
+        page: p.page,
+        limit: p.limit,
+        totalItems: p.totalItems,
+        totalPages: p.totalPages,
+        data: p.paginatedData,
+    });
+});
+
+app.listen(3000);
+
+// Test examples:
+// GET /recipes                        → page 1, 3 items (default)
+// GET /recipes?page=2&limit=5         → page 2, 5 items per page
+// GET /recipes?search=chicken         → filtered: Tikka Masala, Caesar Salad, Sandwich, Fried Rice
+// GET /recipes?search=chicken&page=2&limit=2 → page 2 of chicken results: Sandwich, Fried Rice
+
+// Key patterns:
+// - Middleware factory: paginationMiddleware(data) returns a middleware function
+//   This lets you reuse the same middleware for different data sets
+// - Extending req: attach custom data to the request object via interface
+// - Default values: || 1 and || 3 for missing/invalid query params
+// - Math.max(1, ...) prevents page=0 or negative numbers
+// - Math.ceil for total pages: 7 items / 3 per page = ceil(2.33) = 3 pages
+// - slice(start, end) for pagination: page 2, limit 3 → slice(3, 6)
+//
+// Pagination formula to memorize:
+// startIndex = (page - 1) * limit
+// endIndex = startIndex + limit
+// totalPages = Math.ceil(totalItems / limit)
+```
+
+---
+
+### Problem 18: Football Scores — Binary Search (Algorithm)
+
+```typescript
+// Task: Given two arrays of scores (teamA and teamB), for each score in teamB,
+// count how many scores in teamA are LESS THAN OR EQUAL to it.
+// Input:  teamA = [1, 4, 2, 4], teamB = [3, 5]
+// Output: [2, 4]
+//   - For teamB[0]=3: scores ≤ 3 in teamA are [1, 2] → count = 2
+//   - For teamB[1]=5: scores ≤ 5 in teamA are [1, 2, 4, 4] → count = 4
+// Constraint: arrays can be very large (up to 10^5), so brute force O(n*m) will timeout
+// Source: HackerRank, reported by Meesho, Adobe, and backend OA candidates
+
+function countScores(teamA: number[], teamB: number[]): number[] {
+    // Step 1: Sort teamA — required for binary search
+    teamA.sort((a, b) => a - b);
+    // teamA = [1, 2, 4, 4]
+
+    // Step 2: For each score in teamB, binary search for the rightmost position
+    // where teamA[pos] <= score
+    return teamB.map(target => upperBound(teamA, target));
+}
+
+// Binary search: find count of elements in sorted array that are ≤ target
+function upperBound(sorted: number[], target: number): number {
+    let left = 0;
+    let right = sorted.length - 1;
+    let result = 0; // if no element ≤ target, count is 0
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+
+        if (sorted[mid] <= target) {
+            // sorted[mid] qualifies — everything at or before mid is ≤ target
+            result = mid + 1; // mid is 0-indexed, count is 1-indexed
+            left = mid + 1;   // look for more qualifying elements to the right
+        } else {
+            // sorted[mid] > target — look left
+            right = mid - 1;
+        }
+    }
+
+    return result;
+}
+
+// Usage
+console.log(countScores([1, 4, 2, 4], [3, 5]));
+// [2, 4]
+
+console.log(countScores([1, 2, 3], [2, 4]));
+// [2, 3]
+
+// Walkthrough for target=3 in sorted [1, 2, 4, 4]:
+// left=0, right=3, mid=1 → sorted[1]=2 ≤ 3 → result=2, left=2
+// left=2, right=3, mid=2 → sorted[2]=4 > 3 → right=1
+// left=2 > right=1 → stop → return 2
+// Answer: 2 scores in teamA are ≤ 3
+
+// Time complexity:
+// - Sorting teamA: O(n log n)
+// - For each element in teamB: O(log n) binary search
+// - Total: O(n log n + m log n) where n = teamA.length, m = teamB.length
+//
+// vs brute force: O(n * m) — would timeout for n,m = 100,000
+//
+// Key pattern: "count elements ≤ X in an array" → sort + binary search
+// This is a very common HackerRank pattern — recognize it instantly
+```
+
+---
+
+### Problem 19: Maximum Transfer Amount — API + Algorithm Hybrid
+
+```typescript
+// Task: Fetch transaction data from an API, then find the maximum amount
+// that was transferred between two specific cities
+// API: https://jsonmock.hackerrank.com/api/transactions?page=N
+// Response: { data: [{ id, userId, userName, amount, location: { city } }], total_pages }
+// Given: sourceCity and destCity
+// Find: Maximum transaction amount from sourceCity
+//       (This is a simplified version — real problem may involve more complex filtering)
+// Source: HackerRank REST API + Algorithm hybrid problems
+
+async function getMaxTransferAmount(city: string): Promise<number> {
+    const BASE = 'https://jsonmock.hackerrank.com/api/transactions';
+
+    // Step 1: Fetch all pages
+    const firstRes = await fetch(`${BASE}?page=1`);
+    const firstData = await firstRes.json();
+    const totalPages: number = firstData.total_pages;
+    let allTransactions: any[] = [...firstData.data];
+
+    if (totalPages > 1) {
+        const promises = [];
+        for (let page = 2; page <= totalPages; page++) {
+            promises.push(
+                fetch(`${BASE}?page=${page}`)
+                    .then(res => res.json())
+                    .then(data => data.data),
+            );
+        }
+        const pages = await Promise.all(promises);
+        pages.forEach(p => allTransactions.push(...p));
+    }
+
+    // Step 2: Filter by city and find max amount
+    let maxAmount = -1;
+
+    for (const tx of allTransactions) {
+        if (tx.location?.city === city) {
+            // Parse amount — might be "$1,234.56" format
+            const amount = typeof tx.amount === 'string'
+                ? parseFloat(tx.amount.replace(/[$,]/g, ''))
+                : tx.amount;
+
+            if (amount > maxAmount) {
+                maxAmount = amount;
+            }
+        }
+    }
+
+    return maxAmount; // -1 if no transactions found for that city
+}
+
+// Usage
+const maxLA = await getMaxTransferAmount('Los Angeles');
+console.log(`Max transfer in LA: $${maxLA}`);
+
+// Variant: Find max amount across ALL cities and return { city, amount }
+async function getMaxTransferByCity(): Promise<{ city: string; amount: number }> {
+    // ... fetch all transactions (same as above) ...
+    const allTransactions: any[] = []; // fetched data
+
+    const cityMaxMap = new Map<string, number>();
+
+    for (const tx of allTransactions) {
+        const city = tx.location?.city;
+        if (!city) continue;
+
+        const amount = typeof tx.amount === 'string'
+            ? parseFloat(tx.amount.replace(/[$,]/g, ''))
+            : tx.amount;
+
+        const currentMax = cityMaxMap.get(city) ?? 0;
+        if (amount > currentMax) {
+            cityMaxMap.set(city, amount);
+        }
+    }
+
+    // Find the city with the overall max
+    let resultCity = '';
+    let resultAmount = -1;
+
+    for (const [city, amount] of cityMaxMap) {
+        if (amount > resultAmount) {
+            resultCity = city;
+            resultAmount = amount;
+        }
+    }
+
+    return { city: resultCity, amount: resultAmount };
+}
+
+// Key patterns:
+// - Same pagination fetch pattern (you should be able to write this in your sleep by now)
+// - Currency string parsing: "$1,234.56" → 1234.56
+// - Map for grouping/aggregating: Map<city, maxAmount>
+// - Finding max: simple comparison, no need for Math.max with spread (which can stack overflow on large arrays)
+```
+
+---
+
+## Summary: The Patterns That Keep Repeating
+
+// After solving all 19 problems, you'll notice the same patterns appear over and over:
+//
+// 1. PAGINATION PATTERN (Problems 2, 7, 8, 14, 15, 19):
+//    - Fetch page 1 → get total_pages → fetch remaining pages with Promise.all
+//    - This is the #1 most common HackerRank backend pattern
+//
+// 2. API + FILTER + SORT (Problems 7, 8, 15):
+//    - Fetch all data → filter by criteria → sort by one or more fields → return
+//
+// 3. DATA AGGREGATION (Problems 1, 2, 14, 19):
+//    - Fetch data → reduce/sum/count/group → return computed result
+//
+// 4. EXPRESS CRUD (Problems 3, 11, 12):
+//    - Routes + status codes + input validation + error handling
+//
+// 5. MIDDLEWARE PATTERN (Problems 11, 17):
+//    - Factory function that returns middleware → attach data to req → call next()
+//
+// 6. BINARY SEARCH (Problem 18):
+//    - "Count elements ≤ X" or "Find first/last element matching criteria" → sort + binary search
+//
+// 7. STATE MACHINE (Problem 16):
+//    - Define valid transitions in a map → validate before applying → track history
+//
+// If you can write these 7 patterns from memory, you can solve
+// virtually any HackerRank backend problem they throw at you.
 
 ---
 
@@ -2531,7 +3654,7 @@ function groupAnagrams(strs: string[]): string[][] {
 
     for (const str of strs) {
         // Sort the characters to create a canonical key
-        const key = str.split('').sort().join('');
+        const key = str.split('').sort().join('');‼️
 
         if (!map.has(key)) {
             map.set(key, []);
