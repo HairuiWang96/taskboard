@@ -1445,6 +1445,16 @@ export class OddsGateway implements OnGatewayConnection, OnGatewayDisconnection 
 // - A withdrawal is approved
 // - A new promotion launches
 // - A user's KYC verification completes
+// KYC = Know Your Customer — a legal/regulatory requirement in iGaming (and banking/finance)
+// The platform must verify a user's identity before allowing deposits, withdrawals, or real-money gambling
+// Typical flow:
+// 1. User signs up
+// 2. Platform asks for: government ID (passport/driver's license), proof of address, sometimes a selfie
+// 3. User uploads documents
+// 4. Platform verifies (manually or via automated service like Jumio/Onfido)
+// 5. Status: SUBMITTED → UNDER_REVIEW → APPROVED or REJECTED
+// WHY it matters: legal requirement — platforms like Soft2Bet operate in regulated markets (EU, NJ)
+// and must verify users to prevent money laundering, underage gambling, and fraud
 //
 // Step 2: The originating service publishes an event to RabbitMQ
 // { event: "bet.settled", userId: "u_123", data: { betId: "b_456", result: "won", payout: 500 } }
@@ -2164,8 +2174,8 @@ app.delete('/todos/:id', (req: Request, res: Response) => {
         return res.status(404).json({ error: `Todo with id ${id} not found` });
     }
 
-    const deleted = todos.splice(todoIndex, 1)[0];
-    // 200 with the deleted item, or 204 No Content — both are acceptable
+    const deleted = todos.splice(todoIndex, 1)[0];‼️
+    // 200 with the deleted item, or 204 No Content — both are acceptable‼️
     res.status(200).json(deleted);
 });
 
@@ -2254,7 +2264,7 @@ app.listen(3000, () => console.log('Server running on port 3000'));
 // Key things interviewers look for:
 // 1. Default values for missing params (don't crash on undefined)‼️
 // 2. Input validation (non-negative offset, positive limit)
-// 3. Upper bound on limit (prevent client requesting 1 million items)
+// 3. Upper bound on limit (prevent client requesting 1 million items)‼️
 // 4. Returning total count and hasMore/hasNext for client-side pagination UI
 // 5. Using Array.slice correctly — slice(start, end) where end is exclusive
 ```
@@ -2508,7 +2518,7 @@ console.log(list.size); // 2
 //
 // Interview tip: if asked "how would you improve this?", mention:
 // - Add a "tail" pointer for O(1) insert at end‼️
-// - Use a doubly linked list for O(1) delete if you have a reference to the node
+// - Use a doubly linked list for O(1) delete if you have a reference to the node‼️
 // - Use a hash map alongside for O(1) search (like LRU cache)‼️
 ```
 
@@ -2534,6 +2544,15 @@ console.log(list.size); // 2
 // Source: HackerRank REST API Certification, reported by multiple backend candidates
 
 async function getMovieTitles(substr: string): Promise<string[]> {
+    // encodeURIComponent converts special characters into URL-safe format‼️
+    // URLs can only contain certain characters. Spaces, &, =, ?, etc. break URLs.
+    // encodeURIComponent replaces them with % codes:
+    //   encodeURIComponent("Real Madrid")  → "Real%20Madrid"      // space → %20
+    //   encodeURIComponent("Tom & Jerry")  → "Tom%20%26%20Jerry"  // & → %26
+    //   encodeURIComponent("price=100")    → "price%3D100"        // = → %3D
+    //
+    // Without it: fetch("/api?team=Real Madrid")  ❌ URL breaks — space is invalid
+    // With it:    fetch("/api?team=Real%20Madrid") ✅ server decodes it back automatically
     const BASE = `https://jsonmock.hackerrank.com/api/movies/search/?Title=${encodeURIComponent(substr)}`;
 
     // Step 1: Fetch first page to get total_pages
@@ -2560,7 +2579,7 @@ async function getMovieTitles(substr: string): Promise<string[]> {
         remainingTitles.forEach(titles => allTitles.push(...titles));
     }
 
-    // Step 3: Sort alphabetically and return
+    // Step 3: Sort alphabetically and return‼️
     return allTitles.sort();
 }
 
@@ -2571,9 +2590,9 @@ console.log(titles);
 
 // Key patterns:
 // - Pagination handling (same pattern as Problem 2)
-// - encodeURIComponent for search terms with special characters
+// - encodeURIComponent for search terms with special characters‼️
 // - Promise.all for parallel fetching
-// - Array.sort() for alphabetical ordering (default sort is fine for strings)
+// - Array.sort() for alphabetical ordering (default sort is fine for strings)‼️
 // - map() to extract just the Title field from full movie objects
 ```
 
@@ -2622,12 +2641,12 @@ async function topArticles(limit: number): Promise<string[]> {
         .filter(article => article.title !== null && article.title !== undefined);
     // ^^ Skip articles where BOTH title and story_title are null
 
-    // Step 4: Sort by num_comments DESC, then title ASC (alphabetical)
+    // Step 4: Sort by num_comments DESC, then title ASC (alphabetical)‼️
     processed.sort((a, b) => {
-        if (b.num_comments !== a.num_comments) {
+        if (b.num_comments !== a.num_comments) {‼️
             return b.num_comments - a.num_comments; // descending by comments
         }
-        return a.title.localeCompare(b.title); // ascending alphabetical
+        return a.title.localeCompare(b.title); // ascending alphabetical‼️
     });
 
     // Step 5: Return only the titles, limited to requested count
@@ -2690,7 +2709,7 @@ console.log(await getCapitalCity('Nonexistent')); // "-1"
 
 // This is a warm-up problem — usually the easier of the two coding tasks
 // Key points:
-// - Always check data.data.length before accessing data.data[0]
+// - Always check data.data.length before accessing data.data[0]‼️
 // - Return the exact type the spec asks for ("-1" as string, not the number -1)
 // - encodeURIComponent for country names with spaces (e.g., "New Zealand")
 ```
@@ -2721,9 +2740,9 @@ async function getDiscountedPrice(barcode: number): Promise<string | number> {
     const discountedPrice = item.price * (1 - item.discount / 100);
 
     // Round to 2 decimal places
-    // WHY Math.round and not toFixed? toFixed returns a string.
+    // WHY Math.round and not toFixed? toFixed returns a string.‼️
     // But some HackerRank tests expect a number. Use whichever the spec requires.
-    return Math.round(discountedPrice * 100) / 100;
+    return Math.round(discountedPrice * 100) / 100;‼️
 }
 
 // Usage
@@ -2769,17 +2788,17 @@ interface Task {
 let tasks: Task[] = [];
 let nextId = 1;
 
-// Define permissions per role
+// Define permissions per role‼️
 const rolePermissions: Record<string, string[]> = {
     admin: ['tasks.read', 'tasks.create', 'tasks.update', 'tasks.delete'],
     editor: ['tasks.read', 'tasks.create', 'tasks.update'],
     viewer: ['tasks.read'],
 };
 
-// Authorization middleware factory — returns middleware for a specific permission
+// Authorization middleware factory — returns middleware for a specific permission‼️
 function authorize(permission: string) {
     return (req: Request, res: Response, next: NextFunction) => {
-        const role = req.headers['x-role'] as string;
+        const role = req.headers['x-role'] as string;‼️
 
         // No role header → 401 Unauthorized
         if (!role) {
@@ -2839,7 +2858,7 @@ app.delete('/tasks/:id', authorize('tasks.delete'), (req: Request, res: Response
 app.listen(3000);
 
 // Key patterns:
-// - Middleware factory: authorize('tasks.create') returns a middleware function
+// - Middleware factory: authorize('tasks.create') returns a middleware function‼️
 //   This is the "closure pattern" — the returned function closes over the permission string
 // - Role lookup from headers: req.headers['x-role']
 // - 401 vs 403: 401 = "who are you?" (no credentials), 403 = "I know who you are, but no" (insufficient permissions)
@@ -2847,8 +2866,8 @@ app.listen(3000);
 //
 // Interview follow-up questions they might ask:
 // - "How would you add a new role?" → Just add to rolePermissions object
-// - "How would you make this production-ready?" → Store roles in DB, use JWT tokens instead of headers,
-//   add role hierarchy (admin inherits editor permissions)
+// - "How would you make this production-ready?" → Store roles in DB, use JWT tokens instead of headers,‼️
+//   add role hierarchy (admin inherits editor permissions)‼️
 // - "What about route-level vs resource-level permissions?" → This is route-level.
 //   Resource-level means "can user X edit THIS specific task?" (ownership check)
 ```
@@ -2894,7 +2913,7 @@ app.post('/products', (req: Request, res: Response) => {
         id: nextId++,
         name,
         price: Number(price),
-        isPublished: false, // ALWAYS false — ignore whatever the client sends‼️
+        isPublished: false, // ALWAYS false — ignore whatever the client sends
     };
 
     products.push(product);
@@ -2920,7 +2939,7 @@ app.get('/products/:id', (req: Request, res: Response) => {
     res.status(200).json(product);
 });
 
-// PUT and DELETE — Not allowed (405)
+// PUT and DELETE — Not allowed (405)‼️
 app.put('/products', (req: Request, res: Response) => {
     res.status(405).json({ error: 'Method Not Allowed' });
 });
@@ -2943,15 +2962,15 @@ app.listen(3000);
 // - Business rule enforcement: isPublished is ALWAYS false on creation
 //   Even if client sends { isPublished: true }, we ignore it
 //   This tests whether you read the spec carefully
-// - 405 Method Not Allowed: a real HTTP status code that many developers forget exists
-//   Use it when the endpoint exists but the HTTP method is not supported
+// - 405 Method Not Allowed: a real HTTP status code that many developers forget exists‼️
+//   Use it when the endpoint exists but the HTTP method is not supported‼️
 // - Auto-increment: simple pattern with a module-level counter
-// - Defensive sorting: [...products].sort() creates a copy so we don't mutate the array
+// - Defensive sorting: [...products].sort() creates a copy so we don't mutate the array‼️
 ```
 
 ---
 
-### Problem 13: Async Search with EventEmitter
+### Problem 13: Async Search with EventEmitter‼️
 
 ```typescript
 // Task: Create a Search class that extends EventEmitter
@@ -3004,7 +3023,7 @@ class Search extends EventEmitter {
     }
 }
 
-// Usage — how the test file typically uses it:
+// Usage — how the test file typically uses it:‼️
 const search = new Search();
 
 search.on('SEARCH_STARTED', data => {
@@ -3030,7 +3049,7 @@ await search.searchCount(undefined);
 
 // Key patterns:
 // - Extending EventEmitter: class Search extends EventEmitter
-// - Event-driven async: emit events at each stage of an async operation
+// - Event-driven async: emit events at each stage of an async operation‼️
 // - Guard clauses: check for invalid input BEFORE starting the async work
 // - Error handling: try/catch around the async call, emit error events
 //
@@ -3108,7 +3127,7 @@ async function getStatement(userId: number): Promise<Statement> {
     const userName = transactions[0].userName;
     let totalCredits = 0;
     let totalDebits = 0;
-    const citySet = new Set<string>();
+    const citySet = new Set<string>();‼️
 
     for (const tx of transactions) {
         // GOTCHA: amount might come as a string like "$1,234.56" from some APIs
@@ -3128,7 +3147,7 @@ async function getStatement(userId: number): Promise<Statement> {
 
     return {
         userName,
-        totalCredits: Math.round(totalCredits * 100) / 100,
+        totalCredits: Math.round(totalCredits * 100) / 100,‼️
         totalDebits: Math.round(totalDebits * 100) / 100,
         netBalance: Math.round((totalCredits - totalDebits) * 100) / 100,
         transactionCount: transactions.length,
@@ -3152,13 +3171,13 @@ console.log(statement);
 // - Same pagination pattern as Problems 2, 7, 8 (it keeps coming up!)
 // - Set for unique values (cities) — much cleaner than array + indexOf
 // - String-to-number parsing: "$1,234.56" → 1234.56 (remove $, remove commas)
-// - Rounding: Math.round(x * 100) / 100 for 2 decimal places
+// - Rounding: Math.round(x * 100) / 100 for 2 decimal places‼️
 // - Aggregation: single pass through data to calculate multiple metrics
 //
 // Common mistakes:
 // - Not handling paginated responses (only processing page 1)
 // - Not parsing currency strings ("$500" is a string, not a number)
-// - Floating point errors: 0.1 + 0.2 = 0.30000000000000004 → always round
+// - Floating point errors: 0.1 + 0.2 = 0.30000000000000004 → always round‼️
 ```
 
 ---
@@ -3216,7 +3235,7 @@ console.log(bigCountries);
 
 ---
 
-### Problem 16: Order State Machine — State Transitions with Validation
+### Problem 16: Order State Machine — State Transitions with Validation‼️
 
 ```typescript
 // Task: Implement an order processing function that handles state transitions
@@ -3233,12 +3252,12 @@ interface Order {
     item: string;
     quantity: number;
     status: OrderStatus;
-    history: { status: OrderStatus; timestamp: Date }[];
+    history: { status: OrderStatus; timestamp: Date }[];‼️
 }
 
 type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
-// Define valid transitions as a map
+// Define valid transitions as a map‼️
 const validTransitions: Record<OrderStatus, OrderStatus[]> = {
     PENDING: ['PROCESSING', 'CANCELLED'],
     PROCESSING: ['SHIPPED', 'CANCELLED'],
@@ -3298,14 +3317,14 @@ try {
 // Key patterns:
 // - State machine: validTransitions map defines all legal transitions
 //   Adding a new state or transition = just update the map, no code logic changes
-// - History tracking: every transition is logged with timestamp (audit trail)
+// - History tracking: every transition is logged with timestamp (audit trail)‼️
 // - Clear error messages: tell the user WHAT went wrong and WHAT is allowed
 //
 // WHY this pattern matters in iGaming:
 // - Bet states: PENDING → ACCEPTED → SETTLED → PAID (exactly this pattern)
 // - Payment states: INITIATED → PROCESSING → COMPLETED/FAILED
 // - KYC states: SUBMITTED → UNDER_REVIEW → APPROVED/REJECTED
-// - The state machine pattern prevents invalid operations on bets/payments
+// - The state machine pattern prevents invalid operations on bets/payments‼️
 ```
 
 ---
@@ -3340,7 +3359,7 @@ const recipes = [
     { id: 10, name: 'Veggie Burger', cuisine: 'American', time: 25 },
 ];
 
-// Extend Request type to include pagination context
+// Extend Request type to include pagination context‼️
 interface PaginatedRequest extends Request {
     pagination?: {
         page: number;
@@ -3359,13 +3378,13 @@ function paginationMiddleware(data: typeof recipes) {
         // Parse query params with defaults
         const page = Math.max(1, parseInt(req.query.page as string) || 1);
         const limit = Math.max(1, parseInt(req.query.limit as string) || 3);
-        const search = req.query.search as string | undefined;
+        const search = req.query.search as string | undefined;‼️
 
         // Filter by search term (case-insensitive)
         let filteredData = data;
         if (search) {
             const searchRegex = new RegExp(search, 'i'); // 'i' flag = case-insensitive
-            filteredData = data.filter(item => searchRegex.test(item.name));
+            filteredData = data.filter(item => searchRegex.test(item.name));‼️
         }
 
         // Calculate pagination
@@ -3375,7 +3394,7 @@ function paginationMiddleware(data: typeof recipes) {
         const endIndex = startIndex + limit;
         const paginatedData = filteredData.slice(startIndex, endIndex);
 
-        // Attach to request object for handler to use
+        // Attach to request object for handler to use‼️
         req.pagination = {
             page,
             limit,
@@ -3412,9 +3431,9 @@ app.listen(3000);
 // GET /recipes?search=chicken&page=2&limit=2 → page 2 of chicken results: Sandwich, Fried Rice
 
 // Key patterns:
-// - Middleware factory: paginationMiddleware(data) returns a middleware function
+// - Middleware factory: paginationMiddleware(data) returns a middleware function‼️
 //   This lets you reuse the same middleware for different data sets
-// - Extending req: attach custom data to the request object via interface
+// - Extending req: attach custom data to the request object via interface‼️
 // - Default values: || 1 and || 3 for missing/invalid query params
 // - Math.max(1, ...) prevents page=0 or negative numbers
 // - Math.ceil for total pages: 7 items / 3 per page = ceil(2.33) = 3 pages
@@ -3441,7 +3460,7 @@ app.listen(3000);
 // Source: HackerRank, reported by Meesho, Adobe, and backend OA candidates
 
 function countScores(teamA: number[], teamB: number[]): number[] {
-    // Step 1: Sort teamA — required for binary search
+    // Step 1: Sort teamA — required for binary search‼️
     teamA.sort((a, b) => a - b);
     // teamA = [1, 2, 4, 4]
 
@@ -3460,8 +3479,8 @@ function upperBound(sorted: number[], target: number): number {
         const mid = Math.floor((left + right) / 2);
 
         if (sorted[mid] <= target) {
-            // sorted[mid] qualifies — everything at or before mid is ≤ target
-            result = mid + 1; // mid is 0-indexed, count is 1-indexed
+            // sorted[mid] qualifies — everything at or before mid is ≤ target‼️
+            result = mid + 1; // mid is 0-indexed, count is 1-indexed‼️
             left = mid + 1; // look for more qualifying elements to the right
         } else {
             // sorted[mid] > target — look left
@@ -3492,7 +3511,7 @@ console.log(countScores([1, 2, 3], [2, 4]));
 //
 // vs brute force: O(n * m) — would timeout for n,m = 100,000
 //
-// Key pattern: "count elements ≤ X in an array" → sort + binary search
+// Key pattern: "count elements ≤ X in an array" → sort + binary search‼️
 // This is a very common HackerRank pattern — recognize it instantly
 ```
 
@@ -3564,7 +3583,7 @@ async function getMaxTransferByCity(): Promise<{ city: string; amount: number }>
         const city = tx.location?.city;
         if (!city) continue;
 
-        const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount.replace(/[$,]/g, '')) : tx.amount;
+        const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount.replace(/[$,]/g, '')) : tx.amount;‼️
 
         const currentMax = cityMaxMap.get(city) ?? 0;
         if (amount > currentMax) {
@@ -3588,9 +3607,9 @@ async function getMaxTransferByCity(): Promise<{ city: string; amount: number }>
 
 // Key patterns:
 // - Same pagination fetch pattern (you should be able to write this in your sleep by now)
-// - Currency string parsing: "$1,234.56" → 1234.56
+// - Currency string parsing: "$1,234.56" → 1234.56‼️
 // - Map for grouping/aggregating: Map<city, maxAmount>
-// - Finding max: simple comparison, no need for Math.max with spread (which can stack overflow on large arrays)
+// - Finding max: simple comparison, no need for Math.max with spread (which can stack overflow on large arrays)‼️
 ```
 
 ---
@@ -4045,7 +4064,7 @@ console.log(
 // Ways: 1+1+1+1+1, 1+1+1+2, 1+1+2+1, 1+2+1+1, 2+1+1+1, 1+2+2, 2+1+2, 2+2+1
 
 function climbStairs(n: number): number {
-    // This is essentially the Fibonacci sequence
+    // This is essentially the Fibonacci sequence‼️
     // To reach step n, you either came from step n-1 (took 1 step) or step n-2 (took 2 steps)
     // So: ways(n) = ways(n-1) + ways(n-2)
 
@@ -4072,7 +4091,7 @@ function climbStairs(n: number): number {
 
 // Time: O(n)   Space: O(1)
 
-// If the interviewer asks for the memoized recursive version:
+// If the interviewer asks for the memoized recursive version:‼️
 function climbStairsMemo(n: number, memo: Map<number, number> = new Map()): number {
     if (n <= 2) return n;
     if (memo.has(n)) return memo.get(n)!;
@@ -4104,14 +4123,14 @@ console.log(climbStairs(10)); // 89
 
 ```typescript
 import express, { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken'; // npm install jsonwebtoken @types/jsonwebtoken
+import jwt from 'jsonwebtoken'; // npm install jsonwebtoken ‼️@types/jsonwebtoken
 
 const app = express();
 app.use(express.json());
 
 const SECRET_KEY = 'your-secret-key'; // In production, use env variable
 
-// Extend Request type to include user info
+// Extend Request type to include user info‼️
 interface AuthRequest extends Request {
     user?: { id: number; email: string; role: string };
 }
@@ -4131,7 +4150,62 @@ function authenticate(req: AuthRequest, res: Response, next: NextFunction): void
     const token = authHeader.split(' ')[1]; // Extract the token part after "Bearer "
 
     try {
-        // jwt.verify throws if the token is invalid, expired, or tampered with
+        // jwt.verify throws if the token is invalid, expired, or tampered with‼️
+        //
+        // HOW jwt.verify() WORKS INTERNALLY:
+        //
+        // A JWT has 3 parts separated by dots:
+        // eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjEyMywiZXhwIjoxNzE5MDAwMDAwfQ.abc123signature
+        // │ HEADER              │ PAYLOAD                                     │ SIGNATURE
+        // │ { "alg": "HS256" }  │ { "userId": 123, "exp": 1719000000 }       │ HMAC hash
+        //
+        // Step 1: SPLIT AND DECODE
+        //   token.split('.') → [header, payload, signature]
+        //   Base64-decode header and payload (NOT the signature yet)
+        //
+        // Step 2: CHECK SIGNATURE (detects tampering)
+        //   Recalculate what the signature SHOULD be:
+        //     expectedSignature = HMAC-SHA256(header + "." + payload, YOUR_SECRET_KEY)
+        //   Compare with the signature in the token:
+        //     if (expectedSignature !== actualSignature) → throw JsonWebTokenError('invalid signature')
+        //   If someone changed the payload (e.g., userId: 123 → userId: 1),
+        //   the recalculated signature won't match because they don't have your secret key.
+        //   That's the whole point — only someone with the secret can produce a valid signature.// jwt.verify throws if the token is invalid, expired, or tampered with
+        //
+        // Step 3: CHECK EXPIRATION
+        //   Read the "exp" claim from the payload:
+        //     if (payload.exp && Date.now() / 1000 > payload.exp) → throw TokenExpiredError('jwt expired')
+        //
+        // Step 4: CHECK OTHER CLAIMS (if configured)
+        //   Optional: nbf (not before), iss (issuer), aud (audience)
+        //     if (payload.nbf && Date.now() / 1000 < payload.nbf) → throw JsonWebTokenError('jwt not active')
+        //
+        // THE 3 FAILURE CASES:
+        // | Case       | What happened                                          | Error thrown                              |
+        // |------------|--------------------------------------------------------|------------------------------------------|
+        // | Invalid    | Malformed token, wrong format, or wrong secret         | JsonWebTokenError('invalid signature')   |
+        // | Expired    | exp claim is in the past                               | TokenExpiredError('jwt expired')         |
+        // | Tampered   | Payload modified but can't re-sign (no secret)         | JsonWebTokenError('invalid signature')   |
+        //
+        // WHY TAMPERING FAILS:
+        //   Signing (jwt.sign):
+        //     payload = { userId: 123 }
+        //     signature = hash("userId:123" + "MY_SECRET_KEY") → "abc123"
+        //     token = payload + "." + "abc123"
+        //
+        //   Attacker changes payload:
+        //     payload = { userId: 1 }  ← attacker wants to be admin
+        //     But they don't know MY_SECRET_KEY, so they can't compute the new signature
+        //     They send: { userId: 1 } + "." + "abc123" (old signature)
+        //
+        //   jwt.verify:
+        //     expectedSig = hash("userId:1" + "MY_SECRET_KEY") → "xyz789"
+        //     actualSig = "abc123"
+        //     "xyz789" !== "abc123" → THROW invalid signature
+        //
+        // The secret key is what makes JWT secure — without it, you can read the payload‼️
+        // (it's just base64) but you CANNOT forge a valid signature.‼️
+
         const decoded = jwt.verify(token, SECRET_KEY) as { id: number; email: string; role: string };
         req.user = decoded; // Attach user info to the request for downstream handlers
         next(); // Token is valid — continue to the route handler
@@ -4188,7 +4262,7 @@ app.listen(3000, () => console.log('Server running on port 3000'));
 // 401 Unauthorized — not authenticated (no token, bad token, expired token)
 // 403 Forbidden — authenticated but not authorized (wrong role/permissions)
 //
-// JWT structure: header.payload.signature
+// JWT structure: header.payload.signature‼️
 // - Header: { "alg": "HS256", "typ": "JWT" }
 // - Payload: { "id": 1, "email": "...", "iat": 123, "exp": 456 }
 // - Signature: HMACSHA256(header + "." + payload, secret)
@@ -4235,7 +4309,7 @@ function rateLimiter(req: Request, res: Response, next: NextFunction): void {
         const retryAfterMs = WINDOW_MS - (now - oldestTimestamp);
         const retryAfterSec = Math.ceil(retryAfterMs / 1000);
 
-        res.set('Retry-After', String(retryAfterSec)); // Standard header telling client when to retry
+        res.set('Retry-After', String(retryAfterSec)); // Standard header telling client when to retry‼️
         res.status(429).json({
             error: 'Too Many Requests',
             message: `Rate limit exceeded. Try again in ${retryAfterSec} seconds.`,
@@ -4266,13 +4340,29 @@ app.get('/api/data', (req: Request, res: Response) => {
 app.listen(3000, () => console.log('Server running on port 3000'));
 
 // Interview follow-up: "How would you do this in production with multiple servers?"
-// Answer: Use Redis with INCR + EXPIRE:
+// Answer: Use Redis with INCR + EXPIRE:‼️
 //
 // async function redisRateLimiter(ip: string): Promise<boolean> {
 //   const key = `rate:${ip}`;
 //   const count = await redis.incr(key);     // Atomic increment
 //   if (count === 1) {
 //     await redis.expire(key, 60);           // Set expiry on first request
+//     // redis.expire(key, 60) tells Redis: "delete this key automatically after 60 seconds"
+//     // Without expire: the key lives forever → counter never resets → user blocked permanently
+//     // With expire(key, 60): after 60s, Redis auto-deletes the key → counter resets to 0
+//     //
+//     // Timeline:
+//     // 0s   — User's first request → Redis creates key "rate:192.168.1.1" = 1
+//     //         expire(key, 60) → "delete this key at 60s"
+//     // 5s   — Request #2 → key = 2
+//     // 10s  — Request #3 → key = 3
+//     // ...
+//     // 55s  — Request #10 → key = 10 → limit reached, block further requests
+//     // 60s  — Redis auto-deletes the key → as if the user never made any requests
+//     // 61s  — User's next request → key doesn't exist → starts fresh at 1
+//     //
+//     // It's a self-resetting counter — the 60-second TTL (Time To Live)
+//     // is what creates the "per minute" in "10 requests per minute"
 //   }
 //   return count <= MAX_REQUESTS;
 // }
@@ -4393,7 +4483,7 @@ app.listen(3000, () => console.log('Server running on port 3000'));
 // - URL path versioning (/v1/, /v2/) is the most common and explicit approach
 // - Other approaches: header versioning (Accept: application/vnd.api+v2), query param (?version=2)
 // - Always keep v1 working when you release v2 — don't break existing clients
-// - Use Express Router to keep versioned code organized and separate
+// - Use Express Router to keep versioned code organized and separate‼️
 ```
 
 ### B6. Async Data Fetching — External API Aggregation
@@ -4467,7 +4557,7 @@ app.get('/api/user-stats', async (req: Request, res: Response) => {
         const response = await fetch(`${EXTERNAL_API}/users`);
 
         if (!response.ok) {
-            return res.status(502).json({ error: 'External API unavailable' });
+            return res.status(502).json({ error: 'External API unavailable' });‼️
         }
 
         const users: User[] = await response.json();
@@ -4512,9 +4602,9 @@ app.listen(3000, () => console.log('Server running on port 3000'));
 // Key patterns demonstrated:
 // 1. async/await with proper try/catch error handling
 // 2. Promise.all for parallel requests (don't fetch pages one by one!)
-// 3. Data aggregation using Map (grouping, counting)
-// 4. Transforming data structures (Map → sorted array of objects)
-// 5. Proper error propagation (502 for external API failures, 500 for internal errors)
+// 3. Data aggregation using Map (grouping, counting)‼️
+// 4. Transforming data structures (Map → sorted array of objects)‼️
+// 5. Proper error propagation (502 for external API failures, 500 for internal errors)‼️
 // 6. Using Array methods: map, sort, split, from
 ```
 
@@ -4600,13 +4690,6 @@ function transformOrders(raw: RawOrderItem[]) {
     const orders = Array.from(orderMap.values()).sort((a, b) => a.orderId - b.orderId);
 
     // Step 3: Calculate summary
-    const summary = {
-        totalOrders: orders.length,
-        totalRevenue: (Math.round(orders.reduce((sum, o) => sum + o.total, 100) / 100) * 100) / 100,
-        // Fix: correct calculation
-    };
-
-    // Actually let's do the revenue correctly
     const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
 
     return {
@@ -4619,12 +4702,12 @@ function transformOrders(raw: RawOrderItem[]) {
 }
 
 const result = transformOrders(rawApiData);
-console.log(JSON.stringify(result, null, 2));
+console.log(JSON.stringify(result, null, 2));‼️
 
 // Key patterns demonstrated:
 // 1. Grouping flat data into nested structures using Map
 // 2. Building objects incrementally (add items, update running total)
-// 3. Map → Array conversion with Array.from()
+// 3. Map → Array conversion with Array.from()‼️
 // 4. Handling floating-point precision with Math.round
 // 5. Computing derived/summary data from the transformed result
 //
@@ -4641,7 +4724,7 @@ console.log(JSON.stringify(result, null, 2));
 **Q: Implement a simplified EventEmitter class with on, off, emit, and once methods.**
 
 ```typescript
-// Don't use Node's built-in EventEmitter — build it from scratch to show understanding
+// Don't use Node's built-in EventEmitter — build it from scratch to show understanding‼️
 
 type Listener = (...args: any[]) => void;
 
@@ -4728,13 +4811,13 @@ emitter.emit('connect'); // (nothing — once already fired)
 
 // Unsubscribe
 emitter.off('data', onData);
-emitter.emit('data', { id: 3 }); // (nothing — listener removed)
+emitter.emit('data', { id: 3 }); // (nothing — listener removed)‼️
 
 console.log(emitter.listenerCount('data')); // 0
 
 // Why this matters:
 // - Node.js is built on events (http.Server, streams, process are all EventEmitters)
-// - Shows understanding of the observer/pub-sub pattern
+// - Shows understanding of the observer/pub-sub pattern‼️
 // - Tests: closures (once wrapper), array manipulation, Map usage
 ```
 
@@ -4784,7 +4867,7 @@ class UppercaseTransform extends Transform {
     }
 }
 
-// Usage with pipeline (preferred — handles errors and backpressure automatically)
+// Usage with pipeline (preferred — handles errors and backpressure automatically)‼️
 async function processFile(inputPath: string, outputPath: string): Promise<void> {
     await pipelineAsync(
         createReadStream(inputPath), // Readable: reads file in chunks (default 64KB)
@@ -4801,13 +4884,13 @@ async function processFile(inputPath: string, outputPath: string): Promise<void>
 // - Memory efficient: processes data chunk by chunk, not all at once
 // - A 10GB file? Streams handle it with ~64KB of memory. readFile would crash.
 // - Backpressure: if the writer is slow, the reader automatically slows down
-// - pipeline() handles error propagation and cleanup (closes all streams on error)
+// - pipeline() handles error propagation and cleanup (closes all streams on error)‼️
 //
 // The 4 stream types:
 // - Readable: source of data (fs.createReadStream, http request)
 // - Writable: destination (fs.createWriteStream, http response)
 // - Transform: modify data passing through (compression, encryption, parsing)
-// - Duplex: both readable and writable (TCP socket, WebSocket)
+// - Duplex: both readable and writable (TCP socket, WebSocket)‼️
 ```
 
 ### C3. Concurrency — Promise.all, Promise.allSettled, Race Conditions
@@ -4819,8 +4902,8 @@ async function processFile(inputPath: string, outputPath: string): Promise<void>
 // Pattern 1: Promise.all — fails fast if ANY promise rejects
 // =============================================
 async function fetchAllOrFail(urls: string[]): Promise<any[]> {
-    // If even ONE request fails, the entire Promise.all rejects
-    // Use this when ALL data is required and partial results are useless
+    // If even ONE request fails, the entire Promise.all rejects‼️
+    // Use this when ALL data is required and partial results are useless‼️
     try {
         const responses = await Promise.all(urls.map(url => fetch(url).then(res => res.json())));
         return responses;
@@ -4837,10 +4920,10 @@ async function fetchAllGracefully(urls: string[]): Promise<{
     successful: any[];
     failed: { url: string; error: string }[];
 }> {
-    // Promise.allSettled ALWAYS resolves — it waits for everything to finish
+    // Promise.allSettled ALWAYS resolves — it waits for everything to finish‼️
     // Each result is either { status: 'fulfilled', value: ... } or { status: 'rejected', reason: ... }
     const results = await Promise.allSettled(
-        urls.map(async url => {
+        urls.map(async url => {‼️
             const response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             return { url, data: await response.json() };
@@ -4866,7 +4949,7 @@ async function fetchAllGracefully(urls: string[]): Promise<{
 }
 
 // =============================================
-// Pattern 3: Concurrency limit — don't overwhelm the server
+// Pattern 3: Concurrency limit — don't overwhelm the server‼️
 // =============================================
 async function fetchWithLimit<T>(tasks: (() => Promise<T>)[], concurrencyLimit: number): Promise<T[]> {
     // Process tasks in batches of `concurrencyLimit` at a time
@@ -4891,16 +4974,16 @@ const urls = [
     'https://jsonplaceholder.typicode.com/posts/5',
 ];
 
-// fetchAllGracefully(urls).then(console.log);
+// fetchAllGracefully(urls).then(console.log);‼️
 
 // Usage with concurrency limit:
 const tasks = urls.map(url => () => fetch(url).then(r => r.json()));
 // fetchWithLimit(tasks, 2); // Only 2 requests at a time
 
 // When to use which:
-// Promise.all     → All or nothing. Fast fail. Use when every result is required.
+// Promise.all     → All or nothing. Fast fail. Use when every result is required.‼️
 // Promise.allSettled → Graceful degradation. Use when partial results are useful.
-// Promise.race    → First to finish wins. Use for timeouts:
+// Promise.race    → First to finish wins. Use for timeouts:‼️
 //   Promise.race([fetchData(), timeout(5000)])
 // Concurrency limit → Don't overwhelm external APIs. Use when making many requests.
 ```
@@ -4926,7 +5009,7 @@ class AppError extends Error {
         super(message);
         this.statusCode = statusCode;
         this.isOperational = true;
-        // Maintains proper stack trace in V8 (Node.js)
+        // Maintains proper stack trace in V8 (Node.js)‼️
         Error.captureStackTrace(this, this.constructor);
     }
 }
@@ -5059,7 +5142,7 @@ app.listen(3000, () => console.log('Server running on port 3000'));
 // process.on('unhandledRejection', (reason) => {
 //   console.error('Unhandled rejection:', reason);
 //   // Log to monitoring service (Sentry, DataDog, etc.)
-//   // Optionally: graceful shutdown
+//   // Optionally: graceful shutdown‼️
 // });
 ```
 
