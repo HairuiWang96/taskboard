@@ -5847,7 +5847,7 @@ console.log('6: end');
 4. `process.nextTick()` — schedules callback in microtask queue (higher priority)
 5. `setImmediate()` — schedules callback in check phase
 6. `console.log('6: end')` — synchronous, runs immediately
-7. Call stack is now empty → drain microtask queue → nextTick first, then promise
+7. Call stack is now empty → drain microtask queue → nextTick first, then promise‼️
 8. Enter event loop → timers phase (setTimeout) → poll → check phase (setImmediate)
 
 ---
@@ -5856,7 +5856,7 @@ console.log('6: end');
 
 **What is a race condition?**
 
-> ‼️ A race condition occurs when two or more operations try to access/modify shared state concurrently, and the final result depends on the timing/order of execution. In Node.js, even though JS is single-threaded, race conditions happen with:
+> ‼️ A race condition occurs when two or more operations try to access/modify shared state concurrently, ‼️ and the final result depends on the timing/order of execution. In Node.js, even though JS is single-threaded, race conditions happen with:
 >
 > - Multiple async operations writing to the same database record
 > - Two API requests trying to deduct from the same user balance
@@ -5968,7 +5968,7 @@ async function withLock<T>(lockKey: string, ttlMs: number, fn: () => Promise<T>)
     try {
         return await fn(); // Execute the critical section
     } finally {
-        // Release lock — but only if WE still own it (compare value)
+        // Release lock — but only if WE still own it (compare value)‼️
         // Lua script ensures atomic check-and-delete
         const script = `
       if redis.call("get", KEYS[1]) == ARGV[1] then
@@ -6254,7 +6254,7 @@ console.log('F');
 // 2. C — first microtask (first Promise.then)
 // 3. E — second microtask (second Promise chain, same microtask batch)
 // 4. D — C's .then returned a Promise, so D is queued in the NEXT microtask batch‼️
-// 5. B — setTimeout is a macrotask, runs after all microtasks are drained
+// 5. B — setTimeout is a macrotask, runs after all microtasks are drained‼️
 ```
 
 **Snippet 5: typeof and equality quirks**
@@ -6298,7 +6298,7 @@ console.log('5: script end');
 **How async/await execution order works (theory):**
 
 // JavaScript has ONE thread and TWO queues:
-// 1. Call stack — where synchronous code runs, one frame at a time
+// 1. Call stack — where synchronous code runs, one frame at a time‼️
 // 2. Microtask queue — where resolved promise callbacks (and code after `await`) wait‼️
 // 3. Macrotask queue — where `setTimeout`, I/O callbacks, etc. wait
 //
@@ -6327,7 +6327,7 @@ console.log('5: script end');
 //
 // Step 3: Back in global script: console.log('5: script end') — sync → 5
 //
-// Step 4: Call stack is now EMPTY. JS engine checks the microtask queue
+// Step 4: Call stack is now EMPTY. JS engine checks the microtask queue‼️
 //   → finds the continuation of foo → runs console.log('2: foo after await') → 2
 //
 // Result: 4, 1, 3, 5, 2
@@ -6406,7 +6406,7 @@ Scale strategy for a live sporting event (e.g., Super Bowl):
 
 3. QUEUE WRITES: Bet placements spike → don't overwhelm the database
    - Bet placement → RabbitMQ queue → workers process at sustainable rate
-   - Return 202 Accepted immediately, process async
+   - Return 202 Accepted immediately, process async‼️
    - Client polls or subscribes via WebSocket for confirmation
 
 4. SEPARATE READ/WRITE PATHS (CQRS):
