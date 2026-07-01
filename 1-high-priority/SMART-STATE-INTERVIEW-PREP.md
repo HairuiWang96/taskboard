@@ -7155,40 +7155,40 @@ class BetService {
 // It means "call a function on a DIFFERENT server as if it were a local function"
 //
 // Local function call:
-//   const balance = walletService.getBalance(userId);  // same server, same process
+// const balance = walletService.getBalance(userId); // same server, same process
 //
 // RPC (Remote Procedure Call):
-//   const balance = await client.send('wallet.getBalance', { userId });
-//   // Looks like a normal function call, but it actually:
-//   // 1. Sends a message over the network to Wallet Service (different server)
-//   // 2. Wallet Service runs getBalance()
-//   // 3. Sends the result back
-//   // You don't deal with HTTP URLs, headers, status codes — feels like calling a local function
+// const balance = await client.send('wallet.getBalance', { userId });
+// // Looks like a normal function call, but it actually:
+// // 1. Sends a message over the network to Wallet Service (different server)
+// // 2. Wallet Service runs getBalance()
+// // 3. Sends the result back
+// // You don't deal with HTTP URLs, headers, status codes — feels like calling a local function
 //
 // HOW DOES IT KNOW WHERE TO SEND WITHOUT A URL?
 // The BROKER handles routing. Services only need to know the broker's address.
 //
 // ❌ Without broker (REST): every service must know every OTHER service's address
-//   Bet Service must know: http://wallet-service:3001
-//   Bet Service must know: http://notification-service:3002
-//   Bet Service must know: http://analytics-service:3003
-//   → 10 services = each needs to know 9 addresses = nightmare
+// Bet Service must know: http://wallet-service:3001
+// Bet Service must know: http://notification-service:3002
+// Bet Service must know: http://analytics-service:3003
+// → 10 services = each needs to know 9 addresses = nightmare
 //
 // ✅ With broker: every service only knows ONE address — the broker
-//   Bet Service knows:          amqp://rabbitmq:5672  (that's it)
-//   Wallet Service knows:       amqp://rabbitmq:5672  (that's it)
-//   Notification Service knows: amqp://rabbitmq:5672  (that's it)
-//   → 10 services = each knows 1 address = simple
+// Bet Service knows: amqp://rabbitmq:5672 (that's it)
+// Wallet Service knows: amqp://rabbitmq:5672 (that's it)
+// Notification Service knows: amqp://rabbitmq:5672 (that's it)
+// → 10 services = each knows 1 address = simple
 //
 // The broker knows NOTHING about service addresses either!
 // It just holds queues. Services CONNECT to it and say:
-//   Producer: "put this message in queue X"
-//   Consumer: "give me messages from queue X"
+// Producer: "put this message in queue X"
+// Consumer: "give me messages from queue X"
 //
 // So:
-//   Services → know broker address (ONE address)
-//   Broker → knows nothing about services (just holds queues)
-//   Services → know nothing about each other (just queue names)
+// Services → know broker address (ONE address)
+// Broker → knows nothing about services (just holds queues)
+// Services → know nothing about each other (just queue names)
 
 ```typescript
 // Like REST but through a message broker — best of both worlds
@@ -7376,7 +7376,7 @@ curl -X POST http://localhost:3000/bets -d '{"matchId": "123", "amount": 50}'
 // CPU, memory, database connections, queue depth — these don't need application logs.
 // Next, I'd check external dependencies — is the database reachable? Is Redis up?
 // If the issue is still unclear, I'd enable debug logging temporarily or attach
-// to the container. Long-term, I'd ensure we have distributed tracing with
+// to the container. ‼️Long-term, I'd ensure we have distributed tracing with
 // OpenTelemetry and correlation IDs, so we can follow requests across services.
 // The key is systematic elimination — rule out infrastructure, then dependencies,
 // then narrow down to the specific code."
@@ -7494,8 +7494,8 @@ async function deductBalanceOptimistic(userId: string, amount: number) {
 **How to RESOLVE and PREVENT deadlocks:**
 
 ```typescript
-// SOLUTION 1: Always lock rows in the SAME ORDER
-// If you always lock the LOWER user_id first, deadlocks can't happen
+// SOLUTION 1: Always lock rows in the SAME ORDER‼️
+// If you always lock the LOWER user_id first, deadlocks can't happen‼️
 
 async function transfer(fromId: string, toId: string, amount: number) {
     await db.query('BEGIN');
@@ -7514,7 +7514,7 @@ async function transfer(fromId: string, toId: string, amount: number) {
     await db.query('COMMIT');
 }
 
-// WHY this works:
+// WHY this works:‼️
 // Transfer A→B: locks A first, then B
 // Transfer B→A: ALSO locks A first (because A < B), then B
 // Same order → no circular dependency → no deadlock
