@@ -6431,9 +6431,9 @@ Scale strategy for a live sporting event (e.g., Super Bowl):
 
 **Q: What is V8 and what does it do?**
 
-// V8 is the JavaScript ENGINE — it's the part that reads your JS code and executes it.
+// V8 is the JavaScript ENGINE — it's the part that reads your JS code and executes it.‼️
 // Built by Google (same engine used in Chrome browser).
-// Node.js = V8 (JS engine) + libuv (async I/O) + Node APIs (fs, http, crypto, etc.)
+// Node.js = V8 (JS engine) + libuv (async I/O) + Node APIs (fs, http, crypto, etc.)‼️
 //
 // What V8 does:
 // 1. PARSES your JavaScript code (text → Abstract Syntax Tree)
@@ -6444,74 +6444,74 @@ Scale strategy for a live sporting event (e.g., Super Bowl):
 // V8 is what makes JavaScript fast — it uses JIT (Just-In-Time) compilation:
 //
 // Old way (interpreter):
-//   JS code → read line → execute → read next line → execute → slow
+// JS code → read line → execute → read next line → execute → slow
 //
 // V8 way (JIT compiler):
-//   JS code → compile ENTIRE function to machine code → execute machine code → FAST
+// JS code → compile ENTIRE function to machine code → execute machine code → FAST
 //
-// V8 has TWO compilers:
-//   1. Ignition (baseline) — quickly compiles to bytecode (fast startup)
-//   2. TurboFan (optimizing) — watches which functions run often ("hot" functions),
-//      then recompiles them with heavy optimizations (fast execution)
+// V8 has TWO compilers:‼️
+// 1. Ignition (baseline) — quickly compiles to bytecode (fast startup)
+// 2. TurboFan (optimizing) — watches which functions run often ("hot" functions),
+// then recompiles them with heavy optimizations (fast execution)
 //
 // Example:
-//   function add(a, b) { return a + b; }
-//   // Called once → Ignition compiles to bytecode (quick but not optimized)
-//   // Called 10,000 times with numbers → TurboFan recompiles:
-//   //   "this function always gets numbers, I'll optimize for number addition"
-//   //   → generates specialized machine code that's nearly as fast as C
+// function add(a, b) { return a + b; }
+// // Called once → Ignition compiles to bytecode (quick but not optimized)
+// // Called 10,000 times with numbers → TurboFan recompiles:
+// // "this function always gets numbers, I'll optimize for number addition"
+// // → generates specialized machine code that's nearly as fast as C
 //
 // DEOPTIMIZATION — when V8 guesses wrong:
-//   add(1, 2);       // TurboFan: "these are always numbers, optimize!"
-//   add("a", "b");   // Wait, strings? → TurboFan DEOPTIMIZES back to generic bytecode
-//   // That's why consistent types = faster code in Node.js
+// add(1, 2); // TurboFan: "these are always numbers, optimize!"
+// add("a", "b"); // Wait, strings? → TurboFan DEOPTIMIZES back to generic bytecode
+// // That's why consistent types = faster code in Node.js
 
 **Q: What is libuv and how does it relate to V8?**
 
 // V8 can ONLY run JavaScript — it has NO idea how to do:
-//   - File system operations (fs.readFile)
-//   - Network requests (http.get)
-//   - DNS lookups
-//   - Timers (setTimeout)
-//   - Child processes
+// - File system operations (fs.readFile)
+// - Network requests (http.get)
+// - DNS lookups
+// - Timers (setTimeout)
+// - Child processes
 //
 // libuv handles ALL of these async operations.
-// It's a C library that provides the EVENT LOOP and async I/O for Node.js.
+// It's a C library that provides the EVENT LOOP and async I/O for Node.js.‼️
 //
 // Think of it like this:
-//   V8 = the brain (understands JavaScript, runs your code)
-//   libuv = the body (talks to the OS, handles files, network, timers)
+// V8 = the brain (understands JavaScript, runs your code)
+// libuv = the body (talks to the OS, handles files, network, timers)
 //
 // How they work together:
 //
-//   Your code: fs.readFile('data.json', callback)
-//        │
-//        ▼
-//   V8 sees fs.readFile → "I don't know how to read files"
-//        │
-//        ▼
-//   Node.js binding layer → sends the request to libuv
-//        │
-//        ▼
-//   libuv → asks the OS to read the file (non-blocking)
-//   libuv → puts callback in a queue, continues with other work
-//        │
-//        ▼ (file read completes)
-//   libuv → "file is ready!" → puts callback on the event loop
-//        │
-//        ▼
-//   V8 picks up the callback → executes your function with the file data
+// Your code: fs.readFile('data.json', callback)
+// │
+// ▼
+// V8 sees fs.readFile → "I don't know how to read files"
+// │
+// ▼
+// Node.js binding layer → sends the request to libuv
+// │
+// ▼
+// libuv → asks the OS to read the file (non-blocking)
+// libuv → puts callback in a queue, continues with other work
+// │
+// ▼ (file read completes)
+// libuv → "file is ready!" → puts callback on the event loop
+// │
+// ▼
+// V8 picks up the callback → executes your function with the file data
 //
-// libuv provides TWO mechanisms for async I/O:
+// libuv provides TWO mechanisms for async I/O:‼️
 //
-// 1. OS-level async (epoll on Linux, kqueue on Mac, IOCP on Windows)
-//    Used for: network I/O (TCP, UDP, HTTP), pipes
-//    How: asks the OS "tell me when data is ready" → OS notifies libuv → no threads needed
+// 1. OS-level async (epoll on Linux, kqueue on Mac, IOCP on Windows)‼️
+// Used for: network I/O (TCP, UDP, HTTP), pipes‼️
+// How: asks the OS "tell me when data is ready" → OS notifies libuv → no threads needed
 //
 // 2. Thread pool (default 4 threads, configurable via UV_THREADPOOL_SIZE)
-//    Used for: file system, DNS lookups, crypto, compression
-//    How: libuv hands the work to a thread → thread does blocking work → notifies event loop
-//    WHY threads? Some OS operations don't have good async APIs, so libuv uses threads
+// Used for: file system, DNS lookups, crypto, compression‼️
+// How: libuv hands the work to a thread → thread does blocking work → notifies event loop
+// WHY threads? Some OS operations don't have good async APIs, so libuv uses threads‼️
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -6553,11 +6553,11 @@ Scale strategy for a live sporting event (e.g., Super Bowl):
 // INTERVIEW QUESTION: "Is Node.js single-threaded?"
 //
 // ANSWER: "Yes AND no.
-//   - Your JavaScript code runs on ONE thread (the V8 main thread)
-//   - But libuv uses a thread pool (4 threads by default) for file I/O, DNS, crypto
-//   - And the OS handles network I/O asynchronously without any threads
-//   - So Node.js is single-threaded for YOUR code, but multi-threaded under the hood
-//   - If you need CPU-heavy work on multiple threads, use Worker Threads"
+// - Your JavaScript code runs on ONE thread (the V8 main thread)
+// - But libuv uses a thread pool (4 threads by default) for file I/O, DNS, crypto
+// - And the OS handles network I/O asynchronously without any threads‼️
+// - So Node.js is single-threaded for YOUR code, but multi-threaded under the hood
+// - If you need CPU-heavy work on multiple threads, use Worker Threads"
 
 ---
 
@@ -6575,32 +6575,48 @@ Scale strategy for a live sporting event (e.g., Super Bowl):
 ```typescript
 // ❌ BAD — UserService does EVERYTHING
 class UserService {
-    createUser(data) { /* save to DB */ }
-    sendWelcomeEmail(user) { /* send email */ }
-    generateReport(user) { /* create PDF */ }
-    validateCreditCard(card) { /* check card */ }
+    createUser(data) {
+        /* save to DB */
+    }
+    sendWelcomeEmail(user) {
+        /* send email */
+    }
+    generateReport(user) {
+        /* create PDF */
+    }
+    validateCreditCard(card) {
+        /* check card */
+    }
 }
 // Problem: if email template changes, you're editing the same file as database logic
 
 // ✅ GOOD — each class has ONE job
 class UserService {
-    createUser(data) { /* save to DB */ }
+    createUser(data) {
+        /* save to DB */
+    }
 }
 class EmailService {
-    sendWelcomeEmail(user) { /* send email */ }
+    sendWelcomeEmail(user) {
+        /* send email */
+    }
 }
 class ReportService {
-    generateReport(user) { /* create PDF */ }
+    generateReport(user) {
+        /* create PDF */
+    }
 }
 class PaymentService {
-    validateCreditCard(card) { /* check card */ }
+    validateCreditCard(card) {
+        /* check card */
+    }
 }
 // Now email changes don't risk breaking user creation
 ```
 
 **O — Open/Closed Principle (OCP)**
 
-// Open for EXTENSION, closed for MODIFICATION.
+// Open for EXTENSION, closed for MODIFICATION.‼️
 // Add new behavior WITHOUT changing existing code.
 
 ```typescript
@@ -6623,18 +6639,24 @@ interface PaymentMethod {
 }
 
 class CreditCardPayment implements PaymentMethod {
-    async process(amount: number) { /* credit card logic */ }
+    async process(amount: number) {
+        /* credit card logic */
+    }
 }
 class PayPalPayment implements PaymentMethod {
-    async process(amount: number) { /* paypal logic */ }
+    async process(amount: number) {
+        /* paypal logic */
+    }
 }
 class CryptoPayment implements PaymentMethod {
-    async process(amount: number) { /* NEW — no existing code changed */ }
+    async process(amount: number) {
+        /* NEW — no existing code changed */
+    }
 }
 
 class PaymentProcessor {
     async process(method: PaymentMethod, amount: number) {
-        await method.process(amount); // works with ANY payment method
+        await method.process(amount); // works with ANY payment method‼️
     }
 }
 ```
@@ -6647,8 +6669,13 @@ class PaymentProcessor {
 ```typescript
 // ❌ BAD — Square extends Rectangle but breaks the contract
 class Rectangle {
-    constructor(public width: number, public height: number) {}
-    area() { return this.width * this.height; }
+    constructor(
+        public width: number,
+        public height: number,
+    ) {}
+    area() {
+        return this.width * this.height;
+    }
 }
 
 class Square extends Rectangle {
@@ -6664,12 +6691,19 @@ interface Shape {
     area(): number;
 }
 class Rectangle implements Shape {
-    constructor(public width: number, public height: number) {}
-    area() { return this.width * this.height; }
+    constructor(
+        public width: number,
+        public height: number,
+    ) {}
+    area() {
+        return this.width * this.height;
+    }
 }
 class Square implements Shape {
     constructor(public side: number) {}
-    area() { return this.side * this.side; }
+    area() {
+        return this.side * this.side;
+    }
 }
 // Both are Shapes, but neither pretends to be the other
 ```
@@ -6701,12 +6735,20 @@ interface Meetable {
 }
 
 class HumanWorker implements Workable, Eatable, Meetable {
-    work() { /* ... */ }
-    eat() { /* ... */ }
-    attendMeeting() { /* ... */ }
+    work() {
+        /* ... */
+    }
+    eat() {
+        /* ... */
+    }
+    attendMeeting() {
+        /* ... */
+    }
 }
 class RobotWorker implements Workable {
-    work() { /* ... */ }
+    work() {
+        /* ... */
+    }
     // No eat() or attendMeeting() — robot doesn't need them
 }
 ```
@@ -6735,10 +6777,14 @@ interface Database {
 }
 
 class MySQLDatabase implements Database {
-    async findById(table: string, id: string) { /* MySQL query */ }
+    async findById(table: string, id: string) {
+        /* MySQL query */
+    }
 }
 class MongoDB implements Database {
-    async findById(table: string, id: string) { /* MongoDB query */ }
+    async findById(table: string, id: string) {
+        /* MongoDB query */
+    }
 }
 
 class UserService {
@@ -6752,7 +6798,7 @@ class UserService {
 
 // Now you can swap databases:
 const userService = new UserService(new MySQLDatabase()); // production
-const userService = new UserService(new MockDatabase());  // testing
+const userService = new UserService(new MockDatabase()); // testing
 // UserService code doesn't change at all!
 
 // THIS IS EXACTLY HOW NESTJS WORKS:
@@ -6769,10 +6815,10 @@ const userService = new UserService(new MockDatabase());  // testing
 //
 // WHAT TO SAY IN INTERVIEW:
 // "I follow SOLID principles — for example, in NestJS I use dependency injection
-//  which is the D in SOLID. Each service has a single responsibility (S),
-//  and I use interfaces so I can swap implementations for testing or when
-//  requirements change (O and D). This makes the codebase maintainable
-//  as the team and product grow."
+// which is the D in SOLID. Each service has a single responsibility (S),
+// and I use interfaces so I can swap implementations for testing or when
+// requirements change (O and D). This makes the codebase maintainable
+// as the team and product grow."
 
 ---
 
@@ -6810,8 +6856,8 @@ await db.query('COMMIT');
 
 **C — Consistency (Rules Are Always Followed)**
 
-// The database moves from one VALID state to another VALID state.
-// Constraints (foreign keys, unique, check constraints) are never violated.
+// The database moves from one VALID state to another VALID state.‼️
+// Constraints (foreign keys, unique, check constraints) are never violated.‼️
 
 ```typescript
 // Example: balance can never go below 0
@@ -6830,7 +6876,7 @@ await db.query('COMMIT');
 
 **I — Isolation (Transactions Don't Interfere)**
 
-// Multiple transactions running at the same time can't see each other's uncommitted changes.
+// Multiple transactions running at the same time can't see each other's uncommitted changes.‼️
 // Each transaction thinks it's the ONLY one running.
 
 ```typescript
@@ -6853,14 +6899,14 @@ await db.query('COMMIT');
 //
 // Isolation levels (from least to most strict):
 // READ UNCOMMITTED — can see other transactions' uncommitted changes (dirty reads) — almost never used
-// READ COMMITTED — only sees committed data — PostgreSQL default
-// REPEATABLE READ — same query returns same results within a transaction — MySQL InnoDB default
-// SERIALIZABLE — transactions execute as if they ran one at a time — safest but slowest
+// READ COMMITTED — only sees committed data — PostgreSQL default‼️
+// REPEATABLE READ — same query returns same results within a transaction — MySQL InnoDB default‼️
+// SERIALIZABLE — transactions execute as if they ran one at a time — safest but slowest‼️
 ```
 
 **D — Durability (Committed Data Survives Crashes)**
 
-// Once a transaction is COMMITTED, the data is permanently saved.
+// Once a transaction is COMMITTED, the data is permanently saved.‼️
 // Even if the server crashes 1 millisecond after COMMIT, the data is safe.
 
 ```typescript
@@ -6871,7 +6917,7 @@ await db.query('COMMIT');
 //   3. Replays any committed transactions that weren't fully written to data files
 //   4. Your data is intact
 
-// This is why databases are slower than in-memory stores like Redis:
+// This is why databases are slower than in-memory stores like Redis:‼️
 // Database: writes to disk → guaranteed durability → slower
 // Redis: writes to memory → can lose data on crash → faster
 // That's why we use MySQL for money/bets and Redis for caching/sessions
@@ -6879,16 +6925,16 @@ await db.query('COMMIT');
 
 // ACID SUMMARY:
 // A — All or nothing. Transaction either fully completes or fully rolls back.
-// C — Rules (constraints) are always enforced. No invalid data ever saved.
-// I — Concurrent transactions don't interfere with each other.
+// C — Rules (constraints) are always enforced. No invalid data ever saved.‼️
+// I — Concurrent transactions don't interfere with each other.‼️
 // D — Once committed, data survives any crash.
 //
 // WHAT TO SAY IN INTERVIEW:
 // "For financial data like user balances and bet records, I use MySQL with
-//  ACID transactions. Atomicity ensures a balance deduction and bet creation
-//  happen together or not at all. Isolation with row locking prevents
-//  double-spending. For non-critical data like analytics or caching,
-//  I use Redis or MongoDB where strict ACID isn't necessary."
+// ACID transactions. Atomicity ensures a balance deduction and bet creation
+// happen together or not at all. Isolation with row locking prevents
+// double-spending. For non-critical data like analytics or caching,
+// I use Redis or MongoDB where strict ACID isn't necessary."
 
 ---
 
@@ -6896,7 +6942,7 @@ await db.query('COMMIT');
 
 // These two concepts describe how well your code is organized.
 // COUPLING = how much modules DEPEND on each other (want LOW)
-// COHESION = how related the things inside a module are (want HIGH)
+// COHESION = how related the things inside a module are (want HIGH)‼️
 //
 // Goal: LOW coupling, HIGH cohesion
 
@@ -6907,13 +6953,13 @@ await db.query('COMMIT');
 // Changing one breaks the other
 
 class OrderService {
-    private db = new MySQLDatabase();        // directly creates its own database
-    private email = new SendGridEmailer();   // directly creates its own emailer
-    private payment = new StripePayment();   // directly creates its own payment
+    private db = new MySQLDatabase(); // directly creates its own database
+    private email = new SendGridEmailer(); // directly creates its own emailer
+    private payment = new StripePayment(); // directly creates its own payment
 
     async createOrder(data) {
         const order = await this.db.query('INSERT INTO orders ...');
-        await this.payment.charge(data.card, data.amount);  // knows Stripe's API
+        await this.payment.charge(data.card, data.amount); // knows Stripe's API
         await this.email.send(data.email, 'Order confirmed'); // knows SendGrid's API
     }
 }
@@ -6936,8 +6982,8 @@ interface EmailProvider {
 @Injectable()
 class OrderService {
     constructor(
-        private payment: PaymentProvider,  // doesn't know if it's Stripe or PayPal
-        private email: EmailProvider,      // doesn't know if it's SendGrid or Mailgun
+        private payment: PaymentProvider, // doesn't know if it's Stripe or PayPal
+        private email: EmailProvider, // doesn't know if it's SendGrid or Mailgun
         private orderRepo: OrderRepository,
     ) {}
 
@@ -6950,7 +6996,7 @@ class OrderService {
 
 // Now:
 // - Switch from Stripe to PayPal → just provide a different PaymentProvider implementation
-// - Test with mocks → inject MockPaymentProvider
+// - Test with mocks → inject MockPaymentProvider‼️
 // - OrderService doesn't know or care about implementation details
 // - THIS IS EXACTLY WHAT NESTJS DI DOES — and it's also the D in SOLID
 ```
@@ -6962,40 +7008,64 @@ class OrderService {
 // "God class" that handles everything
 
 class AppService {
-    createUser() { /* user logic */ }
-    processPayment() { /* payment logic */ }
-    sendEmail() { /* email logic */ }
-    generateReport() { /* report logic */ }
-    resizeImage() { /* image logic */ }
+    createUser() {
+        /* user logic */
+    }
+    processPayment() {
+        /* payment logic */
+    }
+    sendEmail() {
+        /* email logic */
+    }
+    generateReport() {
+        /* report logic */
+    }
+    resizeImage() {
+        /* image logic */
+    }
 }
 // These are 5 completely unrelated responsibilities crammed into one class
 
 // ✅ HIGH COHESION — module does ONE related set of things
 
 class UserService {
-    createUser() { /* ... */ }
-    updateUser() { /* ... */ }
-    deleteUser() { /* ... */ }
-    findUserById() { /* ... */ }
+    createUser() {
+        /* ... */
+    }
+    updateUser() {
+        /* ... */
+    }
+    deleteUser() {
+        /* ... */
+    }
+    findUserById() {
+        /* ... */
+    }
 }
 // Everything in UserService is about USERS — highly cohesive
 
 class PaymentService {
-    processPayment() { /* ... */ }
-    refundPayment() { /* ... */ }
-    getPaymentHistory() { /* ... */ }
+    processPayment() {
+        /* ... */
+    }
+    refundPayment() {
+        /* ... */
+    }
+    getPaymentHistory() {
+        /* ... */
+    }
 }
 // Everything in PaymentService is about PAYMENTS — highly cohesive
 ```
 
 // HOW COUPLING AND COHESION RELATE:
 //
-// | Coupling | Cohesion | Result                                               |
+// | Coupling | Cohesion | Result |
 // |----------|----------|------------------------------------------------------|
-// | LOW      | HIGH     | ✅ IDEAL — clean, maintainable, testable code         |
-// | LOW      | LOW      | Modules are independent but internally disorganized  |
-// | HIGH     | HIGH     | Modules are focused but tangled with each other      |
-// | HIGH     | LOW      | ❌ WORST — messy "spaghetti code", untestable         |
+// | LOW | HIGH | ✅ IDEAL — clean, maintainable, testable code |
+// | LOW | LOW | Modules are independent but internally disorganized |
+// | HIGH | HIGH | Modules are focused but tangled with each other |
+// | HIGH | LOW | ❌ WORST — messy "spaghetti code", untestable |
 //
 // IN NESTJS TERMS:
 // - Each Module (UsersModule, PaymentsModule) = HIGH cohesion (one feature per module)
@@ -7004,9 +7074,9 @@ class PaymentService {
 //
 // WHAT TO SAY IN INTERVIEW:
 // "I aim for low coupling and high cohesion. In NestJS, each module handles one
-//  domain (users, payments, notifications) with high cohesion. Modules communicate
-//  through exported services and dependency injection, keeping coupling low.
-//  This makes it easy to test modules in isolation and swap implementations."
+// domain (users, payments, notifications) with high cohesion. Modules communicate
+// through exported services and dependency injection, keeping coupling low.
+// This makes it easy to test modules in isolation and swap implementations."
 
 ---
 
@@ -7028,9 +7098,7 @@ class BetService {
 
     async placeBet(userId: string, amount: number) {
         // Synchronous call — Bet Service WAITS for Wallet Service to respond
-        const { data: wallet } = await this.httpService.axiosRef.get(
-            `http://wallet-service:3001/wallets/${userId}`,
-        );
+        const { data: wallet } = await this.httpService.axiosRef.get(`http://wallet-service:3001/wallets/${userId}`);
 
         if (wallet.balance < amount) {
             throw new Error('Insufficient funds');
@@ -7047,7 +7115,7 @@ class BetService {
 // CONS:
 // - TIGHT COUPLING — Bet Service must know Wallet Service's URL and API
 // - If Wallet Service is down, Bet Service FAILS
-// - Latency adds up — each call adds network round-trip time
+// - Latency adds up — each call adds network round-trip time‼️
 // - CASCADING FAILURES — if one service is slow, it slows down everything calling it
 ```
 
@@ -7081,7 +7149,46 @@ class BetService {
 // - Eventual consistency — data might be out of sync for a moment
 ```
 
-**3. Hybrid — RPC over Message Broker (request-response via queue)**
+**3. Hybrid — RPC over Message Broker (request-response via queue)**‼️
+
+// RPC = Remote Procedure Call
+// It means "call a function on a DIFFERENT server as if it were a local function"
+//
+// Local function call:
+//   const balance = walletService.getBalance(userId);  // same server, same process
+//
+// RPC (Remote Procedure Call):
+//   const balance = await client.send('wallet.getBalance', { userId });
+//   // Looks like a normal function call, but it actually:
+//   // 1. Sends a message over the network to Wallet Service (different server)
+//   // 2. Wallet Service runs getBalance()
+//   // 3. Sends the result back
+//   // You don't deal with HTTP URLs, headers, status codes — feels like calling a local function
+//
+// HOW DOES IT KNOW WHERE TO SEND WITHOUT A URL?
+// The BROKER handles routing. Services only need to know the broker's address.
+//
+// ❌ Without broker (REST): every service must know every OTHER service's address
+//   Bet Service must know: http://wallet-service:3001
+//   Bet Service must know: http://notification-service:3002
+//   Bet Service must know: http://analytics-service:3003
+//   → 10 services = each needs to know 9 addresses = nightmare
+//
+// ✅ With broker: every service only knows ONE address — the broker
+//   Bet Service knows:          amqp://rabbitmq:5672  (that's it)
+//   Wallet Service knows:       amqp://rabbitmq:5672  (that's it)
+//   Notification Service knows: amqp://rabbitmq:5672  (that's it)
+//   → 10 services = each knows 1 address = simple
+//
+// The broker knows NOTHING about service addresses either!
+// It just holds queues. Services CONNECT to it and say:
+//   Producer: "put this message in queue X"
+//   Consumer: "give me messages from queue X"
+//
+// So:
+//   Services → know broker address (ONE address)
+//   Broker → knows nothing about services (just holds queues)
+//   Services → know nothing about each other (just queue names)
 
 ```typescript
 // Like REST but through a message broker — best of both worlds
@@ -7094,9 +7201,7 @@ class BetService {
     async getUserBalance(userId: string): Promise<number> {
         // send() = request-response pattern (waits for reply)
         // emit() = fire-and-forget pattern (no reply)
-        const balance = await firstValueFrom(
-            this.client.send('wallet.getBalance', { userId }),
-        );
+        const balance = await firstValueFrom(this.client.send('wallet.getBalance', { userId }));
         return balance;
     }
 }
@@ -7104,7 +7209,7 @@ class BetService {
 // Wallet Service responds to the request:
 @Controller()
 class WalletController {
-    @MessagePattern('wallet.getBalance')  // responds to requests (not @EventPattern)
+    @MessagePattern('wallet.getBalance') // responds to requests (not @EventPattern)
     getBalance(data: { userId: string }): number {
         return this.walletService.getBalance(data.userId);
     }
@@ -7121,11 +7226,11 @@ class WalletController {
 ```
 
 // WHEN TO USE WHICH:
-// | Pattern          | Use when                                           | iGaming example                    |
+// | Pattern | Use when | iGaming example |
 // |------------------|----------------------------------------------------|------------------------------------|
-// | REST (HTTP)      | Need immediate response, simple CRUD               | GET /users/:id, GET /bets/:id      |
-// | Message (emit)   | Side effects, notifications, analytics             | bet.placed → notify + audit        |
-// | RPC over broker  | Need response but want broker benefits             | Check balance before placing bet   |
+// | REST (HTTP) | Need immediate response, simple CRUD | GET /users/:id, GET /bets/:id |
+// | Message (emit) | Side effects, notifications, analytics | bet.placed → notify + audit |
+// | RPC over broker | Need response but want broker benefits | Check balance before placing bet |
 //
 // IN PRACTICE: most systems use ALL THREE:
 // - REST for client-facing APIs (user's browser → your API)
@@ -7267,14 +7372,14 @@ curl -X POST http://localhost:3000/bets -d '{"matchId": "123", "amount": 50}'
 
 // WHAT TO SAY IN INTERVIEW:
 // "First, I'd verify the service is actually running and reachable — health checks,
-//  pod status, network connectivity. Then I'd check infrastructure metrics:
-//  CPU, memory, database connections, queue depth — these don't need application logs.
-//  Next, I'd check external dependencies — is the database reachable? Is Redis up?
-//  If the issue is still unclear, I'd enable debug logging temporarily or attach
-//  to the container. Long-term, I'd ensure we have distributed tracing with
-//  OpenTelemetry and correlation IDs, so we can follow requests across services.
-//  The key is systematic elimination — rule out infrastructure, then dependencies,
-//  then narrow down to the specific code."
+// pod status, network connectivity. Then I'd check infrastructure metrics:
+// CPU, memory, database connections, queue depth — these don't need application logs.
+// Next, I'd check external dependencies — is the database reachable? Is Redis up?
+// If the issue is still unclear, I'd enable debug logging temporarily or attach
+// to the container. Long-term, I'd ensure we have distributed tracing with
+// OpenTelemetry and correlation IDs, so we can follow requests across services.
+// The key is systematic elimination — rule out infrastructure, then dependencies,
+// then narrow down to the specific code."
 
 ---
 
@@ -7319,22 +7424,16 @@ async function deductBalance(userId: string, amount: number) {
     await db.query('BEGIN');
 
     // Lock the row — nobody else can read or write this row until we COMMIT
-    const [wallet] = await db.query(
-        'SELECT balance FROM wallets WHERE user_id = ? FOR UPDATE',
-        [userId],
-    );
+    const [wallet] = await db.query('SELECT balance FROM wallets WHERE user_id = ? FOR UPDATE', [userId]);
 
     if (wallet.balance < amount) {
         await db.query('ROLLBACK');
         throw new Error('Insufficient funds');
     }
 
-    await db.query(
-        'UPDATE wallets SET balance = balance - ? WHERE user_id = ?',
-        [amount, userId],
-    );
+    await db.query('UPDATE wallets SET balance = balance - ? WHERE user_id = ?', [amount, userId]);
 
-    await db.query('COMMIT');  // releases the lock
+    await db.query('COMMIT'); // releases the lock
 }
 
 // PROS: guaranteed to work, no retries needed
@@ -7347,20 +7446,14 @@ async function deductBalance(userId: string, amount: number) {
 
 async function deductBalanceOptimistic(userId: string, amount: number) {
     // Read current state (no lock)
-    const [wallet] = await db.query(
-        'SELECT balance, version FROM wallets WHERE user_id = ?',
-        [userId],
-    );
+    const [wallet] = await db.query('SELECT balance, version FROM wallets WHERE user_id = ?', [userId]);
 
     if (wallet.balance < amount) {
         throw new Error('Insufficient funds');
     }
 
     // Update ONLY IF version hasn't changed
-    const result = await db.query(
-        'UPDATE wallets SET balance = balance - ?, version = version + 1 WHERE user_id = ? AND version = ?',
-        [amount, userId, wallet.version],
-    );
+    const result = await db.query('UPDATE wallets SET balance = balance - ?, version = version + 1 WHERE user_id = ? AND version = ?', [amount, userId, wallet.version]);
 
     if (result.affectedRows === 0) {
         // Someone else modified the row between our SELECT and UPDATE
@@ -7448,17 +7541,17 @@ await db.query('SET innodb_lock_wait_timeout = 5'); // 5 seconds max
 
 // ❌ BAD — long transaction
 await db.query('BEGIN');
-await db.query('SELECT ... FOR UPDATE');   // lock acquired
-await callExternalAPI();                    // slow network call — lock held for seconds!
+await db.query('SELECT ... FOR UPDATE'); // lock acquired
+await callExternalAPI(); // slow network call — lock held for seconds!
 await db.query('UPDATE ...');
-await db.query('COMMIT');                   // lock released after API call
+await db.query('COMMIT'); // lock released after API call
 
 // ✅ GOOD — keep lock duration minimal
-const data = await callExternalAPI();       // do slow work BEFORE the transaction
+const data = await callExternalAPI(); // do slow work BEFORE the transaction
 await db.query('BEGIN');
-await db.query('SELECT ... FOR UPDATE');    // lock acquired
-await db.query('UPDATE ...');               // immediate update
-await db.query('COMMIT');                   // lock released quickly
+await db.query('SELECT ... FOR UPDATE'); // lock acquired
+await db.query('UPDATE ...'); // immediate update
+await db.query('COMMIT'); // lock released quickly
 ```
 
 **Other common lock problems:**
@@ -7480,12 +7573,12 @@ await db.query('COMMIT');                   // lock released quickly
 ```
 
 // SUMMARY — Database Locks:
-// | Type              | How it works                    | Use when                        |
+// | Type | How it works | Use when |
 // |-------------------|---------------------------------|---------------------------------|
-// | Shared (read)     | Multiple readers, no writers    | Reading data that shouldn't change |
-// | Exclusive (write) | One writer, no readers          | Updating data                   |
-// | Pessimistic       | Lock BEFORE operating           | High conflict (same row often)  |
-// | Optimistic        | Check version AFTER operating   | Low conflict (rare same row)    |
+// | Shared (read) | Multiple readers, no writers | Reading data that shouldn't change |
+// | Exclusive (write) | One writer, no readers | Updating data |
+// | Pessimistic | Lock BEFORE operating | High conflict (same row often) |
+// | Optimistic | Check version AFTER operating | Low conflict (rare same row) |
 //
 // DEADLOCK PREVENTION:
 // 1. Always lock in consistent order
@@ -7495,8 +7588,8 @@ await db.query('COMMIT');                   // lock released quickly
 //
 // WHAT TO SAY IN INTERVIEW:
 // "For financial data like wallet balances, I use pessimistic locking with
-//  SELECT FOR UPDATE to prevent double-spending. For less critical data,
-//  I use optimistic locking with version numbers for better throughput.
-//  To prevent deadlocks, I always acquire locks in a consistent order
-//  and keep transactions as short as possible — do any slow work like
-//  API calls OUTSIDE the transaction."
+// SELECT FOR UPDATE to prevent double-spending. For less critical data,
+// I use optimistic locking with version numbers for better throughput.
+// To prevent deadlocks, I always acquire locks in a consistent order
+// and keep transactions as short as possible — do any slow work like
+// API calls OUTSIDE the transaction."
