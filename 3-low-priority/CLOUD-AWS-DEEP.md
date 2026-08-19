@@ -52,16 +52,16 @@ Region: geographic area (us-east-1 = N. Virginia, eu-west-1 = Ireland)
 
 Availability Zone (AZ): one or more data centers within a region
   - us-east-1 has 6 AZs (us-east-1a through 1f)
-  - Each AZ is physically separated — different power, cooling, networking
-  - Design for AZ failure: spread resources across 2+ AZs
+  - Each AZ is physically separated — different power, cooling, networking‼️
+  - Design for AZ failure: spread resources across 2+ AZs‼️
 
 Edge Location: CDN points of presence (CloudFront, Route 53)
-  - 400+ globally — much more than regions
+  - 400+ globally — much more than regions‼️
   - Cache static content close to users
 
 Multi-region architecture:
-  Active-Active: traffic served from multiple regions simultaneously
-  Active-Passive: one region active, another on standby (disaster recovery)
+  Active-Active: traffic served from multiple regions simultaneously‼️
+  Active-Passive: one region active, another on standby (disaster recovery)‼️
 ```
 
 ### The Shared Responsibility Model
@@ -110,9 +110,9 @@ Auto Scaling Group (ASG):
   Maintain desired number of instances
   Scale out (add) when CPU > 70%, scale in (remove) when CPU < 30%
   Replace unhealthy instances automatically
-  Span multiple AZs for high availability
+  Span multiple AZs for high availability‼️
 
-User Data: script run on first boot (install packages, configure app)
+User Data: script run on first boot (install packages, configure app)‼️
   #!/bin/bash
   yum install -y nodejs
   aws s3 cp s3://my-bucket/app.tar.gz /app/
@@ -124,11 +124,11 @@ User Data: script run on first boot (install packages, configure app)
 ```text
 Run Docker containers without managing Kubernetes
 
-Launch types:
+Launch types:‼️
   EC2:     you manage the underlying EC2 instances
   Fargate: AWS manages the servers — serverless containers (most common)
 
-Core concepts:
+Core concepts:‼️
   Task Definition:  like a Dockerfile for deployment — image, CPU, memory, env vars
   Task:             running instance of a task definition
   Service:          keeps N tasks running, integrates with load balancer
@@ -146,41 +146,39 @@ When to use ECS vs EKS (Kubernetes):
 ```json
 // Task definition (simplified)
 {
-  "family": "api",
-  "cpu": "256",
-  "memory": "512",
-  "networkMode": "awsvpc",
-  "requiresCompatibilities": ["FARGATE"],
-  "containerDefinitions": [
-    {
-      "name": "api",
-      "image": "ghcr.io/org/api:latest",
-      "portMappings": [{ "containerPort": 3000 }],
-      "environment": [
-        { "name": "NODE_ENV", "value": "production" }
-      ],
-      "secrets": [
+    "family": "api",
+    "cpu": "256",
+    "memory": "512",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "containerDefinitions": [
         {
-          "name": "DATABASE_URL",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:123:secret:prod/db-url"
+            "name": "api",
+            "image": "ghcr.io/org/api:latest",
+            "portMappings": [{ "containerPort": 3000 }],
+            "environment": [{ "name": "NODE_ENV", "value": "production" }],
+            "secrets": [
+                {
+                    "name": "DATABASE_URL",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:123:secret:prod/db-url"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/api",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "healthCheck": {
+                "command": ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"],
+                "interval": 30,
+                "timeout": 5,
+                "retries": 3
+            }
         }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/api",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "ecs"
-        }
-      },
-      "healthCheck": {
-        "command": ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"],
-        "interval": 30,
-        "timeout": 5,
-        "retries": 3
-      }
-    }
-  ]
+    ]
 }
 ```
 
@@ -200,7 +198,7 @@ Characteristics:
 Cold start mitigation:
   - Provisioned Concurrency: keep N containers warm (cost $)
   - Lambda SnapStart (Java): pre-initialize snapshot
-  - Keep function lightweight: small bundle, minimal imports
+  - Keep function lightweight: small bundle, minimal imports‼️
   - Use arm64 (Graviton) — faster init + 20% cheaper
 
 When to use Lambda:
@@ -209,31 +207,29 @@ When to use Lambda:
   ✓ Glue code: file conversion, data transformation
   ✗ Long-running tasks (> 15 min)
   ✗ High-sustained traffic (containers cheaper)
-  ✗ Websockets (ECS/EC2 better)
+  ✗ Websockets (ECS/EC2 better)‼️
 ```
 
 ```ts
 // Lambda handler (TypeScript, via esbuild or tsx)
 import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
 
-export const handler = async (
-  event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> => {
-  const userId = event.pathParameters?.id;
+export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
+    const userId = event.pathParameters?.id;
 
-  try {
-    const user = await fetchUser(userId!);
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(user),
-    };
-  } catch (err) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal Server Error' }),
-    };
-  }
+    try {
+        const user = await fetchUser(userId!);
+        return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(user),
+        };
+    } catch (err) {
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'Internal Server Error' }),
+        };
+    }
 };
 ```
 
@@ -252,11 +248,11 @@ Key components:
     Public subnet:   has route to Internet Gateway (web servers, load balancers)
     Private subnet:  no direct internet access (databases, app servers)
   Internet Gateway:  allows public subnets to reach the internet
-  NAT Gateway:       allows private subnets to reach internet (outbound only)
-                     e.g. app server pulling npm packages or calling Stripe API
-  Security Group:    stateful firewall at instance level (which ports, which IPs)
-  NACL:              stateless firewall at subnet level (broader rules)
-  VPC Peering:       connect two VPCs privately (no internet transit)
+  NAT Gateway:       allows private subnets to reach internet (outbound only)‼️
+                     e.g. app server pulling npm packages or calling Stripe API‼️
+  Security Group:    stateful firewall at instance level (which ports, which IPs)‼️
+  NACL:              stateless firewall at subnet level (broader rules)‼️
+  VPC Peering:       connect two VPCs privately (no internet transit)‼️
 
 Typical 3-tier architecture:
   Public subnet:  Application Load Balancer (ALB)
@@ -276,15 +272,15 @@ Internet → IGW → ALB (public subnet) → ECS Tasks (private subnet) → RDS 
 
 ```text
 ALB (Application Load Balancer) — Layer 7, HTTP/HTTPS:
-  - Route by URL path: /api/* → API service, /admin/* → admin service
-  - Route by hostname: api.example.com vs app.example.com
-  - Sticky sessions (route same user to same target)
+  - Route by URL path: /api/* → API service, /admin/* → admin service‼️
+  - Route by hostname: api.example.com vs app.example.com‼️
+  - Sticky sessions (route same user to same target)‼️
   - WebSocket support
   - TLS termination (cert managed by ACM — free!)
   - Best for: web apps, microservices, containers
 
 NLB (Network Load Balancer) — Layer 4, TCP/UDP:
-  - Extremely high performance (millions of req/s)
+  - Extremely high performance (millions of req/s)‼️
   - Static IP address (whitelisting by clients)
   - TLS passthrough (encryption all the way to app)
   - Best for: real-time apps, gaming, financial trading
@@ -301,10 +297,10 @@ AWS CDN — 400+ edge locations globally
 
 Origins:
   S3 bucket:  serve static files (React build, images, videos)
-  ALB:        API responses (cache GET responses)
+  ALB:        API responses (cache GET responses)‼️
   Custom:     any HTTP server
 
-Cache behaviors:
+Cache behaviors:‼️
   /static/*   → cache indefinitely (content-hashed filenames)
   /api/*      → don't cache (or cache 60s for read-heavy endpoints)
   /           → cache 0s (always fetch latest index.html)
@@ -315,7 +311,7 @@ Benefits:
   - Security: DDoS protection (AWS Shield Standard — free)
   - TLS: automatic certificate, HTTP → HTTPS redirect
 
-S3 + CloudFront = perfect static site hosting:
+S3 + CloudFront = perfect static site hosting:‼️
   React app → npm build → S3 → CloudFront
   Cost: ~$0.50/month for most apps
 ```
@@ -330,7 +326,7 @@ S3 + CloudFront = perfect static site hosting:
 Object storage — files, backups, static assets
 
 Key concepts:
-  Bucket:     container for objects (globally unique name)
+  Bucket:     container for objects (globally unique name)‼️
   Object:     file + metadata (max 5TB)
   Key:        object's path within bucket (users/123/photo.jpg)
 
@@ -341,7 +337,7 @@ Storage classes (tiers by access frequency):
   Glacier Flexible:  archive, 1-12 hour retrieval           ($0.0036/GB)
   Glacier Deep:      long-term archive, 12-48 hour          ($0.00099/GB)
 
-Lifecycle rules: automatically transition between classes
+Lifecycle rules: automatically transition between classes‼️
   30 days → Standard-IA
   90 days → Glacier Instant
   365 days → Glacier Deep Archive
@@ -353,6 +349,39 @@ Security:
   Block all public access (enabled by default) — for user data buckets
   Bucket policy: grant access to specific IAM roles, AWS services
   Presigned URLs: temporary access (GET or PUT) without credentials
+    — A time-limited URL that grants access to a PRIVATE S3 object
+    — Anyone with the link can download/upload until it expires
+    — Auth is embedded in the URL itself (signature in query params)
+    — You set the expiry (e.g., 5 minutes, 1 hour, up to 7 days)
+    — vs Public URL (https://bucket.s3.amazonaws.com/file.jpg):
+        Public URL: object must be publicly accessible, never expires, no auth
+        Presigned:  object stays private, expires after set time, auth baked in
+    — Use cases: secure file downloads, letting users upload directly to S3
+      without routing through your server, sharing files temporarily
+
+    — The actual S3 object always has a permanent private URI:
+        s3://my-bucket/documents/user123/file.pdf
+        https://my-bucket.s3.amazonaws.com/documents/user123/file.pdf
+      That permanent URL always exists but returns 403 Access Denied
+      unless you have AWS credentials. The presigned URL points to the
+      same object but with a signature + expiry tacked on as query params.
+      Same object, same URI underneath — presigned just temporarily unlocks it.
+
+    — What the "signature" means:
+        It's a cryptographic hash (HMAC-SHA256) that proves the URL was
+        generated by someone with valid AWS credentials — without exposing
+        those credentials.
+        How it works:
+          1. Your server has AWS access keys (access key ID + secret key)
+          2. AWS SDK takes the bucket, key, expiry, and your secret key
+          3. Runs them through HMAC-SHA256 (one-way hash) → produces signature
+          4. Signature is appended to the URL as a query parameter
+        When someone uses the URL, S3 recalculates the signature. If it matches:
+          — The URL was created by someone with valid credentials
+          — It hasn't been tampered with (changing any part invalidates it)
+          — It hasn't expired
+        Like signing a check — proves it came from the account holder
+        without giving away their bank login.
   Encryption: SSE-S3 (AWS managed), SSE-KMS (customer managed key)
   Access logs: who accessed what (HIPAA audit trail)
 ```
@@ -365,27 +394,37 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 const s3 = new S3Client({ region: 'us-east-1' });
 
 // Upload
-await s3.send(new PutObjectCommand({
-  Bucket: 'my-bucket',
-  Key: `documents/${userId}/${fileId}.pdf`,
-  Body: fileBuffer,
-  ContentType: 'application/pdf',
-  ServerSideEncryption: 'AES256', // encrypt at rest
-  Metadata: { userId, uploadedAt: new Date().toISOString() },
-}));
+await s3.send(
+    new PutObjectCommand({
+        Bucket: 'my-bucket',
+        Key: `documents/${userId}/${fileId}.pdf`,
+        Body: fileBuffer,
+        ContentType: 'application/pdf',
+        ServerSideEncryption: 'AES256', // encrypt at rest‼️
+        Metadata: { userId, uploadedAt: new Date().toISOString() },
+    }),
+);
 
 // Presigned download URL (expire in 1 hour)
-const url = await getSignedUrl(s3, new GetObjectCommand({
-  Bucket: 'my-bucket',
-  Key: `documents/${userId}/${fileId}.pdf`,
-}), { expiresIn: 3600 });
+const url = await getSignedUrl(
+    s3,
+    new GetObjectCommand({
+        Bucket: 'my-bucket',
+        Key: `documents/${userId}/${fileId}.pdf`,
+    }),
+    { expiresIn: 3600 },
+);
 
 // Presigned upload URL (client uploads directly, bypassing server)
-const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({
-  Bucket: 'my-bucket',
-  Key: `uploads/${uuid()}`,
-  ContentType: 'image/jpeg',
-}), { expiresIn: 300 }); // 5 minutes
+const uploadUrl = await getSignedUrl(
+    s3,
+    new PutObjectCommand({
+        Bucket: 'my-bucket',
+        Key: `uploads/${uuid()}`,
+        ContentType: 'image/jpeg',
+    }),
+    { expiresIn: 300 },
+); // 5 minutes
 ```
 
 ---
@@ -525,44 +564,50 @@ const sqs = new SQSClient({ region: 'us-east-1' });
 const QUEUE_URL = process.env.SQS_QUEUE_URL;
 
 // Send message (producer)
-await sqs.send(new SendMessageCommand({
-  QueueUrl: QUEUE_URL,
-  MessageBody: JSON.stringify({
-    type: 'patient.matched',
-    patientId: '123',
-    advocateId: '456',
-    matchedAt: new Date().toISOString(),
-  }),
-  MessageAttributes: {
-    EventType: { DataType: 'String', StringValue: 'patient.matched' },
-  },
-  // FIFO queue: MessageGroupId and MessageDeduplicationId required
-}));
+await sqs.send(
+    new SendMessageCommand({
+        QueueUrl: QUEUE_URL,
+        MessageBody: JSON.stringify({
+            type: 'patient.matched',
+            patientId: '123',
+            advocateId: '456',
+            matchedAt: new Date().toISOString(),
+        }),
+        MessageAttributes: {
+            EventType: { DataType: 'String', StringValue: 'patient.matched' },
+        },
+        // FIFO queue: MessageGroupId and MessageDeduplicationId required
+    }),
+);
 
 // Consume (manual polling — for long-running workers)
 async function poll() {
-  while (true) {
-    const response = await sqs.send(new ReceiveMessageCommand({
-      QueueUrl: QUEUE_URL,
-      MaxNumberOfMessages: 10,
-      WaitTimeSeconds: 20,       // long polling
-      VisibilityTimeout: 300,    // 5 minutes to process
-    }));
+    while (true) {
+        const response = await sqs.send(
+            new ReceiveMessageCommand({
+                QueueUrl: QUEUE_URL,
+                MaxNumberOfMessages: 10,
+                WaitTimeSeconds: 20, // long polling
+                VisibilityTimeout: 300, // 5 minutes to process
+            }),
+        );
 
-    for (const message of response.Messages ?? []) {
-      try {
-        await processMessage(JSON.parse(message.Body!));
-        // Delete only after successful processing
-        await sqs.send(new DeleteMessageCommand({
-          QueueUrl: QUEUE_URL,
-          ReceiptHandle: message.ReceiptHandle!,
-        }));
-      } catch (err) {
-        // Don't delete — visibility timeout expires, message returns to queue
-        logger.error({ err, messageId: message.MessageId }, 'Failed to process message');
-      }
+        for (const message of response.Messages ?? []) {
+            try {
+                await processMessage(JSON.parse(message.Body!));
+                // Delete only after successful processing
+                await sqs.send(
+                    new DeleteMessageCommand({
+                        QueueUrl: QUEUE_URL,
+                        ReceiptHandle: message.ReceiptHandle!,
+                    }),
+                );
+            } catch (err) {
+                // Don't delete — visibility timeout expires, message returns to queue
+                logger.error({ err, messageId: message.MessageId }, 'Failed to process message');
+            }
+        }
     }
-  }
 }
 ```
 
@@ -934,9 +979,9 @@ Reserved capacity saves 30-40%:
 
 ```json
 {
-  "Effect": "Allow",
-  "Action": ["s3:GetObject", "s3:PutObject"],
-  "Resource": "arn:aws:s3:::my-bucket/*"
+    "Effect": "Allow",
+    "Action": ["s3:GetObject", "s3:PutObject"],
+    "Resource": "arn:aws:s3:::my-bucket/*"
 }
 ```
 
