@@ -164,9 +164,21 @@ Why it matters:
   - It applies to CSPs (Cloud Service Providers), not to agencies themselves
 
 Authorization levels (impact levels):‼️
+
+  "Controls" in this context = specific security requirements/safeguards
+    that an organization must implement to protect their systems and data.
+    Think of them as a checklist of rules — each control says "you must do X
+    to be compliant."
+    Examples:
+      AC-2 (Account Management) — you must manage who has access, disable
+        inactive accounts, review permissions regularly
+      AU-3 (Content of Audit Records) — your logs must capture what happened,
+        who did it, when, and where
+    More controls = stricter security = more work to achieve compliance
+
   FedRAMP Low:
     - For systems where loss of CIA would have LIMITED adverse effect
-    - ~125 controls
+    - ~125 controls (= 125 individual security requirements to implement and prove)
     - Examples: public websites, non-sensitive collaboration tools
     - Fastest and cheapest to achieve
     - Rare — most agencies require at least Moderate
