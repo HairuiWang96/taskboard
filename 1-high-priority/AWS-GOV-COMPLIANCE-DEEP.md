@@ -76,7 +76,7 @@ Getting access to GovCloud:
   2. Apply for GovCloud access through AWS (requires US entity validation)
   3. AWS creates a separate GovCloud account
   4. You get separate root credentials for the GovCloud account
-  5. Console URL is different: https://console.amazonaws-us-gov.com
+  5. Console URL is different: https://console.amazonaws-us-gov.com‼️
 
 Account linking:
   - Your commercial account is the "payer" account
@@ -85,7 +85,7 @@ Account linking:
   - You CANNOT assume roles cross-region between commercial and GovCloud‼️
 
 AWS Organizations in GovCloud:
-  - You can create a separate AWS Organization within GovCloud
+  - You can create a separate AWS Organization within GovCloud‼️
   - This is INDEPENDENT of your commercial Organization
   - SCPs, OUs, and account structure are managed separately
   - Best practice: mirror your commercial OU structure in GovCloud
@@ -125,7 +125,7 @@ Service availability gaps (common pain points):
     - Management: CloudFormation, CloudWatch, Systems Manager
 
   Workaround patterns for missing services:
-    - Run workloads that need unavailable services in commercial regions
+    - Run workloads (= your apps, services, or tasks running in the cloud) that need unavailable services in commercial regions‼️
       (only if data classification allows)
     - Use open-source alternatives deployed on EC2/EKS
     - Wait — AWS continuously adds services to GovCloud
@@ -172,7 +172,11 @@ Authorization levels (impact levels):‼️
     - Rare — most agencies require at least Moderate
 
   FedRAMP Moderate:
-    - For systems where loss of CIA would have SERIOUS adverse effect
+    - For systems where loss of CIA (Confidentiality, Integrity, Availability) would have SERIOUS adverse effect
+      CIA = the three pillars of information security:
+        Confidentiality — only authorized people can access the data
+        Integrity       — data is accurate and hasn't been tampered with
+        Availability    — systems are up and accessible when needed
     - ~325 controls‼️
     - Covers ~80% of federal use cases
     - Examples: email, case management, HR systems, CRM
@@ -907,7 +911,20 @@ Real-world account counts:
 ### OU Structure & Landing Zone
 
 ```text
-Recommended OU (Organizational Unit) structure:‼️
+Recommended OU structure:‼️
+
+  OU = Organizational Unit
+    — A logical grouping of AWS accounts within AWS Organizations
+    — Used to apply policies (like SCPs) to multiple accounts at once
+    — Hierarchical: OUs can be nested inside other OUs
+    — Think of it like folders for your AWS accounts
+
+  SCP = Service Control Policy
+    — Sets the MAXIMUM permissions that accounts in an OU can have
+    — SCPs don't grant permissions — they act as guardrails (deny-based boundaries)
+    — Even if an IAM admin in an account allows something, the SCP can block it
+    — Example: prevent any account in "Production" OU from launching resources
+      outside approved regions, even if an IAM policy explicitly allows it
 
   Root
   ├── Security OU
@@ -1647,6 +1664,12 @@ IAM Identity Center — centralized access management:‼️
 
 ```text
 SAML 2.0 Federation:‼️
+  SAML = Security Assertion Markup Language
+    — An XML-based standard for exchanging authentication/authorization data
+      between an Identity Provider (IdP) and a Service Provider (SP)
+    — In simple terms: it lets you log in once (e.g., via Okta) and access
+      multiple services (e.g., AWS) without separate passwords for each
+
   - Your existing IdP (Okta, Azure AD, ADFS) authenticates users
   - SAML assertion sent to AWS STS
   - STS returns temporary credentials
@@ -2077,6 +2100,12 @@ Making logs tamper-proof:‼️
     - Required for forensic and legal evidence
 
 SIEM Integration:‼️
+  SIEM = Security Information and Event Management
+    — A system that collects, aggregates, and analyzes logs from across
+      your infrastructure in real time to detect threats and anomalies
+    — In simple terms: one dashboard that watches ALL your security logs,
+      alerts you when something suspicious happens, and helps investigate incidents
+
   Common SIEM platforms:
     Splunk:
       - AWS Add-on for Splunk (pulls from S3, CloudWatch, Kinesis)
