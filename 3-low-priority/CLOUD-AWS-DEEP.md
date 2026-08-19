@@ -439,7 +439,7 @@ Managed relational databases: PostgreSQL, MySQL, Aurora
 What AWS manages for you:
   - Hardware provisioning and patching
   - Database software installation and upgrades
-  - Automated backups (point-in-time recovery up to 35 days)
+  - Automated backups (point-in-time recovery up to 35 days)‼️
   - Multi-AZ failover (automatic, ~1-2 min failover)
   - Read replicas (manual setup, but easy)
 
@@ -463,23 +463,23 @@ Aurora (AWS's own PostgreSQL-compatible engine):
 
 RDS Proxy:
   Connection pooler managed by AWS
-  Put between your app and RDS
+  Put between your app and RDS‼️
   Critical for Lambda → RDS (Lambda creates many short connections)
 ```
 
 ### DynamoDB
 
 ```text
-AWS's managed NoSQL key-value + document database
+AWS's managed NoSQL key-value + document database‼️
 
 Pricing:
   On-demand: pay per request ($1.25 per million writes, $0.25 per million reads)
   Provisioned: set RCU/WCU in advance (cheaper for predictable load)
 
 Key design:
-  Primary key: Partition key (+ optional Sort key)
+  Primary key: Partition key (+ optional Sort key)‼️
   Partition key determines which partition holds the item
-  All items with same PK are in same partition → sorted by SK
+  All items with same PK are in same partition → sorted by SK‼️
 
 Single-table design (DynamoDB best practice):
   Put all entities in one table with generic PK/SK
@@ -492,12 +492,12 @@ Single-table design (DynamoDB best practice):
 
   Query all tasks for user: PK="USER#123", SK begins_with "TASK#"
 
-GSI (Global Secondary Index):
+GSI (Global Secondary Index):‼️
   Query on non-primary key attributes
   Each GSI = another partition of the data on different keys
 
 When to use DynamoDB:
-  ✓ Known access patterns (fits single-table design)
+  ✓ Known access patterns (fits single-table design)‼️
   ✓ Very high scale (millions of items, millions of reads/second)
   ✓ Simple queries (no complex joins needed)
   ✗ Complex queries / ad-hoc analytics
@@ -540,7 +540,7 @@ Cluster vs Single node:
 Managed message queue — decouple producer from consumer
 
 Queue types:
-  Standard:    at-least-once delivery, best-effort ordering, unlimited throughput
+  Standard:    at-least-once delivery, best-effort ordering, unlimited throughput‼️
   FIFO:        exactly-once delivery, strict ordering, 3000 messages/second
 
 Key settings:
@@ -627,7 +627,7 @@ Subscription protocols:
   Email:      send email (alerting)
   SMS:        Twilio competitor
 
-Fan-out pattern (SNS → multiple SQS):
+Fan-out pattern (SNS → multiple SQS):‼️
   SNS topic: "patient.matched"
   → SQS queue 1 → Notification worker (sends welcome SMS)
   → SQS queue 2 → Billing worker (creates invoice)
@@ -658,7 +658,7 @@ Schedule:
   Run on cron: rate(5 minutes), cron(0 9 * * MON-FRI *) — 9am weekdays
   Better than CloudWatch Events (same thing, rebranded)
 
-Why EventBridge > SNS for event routing:
+Why EventBridge > SNS for event routing:‼️
   - Schema registry: define and validate event shapes
   - Archive and replay: replay past events for testing or recovery
   - More powerful filtering: content-based routing
@@ -677,7 +677,7 @@ Who can do what to which AWS resources
 Key concepts:
   User:          a person or application with long-term credentials
   Group:         collection of users sharing permissions
-  Role:          assumed by services, Lambda, EC2, ECS tasks — no password
+  Role:          assumed by services, Lambda, EC2, ECS tasks — no password‼️
   Policy:        JSON document defining permissions (Allow/Deny)
 
 Principle of least privilege:
@@ -704,14 +704,14 @@ Policy example:
 
 IAM Roles for Services (vs access keys):
   ✗ Never use access keys in application code (they can leak)
-  ✓ Assign IAM role to EC2/ECS/Lambda — SDK auto-gets temporary credentials
+  ✓ Assign IAM role to EC2/ECS/Lambda — SDK auto-gets temporary credentials‼️
   Role credentials rotate automatically (short-lived, hours)
 ```
 
 ### Cognito (User Pools)
 
 ```text
-Managed authentication and authorization
+Managed authentication and authorization‼️
 
 User Pool:     user directory — sign up, sign in, password reset, MFA
   - Issues JWT tokens (ID token, access token, refresh token)
@@ -748,7 +748,7 @@ Envelope encryption:
   2. Encrypt your data with the plaintext key
   3. Store encrypted data + encrypted key together
   4. To decrypt: call KMS to decrypt the key, then decrypt data
-  This way: KMS never sees your data — only the key
+  This way: KMS never sees your data — only the key‼️
 
 HIPAA: all PHI must be encrypted at rest
   RDS: enable encryption at creation (can't enable after)
@@ -764,8 +764,14 @@ HIPAA: all PHI must be encrypted at rest
 
 ```text
 HTTP API (newer, cheaper, faster) vs REST API (more features):
-  HTTP API: simple proxy, JWT auth, CORS — 70% cheaper
+  HTTP API: simple proxy, JWT auth, CORS — 70% cheaper‼️
   REST API: request/response transforms, API keys, usage plans, WAF
+    WAF = Web Application Firewall
+      — Filters and blocks malicious HTTP traffic before it reaches your app
+      — Protects against: SQL injection, XSS, bot traffic, DDoS (rate limiting)
+      — You define rules (e.g., block requests from certain IPs, block
+        requests with SQL patterns in query strings, rate limit to 1000 req/min)
+      — Sits in front of API Gateway, ALB, or CloudFront
 
 Lambda proxy integration:
   API Gateway passes entire request to Lambda
@@ -821,7 +827,7 @@ Express vs Standard workflows:
 Typical cost breakdown for a web app:
   EC2/ECS:    30-40% (compute)
   RDS:        20-30% (database)
-  Data transfer: 15-20% (egress is expensive)
+  Data transfer: 15-20% (egress is expensive)‼️
   S3:         5-10%
   Other:      10%
 
@@ -846,20 +852,20 @@ Reserved capacity:
   Savings Plans: flexible (any instance type, any region)
   Cover baseline load with reserved, spikes with on-demand
 
-Spot instances:
+Spot instances:‼️
   80-90% cheaper than on-demand
   Use for: batch processing, CI/CD workers, non-critical background jobs
   Not for: stateful apps, anything that can't tolerate 2-min shutdown notice
 
 S3 cost optimization:
   Use appropriate storage class (Lifecycle rules to Glacier for old data)
-  CloudFront in front of S3 (reduce S3 requests, cheaper egress)
+  CloudFront in front of S3 (reduce S3 requests, cheaper egress)‼️
   Transfer Acceleration: not needed if using CloudFront
 
 RDS cost optimization:
   Aurora Serverless v2: scales to 0 when idle (dev/staging environments)
   Use read replicas to offload analytics queries (cheaper than scaling primary)
-  Snapshot and pause dev databases outside business hours
+  Snapshot and pause dev databases outside business hours‼️
 
 Cost monitoring:
   AWS Budgets: alert when spending exceeds threshold
@@ -959,7 +965,7 @@ Reserved capacity saves 30-40%:
 
 ### "What is CloudFront and when would you put it in front of your API?"
 
-> CloudFront is AWS's CDN. For static assets (React app, images), always put CloudFront in front of S3 — it serves from edge nodes near users (~10ms vs 150ms), reduces S3 costs, and gives DDoS protection for free. For APIs: put CloudFront in front of ALB when you have publicly cacheable GET responses (product catalogs, reference data, public content). Not worth it for personalized or real-time data. CloudFront also lets you add WAF rules and rate limiting at the edge before requests reach your servers.
+> CloudFront is AWS's CDN. For static assets (React app, images), always put CloudFront in front of S3 — it serves from edge nodes near users (~10ms vs 150ms), ‼️reduces S3 costs, and gives DDoS protection for free. ‼️For APIs: put CloudFront in front of ALB when you have publicly cacheable GET responses (product catalogs, reference data, public content). Not worth it for personalized or real-time data. CloudFront also lets you add WAF rules and rate limiting at the edge before requests reach your servers.
 
 ---
 
@@ -991,7 +997,7 @@ Reserved capacity saves 30-40%:
 
 ### "What is the difference between RDS, DynamoDB, and ElastiCache?"
 
-> **RDS** — managed relational database (PostgreSQL, MySQL, Aurora); auto-backups, read replicas, multi-AZ failover. Use when you need SQL, JOINs, ACID transactions. **DynamoDB** — managed NoSQL key-value/document store; single-digit millisecond latency at any scale; serverless, auto-scales. Use for: session storage, leaderboards, IoT, anything with predictable access patterns (no ad-hoc queries). **ElastiCache** — managed Redis or Memcached; in-memory caching layer in front of databases. Use to reduce database load for frequently-read data.
+> **RDS** — managed relational database (PostgreSQL, MySQL, Aurora); auto-backups, read replicas, multi-AZ failover. Use when you need SQL, JOINs, ACID transactions. **DynamoDB** — managed NoSQL key-value/document store; single-digit millisecond latency at any scale; ‼️serverless, auto-scales. Use for: session storage, leaderboards, IoT, anything with predictable access patterns (no ad-hoc queries). **ElastiCache** — managed Redis or Memcached; in-memory caching layer in front of databases. Use to reduce database load for frequently-read data.
 
 ### "What is Auto Scaling and how does it work?"
 
@@ -1005,6 +1011,6 @@ Reserved capacity saves 30-40%:
 
 > CloudFront is AWS's CDN — caches content at edge locations globally. Reduces latency (content served from nearest location), reduces origin load, absorbs DDoS. Use for: serving static assets (S3-backed), API caching at the edge, protecting origins behind CloudFront (origin never directly exposed), Lambda@Edge for request/response manipulation. Set aggressive cache headers for immutable assets.
 
-### "What are the key metrics to monitor in production?"
+### "What are the key metrics to monitor in production?"‼️
 
 > **The Four Golden Signals** (Google SRE): **Latency** (how long requests take — distinguish success vs error latency), **Traffic** (requests/sec, transactions/sec), **Errors** (rate of failed requests — 5xx, timeouts), **Saturation** (how full the service is — CPU, memory, disk, DB connections). AWS tools: CloudWatch (metrics, logs, alarms), X-Ray (distributed tracing), CloudTrail (API audit log).
