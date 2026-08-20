@@ -76,7 +76,7 @@ React 16+: ‼️ Fiber — a complete rewrite of the reconciler.
 ‼️ A Fiber is a JavaScript object — one per component instance — that represents:
   - What type of component it is (function, class, host element)
   - Its props and state
-  - Pointers to parent, child, and sibling fibers (linked list, not a tree)
+  - Pointers to parent, child, and sibling fibers (linked list, not a tree)‼️
   - Work that needs to happen (effect flags)
   - Priority of the work
 
@@ -101,9 +101,9 @@ Example:
 
 Fiber tree:
   App → child → Header → sibling → Main → child → Article
-  All have return pointers back to their parent
+  All have return pointers back to their parent‼️
 
-Why linked list (not tree)?
+Why linked list (not tree)?‼️
   A linked list can be traversed iteratively (with a pointer + loop).
   A tree requires recursion (fills the call stack).
   ‼️ Iterative traversal can be paused at any point — recursive cannot.
@@ -114,7 +114,7 @@ Why linked list (not tree)?
 
 ```text
 React processes fibers in a "work loop" — a while loop that picks up
-the next fiber unit of work and processes it.
+the next fiber unit of work and processes it.‼️
 
 function workLoop(deadline) {
   while (nextFiber && deadline.timeRemaining() > 0) {
@@ -137,11 +137,11 @@ instead of requestIdleCallback (better cross-browser control of timing).
 ```text
 1. Trigger: state/prop change, forceUpdate, context change
 2. Render phase: React calls your component function → gets new element tree (virtual DOM)
-   - Pure, no side effects here
+   - Pure, no side effects here‼️
    - May be interrupted in concurrent mode
 3. Commit phase: React diffs old vs new tree → applies minimal DOM changes
-   - Always synchronous
-   - ‼️ DOM mutations, then refs, then effects run here
+   - Always synchronous‼️
+   - ‼️ DOM mutations, then refs, then effects run here‼️
 ```
 
 ### The diffing algorithm
@@ -218,27 +218,60 @@ const list = items.map(item => <li key={item.id}>{item.name}</li>);
 // ‼️ Keys reset component state — use deliberately
 // Forcing remount (reset) using key:
 <Input key={userId} defaultValue={user.name} />;
-// When userId changes, Input unmounts and remounts fresh — state reset
+// When userId changes, Input unmounts and remounts fresh — state reset‼️
 
 // ‼️ Keys work across conditional branches:
+//
+// The problem: when you use a ternary like this WITHOUT keys:
+//   isLoggedIn ? <Dashboard /> : <Login />
+// Both components sit in the SAME POSITION in the React tree (position 0).
+// React sees "position 0 had a component, position 0 still has a component"
+// and might try to UPDATE the existing one instead of replacing it.
+// This can LEAK STATE from one component into the other.‼️
+//
+// Adding keys tells React: "these are completely different things —
+// destroy one and create the other." Forces a clean unmount/mount.
 {
     isLoggedIn ? <Dashboard key='dashboard' /> : <Login key='login' />;
 }
 // ‼️ Without keys — React may try to update Dashboard → Login (same position)
-// With keys — React knows they're different, unmounts/mounts correctly
+// With keys — React knows they're different, unmounts/mounts correctly‼️
 ```
 
 ### Reconciliation and component types
+
+```text
+‼️ Two different questions about conditional rendering:
+
+  Question 1: "How do I make sure React properly REPLACES one component
+               with another?" → Use keys (shown above)
+
+  Question 2: "What if I want to KEEP the state alive when toggling
+               between components?" → Use CSS hiding (shown below)
+
+  By default, toggling between components DESTROYS one and CREATES the other.
+  All internal state (form inputs, scroll position, etc.) is LOST.
+  Sometimes that's what you want (login → dashboard = fresh state).
+  Sometimes it's NOT (tabs where you don't want to lose what the user typed).
+
+  Summary:
+    Unmount/mount (default):  state is RESET every time you toggle
+    CSS display: none:        state is PRESERVED — component stays alive but hidden
+
+    Use unmount when:  you WANT fresh state (login → dashboard)
+    Use CSS hide when: you want to KEEP state (tabs, multi-step forms)‼️
+```
 
 ```jsx
 // Conditional rendering — component type matters
 function Parent({ isLoggedIn }) {
     return isLoggedIn ? <UserDashboard /> : <LoginForm />;
     // When isLoggedIn toggles: React UNMOUNTS one and MOUNTS the other
-    // State of each is reset — intentional behavior
+    // All state inside each component is RESET — it's a fresh instance every time
+    // This is usually what you want (e.g., going from login to dashboard)
 }
 
-// Preserve state across conditional renders:
+// You might think using && instead of ternary is different — it's NOT:
 function Parent({ isLoggedIn }) {
     return (
         <>
@@ -246,15 +279,25 @@ function Parent({ isLoggedIn }) {
             {!isLoggedIn && <LoginForm />}
         </>
     );
-    // Same result — they unmount/mount
+    // Same result — they still unmount/mount
+    // When isLoggedIn flips, one component is removed from the tree entirely
+    // and the other is added. State is still RESET.
+    // This is just a different SYNTAX for the same behavior as the ternary above.
+}
 
-    // To PRESERVE state: always render, use CSS to hide
+// So how do you actually PRESERVE state? (e.g., tabs, multi-step forms)
+// Always render BOTH components, use CSS to hide the inactive one:
+function Parent({ isLoggedIn }) {
     return (
         <>
             <UserDashboard style={{ display: isLoggedIn ? 'block' : 'none' }} />
             <LoginForm style={{ display: isLoggedIn ? 'none' : 'block' }} />
         </>
     );
+    // Both components stay MOUNTED in the DOM at all times
+    // The hidden one is just invisible (display: none)
+    // Its state (form inputs, scroll position) survives the toggle‼️
+    // Trade-off: both components are in memory — only use when state preservation matters
 }
 ```
 
@@ -3708,7 +3751,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 ```text
 ‼️ Next.js env variable rules:
-  .env.local         — local overrides (gitignored)
+  .env.local         — local overrides (gitignored)‼️
   .env.development   — dev defaults
   .env.production    — prod defaults
   .env               — all environments
@@ -3717,7 +3760,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   NEXT_PUBLIC_API_URL → accessible in client components
   DATABASE_URL        → server only (not in browser bundle)
 
-Load order (later overrides earlier):
+Load order (later overrides earlier):‼️
   .env → .env.local → .env.development/.env.production
 
 ‼️ Common mistake: putting secrets in NEXT_PUBLIC_ variables
@@ -7745,7 +7788,7 @@ The shift:
             in the right way, and that everyone grows in the process?"
 
 Technical skills get you to senior. Soft skills keep you there and move you up.
-Most senior engineers who stall do so because of communication, not code.
+Most senior engineers who stall do so because of communication, not code.‼️
 ```
 
 ### Communication
@@ -7756,9 +7799,9 @@ from average ones.
 
 Writing:
   - Write design docs BEFORE coding — forces you to think, gets early feedback
-  - Write clear PR descriptions — explain WHY, not just WHAT
+  - Write clear PR descriptions — explain WHY, not just WHAT‼️
   - Write clear commit messages — your future self will thank you
-  - Write clear Slack messages — state the problem, what you tried, what you need
+  - Write clear Slack messages — state the problem, what you tried, what you need‼️
   - Write clear incident reports — timeline, impact, root cause, action items
   - Write RFC/ADRs (Architecture Decision Records) for major decisions
     so future engineers know WHY choices were made
@@ -7773,7 +7816,7 @@ Writing:
 
 Speaking:
   - In meetings: state your point first, then explain (pyramid principle)‼️
-  - Don't say "I think we should..." — say "I recommend X because Y"
+  - Don't say "I think we should..." — say "I recommend X because Y"‼️
   - Ask clarifying questions instead of assuming
   - Disagree respectfully: "I see it differently because..." not "That's wrong"
   - Know when to speak up and when to let others have the floor
@@ -7806,13 +7849,13 @@ Giving feedback:
     - Give it timely — don't save it for quarterly reviews
     - Give positive feedback too — not just corrections‼️
     - In code reviews: explain WHY something should change, not just "change this"
-    - Praise in public, critique in private
+    - Praise in public, critique in private‼️
 
   In code reviews:
     ✗ "This is wrong"
     ✗ "Why did you do it this way?"
     ✓ "This works, but consider X because Y — here's an example: ..."
-    ✓ "Nit: minor style preference, take it or leave it"
+    ✓ "Nit: minor style preference, take it or leave it"‼️
     ✓ "Question: I'm not sure I understand the intent here — could you clarify?"
 
 Receiving feedback:
@@ -7858,7 +7901,7 @@ Your PM can't prioritize well if you don't share technical reality.
 With your manager:
   - Proactively share status — don't wait to be asked
   - Flag risks early: "This might slip because X — here's my plan to mitigate"
-  - Come with solutions, not just problems
+  - Come with solutions, not just problems‼️
   - Ask for what you need: resources, time, scope reduction
   - Share your career goals — they can't help if they don't know
   - Make their job easier — they'll remember
@@ -7873,7 +7916,7 @@ With your PM:
     ✓ "We can ship the core flow in 2 weeks. The edge cases can follow
        in the next sprint. Here's what I'd cut..."
   - Negotiate: "We can do A or B in this sprint, but not both. Which matters more?"
-  - Understand their priorities — they have pressure you don't see
+  - Understand their priorities — they have pressure you don't see‼️
 ```
 
 ### Estimating work
@@ -7883,8 +7926,8 @@ With your PM:
 be better at it — not perfect, but more realistic.
 
 Why estimates are hard:
-  - Unknown unknowns (you don't know what you don't know)
-  - Optimism bias (developers consistently underestimate)
+  - Unknown unknowns (you don't know what you don't know)‼️
+  - Optimism bias (developers consistently underestimate)‼️
   - Scope creep (requirements shift mid-sprint)
   - Context switching (meetings, Slack, incidents)
   - Integration complexity (your code works, but does it work with theirs?)
@@ -7926,7 +7969,7 @@ When you disagree with a technical decision:‼️
   4. Disagree and commit — if the team decides differently, support it‼️
      "I still think X would be better, but I understand the reasoning for Y.
       I'll fully commit to making Y work well."
-  5. Know when it matters — not every hill is worth dying on
+  5. Know when it matters — not every hill is worth dying on‼️
      Ask: "Will this matter in 6 months?" If no, let it go.
 
 When two team members are in conflict:
@@ -8030,11 +8073,11 @@ When requirements are unclear:
      "I'm assuming we only need to support English for v1. If that's wrong,
       let me know now because it changes the architecture."
   4. Build the smallest thing that validates the approach
-  5. Get feedback early — ship a prototype in 2 days, not a polished product in 2 weeks
+  5. Get feedback early — ship a prototype in 2 days, not a polished product in 2 weeks‼️
   6. Be comfortable with "we'll figure it out as we go" for non-critical decisions
 
 When the technical direction is unclear:
-  - Timebox your research: "I'll spend 4 hours evaluating options, then decide"
+  - Timebox your research: "I'll spend 4 hours evaluating options, then decide"‼️
   - Write a short comparison doc (not a 10-page RFC for every decision)
   - Talk to people who've done it before
   - Choose the most reversible option when confidence is low‼️
