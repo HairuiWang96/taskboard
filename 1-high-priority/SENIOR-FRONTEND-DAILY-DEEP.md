@@ -310,10 +310,10 @@ A component re-renders when:
   3. A context it consumes changes
   4. Its props change (but parent re-render already causes this)
 
-Note: ‼️ re-render ≠ DOM update
-  React re-renders (calls function) to compute new virtual DOM
+Note: ‼️ re-render ≠ DOM update‼️
+  React re-renders (calls function) to compute new virtual DOM‼️
   Then diffs against previous — only CHANGED DOM nodes are updated
-  Re-renders are usually fast; unnecessary DOM mutations are slow
+  Re-renders are usually fast; unnecessary DOM mutations are slow‼️
 ```
 
 ---
@@ -330,26 +330,26 @@ RENDER PHASE (pure, may be interrupted/repeated in concurrent mode):
   - Creates new fiber tree (virtual DOM)
   - Diffs against current fiber tree (reconciliation)
   - Calculates what needs to change (effect list)
-  - No DOM changes yet — this is all in JS memory
+  - No DOM changes yet — this is all in JS memory‼️
   - CAN be interrupted, discarded, and restarted (concurrent mode)
   - Must be pure (no side effects) — React may call your component multiple times
 
-COMMIT PHASE (synchronous, cannot be interrupted):
+COMMIT PHASE (synchronous, cannot be interrupted):‼️
   - React applies all the DOM mutations at once
-  - Runs useLayoutEffect (after DOM update, before browser paint)
+  - Runs useLayoutEffect (after DOM update, before browser paint)‼️
   - Browser paints the screen
   - Runs useEffect (after browser paint)
 
 This is why:
-  - useEffect (post-paint): safe for async, data fetching, subscriptions
-  - useLayoutEffect (post-DOM, pre-paint): safe for measuring DOM, preventing flicker
-  - Both can be called multiple times — render phase may restart
+  - useEffect (post-paint): safe for async, data fetching, subscriptions‼️
+  - useLayoutEffect (post-DOM, pre-paint): safe for measuring DOM, preventing flicker‼️
+  - Both can be called multiple times — render phase may restart‼️
 ```
 
 ### Why render phase must be pure
 
 ```jsx
-// ✗ Side effect in render — dangerous in concurrent mode
+// ✗ Side effect in render — dangerous in concurrent mode‼️
 function Component() {
     // This runs during render phase — may run multiple times
     fetch('/api/data'); // fires multiple times! network requests pile up
@@ -358,7 +358,7 @@ function Component() {
     return <div>...</div>;
 }
 
-// ✓ Side effects go in useEffect (commit phase, runs once after paint)
+// ✓ Side effects go in useEffect (commit phase, runs once after paint)‼️
 function Component() {
     useEffect(() => {
         fetch('/api/data').then(setData);
@@ -372,22 +372,22 @@ function Component() {
 ### useEffect vs useLayoutEffect vs useInsertionEffect
 
 ```jsx
-// useInsertionEffect (React 18, CSS-in-JS only)
+// useInsertionEffect (React 18, CSS-in-JS only)‼️
 //   → Runs before DOM mutations — for injecting style tags
-//   → Not for application code
+//   → Not for application code‼️
 
 // useLayoutEffect
-//   → Runs synchronously after DOM update, before paint
-//   → Use for: reading DOM measurements, avoiding visual flicker
-//   → Blocks the browser — keep it fast
+//   → Runs synchronously after DOM update, before paint‼️
+//   → Use for: reading DOM measurements, avoiding visual flicker‼️
+//   → Blocks the browser — keep it fast‼️
 useLayoutEffect(() => {
     const height = ref.current.getBoundingClientRect().height;
     setHeight(height); // set state before paint — no flash of wrong layout
 }, []);
 
 // useEffect
-//   → Runs asynchronously after paint
-//   → Use for: data fetching, subscriptions, non-visual side effects
+//   → Runs asynchronously after paint‼️
+//   → Use for: data fetching, subscriptions, non-visual side effects‼️
 useEffect(() => {
     const subscription = store.subscribe(handleChange);
     return () => subscription.unsubscribe();
@@ -401,7 +401,7 @@ useEffect(() => {
 ### How hooks actually work
 
 ```text
-Hooks are stored as a linked list on the fiber.
+Hooks are stored as a linked list on the fiber.‼️
 Each hook call appends to this list during render.
 
 function Component() {
@@ -412,7 +412,7 @@ function Component() {
 
 Fiber's hook list: hook1 → hook2 → hook3
 
-On re-render, React reads hooks in ORDER from this list.
+On re-render, React reads hooks in ORDER from this list.‼️
 This is why hooks cannot be inside conditions or loops:
   if (condition) {
     useState(1); // hook 1 sometimes, sometimes not
@@ -431,17 +431,17 @@ This is why hooks cannot be inside conditions or loops:
 const [count, setCount] = useState(0);
 
 // Functional update — use when new state depends on old state ‼️
-setCount(prev => prev + 1); // ‼️ safe in concurrent mode, batched updates
+setCount(prev => prev + 1); // ‼️ safe in concurrent mode, batched updates‼️
 
-// ‼️ ✗ Direct value — stale if called multiple times before re-render
+// ‼️ ✗ Direct value — stale if called multiple times before re-render‼️
 setCount(count + 1);
 setCount(count + 1); // ‼️ still count+1, not count+2!
 
-// ✓ Functional update — always applies to latest state
+// ✓ Functional update — always applies to latest state‼️
 setCount(c => c + 1);
 setCount(c => c + 1); // correctly count+2
 
-// ‼️ Lazy initialization — only runs on mount, not every render
+// ‼️ Lazy initialization — only runs on mount, not every render‼️
 const [data, setData] = useState(() => JSON.parse(localStorage.getItem('data') ?? '[]'));
 
 // Object state — must spread to preserve other keys
@@ -456,7 +456,7 @@ setForm(prev => ({ ...prev, name: 'Alice' })); // preserve email
 function handleClick() {
     setCount(c => c + 1);
     setName('Alice');
-    // React batches both — ONE re-render, not two
+    // React batches both — ONE re-render, not two‼️
 }
 
 // Why functional updates matter
@@ -483,7 +483,7 @@ function handleClick() {
 //   2. React diffs virtual DOM and updates the real DOM
 //   3. Browser paints the screen (user sees the new UI)
 //   4. useEffect callbacks fire
-//      - cleanup of the previous effect runs first (if any)
+//      - cleanup of the previous effect runs first (if any)‼️
 //      - then the new effect body runs
 //
 // useLayoutEffect fires between step 2 and 3 — after DOM update but before paint.
@@ -504,7 +504,7 @@ useEffect(() => {
 // ‼️ no array — run after EVERY render (rare, usually a bug)
 
 // React 18 StrictMode: effects run TWICE on mount in development ‼️
-// Purpose: verify your cleanup function correctly reverses the effect
+// Purpose: verify your cleanup function correctly reverses the effect‼️
 // This catches missing cleanups
 
 // Common patterns
@@ -536,13 +536,13 @@ useEffect(() => {
 //   5. Render  → component runs again with users = [...]
 //   6. Paint   → browser now shows the populated list
 //
-// That's why you always need a loading fallback for the first paint:
+// That's why you always need a loading fallback for the first paint:‼️
 //
 // const [users, setUsers] = useState([]);          // first paint uses this
 // useEffect(() => {
 //     fetch('/api/users')
 //         .then(r => r.json())
-//         .then(data => setUsers(data));            // triggers second render + paint
+//         .then(data => setUsers(data));            // triggers second render + paint‼️
 // }, []);
 // return users.length === 0 ? <Spinner /> : <UserList users={users} />;
 ```
@@ -550,9 +550,9 @@ useEffect(() => {
 ### useRef deep dive
 
 ```js
-// ‼️ useRef returns a mutable box { current: initialValue }
-// Changing .current does NOT trigger re-render
-// ‼️ Same object reference across all renders
+// ‼️ useRef returns a mutable box { current: initialValue }‼️
+// Changing .current does NOT trigger re-render‼️
+// ‼️ Same object reference across all renders‼️
 
 // Under the hood, useRef is basically:
 function useRef(initialValue) {
@@ -568,19 +568,19 @@ useEffect(() => {
 }, []);
 <input ref={inputRef} />;
 
-// Use 2: store mutable values across renders without triggering re-render
+// Use 2: store mutable values across renders without triggering re-render‼️
 const renderCount = useRef(0);
 useEffect(() => {
-    renderCount.current++; // runs after every render, always up-to-date
+    renderCount.current++; // runs after every render, always up-to-date‼️
 }); // no dep = after every render
 // NOTE: unlike usePrevious, this never reads ref.current during render (no return statement).
 // So there's no "one render behind" problem — you read renderCount.current whenever
 // you need it (e.g. in JSX or a handler), and by then the effect has already incremented it.
-// Contrast:
+// Contrast:‼️
 //   usePrevious → reads ref.current during render's return  → captures stale value → one render behind
 //   renderCount → never reads ref.current during render     → always current when you check it
 
-// ‼️ Use 3: store latest callback (avoid stale closure)
+// ‼️ Use 3: store latest callback (avoid stale closure)‼️
 const latestCallback = useRef(onSuccess);
 useEffect(() => {
     latestCallback.current = onSuccess;
@@ -640,14 +640,14 @@ const sortedItems = useMemo(
     [items], // recompute only when items changes
 );
 
-// useCallback — memoize a FUNCTION REFERENCE
+// useCallback — memoize a FUNCTION REFERENCE‼️
 const handleDelete = useCallback(id => {
     setItems(prev => prev.filter(item => item.id !== id));
-}, []); // stable reference — won't cause child re-renders
+}, []); // stable reference — won't cause child re-renders‼️
 
 // When to use:
 // useMemo: genuinely expensive computation (sorting thousands of items)
-// useCallback: function passed to React.memo children, or in useEffect deps
+// useCallback: function passed to React.memo children, or in useEffect deps‼️
 
 // When NOT to use:
 // Memoization has a cost too — memory + comparison overhead
@@ -710,6 +710,69 @@ const [state, dispatch] = useReducer(reducer, initialState);
 ```
 
 ### Custom hooks
+
+```text
+‼️ When to use custom hooks — a practical guideline:
+
+  1. Extract logic out of components
+     If a component has useState + useCallback + logic that isn't about
+     rendering, pull it into a hook. The component stays focused on JSX.
+     Rule of thumb: if you're scrolling past logic to find the return(),
+     it's time to extract.
+
+  2. Reuse stateful logic across components
+     If two components need the same behavior (e.g., a useLocalStorage hook
+     that syncs state to localStorage), write it once and call it in both.
+     Regular functions can't hold state; hooks can.
+
+  3. Encapsulate a "concern" — one hook = one responsibility
+     As a project grows, each hook manages its own state independently:
+
+       hooks/
+       ├── useFileViewer.ts        ← navigation, loading
+       ├── useZoom.ts              ← zoom in/out, fit-to-width
+       ├── useSearch.ts            ← text search
+       └── useKeyboardShortcuts.ts ← keyboard navigation
+
+     The component just combines them:
+
+       function App() {
+         const { currentPage, ... } = useFileViewer();
+         const { zoomLevel, ... } = useZoom();
+         const { searchResults, ... } = useSearch();
+         // ...compose in JSX
+       }
+
+‼️ When NOT to use a custom hook:
+
+  - Pure computation — if there's no useState/useEffect/useCallback etc.,
+    just use a regular function. A hook is only needed when you're wrapping
+    React primitives.
+
+  - One-liner state — a single useState inside a component doesn't need
+    extraction. It's overhead with no benefit.
+
+  - Premature abstraction — don't create useCounter for a counter that only
+    exists in one place. Wait until you see the pattern repeat or the
+    component gets too crowded.
+
+The bigger picture — think of it as layers:‼️
+
+  ┌─────────────────────────────┐
+  │  Components (JSX / UI)      │  ← what the user sees
+  ├─────────────────────────────┤
+  │  Custom Hooks (logic)       │  ← how things behave
+  ├─────────────────────────────┤
+  │  Types + Constants          │  ← shared contracts
+  ├─────────────────────────────┤
+  │  Data / API                 │  ← where things come from
+  └─────────────────────────────┘
+
+  Components call hooks. Hooks manage state and side effects.
+  This separation means you can change the UI without touching logic,
+  or change logic without touching UI.
+  That's what makes a project maintainable as it scales.‼️
+```
 
 ```ts
 // Extract stateful logic — NOT just to organize code, but to REUSE it
