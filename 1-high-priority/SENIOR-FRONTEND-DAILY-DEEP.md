@@ -1694,7 +1694,6 @@ function TaskItem({ task }) {
 
 ## 14. Error Handling
 
-
 ```tsx
 // Error Boundary — class component (no hook equivalent yet)
 //
@@ -1769,7 +1768,6 @@ class ResettableErrorBoundary extends React.Component {
 ---
 
 ## 15. Testing
-
 
 ```tsx
 // React Testing Library philosophy:
@@ -1861,7 +1859,6 @@ Good architecture:
   - Performance is built in, not bolted on
 ```
 
-
 ### Layer-based (bad for large apps)
 
 ```text
@@ -1930,11 +1927,9 @@ export type { User, AuthState } from './types/auth.types';
 // ✗ import { useAuth } from '@/features/auth/hooks/useAuth' — breaks encapsulation
 ```
 
-
 ---
 
 ## 17. Component Architecture
-
 
 ### The three-layer component model
 
@@ -2062,7 +2057,6 @@ Select.Option = function Option({ value, children }: OptionProps) {
 
 ## 18. State Architecture
 
-
 This is the most important architectural decision. The rule: **state should live as close to where it's used as possible, and no higher.**
 
 ### The four types of frontend state
@@ -2073,7 +2067,7 @@ This is the most important architectural decision. The rule: **state should live
    - Has a lifecycle: loading, success, error, stale, refetching
    - Examples: user profile, product list, order history
    - Tool: TanStack Query (React Query) or SWR — NOT Redux
-   
+
 2. Global client state (shared UI state)
    - Data that multiple components need but doesn't come from the server
    - Should be minimal — most devs put too much here
@@ -2103,8 +2097,8 @@ const page = Number(searchParams.get('page') ?? 1);
 
 // Server state — fetched data (TanStack Query)
 const { data: products, isLoading } = useQuery({
-  queryKey: ['products', query, page],
-  queryFn: () => api.products.search({ query, page }),
+    queryKey: ['products', query, page],
+    queryFn: () => api.products.search({ query, page }),
 });
 
 // Global state — auth (Zustand)
@@ -2127,40 +2121,38 @@ const hasResults = (products?.items?.length ?? 0) > 0;
 // Define queries in a dedicated file — queryKeys pattern
 // features/products/api/products.queries.ts
 export const productQueries = {
-  all: () => ['products'] as const,
-  lists: () => [...productQueries.all(), 'list'] as const,
-  list: (filters: ProductFilters) => [...productQueries.lists(), filters] as const,
-  details: () => [...productQueries.all(), 'detail'] as const,
-  detail: (id: string) => [...productQueries.details(), id] as const,
+    all: () => ['products'] as const,
+    lists: () => [...productQueries.all(), 'list'] as const,
+    list: (filters: ProductFilters) => [...productQueries.lists(), filters] as const,
+    details: () => [...productQueries.all(), 'detail'] as const,
+    detail: (id: string) => [...productQueries.details(), id] as const,
 };
 
 // Use in components
 function ProductList({ filters }: { filters: ProductFilters }) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: productQueries.list(filters),
-    queryFn: () => api.products.list(filters),
-    staleTime: 1000 * 60 * 5,  // 5 minutes before refetching
-  });
+    const { data, isLoading, error } = useQuery({
+        queryKey: productQueries.list(filters),
+        queryFn: () => api.products.list(filters),
+        staleTime: 1000 * 60 * 5, // 5 minutes before refetching
+    });
 }
 
 // Mutations with cache invalidation
 function useDeleteProduct() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api.products.delete(id),
-    onSuccess: () => {
-      // Invalidate the list — will refetch automatically
-      queryClient.invalidateQueries({ queryKey: productQueries.lists() });
-    },
-  });
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => api.products.delete(id),
+        onSuccess: () => {
+            // Invalidate the list — will refetch automatically
+            queryClient.invalidateQueries({ queryKey: productQueries.lists() });
+        },
+    });
 }
 ```
-
 
 ---
 
 ## 19. Data Fetching Architecture
-
 
 ```text
 Anti-pattern: fetch data in a useEffect inside the component
@@ -2242,28 +2234,25 @@ function ParentComponent() {
 
 ## 20. Routing Architecture
 
-
 ```typescript
 // Next.js App Router — file-system routing
-app/
-  layout.tsx            // root layout (nav, footer)
-  page.tsx              // home page /
-  (auth)/               // route group — shared layout, no URL segment
-    login/page.tsx      // /login
-    signup/page.tsx     // /signup
-  dashboard/
-    layout.tsx          // dashboard shell (sidebar)
-    page.tsx            // /dashboard
-    settings/
-      page.tsx          // /dashboard/settings
-  products/
-    page.tsx            // /products (list)
-    [id]/
-      page.tsx          // /products/123 (detail)
-      loading.tsx       // Suspense boundary for this route
-      error.tsx         // Error boundary for this route
-  api/
-    products/route.ts   // /api/products (API route)
+app / layout.tsx; // root layout (nav, footer)
+page.tsx(
+    // home page /
+    auth,
+) / // route group — shared layout, no URL segment
+    login /
+    page.tsx; // /login
+signup / page.tsx; // /signup
+dashboard / layout.tsx; // dashboard shell (sidebar)
+page.tsx; // /dashboard
+settings / page.tsx; // /dashboard/settings
+products /
+    page.tsx[id] / // /products (list)
+    page.tsx; // /products/123 (detail)
+loading.tsx; // Suspense boundary for this route
+error.tsx; // Error boundary for this route
+api / products / route.ts; // /api/products (API route)
 
 // Code splitting is automatic — each page is a separate bundle
 // Users only download the code for the route they're on
@@ -2306,7 +2295,6 @@ const ProductList = lazy(() => import('./features/products/ProductList'));
 ---
 
 ## 21. Rendering Strategy Architecture
-
 
 ```text
 CSR (Client-Side Rendering):
@@ -2375,7 +2363,6 @@ async function ProductPage({ params }) {
 
 ## 22. Monorepo Architecture
 
-
 For large products with multiple apps or teams.
 
 ```text
@@ -2413,28 +2400,27 @@ When NOT to use a monorepo:
 ```json
 // turbo.json — build pipeline
 {
-  "$schema": "https://turbo.build/schema.json",
-  "tasks": {
-    "build": {
-      "dependsOn": ["^build"],  // build dependencies first
-      "outputs": [".next/**", "dist/**"]
-    },
-    "test": {
-      "dependsOn": ["^build"]
-    },
-    "lint": {},
-    "dev": {
-      "cache": false,
-      "persistent": true
+    "$schema": "https://turbo.build/schema.json",
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build"], // build dependencies first
+            "outputs": [".next/**", "dist/**"]
+        },
+        "test": {
+            "dependsOn": ["^build"]
+        },
+        "lint": {},
+        "dev": {
+            "cache": false,
+            "persistent": true
+        }
     }
-  }
 }
 ```
 
 ---
 
 ## 23. Module Boundary Rules
-
 
 In a large codebase, without rules on what can import what, everything becomes interdependent and impossible to refactor.
 
@@ -2474,7 +2460,6 @@ Why this matters:
 
 ## 24. TanStack Query (React Query)
 
-
 ### The problem it solves
 
 ```text
@@ -2500,23 +2485,23 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60,      // data is "fresh" for 1 minute — no refetch during this time
-      gcTime: 1000 * 60 * 5,     // keep unused data in cache for 5 minutes (was cacheTime in v4)
-      retry: 2,                  // retry failed requests twice
-      refetchOnWindowFocus: true, // refetch when user returns to tab
+    defaultOptions: {
+        queries: {
+            staleTime: 1000 * 60, // data is "fresh" for 1 minute — no refetch during this time
+            gcTime: 1000 * 60 * 5, // keep unused data in cache for 5 minutes (was cacheTime in v4)
+            retry: 2, // retry failed requests twice
+            refetchOnWindowFocus: true, // refetch when user returns to tab
+        },
     },
-  },
 });
 
 function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <MyApp />
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
-  );
+    return (
+        <QueryClientProvider client={queryClient}>
+            <MyApp />
+            <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
+    );
 }
 ```
 
@@ -2526,46 +2511,48 @@ function App() {
 import { useQuery } from '@tanstack/react-query';
 
 function TaskList() {
-  const {
-    data: tasks,       // the data (undefined while loading)
-    isLoading,         // true on first load (no cached data)
-    isFetching,        // true whenever a request is in-flight (including background refetch)
-    isError,
-    error,
-    refetch,           // manually trigger a refetch
-  } = useQuery({
-    queryKey: ['tasks'],         // cache key — must be unique per "query"
-    queryFn: () => fetch('/tasks').then(r => r.json()),
-  });
+    const {
+        data: tasks, // the data (undefined while loading)
+        isLoading, // true on first load (no cached data)
+        isFetching, // true whenever a request is in-flight (including background refetch)
+        isError,
+        error,
+        refetch, // manually trigger a refetch
+    } = useQuery({
+        queryKey: ['tasks'], // cache key — must be unique per "query"
+        queryFn: () => fetch('/tasks').then(r => r.json()),
+    });
 
-  if (isLoading) return <Spinner />;
-  if (isError) return <Error message={error.message} />;
+    if (isLoading) return <Spinner />;
+    if (isError) return <Error message={error.message} />;
 
-  return (
-    <div>
-      {isFetching && <small>Refreshing...</small>} {/* background refresh indicator */}
-      {tasks.map(task => <TaskCard key={task.id} task={task} />)}
-    </div>
-  );
+    return (
+        <div>
+            {isFetching && <small>Refreshing...</small>} {/* background refresh indicator */}
+            {tasks.map(task => (
+                <TaskCard key={task.id} task={task} />
+            ))}
+        </div>
+    );
 }
 
 // Query keys with variables — query re-runs when key changes
 function TaskDetail({ taskId }: { taskId: string }) {
-  const { data: task } = useQuery({
-    queryKey: ['tasks', taskId],             // unique per taskId
-    queryFn: () => fetch(`/tasks/${taskId}`).then(r => r.json()),
-    enabled: !!taskId,                       // don't fetch if taskId is empty/undefined
-  });
+    const { data: task } = useQuery({
+        queryKey: ['tasks', taskId], // unique per taskId
+        queryFn: () => fetch(`/tasks/${taskId}`).then(r => r.json()),
+        enabled: !!taskId, // don't fetch if taskId is empty/undefined
+    });
 }
 
 // Query with search params
 function SearchResults({ query }: { query: string }) {
-  const { data } = useQuery({
-    queryKey: ['tasks', 'search', query],    // re-fetches when query changes
-    queryFn: () => fetch(`/tasks?q=${query}`).then(r => r.json()),
-    enabled: query.length > 2,              // only search when 3+ chars
-    placeholderData: keepPreviousData,       // show old results while fetching new (v5)
-  });
+    const { data } = useQuery({
+        queryKey: ['tasks', 'search', query], // re-fetches when query changes
+        queryFn: () => fetch(`/tasks?q=${query}`).then(r => r.json()),
+        enabled: query.length > 2, // only search when 3+ chars
+        placeholderData: keepPreviousData, // show old results while fetching new (v5)
+    });
 }
 ```
 
@@ -2575,41 +2562,43 @@ function SearchResults({ query }: { query: string }) {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 function TaskForm() {
-  const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
 
-  const createTask = useMutation({
-    mutationFn: (newTask: { title: string }) =>
-      fetch('/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTask),
-      }).then(r => r.json()),
+    const createTask = useMutation({
+        mutationFn: (newTask: { title: string }) =>
+            fetch('/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newTask),
+            }).then(r => r.json()),
 
-    onSuccess: (createdTask) => {
-      // Option 1: invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      // RQ will refetch any active query matching ['tasks', ...]
+        onSuccess: createdTask => {
+            // Option 1: invalidate and refetch
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            // RQ will refetch any active query matching ['tasks', ...]
 
-      // Option 2: optimistic update — update cache directly (faster UX)
-      queryClient.setQueryData(['tasks'], (old: Task[] = []) => [createdTask, ...old]);
-    },
+            // Option 2: optimistic update — update cache directly (faster UX)
+            queryClient.setQueryData(['tasks'], (old: Task[] = []) => [createdTask, ...old]);
+        },
 
-    onError: (error) => {
-      toast.error(`Failed to create task: ${error.message}`);
-    },
-  });
+        onError: error => {
+            toast.error(`Failed to create task: ${error.message}`);
+        },
+    });
 
-  return (
-    <form onSubmit={e => {
-      e.preventDefault();
-      createTask.mutate({ title: e.currentTarget.title.value });
-    }}>
-      <input name="title" />
-      <button type="submit" disabled={createTask.isPending}>
-        {createTask.isPending ? 'Creating...' : 'Add Task'}
-      </button>
-    </form>
-  );
+    return (
+        <form
+            onSubmit={e => {
+                e.preventDefault();
+                createTask.mutate({ title: e.currentTarget.title.value });
+            }}
+        >
+            <input name='title' />
+            <button type='submit' disabled={createTask.isPending}>
+                {createTask.isPending ? 'Creating...' : 'Add Task'}
+            </button>
+        </form>
+    );
 }
 ```
 
@@ -2617,29 +2606,29 @@ function TaskForm() {
 
 ```tsx
 const deleteTask = useMutation({
-  mutationFn: (id: string) => fetch(`/tasks/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => fetch(`/tasks/${id}`, { method: 'DELETE' }),
 
-  // Before the request: optimistically remove from cache
-  onMutate: async (deletedId) => {
-    await queryClient.cancelQueries({ queryKey: ['tasks'] }); // cancel in-flight refetches
-    const previous = queryClient.getQueryData<Task[]>(['tasks']); // save for rollback
+    // Before the request: optimistically remove from cache
+    onMutate: async deletedId => {
+        await queryClient.cancelQueries({ queryKey: ['tasks'] }); // cancel in-flight refetches
+        const previous = queryClient.getQueryData<Task[]>(['tasks']); // save for rollback
 
-    // Optimistically update UI
-    queryClient.setQueryData<Task[]>(['tasks'], old => old?.filter(t => t.id !== deletedId));
+        // Optimistically update UI
+        queryClient.setQueryData<Task[]>(['tasks'], old => old?.filter(t => t.id !== deletedId));
 
-    return { previous }; // pass to onError for rollback
-  },
+        return { previous }; // pass to onError for rollback
+    },
 
-  // On failure: roll back to previous data
-  onError: (err, deletedId, context) => {
-    queryClient.setQueryData(['tasks'], context?.previous);
-    toast.error('Failed to delete task');
-  },
+    // On failure: roll back to previous data
+    onError: (err, deletedId, context) => {
+        queryClient.setQueryData(['tasks'], context?.previous);
+        toast.error('Failed to delete task');
+    },
 
-  // Always: refetch to make sure cache matches server
-  onSettled: () => {
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
-  },
+    // Always: refetch to make sure cache matches server
+    onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
 });
 ```
 
@@ -2647,10 +2636,7 @@ const deleteTask = useMutation({
 
 ```ts
 // Structure keys as arrays — RQ invalidates by prefix matching
-['tasks']                     // all tasks
-['tasks', taskId]             // specific task
-['tasks', 'search', query]   // task search results
-['users', userId, 'tasks']   // tasks belonging to a user
+['tasks'][('tasks', taskId)][('tasks', 'search', query)][('users', userId, 'tasks')]; // all tasks // specific task // task search results // tasks belonging to a user
 
 // Invalidate everything under ['tasks']:
 queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -2660,11 +2646,9 @@ queryClient.invalidateQueries({ queryKey: ['tasks'] });
 // Task detail shown in sidebar AND main panel → one network request
 ```
 
-
 ---
 
 ## 25. Zustand — Client State
-
 
 ### When to use Zustand (vs useState, vs React Query)
 
@@ -2690,28 +2674,30 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
 interface TaskStore {
-  // State
-  filter: 'all' | 'open' | 'completed';
-  selectedTaskId: string | null;
+    // State
+    filter: 'all' | 'open' | 'completed';
+    selectedTaskId: string | null;
 
-  // Actions (in Zustand, state + actions live together)
-  setFilter: (filter: 'all' | 'open' | 'completed') => void;
-  selectTask: (id: string | null) => void;
+    // Actions (in Zustand, state + actions live together)
+    setFilter: (filter: 'all' | 'open' | 'completed') => void;
+    selectTask: (id: string | null) => void;
 }
 
 export const useTaskStore = create<TaskStore>()(
-  devtools(            // Redux DevTools support
-    persist(           // persist to localStorage
-      (set) => ({
-        filter: 'all',
-        selectedTaskId: null,
+    devtools(
+        // Redux DevTools support
+        persist(
+            // persist to localStorage
+            set => ({
+                filter: 'all',
+                selectedTaskId: null,
 
-        setFilter: (filter) => set({ filter }),
-        selectTask: (id) => set({ selectedTaskId: id }),
-      }),
-      { name: 'task-store' }  // localStorage key
-    )
-  )
+                setFilter: filter => set({ filter }),
+                selectTask: id => set({ selectedTaskId: id }),
+            }),
+            { name: 'task-store' }, // localStorage key
+        ),
+    ),
 );
 ```
 
@@ -2720,35 +2706,41 @@ export const useTaskStore = create<TaskStore>()(
 ```tsx
 // Select only the slice you need — prevents unnecessary re-renders
 function FilterBar() {
-  const filter = useTaskStore(state => state.filter);
-  const setFilter = useTaskStore(state => state.setFilter);
+    const filter = useTaskStore(state => state.filter);
+    const setFilter = useTaskStore(state => state.setFilter);
 
-  return (
-    <div>
-      {['all', 'open', 'completed'].map(f => (
-        <button key={f} onClick={() => setFilter(f as any)}
-          className={filter === f ? 'active' : ''}>
-          {f}
-        </button>
-      ))}
-    </div>
-  );
+    return (
+        <div>
+            {['all', 'open', 'completed'].map(f => (
+                <button key={f} onClick={() => setFilter(f as any)} className={filter === f ? 'active' : ''}>
+                    {f}
+                </button>
+            ))}
+        </div>
+    );
 }
 
 function TaskList() {
-  const filter = useTaskStore(state => state.filter);
-  const { data: tasks } = useQuery({ queryKey: ['tasks'], queryFn: fetchTasks });
+    const filter = useTaskStore(state => state.filter);
+    const { data: tasks } = useQuery({ queryKey: ['tasks'], queryFn: fetchTasks });
 
-  const filtered = useMemo(() =>
-    tasks?.filter(t => {
-      if (filter === 'all') return true;
-      if (filter === 'open') return !t.completed;
-      return t.completed;
-    }) ?? [],
-    [tasks, filter]
-  );
+    const filtered = useMemo(
+        () =>
+            tasks?.filter(t => {
+                if (filter === 'all') return true;
+                if (filter === 'open') return !t.completed;
+                return t.completed;
+            }) ?? [],
+        [tasks, filter],
+    );
 
-  return <ul>{filtered.map(t => <li key={t.id}>{t.title}</li>)}</ul>;
+    return (
+        <ul>
+            {filtered.map(t => (
+                <li key={t.id}>{t.title}</li>
+            ))}
+        </ul>
+    );
 }
 ```
 
@@ -2757,46 +2749,46 @@ function TaskList() {
 ```ts
 // Slice pattern: split large stores into logical slices
 interface AuthSlice {
-  user: User | null;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+    user: User | null;
+    isLoading: boolean;
+    login: (email: string, password: string) => Promise<void>;
+    logout: () => void;
 }
 
 interface UISlice {
-  sidebarOpen: boolean;
-  toggleSidebar: () => void;
+    sidebarOpen: boolean;
+    toggleSidebar: () => void;
 }
 
 // Combine slices
 type AppStore = AuthSlice & UISlice;
 
 export const useAppStore = create<AppStore>()(
-  devtools((set, get) => ({
-    // Auth slice
-    user: null,
-    isLoading: false,
+    devtools((set, get) => ({
+        // Auth slice
+        user: null,
+        isLoading: false,
 
-    login: async (email, password) => {
-      set({ isLoading: true });
-      try {
-        const user = await authService.login(email, password);
-        set({ user, isLoading: false });
-      } catch (err) {
-        set({ isLoading: false });
-        throw err;
-      }
-    },
+        login: async (email, password) => {
+            set({ isLoading: true });
+            try {
+                const user = await authService.login(email, password);
+                set({ user, isLoading: false });
+            } catch (err) {
+                set({ isLoading: false });
+                throw err;
+            }
+        },
 
-    logout: () => {
-      authService.clearToken();
-      set({ user: null });
-    },
+        logout: () => {
+            authService.clearToken();
+            set({ user: null });
+        },
 
-    // UI slice
-    sidebarOpen: true,
-    toggleSidebar: () => set(state => ({ sidebarOpen: !state.sidebarOpen })),
-  }))
+        // UI slice
+        sidebarOpen: true,
+        toggleSidebar: () => set(state => ({ sidebarOpen: !state.sidebarOpen })),
+    })),
 );
 
 // Access anywhere — no Provider needed (unlike Context)
@@ -2806,7 +2798,6 @@ const { user, login } = useAppStore(state => ({ user: state.user, login: state.l
 ---
 
 ## 26. React Hook Form
-
 
 ### Why not use controlled inputs everywhere?
 
@@ -2832,58 +2823,64 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 const schema = z.object({
-  title: z.string().min(1, 'Title is required').max(100),
-  priority: z.enum(['low', 'medium', 'high']),
-  dueDate: z.string().optional(),
+    title: z.string().min(1, 'Title is required').max(100),
+    priority: z.enum(['low', 'medium', 'high']),
+    dueDate: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 function TaskForm({ onSubmit }: { onSubmit: (data: FormValues) => Promise<void> }) {
-  const {
-    register,         // connect input to form
-    handleSubmit,     // wraps your submit handler
-    formState: { errors, isSubmitting, isDirty }, // form state
-    reset,            // reset to defaults
-    watch,            // watch a field's value
-    setValue,         // programmatically set a value
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),  // Zod validates on submit (and optionally on change)
-    defaultValues: { title: '', priority: 'medium' },
-  });
+    const {
+        register, // connect input to form
+        handleSubmit, // wraps your submit handler
+        formState: { errors, isSubmitting, isDirty }, // form state
+        reset, // reset to defaults
+        watch, // watch a field's value
+        setValue, // programmatically set a value
+    } = useForm<FormValues>({
+        resolver: zodResolver(schema), // Zod validates on submit (and optionally on change)
+        defaultValues: { title: '', priority: 'medium' },
+    });
 
-  const title = watch('title'); // reactive — causes re-render on change
+    const title = watch('title'); // reactive — causes re-render on change
 
-  return (
-    <form onSubmit={handleSubmit(async (data) => {
-      await onSubmit(data);
-      reset(); // clear form after successful submit
-    })}>
-      <div>
-        <label htmlFor="title">Title</label>
-        <input
-          id="title"
-          {...register('title')} // spreads name, ref, onChange, onBlur
-          aria-invalid={!!errors.title}
-          aria-describedby={errors.title ? 'title-error' : undefined}
-        />
-        {errors.title && <p id="title-error" role="alert">{errors.title.message}</p>}
-      </div>
+    return (
+        <form
+            onSubmit={handleSubmit(async data => {
+                await onSubmit(data);
+                reset(); // clear form after successful submit
+            })}
+        >
+            <div>
+                <label htmlFor='title'>Title</label>
+                <input
+                    id='title'
+                    {...register('title')} // spreads name, ref, onChange, onBlur
+                    aria-invalid={!!errors.title}
+                    aria-describedby={errors.title ? 'title-error' : undefined}
+                />
+                {errors.title && (
+                    <p id='title-error' role='alert'>
+                        {errors.title.message}
+                    </p>
+                )}
+            </div>
 
-      <div>
-        <label htmlFor="priority">Priority</label>
-        <select id="priority" {...register('priority')}>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
-      </div>
+            <div>
+                <label htmlFor='priority'>Priority</label>
+                <select id='priority' {...register('priority')}>
+                    <option value='low'>Low</option>
+                    <option value='medium'>Medium</option>
+                    <option value='high'>High</option>
+                </select>
+            </div>
 
-      <button type="submit" disabled={isSubmitting || !isDirty}>
-        {isSubmitting ? 'Saving...' : 'Save Task'}
-      </button>
-    </form>
-  );
+            <button type='submit' disabled={isSubmitting || !isDirty}>
+                {isSubmitting ? 'Saving...' : 'Save Task'}
+            </button>
+        </form>
+    );
 }
 ```
 
@@ -2894,30 +2891,30 @@ import { Controller } from 'react-hook-form';
 
 // For components that don't accept ref (UI libraries, custom components)
 function TaskForm() {
-  const { control } = useForm<FormValues>();
+    const { control } = useForm<FormValues>();
 
-  return (
-    <Controller
-      control={control}
-      name="priority"
-      render={({ field, fieldState }) => (
-        <Select          // shadcn/ui Select (not a native <select>)
-          value={field.value}
-          onValueChange={field.onChange}
-          aria-invalid={!!fieldState.error}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="low">Low</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
-    />
-  );
+    return (
+        <Controller
+            control={control}
+            name='priority'
+            render={({ field, fieldState }) => (
+                <Select // shadcn/ui Select (not a native <select>)
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    aria-invalid={!!fieldState.error}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder='Priority' />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value='low'>Low</SelectItem>
+                        <SelectItem value='medium'>Medium</SelectItem>
+                        <SelectItem value='high'>High</SelectItem>
+                    </SelectContent>
+                </Select>
+            )}
+        />
+    );
 }
 ```
 
@@ -2927,33 +2924,36 @@ function TaskForm() {
 import { useFieldArray } from 'react-hook-form';
 
 function TaskForm() {
-  const { register, control } = useForm<{ subtasks: { title: string }[] }>();
+    const { register, control } = useForm<{ subtasks: { title: string }[] }>();
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'subtasks',
-  });
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: 'subtasks',
+    });
 
-  return (
-    <div>
-      {fields.map((field, index) => (
-        <div key={field.id}> {/* use field.id, not index */}
-          <input {...register(`subtasks.${index}.title`)} />
-          <button type="button" onClick={() => remove(index)}>Remove</button>
+    return (
+        <div>
+            {fields.map((field, index) => (
+                <div key={field.id}>
+                    {' '}
+                    {/* use field.id, not index */}
+                    <input {...register(`subtasks.${index}.title`)} />
+                    <button type='button' onClick={() => remove(index)}>
+                        Remove
+                    </button>
+                </div>
+            ))}
+            <button type='button' onClick={() => append({ title: '' })}>
+                Add subtask
+            </button>
         </div>
-      ))}
-      <button type="button" onClick={() => append({ title: '' })}>
-        Add subtask
-      </button>
-    </div>
-  );
+    );
 }
 ```
 
 ---
 
 ## 27. React Router v6
-
 
 ### Setup
 
@@ -2962,27 +2962,27 @@ function TaskForm() {
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <RootLayout />,       // wrapper with nav, header, etc.
-    errorElement: <ErrorPage />,   // handles thrown errors and 404s
-    children: [
-      { index: true, element: <HomePage /> },         // path: "/"
-      { path: 'tasks', element: <TaskListPage /> },   // path: "/tasks"
-      { path: 'tasks/:id', element: <TaskPage /> },   // path: "/tasks/123"
-      {
-        path: 'admin',
-        element: <AdminGuard />,   // auth check wrapper
+    {
+        path: '/',
+        element: <RootLayout />, // wrapper with nav, header, etc.
+        errorElement: <ErrorPage />, // handles thrown errors and 404s
         children: [
-          { path: 'users', element: <UsersPage /> },  // path: "/admin/users"
+            { index: true, element: <HomePage /> }, // path: "/"
+            { path: 'tasks', element: <TaskListPage /> }, // path: "/tasks"
+            { path: 'tasks/:id', element: <TaskPage /> }, // path: "/tasks/123"
+            {
+                path: 'admin',
+                element: <AdminGuard />, // auth check wrapper
+                children: [
+                    { path: 'users', element: <UsersPage /> }, // path: "/admin/users"
+                ],
+            },
         ],
-      },
-    ],
-  },
+    },
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+    return <RouterProvider router={router} />;
 }
 ```
 
@@ -2992,25 +2992,29 @@ function App() {
 import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 
 function TaskPage() {
-  const { id } = useParams<{ id: string }>();         // URL params (:id)
-  const navigate = useNavigate();                     // programmatic navigation
-  const location = useLocation();                     // current URL info
-  const [searchParams, setSearchParams] = useSearchParams(); // query string
+    const { id } = useParams<{ id: string }>(); // URL params (:id)
+    const navigate = useNavigate(); // programmatic navigation
+    const location = useLocation(); // current URL info
+    const [searchParams, setSearchParams] = useSearchParams(); // query string
 
-  const filter = searchParams.get('filter') ?? 'all';
+    const filter = searchParams.get('filter') ?? 'all';
 
-  function handleClose() {
-    navigate(-1);                                    // go back
-    navigate('/tasks');                              // go to specific route
-    navigate('/tasks', { replace: true });           // replace (no back button entry)
-    navigate('/tasks', { state: { from: 'detail' } }); // pass state (accessible via location.state)
-  }
+    function handleClose() {
+        navigate(-1); // go back
+        navigate('/tasks'); // go to specific route
+        navigate('/tasks', { replace: true }); // replace (no back button entry)
+        navigate('/tasks', { state: { from: 'detail' } }); // pass state (accessible via location.state)
+    }
 
-  function setFilter(f: string) {
-    setSearchParams({ filter: f });                  // updates URL: /tasks?filter=open
-  }
+    function setFilter(f: string) {
+        setSearchParams({ filter: f }); // updates URL: /tasks?filter=open
+    }
 
-  return <div>Task {id} — filter: {filter}</div>;
+    return (
+        <div>
+            Task {id} — filter: {filter}
+        </div>
+    );
 }
 ```
 
@@ -3019,19 +3023,23 @@ function TaskPage() {
 ```tsx
 // RootLayout.tsx — wraps all child routes
 function RootLayout() {
-  return (
-    <div>
-      <Header />
-      <nav>
-        <NavLink to="/"      className={({ isActive }) => isActive ? 'active' : ''}>Home</NavLink>
-        <NavLink to="/tasks" className={({ isActive }) => isActive ? 'active' : ''}>Tasks</NavLink>
-      </nav>
-      <main>
-        <Outlet />  {/* child route renders here */}
-      </main>
-      <Footer />
-    </div>
-  );
+    return (
+        <div>
+            <Header />
+            <nav>
+                <NavLink to='/' className={({ isActive }) => (isActive ? 'active' : '')}>
+                    Home
+                </NavLink>
+                <NavLink to='/tasks' className={({ isActive }) => (isActive ? 'active' : '')}>
+                    Tasks
+                </NavLink>
+            </nav>
+            <main>
+                <Outlet /> {/* child route renders here */}
+            </main>
+            <Footer />
+        </div>
+    );
 }
 ```
 
@@ -3042,48 +3050,50 @@ function RootLayout() {
 // Data is available immediately — no loading spinner needed for initial data
 
 const router = createBrowserRouter([
-  {
-    path: 'tasks/:id',
-    element: <TaskPage />,
-    loader: async ({ params }) => {
-      const task = await fetch(`/api/tasks/${params.id}`).then(r => {
-        if (!r.ok) throw new Response('Not Found', { status: 404 });
-        return r.json();
-      });
-      return task; // available via useLoaderData()
+    {
+        path: 'tasks/:id',
+        element: <TaskPage />,
+        loader: async ({ params }) => {
+            const task = await fetch(`/api/tasks/${params.id}`).then(r => {
+                if (!r.ok) throw new Response('Not Found', { status: 404 });
+                return r.json();
+            });
+            return task; // available via useLoaderData()
+        },
+        errorElement: <TaskError />,
     },
-    errorElement: <TaskError />,
-  },
 ]);
 
 function TaskPage() {
-  const task = useLoaderData() as Task; // pre-loaded, no useState/useEffect needed
-  return <div>{task.title}</div>;
+    const task = useLoaderData() as Task; // pre-loaded, no useState/useEffect needed
+    return <div>{task.title}</div>;
 }
 
 // Route actions: handle form submissions
 const router = createBrowserRouter([
-  {
-    path: 'tasks/new',
-    element: <NewTaskPage />,
-    action: async ({ request }) => {
-      const formData = await request.formData();
-      const title = formData.get('title') as string;
-      const task = await createTask({ title });
-      return redirect(`/tasks/${task.id}`);
+    {
+        path: 'tasks/new',
+        element: <NewTaskPage />,
+        action: async ({ request }) => {
+            const formData = await request.formData();
+            const title = formData.get('title') as string;
+            const task = await createTask({ title });
+            return redirect(`/tasks/${task.id}`);
+        },
     },
-  },
 ]);
 
 // Form that uses the action:
 import { Form } from 'react-router-dom';
 function NewTaskPage() {
-  return (
-    <Form method="post">   {/* submits to the route's action */}
-      <input name="title" />
-      <button type="submit">Create</button>
-    </Form>
-  );
+    return (
+        <Form method='post'>
+            {' '}
+            {/* submits to the route's action */}
+            <input name='title' />
+            <button type='submit'>Create</button>
+        </Form>
+    );
 }
 ```
 
@@ -3125,7 +3135,6 @@ function LoginPage() {
 
 ## 28. Choosing the Right Tool
 
-
 ```text
 Problem                               Solution
 ─────────────────────────────────────────────────────────────────────────
@@ -3153,7 +3162,6 @@ What NOT to use:
 ---
 
 ## 29. Next.js (App Router)
-
 
 ### App Router vs Pages Router
 
@@ -3483,16 +3491,16 @@ export function PostForm() {
 
 ```text
 ‼️ middleware.ts lives at the ROOT of the project (same level as app/).
-  Runs BEFORE every matched request (before rendering, before data fetching).
+  Runs BEFORE every matched request (before rendering, before data fetching).‼️
 
 Common uses:
   - Authentication checks (redirect if not logged in)
   - Geolocation-based redirects
-  - A/B testing (rewrite to different page variant)
+  - A/B testing (rewrite to different page variant)‼️
   - Rate limiting headers
   - Internationalization (redirect to locale-prefixed path)
 
-Limitations:
+Limitations:‼️
   - Runs on the Edge Runtime (limited Node.js APIs — no fs, no native modules)
   - Must return a NextResponse (or NextResponse.next() to continue)
   - Cannot access database directly (use lightweight checks like JWT verification)
@@ -3527,7 +3535,7 @@ export const config = {
 
 ```text
 ‼️ ISR = static pages that re-generate in the background after a time interval.
-  Best of both worlds: speed of static + freshness of dynamic.
+  Best of both worlds: speed of static + freshness of dynamic.‼️
 
 How it works:
   1. Page is statically generated at build time
@@ -3573,7 +3581,7 @@ import Image from 'next/image'
 import heroImage from '@/public/hero.jpg'
 <Image src={heroImage} alt="Hero" placeholder="blur" />
 
-// Remote image — must specify dimensions (or use fill)
+// Remote image — must specify dimensions (or use fill)‼️
 <Image
   src="https://cdn.example.com/photo.jpg"
   alt="Photo"
@@ -3757,11 +3765,9 @@ Self-hosted (Docker, AWS, etc.):
   - Deployed as a static SPA behind a CDN
 ```
 
-
 ---
 
 ## 30. TypeScript + React Advanced Patterns
-
 
 ### Generic Components
 
@@ -4152,11 +4158,9 @@ type EventName = 'click' | 'hover' | 'focus';
 type Handler = `on${Capitalize<EventName>}`; // 'onClick' | 'onHover' | 'onFocus'
 ```
 
-
 ---
 
 ## 31. CSS Architecture
-
 
 ### CSS Modules
 
@@ -4522,11 +4526,9 @@ h1 {
 └─────────────────────┴──────────────────────────────────────────┘
 ```
 
-
 ---
 
 ## 32. Accessibility (a11y) in React
-
 
 ### ARIA — When to Use and When NOT to Use
 
@@ -4887,11 +4889,9 @@ Tools to check:
   GOOD: Red text + error icon + "Error:" prefix
 ```
 
-
 ---
 
 ## 33. Design Systems & Component Libraries
-
 
 ### API Design Principles
 
@@ -5156,8 +5156,6 @@ Publishing workflow:
 ---
 
 ## 34. Testing Strategy for Senior Engineers
-
-
 
 ### The Testing Trophy
 
@@ -5496,11 +5494,9 @@ What coverage does NOT tell you:
   - But don't block for not reaching an arbitrary threshold
 ```
 
-
 ---
 
 ## 35. Error Monitoring & Observability
-
 
 ### Sentry Setup for React
 
@@ -5754,8 +5750,6 @@ logger.error('Payment failed', { orderId: '123', error: err.message });
 ---
 
 ## 36. Authentication Patterns in React
-
-
 
 ### JWT Flow (Access + Refresh Tokens)
 
@@ -6130,8 +6124,6 @@ api.interceptors.response.use(
 ---
 
 ## 37. API Layer Patterns
-
-
 
 ### API Client Architecture
 
@@ -6603,8 +6595,6 @@ Workflow:
 
 ## 38. Developer Experience & Tooling
 
-
-
 ### ESLint (Flat Config)
 
 ```ts
@@ -6891,11 +6881,9 @@ pnpm workspaces:
   - ‼️ pnpm is the recommended package manager for monorepos
 ```
 
-
 ---
 
 ## 39. Code Review Practices
-
 
 ### What Senior Engineers Look For
 
@@ -6993,11 +6981,9 @@ Why small PRs:
     more type-safe than optional props."
 ```
 
-
 ---
 
 ## 40. Feature Flags & A/B Testing
-
 
 ### Feature Flag Patterns in React
 
@@ -7127,8 +7113,6 @@ Cleanup strategy:
 ---
 
 ## 41. Internationalization (i18n)
-
-
 
 ### Setup with next-intl / i18next
 
@@ -7283,8 +7267,6 @@ function Dashboard() {
 ---
 
 ## 42. SEO for React/Next.js
-
-
 
 ### Metadata API (Next.js App Router)
 
@@ -7533,11 +7515,9 @@ CSR (plain React SPA):
   If SEO doesn't matter (internal tool, behind auth) → CSR is fine.
 ```
 
-
 ---
 
 ## 43. Debugging Techniques
-
 
 ### React DevTools
 
