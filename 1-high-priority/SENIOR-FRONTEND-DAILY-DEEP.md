@@ -723,7 +723,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
   2. Reuse stateful logic across components
      If two components need the same behavior (e.g., a useLocalStorage hook
      that syncs state to localStorage), write it once and call it in both.
-     Regular functions can't hold state; hooks can.
+     Regular functions can't hold state; hooks can hold state.
 
   3. Encapsulate a "concern" — one hook = one responsibility
      As a project grows, each hook manages its own state independently:
@@ -768,7 +768,7 @@ The bigger picture — think of it as layers:‼️
   │  Data / API                 │  ← where things come from
   └─────────────────────────────┘
 
-  Components call hooks. Hooks manage state and side effects.
+  Components call hooks. Hooks manage state and side effects.‼️
   This separation means you can change the UI without touching logic,
   or change logic without touching UI.
   That's what makes a project maintainable as it scales.‼️
@@ -778,6 +778,65 @@ The bigger picture — think of it as layers:‼️
 // Extract stateful logic — NOT just to organize code, but to REUSE it
 
 function useLocalStorage<T>(key: string, initial: T) {
+    // ‼️ useState accepts a VALUE or a FUNCTION (called "lazy initializer"):‼️
+    //   useState(0)              — value form
+    //   useState(() => compute()) — function form (lazy initializer)‼️
+    //
+    // Why does this matter? Because your component function runs on EVERY render.
+    // Everything inside it executes again — including the argument to useState.
+    //
+    // VALUE form — what actually happens:
+    //   Render 1 (mount):     useState(expensiveCalculation())
+    //                         → expensiveCalculation() runs → returns 42
+    //                         → React stores 42 as initial state ✓
+    //
+    //   Render 2 (re-render): useState(expensiveCalculation())
+    //                         → expensiveCalculation() runs AGAIN → returns 42
+    //                         → React says "I already have state, ignoring this" 🗑️
+    //
+    //   Render 3 (re-render): same thing — runs again, result thrown away 🗑️
+    //
+    //   The expression expensiveCalculation() is just a JavaScript function call —
+    //   it executes BEFORE useState even sees it.‼️ React has no way to skip it.
+    //   By the time useState receives the value, the computation already happened.
+    //
+    // FUNCTION form — React controls when to call it:‼️
+    //   Render 1 (mount):     useState(() => expensiveCalculation())
+    //                         → React calls the function → runs once → stores 42 ✓
+    //
+    //   Render 2 (re-render): useState(() => expensiveCalculation())
+    //                         → React sees a function but says "I already have state,
+    //                           I won't call it" → expensiveCalculation() never runs ✓
+    //
+    // Use the function form when the initial value is EXPENSIVE to compute‼️
+    // (reading localStorage, parsing JSON, heavy calculations).
+    //
+    //   ✗ useState(JSON.parse(localStorage.getItem(key)) ?? initial)
+    //     → runs localStorage.getItem on EVERY render (wasteful)
+    //
+    //   ✓ useState(() => JSON.parse(localStorage.getItem(key)) ?? initial)
+    //     → runs localStorage.getItem only on FIRST render
+    //
+    // Why use the function form? When the initial value is expensive to compute
+    // (reading localStorage, parsing JSON, heavy calculation). With a plain value,
+    // that computation runs every render even though React throws the result away.
+    // With a function, React only calls it on mount.
+    //
+    // Real example of the problem:
+    //
+    //   // Every time the component re-renders, React calls your component function again
+    //   function MyComponent() {
+    //       // This ENTIRE function body runs on every render
+    //
+    //       const [count, setCount] = useState(expensiveCalculation());
+    //       // ↑ expensiveCalculation() runs EVERY render
+    //       // But React only uses the result the FIRST time
+    //       // On re-renders, React already has the state stored internally,
+    //       // so it throws away the result of expensiveCalculation() — wasted work
+    //
+    //       return <button onClick={() => setCount(count + 1)}>{count}</button>;
+    //   }
+    //
     const [value, setValue] = useState<T>(() => {
         try {
             const stored = localStorage.getItem(key);
@@ -787,6 +846,7 @@ function useLocalStorage<T>(key: string, initial: T) {
         }
     });
 
+    //‼️ I like the syntax of this
     const set = useCallback(
         (newValue: T | ((prev: T) => T)) => {
             setValue(prev => {
@@ -802,6 +862,7 @@ function useLocalStorage<T>(key: string, initial: T) {
 }
 
 // useDebounce
+//Debounce means: "wait until the user STOPS doing something for X milliseconds, then act."
 function useDebounce<T>(value: T, delay: number): T {
     const [debounced, setDebounced] = useState(value);
     useEffect(() => {
@@ -812,14 +873,33 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 // useOnClickOutside
+// Detects when the user clicks OUTSIDE of a specific element.
+// Common use: closing dropdowns, modals, popups, menus.
+//   - User clicks INSIDE the dropdown  → do nothing (they're using it)
+//   - User clicks OUTSIDE the dropdown → close it
+//
+// Usage:
+//   const dropdownRef = useRef<HTMLDivElement>(null);
+//   useOnClickOutside(dropdownRef, () => setIsOpen(false));
+//   return <div ref={dropdownRef}>...</div>;
+//
 function useOnClickOutside(ref: RefObject<HTMLElement>, handler: () => void) {
+    // ref     = a React ref pointing to the element you want to "protect"
+    // handler = what to do when user clicks OUTSIDE (usually: close the thing)
     useEffect(() => {
         const listener = (e: MouseEvent) => {
             if (!ref.current || ref.current.contains(e.target as Node)) return;
+            // !ref.current                    → ref not attached yet, do nothing
+            // ref.current.contains(e.target)  → click was INSIDE the element, do nothing
+            //   .contains() checks if the clicked target is the element itself
+            //   OR any child inside it. If yes → click was inside → ignore it.
             handler();
+            // If we get here, click was OUTSIDE → run the handler (e.g., close dropdown)
         };
         document.addEventListener('mousedown', listener);
+        // Listen for ALL clicks on the entire page
         return () => document.removeEventListener('mousedown', listener);
+        // Cleanup: stop listening when component unmounts
     }, [ref, handler]);
 }
 ```
