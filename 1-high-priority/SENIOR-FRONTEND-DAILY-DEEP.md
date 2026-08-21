@@ -958,7 +958,7 @@ const useTaskStore = create<TaskStore>()(
   )
 );
 
-// Usage — no Provider needed
+// Usage — no Provider needed‼️
 function TaskList() {
   const tasks = useTaskStore(state => state.tasks); // ‼️ selector — only re-renders when tasks changes
   const deleteTask = useTaskStore(state => state.deleteTask);
@@ -1006,7 +1006,7 @@ export function useTheme() {
 const UserContext = createContext({ user: null, theme: 'light', sidebar: false });
 // If sidebar changes, everything re-renders — even components that only use user
 
-// ‼️ ✓ Split contexts by update frequency
+// ‼️ ✓ Split contexts by update frequency‼️
 const UserContext = createContext<User | null>(null);
 const ThemeContext = createContext<Theme>('light');
 const SidebarContext = createContext<boolean>(false);
@@ -1023,7 +1023,7 @@ const SidebarContext = createContext<boolean>(false);
 ### React.memo
 
 ```tsx
-// Prevents re-render if props haven't changed (shallow comparison)
+// Prevents re-render if props haven't changed (shallow comparison)‼️
 const TaskItem = React.memo(function TaskItem({ task, onDelete }) {
     console.log('TaskItem render:', task.id);
     return <div>{task.title}</div>;
@@ -1036,7 +1036,7 @@ const TaskItem = React.memo(function TaskItem({ task, onDelete }) {
 const handleDelete = useCallback(id => deleteTask(id), [deleteTask]);
 <TaskItem task={task} onDelete={handleDelete} />;
 
-// ‼️ Custom comparison function
+// ‼️ Custom comparison function‼️
 const TaskItem = React.memo(TaskItemBase, (prevProps, nextProps) => {
     // Return true if props are equal (skip re-render)
     return prevProps.task.id === nextProps.task.id && prevProps.task.done === nextProps.task.done;
@@ -1074,7 +1074,7 @@ function App() {
 }
 // Each page is a separate JS chunk — only downloaded when that route is visited
 
-// Preload before user navigates (on hover over link)
+// Preload before user navigates (on hover over link)‼️
 const preloadDashboard = () => import('./Dashboard');
 <Link onMouseEnter={preloadDashboard} to='/dashboard'>
     Dashboard
@@ -1120,6 +1120,52 @@ function LongList({ items }) {
 // Only renders ~10-15 rows at a time regardless of list length
 ```
 
+### Passing components/functions as children — key React concept
+
+```text
+‼️ In React, children is just a prop.‼️ You can pass ANYTHING as children:
+
+  1. JSX elements (most common):
+     <Wrapper>
+         <div>hello</div>
+     </Wrapper>
+     // Wrapper receives: children = <div>hello</div>
+
+  2. A string:
+     <Wrapper>hello</Wrapper>
+     // Wrapper receives: children = "hello"
+
+  3. A function or component reference:‼️
+     <Wrapper>
+         {MyComponent}
+     </Wrapper>
+     // Wrapper receives: children = MyComponent (the function itself)‼️
+     // Then Wrapper can CALL it: children({ index: 0, style: {...} })‼️‼️
+     // Which is the same as: MyComponent({ index: 0, style: {...} })‼️
+
+This is normal React/JavaScript syntax — not library-specific.
+It's just like passing a function to another function in plain JavaScript:
+
+  // Plain JS — same concept
+  function doTenTimes(fn) {
+      for (let i = 0; i < 10; i++) {
+          fn(i);  // caller decides WHEN and WITH WHAT to call your function
+      }
+  }
+  doTenTimes((index) => console.log(index));
+
+  // React — same concept
+  <List>
+      {({ index, style }) => <div style={style}>{items[index].name}</div>}
+  </List>
+  // List decides WHEN and WITH WHAT props to call your function‼️
+
+Libraries like react-window use this pattern:
+  "Give me a component/function as children, and I'll call it myself
+   with { index, style } for each visible row."
+  The API design choice is the library's. The syntax is just standard React.‼️
+```
+
 ### Virtualization with react-window
 
 ```tsx
@@ -1127,10 +1173,12 @@ function LongList({ items }) {
 import { FixedSizeList as List } from 'react-window';
 
 function VirtualList({ items }) {
+    // Row is a component — react-window will call it for each VISIBLE row
+    // and automatically pass { index, style } as props
     const Row = ({ index, style }) => (
         <div style={style}>
             {' '}
-            {/* style contains position — MUST apply */}
+            {/* style contains position (absolute) — MUST apply */}
             {items[index].name}
         </div>
     );
@@ -1138,11 +1186,23 @@ function VirtualList({ items }) {
     return (
         <List
             height={600} // visible area height
-            itemCount={items.length}
-            itemSize={50} // height of each row
+            itemCount={items.length} // total items (e.g., 10,000)
+            itemSize={50} // height of each row in pixels
             width='100%'
         >
             {Row}
+            {/* ‼️ {Row} passes the Row component as children to List.
+                List receives it as: children = Row
+                Internally, List calls Row for each visible row:‼️
+                  Row({ index: 0, style: { position: 'absolute', top: 0, height: 50 } })
+                  Row({ index: 1, style: { position: 'absolute', top: 50, height: 50 } })
+                  Row({ index: 2, style: { position: 'absolute', top: 100, height: 50 } })
+                  ...only for the ~12 rows visible on screen
+
+                YOU don't pass index — List does it FOR you automatically.‼️
+                You just tell List how many items and how tall each is.
+                List figures out which rows are visible and calls Row
+                with the right { index, style } for each one. */}
         </List>
     );
 }
@@ -1162,8 +1222,8 @@ function onRenderCallback(id, phase, actualDuration) {
     <TaskList />
 </Profiler>;
 
-// Chrome DevTools → React DevTools → Profiler tab
-// Record → interact → stop → see flame graph
+// Chrome DevTools → React DevTools → Profiler tab‼️
+// Record → interact → stop → see flame graph‼️
 // Look for: unexpectedly deep re-render trees, long render times
 ```
 
