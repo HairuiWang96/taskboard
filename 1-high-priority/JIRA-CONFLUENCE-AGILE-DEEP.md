@@ -7,12 +7,14 @@
 ## Table of Contents
 
 ### Part 1 — Agile Fundamentals (Practical)
+
 1. [Agile Overview](#1-agile-overview)
 2. [Scrum Framework](#2-scrum-framework)
 3. [Kanban](#3-kanban)
 4. [Scaled Agile](#4-scaled-agile)
 
 ### Part 2 — Jira Deep Dive
+
 5. [Jira Concepts](#5-jira-concepts)
 6. [Writing Good Tickets](#6-writing-good-tickets)
 7. [Workflows & Statuses](#7-workflows--statuses)
@@ -23,6 +25,7 @@
 12. [Jira Automation](#12-jira-automation)
 
 ### Part 3 — Confluence Deep Dive
+
 13. [Confluence Basics](#13-confluence-basics)
 14. [Essential Page Types](#14-essential-page-types)
 15. [Writing Effective Technical Docs](#15-writing-effective-technical-docs)
@@ -30,6 +33,7 @@
 17. [Confluence Best Practices](#17-confluence-best-practices)
 
 ### Part 4 — Agile Ceremonies in Practice
+
 18. [Sprint Planning](#18-sprint-planning)
 19. [Daily Standup](#19-daily-standup)
 20. [Sprint Review / Demo](#20-sprint-review--demo)
@@ -37,11 +41,13 @@
 22. [Backlog Refinement / Grooming](#22-backlog-refinement--grooming)
 
 ### Part 5 — Agile Metrics & Reporting
+
 23. [Key Metrics](#23-key-metrics)
 24. [Jira Dashboards & Reports](#24-jira-dashboards--reports)
 25. [Communicating Progress](#25-communicating-progress)
 
 ### Part 6 — Team Dynamics & Culture
+
 26. [Developer's Role in Agile](#26-developers-role-in-agile)
 27. [Working with Product Owners](#27-working-with-product-owners)
 28. [Common Agile Anti-patterns](#28-common-agile-anti-patterns)
@@ -85,7 +91,7 @@ The 12 Agile Principles — the ones that actually matter day-to-day:
 2. Welcome changing requirements, even late in development
    → Don't fight scope changes — plan for them. That's why sprints are short.
 
-3. Working software is the primary measure of progress
+3. Working software is the primary measure of progress‼️
    → Not story points completed, not lines of code, not tickets closed.
      Did the user get something useful? That's progress.
 
@@ -130,7 +136,7 @@ Agile:
 ‼️ Most real teams are somewhere in between.
    Even "waterfall" projects do iterative development within phases.
    Even "agile" projects have some upfront design and planning.
-   The question isn't "which methodology" — it's "how much upfront vs iterative."
+   The question isn't "which methodology" — it's "how much upfront vs iterative."‼️
 ```
 
 ### Common misconceptions
@@ -152,7 +158,7 @@ Reality:       Agile teams ship every sprint. That IS a deadline.
                You just don't promise exact dates 6 months out.
 
 Misconception: "Story points = hours"
-Reality:       Story points measure COMPLEXITY, not time.
+Reality:       Story points measure COMPLEXITY, not time.‼️
                A 5-point story isn't 5 hours — it's 5x more complex than a 1-point story.
                Different devs might take different hours, but complexity is the same.
 
@@ -204,7 +210,7 @@ Development Team:
   - Cross-functional: devs, QA, designers, anyone building the product
   - Self-organizing: the TEAM decides who works on what
   - Typically 3-9 people (5-7 ideal)
-  - Everyone is accountable for the sprint goal, not just "my tickets"
+  - Everyone is accountable for the sprint goal, not just "my tickets"‼️
   - Team estimates work, not management
 
   In practice (as a senior frontend dev):
@@ -269,7 +275,7 @@ Development Team:
    Duration: 1-2 hours
    Who: PO + Dev Team (some or all)
    What happens:
-     - Review upcoming stories (1-2 sprints ahead)
+     - Review upcoming stories (1-2 sprints ahead)‼️
      - Clarify requirements, write acceptance criteria
      - Estimate stories (story points)
      - Split large stories into smaller ones
@@ -295,7 +301,7 @@ Development Team:
    - Should NOT change mid-sprint (with rare exceptions)
    - Visible to everyone (the sprint board)
 
-3. Increment:
+3. Increment:‼️
    - The sum of all completed backlog items at the end of a sprint
    - Must meet the Definition of Done
    - Must be potentially releasable (doesn't mean you MUST release)
@@ -331,7 +337,7 @@ Typical 2-week sprint calendar:
 ### Definition of Done (DoD) and Definition of Ready (DoR)
 
 ```text
-‼️ Definition of Done (DoD) — when is a story DONE?
+‼️ Definition of Done (DoD) — when is a story DONE?‼️
 
   A story is done when ALL of these are true (example):
   ✓ Code is written and follows team coding standards
@@ -348,7 +354,7 @@ Typical 2-week sprint calendar:
   ✓ Works on supported browsers (Chrome, Firefox, Safari, Edge)
 
   ‼️ "Done" means shippable. If you need more work before it can go to
-     production, it's NOT done. "Dev complete" is not "done."
+     production, it's NOT done. "Dev complete" is not "done."‼️
 
 ‼️ Definition of Ready (DoR) — when is a story READY to work on?
 
@@ -358,6 +364,52 @@ Typical 2-week sprint calendar:
   ✓ Story has been estimated by the team
   ✓ Dependencies identified (APIs, designs, other teams)
   ✓ Design mockups/wireframes available (if UI work)
+
+     Wireframe vs Mockup vs Prototype — what's the difference:‼️
+
+       Wireframe = a rough sketch/blueprint of a page layout.
+         Just boxes, lines, and placeholder text. No colors, no images.
+         Shows WHERE things go (navigation here, button there, form here).
+         Think of it like a floor plan for a house.
+
+       Mockup = a realistic, high-fidelity visual design.
+         Includes actual colors, fonts, images, branding.
+         Shows exactly what the final product will LOOK like.
+         Think of it like a 3D rendered image of the finished house.
+
+       Prototype = a clickable mockup where you can actually interact
+         (click buttons, navigate between pages, see transitions).
+         Looks and feels like the real thing, but no real code behind it.
+
+       The workflow:
+         Wireframe (rough layout) → Mockup (polished design) → Prototype (interactive) → Code
+
+       Example — a login page:
+
+         Wireframe:                    Mockup:
+         ┌─────────────────┐          ┌─────────────────────┐
+         │  [ Logo ]       │          │  🔵 MyApp           │
+         │                 │          │                     │
+         │  [___________]  │          │  Email              │
+         │  [___________]  │          │  ┌─────────────┐   │
+         │  [ Login btn ]  │          │  │ john@email  │   │
+         │                 │          │  └─────────────┘   │
+         │  forgot pass?   │          │  Password           │
+         └─────────────────┘          │  ┌─────────────┐   │
+                                      │  │ ••••••••    │   │
+         Gray boxes, no style         │  └─────────────┘   │
+         Just layout + placement      │  ┌─────────────┐   │
+                                      │  │  Log In  🔵 │   │
+                                      │  └─────────────┘   │
+                                      │  Forgot password?   │
+                                      └─────────────────────┘
+                                      Real colors, fonts, spacing
+                                      Looks like the final product
+
+       Tools: Figma (all three), Balsamiq (wireframes), Sketch (mockups)
+       As a developer, you usually receive mockups or prototypes from
+       the design team and build the actual UI from those.
+
   ✓ Technical approach discussed (if complex)
   ✓ Story is small enough to complete in one sprint
   ✓ PO is available to answer questions
@@ -2063,7 +2115,11 @@ Retrospective Notes Template:
 ```text
 ‼️ ADR — Architecture Decision Record
 
-  A lightweight document recording WHY you made a technical decision.
+  In simple terms: a short document that records a technical decision your team
+  made, WHY you made it, and what alternatives you considered. So future engineers
+  (or future you) can understand "why did we choose React over Vue?" or "why did
+  we use PostgreSQL instead of MongoDB?" without having to ask around.
+
   Critical for teams — without ADRs, nobody remembers WHY things are the way they are.
 
   ADR Template:
@@ -2192,6 +2248,13 @@ Retrospective Notes Template:
 ### Runbooks and incident postmortems
 
 ```text
+Runbook = step-by-step instructions for handling a specific operational
+  task or incident. Like a recipe — when X happens, do step 1, step 2, step 3.
+  Examples: "how to restart the production server," "what to do when the
+  database is full," "how to roll back a bad deployment."
+  Written so anyone on the team (even at 3am on-call) can follow it
+  without guessing.‼️
+
 Runbook Template:
 
   ┌──────────────────────────────────────────────────┐
