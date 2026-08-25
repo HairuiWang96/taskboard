@@ -432,7 +432,7 @@ Use Scrum when:
   - The team is new to agile (Scrum's structure helps)
   - You need to commit to delivering specific things by specific dates
 
-Use Kanban when:
+Use Kanban when:‼️
   - Work is unpredictable (support, ops, bug fixing)
   - Items vary wildly in size and priority
   - You want continuous flow, not sprints
@@ -445,8 +445,8 @@ Use Scrumban (hybrid) when:
   - Many teams actually do this without realizing it
 
 ‼️ Most frontend teams doing feature development use Scrum.
-   DevOps/SRE teams often use Kanban (reactive, interrupt-driven work).
-   Support teams almost always use Kanban.
+   DevOps/SRE teams often use Kanban (reactive, interrupt-driven work).‼️
+   Support teams almost always use Kanban.‼️
 ```
 
 ### WIP limits (Work In Progress)
@@ -580,7 +580,7 @@ Cumulative Flow Diagram (CFD):
 ‼️ SAFe — when one Scrum team isn't enough.
 
   SAFe is used when 50-150+ engineers need to coordinate.
-  It's the most common scaling framework (also the most controversial).
+  It's the most common scaling framework (also the most controversial).‼️
 
   Key SAFe concepts:
 
@@ -593,7 +593,7 @@ Cumulative Flow Diagram (CFD):
   Program Increment (PI):
   - A timebox of 8-12 weeks (typically 5 sprints of 2 weeks each)
   - All teams in the ART plan together at PI Planning
-  - The 5th sprint is often an "Innovation and Planning" sprint
+  - The 5th sprint is often an "Innovation and Planning" sprint‼️
     (hackathon, tech debt, planning for next PI)
 
   PI Planning:
@@ -647,7 +647,7 @@ When you need scaling:
   - Shared codebase or platform
 
 Common pitfalls of scaling:
-  ‼️ "We need SAFe" is often a symptom, not a solution.
+  ‼️ "We need SAFe" is often a symptom, not a solution.‼️
 
   1. Scaling too early: One team of 8 doesn't need SAFe. Just do Scrum.
   2. Adding process instead of fixing architecture: If teams are blocked
@@ -656,7 +656,7 @@ Common pitfalls of scaling:
   3. PI Planning becomes theater: Teams commit to objectives but nobody
      believes them. Objectives are too vague to be meaningful.
   4. "Agile in name only": SAFe at scale often becomes waterfall
-     with agile terminology. 10-week planning cycles with fixed scope
+     with agile terminology. ‼️ 10-week planning cycles with fixed scope
      IS waterfall, regardless of what you call it.
   5. Too many coordination roles: RTEs, Solution Train Engineers,
      System Architects — overhead grows, actual development shrinks.
@@ -704,7 +704,7 @@ Board:
   - WIP limits on columns
   - Cumulative flow diagram, control chart
 
-  ‼️ One project can have multiple boards.
+  ‼️ One project can have multiple boards.‼️
      Example: "Frontend" project has:
      - Main Scrum board (for sprint work)
      - Bug triage Kanban board (for incoming bugs)
@@ -774,7 +774,7 @@ Issue Types Explained:
   - Time-boxed research or investigation
   - Example: "Spike: Evaluate chart libraries for dashboard (2 days max)"
   - Output is a DECISION or DOCUMENT, not working code
-  - Always time-boxed: "Spend no more than X hours/days researching"
+  - Always time-boxed: "Spend no more than X hours/days researching"‼️
   - ‼️ If the spike produces code, it was a task, not a spike
 ```
 
@@ -795,9 +795,9 @@ Key fields on every Jira issue:
   Story Points:    Complexity estimate (Fibonacci: 1, 2, 3, 5, 8, 13)
   Labels:          Free-form tags (e.g., "frontend", "tech-debt", "accessibility")
   Components:      Structural categories (e.g., "Auth", "Dashboard", "API")
-  Fix Version:     Which release this is targeting (e.g., "v2.5.0")
+  Fix Version:     Which release this is targeting (e.g., "v2.5.0")‼️
   Due Date:        When this needs to be done (if applicable)
-  Linked Issues:   Related issues (blocks, is blocked by, duplicates)
+  Linked Issues:   Related issues (blocks, is blocked by, duplicates)‼️
   Acceptance Criteria: What must be true for the story to be "done"
 
   ‼️ Fields you should ALWAYS fill in:
@@ -811,7 +811,7 @@ Key fields on every Jira issue:
   Fields that are often abused:
   - Labels: Too many labels = nobody uses them. Keep it to 5-10 standard labels.
   - Components: Useful for filtering but only if consistently used.
-  - Fix Version: Only matters if you do versioned releases.
+  - Fix Version: Only matters if you do versioned releases.‼️
 ```
 
 ---
@@ -896,7 +896,7 @@ Key fields on every Jira issue:
   ‼️ Good acceptance criteria are:
      - Testable (a QA engineer or automated test can verify each one)
      - Specific (no ambiguity — "appropriate message" is BAD, specify the message)
-     - Complete (cover happy path, error cases, edge cases)
+     - Complete (cover happy path, error cases, edge cases)‼️
      - Independent (each criterion can be verified on its own)
 ```
 
@@ -1007,9 +1007,9 @@ Key fields on every Jira issue:
 
 ```text
 Technical stories:
-  Work that doesn't directly deliver user value but is necessary.
+  Work that doesn't directly deliver user value but is necessary.‼️
 
-  These are typically Tasks, not User Stories:
+  These are typically Tasks, not User Stories:‼️
 
   "Upgrade React from v17 to v18"
   "Set up Datadog RUM for frontend monitoring"
@@ -1055,13 +1055,13 @@ Technical stories:
   2. Zustand (lightweight store)
   3. Redux Toolkit (existing team knowledge)
 
-  Questions to Answer:
+  Questions to Answer:‼️
   - Which solution handles our data fetching patterns best?
   - Which has the smallest bundle impact?
   - Which integrates best with our existing codebase?
   - What's the learning curve for the team?
 
-  Time Box: 3 working days maximum.
+  Time Box: 3 working days maximum.‼️
 
   Expected Output:
   - Confluence page with comparison matrix
@@ -1114,7 +1114,7 @@ Technical stories:
   Some teams add more columns:
   - "Blocked" (waiting on external dependency)
   - "Ready for QA" (code merged, deployed to QA environment)
-  - "UAT" (user acceptance testing by PO/stakeholders)
+  - "UAT" (user acceptance testing by PO/stakeholders)‼️
   - "Ready to Deploy" (approved, waiting for release window)
 
   ‼️ Status Categories (Jira groups statuses into 3 categories):
@@ -1141,7 +1141,7 @@ Example: Frontend team workflow mapped to reality:
   Changes Req'd    PR has feedback, developer is addressing comments
   QA               Deployed to staging, QA is testing
   QA Failed        QA found issues, back to developer
-  UAT              PO/stakeholders are verifying the feature
+  UAT              PO/stakeholders are verifying the feature‼️
   Done             All AC met, merged, deployed, PO accepted
 
   ‼️ Your workflow should match how your team ACTUALLY works.
@@ -1216,7 +1216,7 @@ Sprint lifecycle in Jira:
 
   What it is:
   A single sentence describing WHAT the sprint will achieve.
-  Not a list of tickets — a coherent THEME or OBJECTIVE.
+  Not a list of tickets — a coherent THEME or OBJECTIVE.‼️
 
   Good sprint goals:
   "Deliver the core password reset flow so users can recover their accounts"
@@ -1255,13 +1255,13 @@ Sprint lifecycle in Jira:
   - Release forecasting: "We have 100 points remaining, at 25/sprint = 4 sprints"
   - Trend analysis: "Velocity dropping? Are stories too big? Are there blockers?"
 
-  ‼️ CRITICAL: Velocity is for the TEAM's planning, NOT for management reporting.
+  ‼️ CRITICAL: Velocity is for the TEAM's planning, NOT for management reporting.‼️
 
   What velocity is NOT:
   - A performance metric ("Team A does 40 points, Team B does 20 → A is better")
-    → WRONG. Points mean different things to different teams.
+    → WRONG. Points mean different things to different teams.‼️
   - A commitment to management ("You MUST complete 30 points this sprint")
-    → WRONG. Velocity is a FORECAST, not a CONTRACT.
+    → WRONG. Velocity is a FORECAST, not a CONTRACT.‼️
   - Comparable across teams
     → WRONG. Team A's 1 point ≠ Team B's 1 point.
   - Something to gamify ("Let's increase velocity 10% each sprint")
@@ -1298,7 +1298,7 @@ Sprint Burndown Chart:
 
   ‼️ Common burndown patterns:
 
-  "Late spike" (flat then drops):
+  "Late spike" (flat then drops):‼️
   Stories were too big. All finished at the end. Break into smaller stories.
 
   "Scope creep" (line goes up):
@@ -1347,7 +1347,7 @@ Mid-Sprint Scope Changes:
   2. "Quick request" from PO:
      - Push back: "This can go in the next sprint."
      - If it MUST be this sprint: remove something else.
-     - Never just "add" work without removing something.
+     - Never just "add" work without removing something.‼️
 
   3. Stakeholder adds "just one more thing":
      - Scrum Master should protect the team.
