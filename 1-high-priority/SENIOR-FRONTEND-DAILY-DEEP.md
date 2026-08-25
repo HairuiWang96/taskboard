@@ -1241,7 +1241,7 @@ function onRenderCallback(id, phase, actualDuration) {
 // A group of components that work together and share state implicitly.
 // They communicate through Context behind the scenes — no prop passing needed.
 //
-// HTML analogy:
+// HTML analogy:‼️
 //   <select>           ← owns state (which option is selected)
 //     <option>A</option>  ← child, doesn't receive state as prop
 //     <option>B</option>  ← just works because it's inside <select>
@@ -1261,19 +1261,43 @@ function onRenderCallback(id, phase, actualDuration) {
 //   - You want clean readable usage at the call site (no prop drilling)
 //   - The components only make sense together (Tab without Tabs is meaningless)
 
+// ‼️ HOW COMPOUND COMPONENT LIBRARIES (Radix UI, Headless UI, Reach UI) WORK:
+// This is exactly the mechanism those libraries use under the hood.
+// The entire pattern boils down to 3 things:
+//
+// 1. Parent creates a Context with shared state (which tab is active, which item is selected, etc.)
+// 2. Child components consume that Context via useContext — they "just work" when nested
+//    inside the parent, no prop passing needed between them
+// 3. Dot notation (Tabs.Tab, Tabs.Panel) is just attaching sub-components as static properties
+//    on the parent function — it's plain JS, not magic
+//
+// What libraries add on top of this core pattern:
+//   - Accessibility: role="tab", role="tabpanel", aria-selected, aria-controls, etc.
+//   - Keyboard navigation: arrow keys to move between tabs, Enter/Space to select
+//   - Animation hooks: onOpenChange, forceMount for exit animations
+//   - Headless/unstyled: no default styles, you bring your own (Radix, Headless UI)
+//   - Controlled + uncontrolled: works with or without you managing state
+//
+// But the fundamental mechanism? It's just React Context + static property assignment.
+// Nothing more complicated than that.‼️
+
 const TabContext = createContext<{ active: string; setActive: (id: string) => void } | null>(null);
 
+// Step 1: Parent component creates Context provider with shared state
 function Tabs({ defaultTab, children }) {
-    const [active, setActive] = useState(defaultTab);
+    const [active, setActive] = useState(defaultTab); // ← owns the state
     return (
         <TabContext.Provider value={{ active, setActive }}>
+            {' '}
+            {/* ← makes state available to all children */}
             <div>{children}</div>
         </TabContext.Provider>
     );
 }
 
+// Step 2: Child components consume Context — no props passed from parent
 function Tab({ id, children }) {
-    const { active, setActive } = useContext(TabContext)!;
+    const { active, setActive } = useContext(TabContext)!; // ← reads shared state from Context
     return (
         <button onClick={() => setActive(id)} aria-selected={active === id}>
             {children}
@@ -1282,14 +1306,18 @@ function Tab({ id, children }) {
 }
 
 function TabPanel({ id, children }) {
-    const { active } = useContext(TabContext)!;
-    return active === id ? <div>{children}</div> : null;
+    const { active } = useContext(TabContext)!; // ← reads shared state from Context
+    return active === id ? <div>{children}</div> : null; // ← shows/hides based on shared state
 }
 
+// Step 3: Attach as static properties — this is what enables the dot notation API
+// It's just plain JS property assignment on a function object, nothing special
 Tabs.Tab = Tab;
 Tabs.Panel = TabPanel;
 
-// Usage — clean, semantic
+// Usage — clean, semantic API that looks like HTML <select>/<option>
+// The consumer doesn't need to know about Context, prop drilling, or state management
+// They just nest components and it works — exactly like using Radix or Headless UI
 <Tabs defaultTab='profile'>
     <Tabs.Tab id='profile'>Profile</Tabs.Tab>
     <Tabs.Tab id='settings'>Settings</Tabs.Tab>
