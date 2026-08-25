@@ -1333,7 +1333,7 @@ Tabs.Panel = TabPanel;
 ### Render props & children as function
 
 ```tsx
-// ‼️ Pass render logic as a prop — inversion of control
+// ‼️ Pass render logic as a prop — inversion of control‼️
 function DataProvider({ userId, render }) {
     const [data, setData] = useState(null);
     useEffect(() => {
@@ -1352,11 +1352,11 @@ fetchUser(userId).then(setData); // shorthand
 <DataProvider userId='123' render={user => <UserCard user={user} />} />;
 
 // ‼️ children as function
-// children here is NOT JSX — it's a function. That's the whole trick.
+// children here is NOT JSX — it's a function. That's the whole trick.‼️
 // Toggle calls children(...) and passes { on, toggle } into it.
 // The function receives those values, unpacks them, and returns the button JSX.
 //
-// Toggle owns the state, but YOU decide what to render.
+// Toggle owns the state, but YOU decide what to render.‼️
 // Toggle doesn't render a button — you do. It just hands you `on` and `toggle` to use however you want.
 function Toggle({ children }) {
     const [on, setOn] = useState(false);
@@ -1374,8 +1374,8 @@ function Toggle({ children }) {
 // </Toggle>
 <Toggle>{({ on, toggle }) => <button onClick={toggle}>{on ? 'ON' : 'OFF'}</button>}</Toggle>;
 
-// Today: custom hooks replaced most render prop use cases
-// Render props still useful when you need to control WHERE in JSX data is rendered
+// Today: custom hooks replaced most render prop use cases‼️
+// Render props still useful when you need to control WHERE in JSX data is rendered‼️
 ```
 
 ### Higher-Order Components (HOC)
@@ -1407,14 +1407,14 @@ const ProtectedDashboard = withAuth(Dashboard);
 //   const inputRef = useRef(null);
 //   <Input ref={inputRef} />   ← inputRef.current stays null — ref never arrives
 //
-// forwardRef tells React: "pass the ref through to the DOM node inside."
+// forwardRef tells React: "pass the ref through to the DOM node inside."‼️
 //
-// forwardRef wraps the component and injects ref as a SECOND argument
-// (you can't get it from props — React strips it out):
+// forwardRef wraps the component and injects ref as a SECOND argument‼️
+// (you can't get it from props — React strips it out):‼️
 //   function Input({ className, ...props }, ref)
 //                   ↑ normal props          ↑ ref comes here as second arg
 //
-// WHEN YOU NEED THIS:
+// WHEN YOU NEED THIS:‼️
 //   - Parent wants to .focus() an input inside a child
 //   - Parent wants to measure a child's DOM size/position
 //   - Building a reusable component library where consumers need DOM access
@@ -1441,7 +1441,7 @@ const inputRef = useRef<HTMLInputElement>(null);
 //
 // PROBLEM with forwardRef alone:
 //   parent gets the raw DOM node → can call anything: focus, scrollIntoView, click...
-//   useImperativeHandle lets you say: "here's the exact API I allow, nothing else"
+//   useImperativeHandle lets you say: "here's the exact API I allow, nothing else"‼️
 //
 // useImperativeHandle(ref, () => ({ ... }))
 //   - ref     → the ref passed in from parent via forwardRef
@@ -1452,8 +1452,8 @@ const inputRef = useRef<HTMLInputElement>(null);
 //   inputRef.current.clear()          ✓ allowed — you exposed it
 //   inputRef.current.scrollIntoView() ✗ not available — you didn't expose it
 //
-// forwardRef alone:         ref.current = raw <input> DOM node  ← parent can do anything
-// forwardRef + this hook:   ref.current = { focus, clear }      ← parent can only do what you allow
+// forwardRef alone:         ref.current = raw <input> DOM node  ← parent can do anything‼️
+// forwardRef + this hook:   ref.current = { focus, clear }      ← parent can only do what you allow‼️
 //
 // WHEN TO USE:
 //   - Building a reusable library component with a clean, stable public API
@@ -1482,20 +1482,20 @@ const FancyInput = React.forwardRef((props, ref) => {
 
 ```text
 Before React 18 (legacy mode): rendering is synchronous and uninterruptible.
-  A large re-render blocks the main thread until complete.
+  A large re-render blocks the main thread until complete.‼️
 
 React 18 concurrent mode: rendering is interruptible.
   React can start rendering, pause it for higher-priority work, and resume.
-  Result: the UI stays responsive even during expensive renders.
+  Result: the UI stays responsive even during expensive renders.‼️
 
-Key: concurrent mode doesn't change what renders, just WHEN and HOW.
-Your components don't need to know about it — React handles it internally.
+Key: concurrent mode doesn't change what renders, just WHEN and HOW.‼️
+Your components don't need to know about it — React handles it internally.‼️
 ```
 
 ### Automatic batching (React 18)
 
 ```jsx
-// ‼️ React 18: ALL state updates are batched, even in setTimeout/Promises
+// ‼️ React 18: ALL state updates are batched, even in setTimeout/Promises‼️
 // React 17: only batched inside React event handlers
 
 // React 17:
@@ -1507,7 +1507,7 @@ setTimeout(() => {
 // React 18: automatic batching everywhere
 setTimeout(() => {
     setCount(c => c + 1);
-    setFlag(f => !f); // batched — only 1 re-render
+    setFlag(f => !f); // batched — only 1 re-render‼️
 }, 1000);
 
 // React 18 — all three setState calls cause ONE re-render
@@ -1527,7 +1527,7 @@ flushSync(() => setFlag(f => !f)); // forces immediate re-render
 ### useTransition & startTransition
 
 ```tsx
-// ‼️ Mark state updates as non-urgent — React can interrupt them
+// ‼️ Mark state updates as non-urgent — React can interrupt them‼️
 // Urgent: typing, clicking — must respond immediately
 // Transition: filtering 10k items — can be interrupted if user types again
 
@@ -1556,7 +1556,7 @@ function SearchPage() {
         </>
     );
 }
-// Input stays responsive while results update.
+// Input stays responsive while results update.‼️
 // If user types faster, React cancels the previous transition and starts a new one.
 
 // startTransition standalone (without isPending):
@@ -1573,8 +1573,8 @@ function handleInput(e) {
 ### useDeferredValue
 
 ```tsx
-// ‼️ Defer updating a value — similar to debounce but React-aware
-// Use when you don't control the setter (value comes from props)
+// ‼️ Defer updating a value — similar to debounce but React-aware‼️
+// Use when you don't control the setter (value comes from props)‼️
 import { useDeferredValue } from 'react';
 
 function SearchResults({ query }) {
@@ -1603,11 +1603,11 @@ function SearchResults({ query }) {
 ### Suspense for data fetching
 
 ```tsx
-// ‼️ Suspense: show fallback while async content loads
+// ‼️ Suspense: show fallback while async content loads‼️
 // Works with: React.lazy, use() hook, TanStack Query, SWR
 
 function UserProfile({ userId }) {
-  // ‼️ use() hook throws a Promise if data not ready — Suspense catches it
+  // ‼️ use() hook throws a Promise if data not ready — Suspense catches it‼️
   const user = use(fetchUserPromise(userId));
   return <div>{user.name}</div>;
 }
@@ -1697,7 +1697,7 @@ function UserProfile({ id }) {
         queryKey: ['user', id],
         queryFn: () => fetchUser(id),
     });
-    // No loading state needed — Suspense handles it above
+    // No loading state needed — Suspense handles it above‼️
     return <div>{user.name}</div>;
 }
 ```
@@ -1710,15 +1710,15 @@ function UserProfile({ id }) {
 
 ```text
 Traditional React: ALL components run on the client (browser)
-  - Large JS bundles sent to browser
+  - Large JS bundles sent to browser‼️
   - Data fetching requires client → server round trips
-  - Sensitive data/logic exposed to browser
+  - Sensitive data/logic exposed to browser‼️
 
 React Server Components (RSC): components run on the SERVER
-  - Server Component code never ships to the browser (zero bundle impact)
+  - Server Component code never ships to the browser (zero bundle impact)‼️
   - Can directly access databases, file system, env vars
-  - Rendered output (not the component itself) is sent to client
-  - Cannot use useState, useEffect, event handlers (no interactivity)
+  - Rendered output (not the component itself) is sent to client‼️
+  - Cannot use useState, useEffect, event handlers (no interactivity)‼️
 
 Hybrid: RSC + Client Components
   - Server Components: data fetching, static content, heavy dependencies
@@ -1731,13 +1731,13 @@ Hybrid: RSC + Client Components
 // Server Component (default in Next.js App Router — no 'use client' directive)
 // app/users/page.tsx
 async function UsersPage() {
-    // ✓ Can await directly — no useEffect needed
+    // ✓ Can await directly — no useEffect needed‼️
     const users = await db.select().from(usersTable);
 
     // ✓ Access env vars — never exposed to browser
     console.log(process.env.DATABASE_URL); // safe on server
 
-    // ✓ Heavy library — doesn't ship to browser bundle
+    // ✓ Heavy library — doesn't ship to browser bundle‼️
     import { parseMarkdown } from 'heavy-markdown-library'; // ~100KB saved
 
     return <UserList users={users} />;
@@ -1761,24 +1761,24 @@ function UserList({ users }) {
     );
 }
 
-// Rule: push 'use client' as far down the tree as possible
-// Keep Server Components for anything that doesn't need interactivity
+// Rule: push 'use client' as far down the tree as possible‼️
+// Keep Server Components for anything that doesn't need interactivity‼️
 ```
 
 ### Serialization boundary
 
 ```jsx
-// Server → Client boundary: props must be serializable
-// ✓ Strings, numbers, arrays, plain objects, Dates
-// ✗ Functions, class instances, undefined (in objects), React elements (sometimes)
+// Server → Client boundary: props must be serializable‼️
+// ✓ Strings, numbers, arrays, plain objects, Dates‼️
+// ✗ Functions, class instances, undefined (in objects), React elements (sometimes)‼️
 
-// ✗ Can't pass a function from Server to Client Component as prop
+// ✗ Can't pass a function from Server to Client Component as prop‼️
 function ServerComponent() {
     const handleClick = () => console.log('click'); // function
     return <ClientButton onClick={handleClick} />; // ✗ can't serialize
 }
 
-// ✓ Event handlers are defined in Client Components
+// ✓ Event handlers are defined in Client Components‼️
 ('use client');
 function ClientButton() {
     const handleClick = () => console.log('click'); // defined in client
