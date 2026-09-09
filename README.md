@@ -1,15 +1,15 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-97 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+116 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    27 files — study these first, highest interview ROI
-2-medium-priority/  31 files — once high-priority is solid
+1-high-priority/    46 files — study these first, highest interview ROI
+2-medium-priority/  32 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
 
@@ -66,6 +66,7 @@ Root files (start here):
 | [AUTH-DEEP.md](2-medium-priority/AUTH-DEEP.md) | JWT, OAuth2, OIDC, RBAC, sessions |
 | [TESTING-STRATEGY-DEEP.md](2-medium-priority/TESTING-STRATEGY-DEEP.md) | RTL, MSW, Playwright, TDD, CI strategy |
 | [NEXTJS-DEEP.md](2-medium-priority/NEXTJS-DEEP.md) | App router, SSR/SSG/ISR, server components |
+| [NESTJS-DEEP.md](2-medium-priority/NESTJS-DEEP.md) | DI container, lifecycle, guards/interceptors/pipes, TypeORM/Prisma, CQRS, microservices, queues, testing |
 | [API-DESIGN-DEEP.md](2-medium-priority/API-DESIGN-DEEP.md) | REST, versioning, pagination, error handling |
 | [GRAPHQL-DEEP.md](2-medium-priority/GRAPHQL-DEEP.md) | Schema, resolvers, N+1, DataLoader, subscriptions |
 | [REDIS-CACHING-DEEP.md](2-medium-priority/REDIS-CACHING-DEEP.md) | Caching strategies, data structures, pub/sub |
