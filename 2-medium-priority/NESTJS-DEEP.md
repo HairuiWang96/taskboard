@@ -100,7 +100,7 @@ An analogy that holds up well:
 
 That last part is the whole value proposition. Nest is not faster than Express
 (it runs ON Express). It does not do anything Express cannot do. What it gives
-you is that every Nest project on earth is organised the same way.
+you is that every Nest project on earth is organised the same way.‼️
 ```
 
 ```text
@@ -141,7 +141,7 @@ WHAT YOU GET IN THE BOX
     Caching, rate limiting        Scheduled tasks (cron)
 
   All of these follow the SAME conventions, which is the real benefit — learning
-  one teaches you the shape of the others.
+  one teaches you the shape of the others.‼️
 ```
 
 ---
@@ -227,7 +227,7 @@ app.post('/users', async (req, res) => {
 
 ```typescript
 // ── The same feature in NestJS ────────────────────────────────────────────
-// Each concern now has exactly one home, and the framework enforces it.
+// Each concern now has exactly one home, and the framework enforces it.‼️
 
 // 1. WHAT VALID INPUT LOOKS LIKE — declared once, reused everywhere.
 export class CreateUserDto {
@@ -252,7 +252,7 @@ export class UsersController {
   }
 }
 
-// 3. THE BUSINESS LOGIC — no HTTP anywhere in it. This class can be called by
+// 3. THE BUSINESS LOGIC — no HTTP anywhere in it.‼️ This class can be called by
 //    the controller, by a queue worker, by a CLI script, or by a test, without
 //    change, because it does not know HTTP exists.
 @Injectable()
@@ -344,20 +344,20 @@ class ServiceA {
 
 // ‼️ The shorthand: adding an access modifier (private/public/protected/readonly)
 // to a constructor PARAMETER makes TypeScript declare AND assign the property
-// for you. These two classes are identical after compilation.
+// for you. These two classes are identical after compilation.‼️
 class ServiceB {
   constructor(private readonly repo: Repository) {}
   // `this.repo` now exists and is usable in every method.
 }
 
 // This is why every Nest service looks like this, and why the constructor body
-// is almost always empty:
+// is almost always empty:‼️
 @Injectable()
 export class UsersService {
   constructor(private readonly repo: UsersRepository) {}
 
   findAll() {
-    return this.repo.findAll();  // ← this.repo came from the shorthand above
+    return this.repo.findAll();  // ← this.repo came from the shorthand above‼️
   }
 }
 ```
@@ -376,7 +376,7 @@ export class UsersService {
 //   Nest reads the sticky notes at startup and acts on what they say.
 
 @Controller('users')          // sticky note on the CLASS:
-                              //   "this class handles routes starting with /users"
+                              //   "this class handles routes starting with /users"‼️
 export class UsersController {
 
   @Get(':id')                 // sticky note on the METHOD:
@@ -433,15 +433,15 @@ class Example {
 
 ```typescript
 // ── ALSO ASSUMED: async/await ─────────────────────────────────────────────
-// Every database call and every network call in Nest is asynchronous.
+// Every database call and every network call in Nest is asynchronous.‼️
 async findOne(id: string) {
   const user = await this.repo.findById(id);  // wait for the database
-  return user;                                 // Nest serialises this to JSON
+  return user;                                 // Nest serialises this to JSON‼️
 }
 // ‼️ Nest automatically awaits whatever a handler returns, so returning a
-// Promise directly (without await) works too and is common:
+// Promise directly (without await) works too and is common:‼️
 findOne(id: string) {
-  return this.repo.findById(id);   // returns a Promise; Nest resolves it
+  return this.repo.findById(id);   // returns a Promise; Nest resolves it‼️
 }
 ```
 
@@ -498,7 +498,7 @@ npm run build          # compile TypeScript to dist/
 npm run start:prod     # run the compiled output (what production runs)
 npm run test           # unit tests (Jest)
 npm run test:e2e       # end-to-end tests
-npm run test:cov       # coverage report
+npm run test:cov       # coverage report‼️
 nest info              # prints versions — the first thing to paste in a bug report
 ```
 
@@ -516,7 +516,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  // NestFactory.create() is where the whole application gets built:
+  // NestFactory.create() is where the whole application gets built:‼️
   //   1. It starts at AppModule and follows every `imports` to find all modules.
   //   2. It finds every controller and service registered in those modules.
   //   3. It creates ONE instance of each service and passes each one whatever
@@ -1162,7 +1162,7 @@ edge cases; this is enough to reason about normal code.
 ### The one-paragraph version
 
 ```text
-‼️ NestJS is NOT a web server. It is an IoC (Inversion of Control) container
+‼️ NestJS is NOT a web server. It is an IoC (Inversion of Control)‼️ container
    with an HTTP adapter bolted on.
 
    The HTTP part is Express (default) or Fastify — Nest does not implement
@@ -1175,7 +1175,7 @@ edge cases; this is enough to reason about normal code.
      3. An enhancer pipeline — guards / interceptors / pipes / filters that wrap
                                every route handler in a consistent order
 
-   If you remember one thing: decorators do not DO anything at runtime.
+   If you remember one thing: decorators do not DO anything at runtime.‼️
    They only ATTACH METADATA. The container reads it later.
 ```
 
