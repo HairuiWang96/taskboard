@@ -5,11 +5,30 @@
 > Everything from how the IoC container actually works, through DI scopes, the full request
 > lifecycle, validation, persistence (TypeORM / Prisma / Mongoose), CQRS, microservices,
 > queues, WebSockets, GraphQL, caching, observability, testing, and production hardening.
-> Written for the interview question *"you say you know Nest — explain how it works."*
+> Written for the interview question _"you say you know Nest — explain how it works."_
+
+**New to NestJS? Start with [Part 0](#part-0--start-here-the-basics).** It assumes you know
+JavaScript and roughly what a web server does, and nothing else. Sections 1+ assume you have
+read Part 0 (or already write Nest day to day).
 
 ---
 
 ## Table of Contents
+
+### Part 0 — Start Here (beginner)
+
+- [0.1 What NestJS Is, in Plain English](#01-what-nestjs-is-in-plain-english)
+- [0.2 The Problem It Solves](#02-the-problem-it-solves)
+- [0.3 Prerequisites — TypeScript Classes & Decorators](#03-prerequisites--typescript-classes--decorators)
+- [0.4 Installing & the CLI](#04-installing--the-cli)
+- [0.5 The Smallest Possible App, Line by Line](#05-the-smallest-possible-app-line-by-line)
+- [0.6 The Vocabulary](#06-the-vocabulary)
+- [0.7 Dependency Injection Without the Jargon](#07-dependency-injection-without-the-jargon)
+- [0.8 Your First Real Feature, End to End](#08-your-first-real-feature-end-to-end)
+- [0.9 The Request Flow, Simplified](#09-the-request-flow-simplified)
+- [0.10 How to Read the Rest of This File](#010-how-to-read-the-rest-of-this-file)
+
+### Part 1 — Deep Reference
 
 1. [Mental Model — What Nest Actually Is](#1-mental-model--what-nest-actually-is)
 2. [Bootstrapping & Platform Adapters](#2-bootstrapping--platform-adapters)
@@ -47,12 +66,1111 @@
 
 ---
 
+# Part 0 — Start Here: The Basics
+
+> Read this once, top to bottom, before touching anything after it. Everything from
+> §1 onward is written for someone who already has the picture Part 0 gives you.
+
+---
+
+## 0.1 What NestJS Is, in Plain English
+
+```text
+NestJS is a framework for building the BACK END of an application in
+TypeScript — the server that receives HTTP requests, talks to a database, and
+sends JSON back.
+
+The one-sentence definition:
+  ‼️ NestJS is a set of rules and tools layered on top of Express that tells you
+     WHERE each piece of your code should live and WIRES those pieces together
+     for you.
+
+An analogy that holds up well:
+
+  EXPRESS is a pile of high-quality building materials. Timber, nails, wiring.
+  It will let you build anything, and it has no opinion whatsoever about what
+  you build or how. Two developers given Express build two completely different
+  house layouts.
+
+  NESTJS is a prefab house kit. The rooms are already defined, the wiring
+  conduits are already routed, and the instructions say exactly which panel
+  goes where. You have less freedom — and every house in the neighbourhood is
+  laid out the same way, so anyone can walk into any of them and find the
+  kitchen immediately.
+
+That last part is the whole value proposition. Nest is not faster than Express
+(it runs ON Express). It does not do anything Express cannot do. What it gives
+you is that every Nest project on earth is organised the same way.‼️
+```
+
+```text
+WHERE NEST SITS IN THE STACK
+
+  Your browser / mobile app
+          │  HTTP request
+          ▼
+  ┌───────────────────────────────────┐
+  │  NestJS                           │  ← your code lives here
+  │  ┌─────────────────────────────┐  │
+  │  │  Express (or Fastify)       │  │  ← Nest uses this to do HTTP
+  │  │  ┌───────────────────────┐  │  │
+  │  │  │  Node.js `http`       │  │  │  ← Express uses this
+  │  │  └───────────────────────┘  │  │
+  │  └─────────────────────────────┘  │
+  └───────────────────────────────────┘
+          │
+          ▼
+  PostgreSQL / MongoDB / Redis / other services
+
+‼️ This layering matters: when you get an error mentioning Express, or you need
+   an Express feature, it is still right there underneath. Nest never hides it.
+```
+
+```text
+WHAT YOU GET IN THE BOX
+
+  Nest ships with official, integrated support for most of what a real backend
+  needs, so you are not gluing ten unrelated libraries together:
+
+    Routing & controllers         Validation of incoming data
+    Dependency injection          Configuration / env vars
+    Authentication helpers        Database integration (TypeORM, Prisma, Mongoose)
+    Background job queues         WebSockets
+    GraphQL                       Microservice transports (Kafka, RabbitMQ, gRPC)
+    Automatic API documentation   A first-class testing setup
+    Caching, rate limiting        Scheduled tasks (cron)
+
+  All of these follow the SAME conventions, which is the real benefit — learning
+  one teaches you the shape of the others.‼️
+```
+
+---
+
+## 0.2 The Problem It Solves
+
+The fastest way to understand Nest is to watch an Express app rot, then see what Nest does about it.
+
+```typescript
+// ── Day 1 in Express: this is genuinely fine ──────────────────────────────
+const express = require('express');
+const app = express();
+
+app.get('/users/:id', async (req, res) => {
+    const user = await db.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
+    res.json(user);
+});
+
+app.listen(3000);
+// Small, readable, works. Express is a good tool and this is a good use of it.
+```
+
+```typescript
+// ── Month 6 in Express: the same route, after real requirements ───────────
+app.post('/users', async (req, res) => {
+    // Validation, hand-written, in the route.
+    if (!req.body.email || !req.body.email.includes('@')) {
+        return res.status(400).json({ error: 'Invalid email' });
+    }
+    if (!req.body.password || req.body.password.length < 12) {
+        return res.status(400).json({ error: 'Password too short' });
+    }
+
+    // Auth check, hand-written, in the route.
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+    let currentUser;
+    try {
+        currentUser = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (currentUser.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+
+    // Business logic, database access, and error formatting — all in the route.
+    try {
+        const existing = await db.query('SELECT id FROM users WHERE email = $1', [req.body.email]);
+        if (existing.rows.length) return res.status(409).json({ error: 'Email taken' });
+
+        const hash = await bcrypt.hash(req.body.password, 12);
+        const result = await db.query('INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email', [req.body.email, hash]);
+
+        await sendgrid.send({ to: req.body.email, template: 'welcome' });
+
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+```
+
+```text
+‼️ Nothing above is WRONG. Every line is reasonable. The problem is what
+   happens when you have ninety of these:
+
+  1. The validation is copy-pasted into every route, and the twelfth copy has a
+     subtle difference nobody notices.
+  2. The auth check is copy-pasted too — and one route is missing it. That is a
+     security hole, and nothing in the code makes it visible.
+  3. Business logic is welded to HTTP. You cannot call "create a user" from a
+     background job or a CLI script without faking a req and res object.
+  4. You cannot unit test any of it without starting an HTTP server and a
+     real database.
+  5. Where does the database connection come from? A global import. Now every
+     test touches the real database, and you cannot substitute a fake one.
+  6. Every developer solves these the same problems in a slightly different way,
+     so the codebase has four conventions and no way to tell which is current.
+```
+
+```typescript
+// ── The same feature in NestJS ────────────────────────────────────────────
+// Each concern now has exactly one home, and the framework enforces it.‼️
+
+// 1. WHAT VALID INPUT LOOKS LIKE — declared once, reused everywhere.
+export class CreateUserDto {
+    @IsEmail()
+    email: string;
+
+    @MinLength(12)
+    password: string;
+}
+
+// 2. THE ROUTE — HTTP plumbing only. Notice what is NOT here: no validation
+//    code, no auth code, no try/catch, no database access, no status codes.
+@Controller('users')
+export class UsersController {
+    constructor(private readonly usersService: UsersService) {}
+
+    @Post()
+    @UseGuards(JwtAuthGuard, RolesGuard) // auth: declared, not hand-written
+    @Roles(Role.Admin) // and impossible to forget silently
+    create(@Body() dto: CreateUserDto) {
+        // validation happens automatically
+        return this.usersService.create(dto);
+    }
+}
+
+// 3. THE BUSINESS LOGIC — no HTTP anywhere in it. ‼️This class can be called by
+//    the controller, by a queue worker, by a CLI script, or by a test, without
+//    change, because it does not know HTTP exists.
+@Injectable()
+export class UsersService {
+    constructor(
+        private readonly repo: UsersRepository, // handed in, not imported
+        private readonly mailer: MailerService, // so a test can pass fakes
+    ) {}
+
+    async create(dto: CreateUserDto) {
+        if (await this.repo.findByEmail(dto.email)) {
+            // Throwing a Nest exception produces the right status code and JSON
+            // shape automatically — no res.status(409).json(...) in sight.
+            throw new ConflictException('Email taken');
+        }
+        const user = await this.repo.create(dto.email, await hash(dto.password));
+        await this.mailer.sendWelcome(user.email);
+        return user;
+    }
+}
+```
+
+```text
+‼️ THE TRADE-OFF, stated honestly — this is the part most tutorials skip.
+
+  WHAT YOU GAINED
+    - One home per concern, enforced by the framework rather than by discipline.
+    - Auth and validation are declarative: you can SEE, at a glance, which
+      routes are protected. A missing guard is visible in a code review.
+    - The business logic is testable in isolation, in milliseconds, with no
+      HTTP server and no database.
+    - Any developer who knows Nest can navigate your codebase on day one.
+
+  WHAT YOU PAID
+    - Six files instead of one. A feature that was 20 lines of Express becomes
+      a module, a controller, a service, a repository, and two DTOs.
+    - A real learning curve: decorators, dependency injection, modules.
+    - More indirection when reading code — "where does this actually happen?"
+      takes a few more jumps.
+
+  ‼️ So: for a weekend project or a single webhook endpoint, Express is the
+     right answer and Nest is overkill. For a codebase that three or more
+     people will work on for more than a year, the structure pays for itself
+     around month three. Say exactly this if an interviewer asks "why Nest?" —
+     naming the cost is what makes the answer credible.
+```
+
+---
+
+## 0.3 Prerequisites — TypeScript Classes & Decorators
+
+You do not need advanced TypeScript. You need four things, and one of them (decorators) is probably unfamiliar.
+
+```typescript
+// ── 1. CLASSES ────────────────────────────────────────────────────────────
+// Nest is class-based throughout. Every controller, service, guard, and pipe
+// is a class. If you have only written functions in JavaScript, this is the
+// main adjustment.
+class Greeter {
+    // A property: data attached to each instance of the class.
+    private greeting: string;
+
+    // The constructor runs when you write `new Greeter('Hello')`.
+    constructor(greeting: string) {
+        this.greeting = greeting;
+    }
+
+    // A method: a function attached to the class.
+    greet(name: string): string {
+        return `${this.greeting}, ${name}`;
+    }
+}
+
+const greeter = new Greeter('Hello');
+greeter.greet('Ada'); // → "Hello, Ada"
+```
+
+```typescript
+// ── 2. CONSTRUCTOR PARAMETER SHORTHAND ────────────────────────────────────
+// TypeScript-specific, and used in EVERY Nest class, so it is worth 30 seconds.
+
+// The long way:
+class ServiceA {
+    private readonly repo: Repository;
+    constructor(repo: Repository) {
+        this.repo = repo; // manually copy the parameter onto the instance
+    }
+}
+
+// ‼️ The shorthand: adding an access modifier (private/public/protected/readonly)
+// to a constructor PARAMETER makes TypeScript declare AND assign the property
+// for you. These two classes are identical after compilation.‼️
+class ServiceB {
+    constructor(private readonly repo: Repository) {}
+    // `this.repo` now exists and is usable in every method.
+}
+
+// This is why every Nest service looks like this, and why the constructor body
+// is almost always empty:‼️
+@Injectable()
+export class UsersService {
+    constructor(private readonly repo: UsersRepository) {}
+
+    findAll() {
+        return this.repo.findAll(); // ← this.repo came from the shorthand above‼️
+    }
+}
+```
+
+```typescript
+// ── 3. DECORATORS ─────────────────────────────────────────────────────────
+// ‼️ The @Something() syntax is the thing that makes Nest code look alien at
+// first. It is much simpler than it appears.
+
+// A decorator is JUST A FUNCTION that you attach to a class, method, property,
+// or parameter with @ syntax. It attaches a LABEL. It does not, by itself,
+// change what the code does.
+
+// The single most useful way to think about it:
+//   A decorator is a sticky note you put on a piece of code.
+//   Nest reads the sticky notes at startup and acts on what they say.
+
+@Controller('users') // sticky note on the CLASS:
+//   "this class handles routes starting with /users"‼️
+export class UsersController {
+    @Get(':id') // sticky note on the METHOD:
+    //   "run this method for GET /users/<something>"
+    findOne(
+        @Param('id') id: string, // sticky note on the PARAMETER:
+        //   "fill this argument from the URL's :id part"
+    ) {
+        return { id };
+    }
+}
+
+// ‼️ Nothing above runs when a request arrives except findOne(). The decorators
+// ran ONCE, when the file was first loaded, and all they did was record
+// information. At startup Nest reads that information and registers the real
+// Express route. This is worth internalising early because it explains a lot of
+// otherwise-confusing behaviour later.
+```
+
+```typescript
+// If you want to see that a decorator really is just a function, here is one:
+function LogWhenCalled() {
+    // The outer function is the "decorator factory" — it runs when you write
+    // @LogWhenCalled(). It returns the actual decorator.
+    return function (target: any, key: string, descriptor: PropertyDescriptor) {
+        const original = descriptor.value; // the method being decorated
+        descriptor.value = function (...args: any[]) {
+            console.log(`Calling ${key} with`, args);
+            return original.apply(this, args); // call the real method
+        };
+    };
+}
+
+class Example {
+    @LogWhenCalled()
+    doThing(x: number) {
+        return x * 2;
+    }
+}
+// new Example().doThing(21) now logs "Calling doThing with [21]" and returns 42.
+// ‼️ You will rarely write one of these. You just need to know they are not magic.
+```
+
+```jsonc
+// ── 4. THE TSCONFIG FLAGS THAT MAKE DECORATORS WORK ───────────────────────
+// The Nest CLI sets these for you. Know they exist, because if DI ever
+// mysteriously stops working, one of them has been turned off.
+{
+    "compilerOptions": {
+        "experimentalDecorators": true, // allows the @ syntax to compile at all
+        "emitDecoratorMetadata": true, // records constructor types — this is what
+        // lets Nest know what to inject (see §1)
+    },
+}
+```
+
+```typescript
+// ── ALSO ASSUMED: async/await ─────────────────────────────────────────────
+// Every database call and every network call in Nest is asynchronous.‼️
+async findOne(id: string) {
+  const user = await this.repo.findById(id);  // wait for the database
+  return user;                                 // Nest serialises this to JSON‼️
+}
+// ‼️ Nest automatically awaits whatever a handler returns, so returning a
+// Promise directly (without await) works too and is common:‼️
+findOne(id: string) {
+  return this.repo.findById(id);   // returns a Promise; Nest resolves it‼️
+}
+```
+
+---
+
+## 0.4 Installing & the CLI
+
+```bash
+# The Nest CLI is a code generator and build tool. It is not optional in
+# practice — hand-writing the boilerplate and wiring is tedious and error-prone.
+npm i -g @nestjs/cli
+
+# Create a new project. It scaffolds the folder structure, tsconfig, testing
+# setup, and a working hello-world app.
+nest new my-app
+cd my-app
+
+# Start in watch mode: recompiles and restarts on every save.
+npm run start:dev
+# → http://localhost:3000 now returns "Hello World!"
+```
+
+```bash
+# ── GENERATORS: what you will actually use daily ──────────────────────────
+# `nest g` is short for `nest generate`.
+
+# Generate a complete feature — module + controller + service, all wired up.
+# ‼️ This is the one to remember. `--no-spec` skips the test files if you do
+# not want them yet; leave it off to get them.
+nest g resource users
+#   → asks: REST API / GraphQL / microservice / WebSockets?
+#   → asks: generate CRUD entry points? (say yes — it writes the five standard
+#           routes, the DTOs, and the service methods as a starting point)
+
+# Generate the pieces individually:
+nest g module users        # a module
+nest g controller users    # a controller, auto-registered in users.module.ts
+nest g service users       # a service, auto-registered as a provider
+nest g guard auth          # a guard
+nest g pipe validation     # a pipe
+nest g interceptor logging # an interceptor
+nest g filter http-error   # an exception filter
+nest g decorator current-user
+
+# ‼️ The important part: the CLI does not just create the file, it also ADDS IT
+# to the right module's `controllers`/`providers` array. That wiring step is
+# the one beginners most often forget, and it produces the confusing
+# "Nest can't resolve dependencies" error.
+```
+
+```bash
+# ── Other commands worth knowing ──────────────────────────────────────────
+npm run build          # compile TypeScript to dist/
+npm run start:prod     # run the compiled output (what production runs)
+npm run test           # unit tests (Jest)
+npm run test:e2e       # end-to-end tests
+npm run test:cov       # coverage report‼️
+nest info              # prints versions — the first thing to paste in a bug report
+```
+
+---
+
+## 0.5 The Smallest Possible App, Line by Line
+
+`nest new` generates four files. Understanding these four is understanding 80% of Nest.
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// FILE 1 — main.ts        THE ENTRY POINT. This is what `node` actually runs.
+// ═══════════════════════════════════════════════════════════════════════════
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+    // NestFactory.create() is where the whole application gets built:‼️
+    //   1. It starts at AppModule and follows every `imports` to find all modules.
+    //   2. It finds every controller and service registered in those modules.
+    //   3. It creates ONE instance of each service and passes each one whatever
+    //      its constructor asked for (this is the dependency injection part).
+    //   4. It reads the decorators on your controllers and registers real
+    //      Express routes for them.
+    // At this point the app is fully assembled but not yet accepting requests.
+    const app = await NestFactory.create(AppModule);
+
+    // NOW it starts listening on a TCP port. Requests can arrive from here on.
+    await app.listen(3000);
+}
+bootstrap();
+// ‼️ Everything you want to apply to the WHOLE app — global validation, CORS,
+// security headers, a URL prefix — is configured here, between create() and
+// listen(). See §2 for the production version of this file.
+```
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// FILE 2 — app.module.ts  THE ROOT MODULE. The table of contents of your app.
+// ═══════════════════════════════════════════════════════════════════════════
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+// A MODULE is just a class with an @Module() sticky note listing what belongs
+// to it. It contains no logic. Its entire job is to declare "these pieces go
+// together, and here is how they connect to other groups of pieces."
+@Module({
+    // imports: OTHER modules whose exported services this module wants to use.
+    //          Empty here because this tiny app has no other modules yet.
+    imports: [],
+
+    // controllers: the classes in this module that handle incoming HTTP routes.
+    controllers: [AppController],
+
+    // providers: the classes in this module that can be INJECTED into others.
+    //            "Provider" is the general term; a "service" is the most common
+    //            kind of provider. Registering AppService here is what allows
+    //            AppController to ask for it in its constructor.
+    providers: [AppService],
+})
+export class AppModule {}
+
+// ‼️ THE #1 BEGINNER ERROR: creating a service file but forgetting to add it to
+// `providers`. Nest then says it "can't resolve dependencies" — which really
+// means "you asked for something I was never told about." Using `nest g service`
+// avoids this because the CLI edits the module for you.
+```
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// FILE 3 — app.controller.ts   HANDLES HTTP. Thin by design.
+// ═══════════════════════════════════════════════════════════════════════════
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
+
+// @Controller('') means these routes have no prefix. @Controller('users')
+// would prefix every route in this class with /users.
+@Controller()
+export class AppController {
+    // ‼️ THIS LINE IS DEPENDENCY INJECTION, and it is the heart of Nest.
+    //
+    // The controller does NOT create its own AppService. It does not write
+    // `new AppService()` and it does not import an instance from somewhere.
+    // It simply DECLARES, in its constructor, "I need an AppService."
+    //
+    // At startup, Nest sees that declaration, finds AppService in the module's
+    // providers, creates it (once), and hands it in. See §0.7 for why this
+    // matters so much.
+    constructor(private readonly appService: AppService) {}
+
+    // @Get() with no argument = the controller's own path, so: GET /
+    @Get()
+    getHello(): string {
+        // The controller's job is only to translate between HTTP and the service.
+        // No business logic belongs here.
+        return this.appService.getHello();
+    }
+}
+```
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// FILE 4 — app.service.ts   THE ACTUAL WORK. Knows nothing about HTTP.
+// ═══════════════════════════════════════════════════════════════════════════
+import { Injectable } from '@nestjs/common';
+
+// @Injectable() marks this class as something Nest can manage and inject.
+// ‼️ Without this decorator, Nest cannot record the constructor's parameter
+// types, so injecting anything INTO this class silently fails. Always add it.
+@Injectable()
+export class AppService {
+    getHello(): string {
+        return 'Hello World!';
+    }
+}
+
+// ‼️ Notice there is no `req`, no `res`, and no mention of HTTP anywhere. That
+// is deliberate and it is the point: this class could be called from a
+// controller, a scheduled job, a queue worker, or a test, unchanged.
+```
+
+```text
+HOW THE FOUR FILES RELATE
+
+  main.ts
+    │ "build the app starting from AppModule"
+    ▼
+  app.module.ts  ─────────────────────────────────────┐
+    │ "these controllers handle routes"               │ "these providers can
+    ▼                                                 │  be injected"
+  app.controller.ts                                   ▼
+    │ "I need an AppService"  ──────────────►  app.service.ts
+    ▼                                                 │
+  GET /  ────────────────────────────────────────────►│
+                                                       │
+  "Hello World!"  ◄────────────────────────────────────┘
+```
+
+---
+
+## 0.6 The Vocabulary
+
+The words below appear constantly in Nest docs, error messages, and this file. This is the whole glossary.
+
+| Term                          | What it actually is                                                                                                                        | Everyday analogy                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| **Module**                    | A class with `@Module()` that groups related controllers and providers, and declares what it shares with other modules. Contains no logic. | A department in a company: it lists its staff and what services it offers other departments. |
+| **Controller**                | A class with `@Controller()` whose methods handle incoming HTTP routes. Should be thin.                                                    | The receptionist: takes the request, passes it to the right person, hands back the reply.    |
+| **Provider**                  | Any class Nest can create and inject. The umbrella term.                                                                                   | Any member of staff who can be assigned to a team.                                           |
+| **Service**                   | The most common kind of provider — a class with `@Injectable()` holding business logic.                                                    | The specialist who does the actual work.                                                     |
+| **Repository**                | A provider whose only job is reading and writing the database.                                                                             | The filing clerk — the only one allowed to open the cabinets.                                |
+| **DTO**                       | "Data Transfer Object" — a class describing the shape of incoming data, with validation rules attached as decorators.                      | The form a visitor fills in, with rules about which boxes are required.                      |
+| **Entity**                    | A class describing a database table (or Mongo collection) and its columns.                                                                 | The layout of one filing cabinet.                                                            |
+| **Decorator**                 | A `@Something()` label attached to a class, method, property, or parameter. Attaches metadata; changes nothing on its own.                 | A sticky note Nest reads at startup.                                                         |
+| **Dependency Injection (DI)** | You declare what you need in a constructor; Nest creates it and hands it to you.                                                           | You do not hire your own assistant — HR assigns you one.                                     |
+| **Provider token**            | The key Nest looks a dependency up by. Usually the class itself, sometimes a string or symbol.                                             | The job title on the request form.                                                           |
+| **Guard**                     | A class that returns true/false to allow or block a request, before the handler runs.                                                      | The bouncer checking the guest list.                                                         |
+| **Pipe**                      | A class that transforms and/or validates one handler argument before the handler runs.                                                     | The form checker: rejects an incomplete form, converts "42" to the number 42.                |
+| **Interceptor**               | A class that wraps the handler, running code before AND after it.                                                                          | The mail room: stamps the request going in, puts the reply in a standard envelope going out. |
+| **Exception filter**          | A class that catches thrown errors and turns them into an HTTP response.                                                                   | The complaints desk: turns any problem into a polite, standard reply.                        |
+| **Middleware**                | A plain function that runs before everything else, on the raw request.                                                                     | The front door: everyone passes through, nobody is inspected closely.                        |
+| **Enhancer**                  | Collective name for guards, pipes, interceptors, and filters.                                                                              | —                                                                                            |
+| **Injection scope**           | How many instances of a provider exist: one for the whole app (default), one per request, or one per consumer.                             | One shared office printer vs a fresh notepad per meeting.                                    |
+| **`forRoot` / `forFeature`**  | Naming convention. `forRoot` configures something once for the whole app; `forFeature` registers per-module pieces against it.             | Signing the company's one contract with the bank vs opening a departmental account under it. |
+
+```text
+‼️ Two distinctions that confuse nearly everyone at the start:
+
+  PROVIDER vs SERVICE
+    "Provider" is the category; "service" is the common case. All services are
+    providers. A provider can also be a plain value, a factory function, or an
+    external SDK client. The `providers: []` array in @Module takes all of them.
+
+  MODULE vs FOLDER
+    A folder is just files on disk. A MODULE is a real runtime boundary that
+    controls visibility: a provider inside a module is invisible to other
+    modules unless that module EXPORTS it and the other module IMPORTS it.
+    Putting two files in the same folder does nothing on its own.
+```
+
+---
+
+## 0.7 Dependency Injection Without the Jargon
+
+DI is the concept that makes Nest click. It has an intimidating name and a simple idea.
+
+```typescript
+// ── WITHOUT dependency injection ──────────────────────────────────────────
+// Each class builds its own dependencies.
+class EmailService {
+    send(to: string, body: string) {
+        /* calls SendGrid */
+    }
+}
+
+class UsersService {
+    private email = new EmailService(); // ← creates its own
+    private db = new Database(process.env.DATABASE_URL); // ← and its own
+
+    async register(dto: CreateUserDto) {
+        const user = await this.db.insert(dto);
+        await this.email.send(user.email, 'Welcome!');
+        return user;
+    }
+}
+
+// ‼️ Why this hurts, concretely:
+//
+// 1. YOU CANNOT TEST IT. To test register(), you need a real database
+//    connection and you will send a real email to a real inbox, every time
+//    the test suite runs. There is no seam to substitute a fake — the `new`
+//    is hard-coded inside the class.
+//
+// 2. YOU CANNOT SWAP IMPLEMENTATIONS. Moving from SendGrid to Postmark means
+//    editing every class that wrote `new EmailService()`.
+//
+// 3. YOU GET DUPLICATE INSTANCES. Ten services each doing
+//    `new Database(...)` opens ten separate connection pools to the same
+//    database — a real and common production problem.
+```
+
+```typescript
+// ── WITH dependency injection ─────────────────────────────────────────────
+// Each class DECLARES what it needs and receives it from outside.
+@Injectable()
+export class UsersService {
+    constructor(
+        private readonly email: EmailService, // "I need one of these"
+        private readonly db: DatabaseService, // "and one of these"
+    ) {}
+    // ‼️ Note what is missing: no `new`, no imports of instances, no knowledge of
+    // HOW these are built or configured. The class states its needs and nothing more.
+
+    async register(dto: CreateUserDto) {
+        const user = await this.db.insert(dto);
+        await this.email.send(user.email, 'Welcome!');
+        return user;
+    }
+}
+
+// Nest reads that constructor at startup, finds EmailService and DatabaseService
+// in the module's providers, creates ONE of each, and passes them in.
+```
+
+```typescript
+// ── The payoff, made concrete ─────────────────────────────────────────────
+
+// 1. TESTING becomes trivial — pass fakes instead of the real thing.
+const fakeEmail = { send: jest.fn() }; // records calls
+const fakeDb = { insert: jest.fn().mockResolvedValue({ email: 'a@b.com' }) };
+
+const service = new UsersService(fakeEmail as any, fakeDb as any);
+await service.register({ email: 'a@b.com', password: 'x'.repeat(12) });
+
+// The test runs in under a millisecond, touches no network, no database, and
+// sends no email — and you can assert on exactly what happened:
+expect(fakeEmail.send).toHaveBeenCalledWith('a@b.com', 'Welcome!');
+
+// 2. SWAPPING IMPLEMENTATIONS is a one-line change in ONE file, and no
+//    consumer of the service changes at all:
+@Module({
+    providers: [
+        {
+            provide: EmailService, // whenever someone asks for this…
+            useClass:
+                process.env.NODE_ENV === 'production'
+                    ? SendGridEmailService // …in production, give them this
+                    : ConsoleEmailService, // …locally, just log to the terminal
+        },
+    ],
+})
+export class AppModule {}
+
+// 3. ONE SHARED INSTANCE. Nest creates each provider ONCE and gives the same
+//    object to everyone who asks. One connection pool, one cache, one client —
+//    no matter how many services depend on it.
+```
+
+```text
+‼️ WHERE THE NAME COMES FROM, and why it is worth knowing
+
+  "Inversion of Control" — normally YOUR code decides when to create its
+  collaborators. With DI that control is INVERTED: the framework creates them
+  and gives them to you. You stop calling `new`; something else does.
+
+  "IoC container" / "the container" — the part of Nest that holds all the
+  created instances and knows how to build them. When docs or errors mention
+  "the container", they mean this registry.
+
+  ‼️ The one rule that makes DI work in Nest, and the source of most beginner
+     errors: a class can only be injected if it is REGISTERED in a module's
+     `providers` array (or exported by a module you import). Nest cannot inject
+     something it was never told about — that is precisely what the error
+     "Nest can't resolve dependencies of X" means.
+```
+
+---
+
+## 0.8 Your First Real Feature, End to End
+
+A complete, working `tasks` feature — every file, in the order you would write them.
+
+```bash
+# The CLI writes all of this scaffolding and wires it into AppModule for you.
+nest g resource tasks
+```
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// 1. THE DTOs — what the outside world is allowed to send us.
+//    src/tasks/dto/create-task.dto.ts
+// ═══════════════════════════════════════════════════════════════════════════
+import { IsString, IsNotEmpty, MaxLength, IsEnum, IsOptional } from 'class-validator';
+
+export enum TaskStatus {
+    Todo = 'todo',
+    InProgress = 'in_progress',
+    Done = 'done',
+}
+
+export class CreateTaskDto {
+    // Each decorator is one validation rule. If the incoming JSON fails any of
+    // them, Nest rejects the request with 400 and a list of what was wrong —
+    // your handler never runs and never sees invalid data.
+    @IsString()
+    @IsNotEmpty({ message: 'Title cannot be empty' })
+    @MaxLength(200)
+    title: string;
+
+    @IsString()
+    @IsOptional() // may be omitted entirely
+    @MaxLength(2000)
+    description?: string;
+
+    @IsEnum(TaskStatus) // must be one of the enum's values
+    @IsOptional()
+    status?: TaskStatus = TaskStatus.Todo;
+}
+
+// src/tasks/dto/update-task.dto.ts
+// PartialType makes every field of CreateTaskDto optional while keeping all its
+// validation rules — exactly what a PATCH request needs, with zero duplication.
+export class UpdateTaskDto extends PartialType(CreateTaskDto) {}
+```
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// 2. THE ENTITY — what a task looks like in the database.
+//    src/tasks/entities/task.entity.ts
+// ═══════════════════════════════════════════════════════════════════════════
+@Entity('tasks')
+export class Task {
+    @PrimaryGeneratedColumn('uuid') // the database generates the id
+    id: string;
+
+    @Column()
+    title: string;
+
+    @Column({ nullable: true }) // this column may hold NULL
+    description: string | null;
+
+    @Column({ type: 'enum', enum: TaskStatus, default: TaskStatus.Todo })
+    status: TaskStatus;
+
+    @CreateDateColumn() // set automatically on insert
+    createdAt: Date;
+
+    @UpdateDateColumn() // updated automatically on every save
+    updatedAt: Date;
+}
+
+// ‼️ Keep DTOs and entities SEPARATE, even when they look nearly identical.
+// The DTO is your public contract (what clients may send); the entity is your
+// private storage layout. Merging them means every database column change is a
+// breaking API change, and every internal column is exposed to the internet.
+```
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// 3. THE SERVICE — all the business logic. No HTTP anywhere.
+//    src/tasks/tasks.service.ts
+// ═══════════════════════════════════════════════════════════════════════════
+@Injectable()
+export class TasksService {
+    constructor(
+        // @InjectRepository gives you TypeORM's ready-made repository for this
+        // entity — find, save, delete, and so on — without writing SQL by hand.
+        @InjectRepository(Task)
+        private readonly repo: Repository<Task>,
+    ) {}
+
+    findAll(): Promise<Task[]> {
+        return this.repo.find({
+            order: { createdAt: 'DESC' },
+            // ‼️ Always cap this. Without a limit, the endpoint returns every row in
+            // the table, which is fine with 50 tasks and fatal with 5 million.
+            take: 50,
+        });
+    }
+
+    async findOne(id: string): Promise<Task> {
+        const task = await this.repo.findOneBy({ id });
+
+        // Throwing a Nest exception is how the service signals a problem WITHOUT
+        // knowing about HTTP. Nest turns NotFoundException into a 404 response
+        // automatically; if this service were called from a CLI script instead,
+        // it would simply be a normal thrown error.
+        if (!task) throw new NotFoundException(`Task ${id} not found`);
+        return task;
+    }
+
+    create(dto: CreateTaskDto): Promise<Task> {
+        // .create() builds an entity instance in memory (no database call yet).
+        // .save() is what actually issues the INSERT.
+        const task = this.repo.create(dto);
+        return this.repo.save(task);
+    }
+
+    async update(id: string, dto: UpdateTaskDto): Promise<Task> {
+        // Reusing findOne() means the "does it exist?" check and its 404 live in
+        // exactly one place, rather than being repeated in every method.
+        const task = await this.findOne(id);
+
+        // Object.assign copies only the properties present in dto, so fields the
+        // client did not send keep their current values — correct PATCH semantics.
+        Object.assign(task, dto);
+        return this.repo.save(task);
+    }
+
+    async remove(id: string): Promise<void> {
+        const result = await this.repo.delete(id);
+
+        // .delete() does not throw when the row is missing; it reports 0 rows
+        // affected. Checking this is what turns a silent no-op into an honest 404.
+        if (result.affected === 0) throw new NotFoundException(`Task ${id} not found`);
+    }
+}
+```
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// 4. THE CONTROLLER — HTTP only. Every method is one or two lines.
+//    src/tasks/tasks.controller.ts
+// ═══════════════════════════════════════════════════════════════════════════
+@Controller('tasks') // every route below is prefixed with /tasks
+export class TasksController {
+    constructor(private readonly tasksService: TasksService) {}
+
+    @Get() // GET /tasks
+    findAll() {
+        return this.tasksService.findAll();
+    }
+
+    @Get(':id') // GET /tasks/abc-123
+    findOne(
+        // ParseUUIDPipe checks the id is a valid UUID and rejects it with 400 if
+        // not — before the service runs, so a malformed id never reaches the
+        // database. This is a pipe doing validation on a single argument.
+        @Param('id', ParseUUIDPipe) id: string,
+    ) {
+        return this.tasksService.findOne(id);
+    }
+
+    @Post() // POST /tasks
+    // Nest returns 201 for POST by default, so @HttpCode is unnecessary here —
+    // shown only to make the default explicit.
+    @HttpCode(HttpStatus.CREATED)
+    create(
+        // @Body() takes the parsed JSON request body. Because the parameter is
+        // typed as CreateTaskDto and a global ValidationPipe is enabled, the body
+        // is validated against that DTO's rules automatically.
+        @Body() dto: CreateTaskDto,
+    ) {
+        return this.tasksService.create(dto);
+    }
+
+    @Patch(':id') // PATCH /tasks/abc-123
+    update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTaskDto) {
+        return this.tasksService.update(id, dto);
+    }
+
+    @Delete(':id') // DELETE /tasks/abc-123
+    @HttpCode(HttpStatus.NO_CONTENT) // 204: success, and deliberately no body
+    remove(@Param('id', ParseUUIDPipe) id: string) {
+        return this.tasksService.remove(id);
+    }
+}
+```
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// 5. THE MODULE — ties the feature together.
+//    src/tasks/tasks.module.ts
+// ═══════════════════════════════════════════════════════════════════════════
+@Module({
+    // forFeature registers the Task repository so @InjectRepository(Task) can
+    // find it. It is scoped to THIS module only.
+    imports: [TypeOrmModule.forFeature([Task])],
+    controllers: [TasksController],
+    providers: [TasksService],
+
+    // exports lists what OTHER modules may use. If nothing else needs
+    // TasksService, leave this out entirely — exporting by default is how
+    // module boundaries quietly stop meaning anything.
+    exports: [TasksService],
+})
+export class TasksModule {}
+```
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// 6. REGISTER IT — src/app.module.ts
+// ═══════════════════════════════════════════════════════════════════════════
+@Module({
+    imports: [
+        ConfigModule.forRoot({ isGlobal: true }), // load .env once, app-wide
+        TypeOrmModule.forRoot({
+            /* connection settings */
+        }),
+        TasksModule, // ← the new feature
+    ],
+})
+export class AppModule {}
+// ‼️ `nest g resource tasks` adds this import line for you. Adding a module
+// folder without registering it here is the other classic beginner mistake:
+// the code exists, compiles fine, and the routes simply do not appear.
+```
+
+```bash
+# ── Try it ────────────────────────────────────────────────────────────────
+curl -X POST http://localhost:3000/tasks \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Learn NestJS"}'
+# → 201 {"id":"...","title":"Learn NestJS","status":"todo","createdAt":"..."}
+
+curl -X POST http://localhost:3000/tasks \
+  -H 'Content-Type: application/json' \
+  -d '{"title":""}'
+# → 400 {"message":["Title cannot be empty"],"error":"Bad Request","statusCode":400}
+# ‼️ You wrote zero validation code in the controller. The DTO's decorators and
+#    the global ValidationPipe produced that response between them.
+
+curl http://localhost:3000/tasks/not-a-uuid
+# → 400 — ParseUUIDPipe rejected it before the service or database was touched.
+```
+
+---
+
+## 0.9 The Request Flow, Simplified
+
+```text
+Here is the beginner version of the lifecycle. §7 has the complete one with the
+edge cases; this is enough to reason about normal code.
+
+  A request arrives:  POST /tasks  { "title": "Learn NestJS" }
+
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ MIDDLEWARE      "everyone passes through the front door"         │
+  │ Runs on every request, knows nothing about which route was hit.  │
+  │ Typical use: logging, adding a request id.                       │
+  └──────────────────────────────────────────────────────────────────┘
+                              ▼
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ GUARDS          "the bouncer — are you allowed in?"              │
+  │ Returns true (continue) or false (→ 403 Forbidden, stop here).   │
+  │ Typical use: is this user logged in, do they have the right role.│
+  └──────────────────────────────────────────────────────────────────┘
+                              ▼
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ INTERCEPTORS (before)   "stamp the incoming envelope"            │
+  │ Anything you want to do just before the handler. Often a timer   │
+  │ started here and stopped on the way back out.                    │
+  └──────────────────────────────────────────────────────────────────┘
+                              ▼
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ PIPES           "check and tidy the form"                        │
+  │ Validates and converts each argument. Invalid → 400, stop here.  │
+  │ This is where your DTO's rules are enforced and "42" becomes 42. │
+  └──────────────────────────────────────────────────────────────────┘
+                              ▼
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ YOUR CONTROLLER METHOD  →  YOUR SERVICE  →  THE DATABASE         │
+  │ The only part you actually write for a normal feature.           │
+  └──────────────────────────────────────────────────────────────────┘
+                              ▼
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ INTERCEPTORS (after)    "put the reply in a standard envelope"   │
+  │ Reshape the response, log how long it took, cache the result.    │
+  └──────────────────────────────────────────────────────────────────┘
+                              ▼
+                        Response sent
+
+  AND IF ANYTHING THREW AN ERROR at any point above:
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ EXCEPTION FILTERS       "the complaints desk"                    │
+  │ Catches the error and turns it into a proper HTTP response.      │
+  │ NotFoundException → 404, ConflictException → 409, anything       │
+  │ unrecognised → 500 with a generic message.                       │
+  └──────────────────────────────────────────────────────────────────┘
+```
+
+```text
+‼️ THE POINT OF ALL THOSE LAYERS
+
+  Look at the TasksController in §0.8 again. It contains no authentication
+  code, no validation code, no try/catch, no status-code juggling, and no
+  logging. Every one of those concerns is handled by a layer above, applied
+  declaratively with a decorator.
+
+  That is the trade Nest offers: you accept more moving parts and more files,
+  and in exchange the cross-cutting concerns are written ONCE, applied
+  consistently, and impossible to forget silently on route number 87.
+
+‼️ THE ONE ORDER DETAIL THAT MATTERS EVEN EARLY
+  Guards run BEFORE pipes. So inside a guard, the request body has NOT been
+  validated yet — it is still raw, attacker-controlled input. Never base an
+  access decision on request.body. Read from the URL, the headers, or the
+  verified token instead.
+```
+
+---
+
+## 0.10 How to Read the Rest of This File
+
+```text
+‼️ Do not read §1–33 straight through. It is a reference, not a tutorial.
+
+  IF YOU ARE LEARNING NEST FOR THE FIRST TIME
+    Build something small first — the tasks feature from §0.8 is a good target.
+    Then read, in this order:
+      §3  Modules            — the organising principle, and the thing that
+                               causes most early confusion
+      §6  Controllers        — routing and parameter decorators in full
+      §11 Pipes & Validation — DTOs are where most day-to-day work happens
+      §9  Guards             — how authentication is actually wired up
+      §12 Exception filters  — how errors become responses
+      §16 or §17             — pick TypeORM or Prisma, not both
+      §27 Testing            — earlier than feels natural; it pays off fast
+
+  IF YOU ARE PREPARING FOR AN INTERVIEW
+      §1  How DI works        ─┐
+      §7  Request lifecycle    ├─ these four are asked in almost every
+      §5  Injection scopes     │  NestJS interview
+      §33 Interview questions ─┘
+    Then §32 (pitfalls) — knowing the failure modes is what signals real
+    experience rather than tutorial familiarity.
+
+  IF YOU ARE DEBUGGING SOMETHING RIGHT NOW
+      Go straight to §32 Common Pitfalls. Seventeen entries, and the error
+      message you are staring at is probably one of them.
+
+  ‼️ Sections 20–25 (CQRS, microservices, queues, WebSockets, GraphQL) are
+     situational. Skip them entirely until you have a concrete reason to use
+     one — reading them early mostly produces the urge to over-engineer.
+
+  A NOTE ON THE ‼️ MARKERS
+    They flag the things that are either (a) the most common source of bugs, or
+    (b) the detail an interviewer is listening for. If you skim, skim to those.
+```
+
+---
+
+# Part 1 — Deep Reference
+
+---
+
 ## 1. Mental Model — What Nest Actually Is
 
 ### The one-paragraph version
 
 ```text
-‼️ NestJS is NOT a web server. It is an IoC (Inversion of Control) container
+‼️ NestJS is NOT a web server. It is an IoC (Inversion of Control)‼️ container
    with an HTTP adapter bolted on.
 
    The HTTP part is Express (default) or Fastify — Nest does not implement
@@ -65,7 +1183,7 @@
      3. An enhancer pipeline — guards / interceptors / pipes / filters that wrap
                                every route handler in a consistent order
 
-   If you remember one thing: decorators do not DO anything at runtime.
+   If you remember one thing: decorators do not DO anything at runtime.‼️
    They only ATTACH METADATA. The container reads it later.
 ```
 
@@ -77,8 +1195,8 @@
 // When you write:
 @Controller('users')
 export class UsersController {
-  @Get(':id')
-  findOne(@Param('id') id: string) {}
+    @Get(':id')
+    findOne(@Param('id') id: string) {}
 }
 
 // Here is what happens, step by step:
@@ -86,22 +1204,22 @@ export class UsersController {
 // STEP 1 — At class-definition time (when the file is imported), the decorators run.
 // @Controller('users') is roughly:
 function Controller(prefix: string): ClassDecorator {
-  return (target) => {
-    // Reflect.defineMetadata writes a key/value pair onto the CLASS ITSELF.
-    // It does not modify behaviour — it is a side-table of annotations.
-    // This requires the `reflect-metadata` polyfill, which is why every Nest
-    // app imports it in main.ts (or via @nestjs/core).
-    Reflect.defineMetadata('path', prefix, target);
-    Reflect.defineMetadata('__controller__', true, target);
-  };
+    return target => {
+        // Reflect.defineMetadata writes a key/value pair onto the CLASS ITSELF.
+        // It does not modify behaviour — it is a side-table of annotations.
+        // This requires the `reflect-metadata` polyfill, which is why every Nest
+        // app imports it in main.ts (or via @nestjs/core).
+        Reflect.defineMetadata('path', prefix, target);
+        Reflect.defineMetadata('__controller__', true, target);
+    };
 }
 
 // @Get(':id') is roughly the same but on the METHOD:
 function Get(path: string): MethodDescriptor {
-  return (target, key, descriptor) => {
-    Reflect.defineMetadata('path', path, descriptor.value);
-    Reflect.defineMetadata('method', RequestMethod.GET, descriptor.value);
-  };
+    return (target, key, descriptor) => {
+        Reflect.defineMetadata('path', path, descriptor.value);
+        Reflect.defineMetadata('method', RequestMethod.GET, descriptor.value);
+    };
 }
 
 // STEP 2 — At bootstrap, NestFactory walks the module tree, finds every class
@@ -125,10 +1243,10 @@ function Get(path: string): MethodDescriptor {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly repo: UserRepository) {}
-  //                              ^^^^^^^^^^^^^^^^
-  // TypeScript types are ERASED at compile time. So how does Nest know to
-  // inject a UserRepository here?
+    constructor(private readonly repo: UserRepository) {}
+    //                              ^^^^^^^^^^^^^^^^
+    // TypeScript types are ERASED at compile time. So how does Nest know to
+    // inject a UserRepository here?
 }
 
 // Answer: `emitDecoratorMetadata: true` in tsconfig.json.
@@ -157,24 +1275,24 @@ export class UsersService {
 
 ```jsonc
 {
-  "compilerOptions": {
-    // Enables @Decorator() syntax at all. Without it, nothing compiles.
-    "experimentalDecorators": true,
+    "compilerOptions": {
+        // Enables @Decorator() syntax at all. Without it, nothing compiles.
+        "experimentalDecorators": true,
 
-    // Emits design:type / design:paramtypes / design:returntype metadata.
-    // This is what makes constructor injection work by type. Turning this off
-    // silently breaks DI — you get "Nest can't resolve dependencies" errors.
-    "emitDecoratorMetadata": true,
+        // Emits design:type / design:paramtypes / design:returntype metadata.
+        // This is what makes constructor injection work by type. Turning this off
+        // silently breaks DI — you get "Nest can't resolve dependencies" errors.
+        "emitDecoratorMetadata": true,
 
-    // Nest targets a modern Node runtime; ES2021+ is the usual baseline.
-    "target": "ES2021",
-    "module": "commonjs",
+        // Nest targets a modern Node runtime; ES2021+ is the usual baseline.
+        "target": "ES2021",
+        "module": "commonjs",
 
-    // Recommended, not required. strictPropertyInitialization often fights with
-    // TypeORM entities and DTOs, so many Nest codebases disable just that flag.
-    "strict": true,
-    "strictPropertyInitialization": false
-  }
+        // Recommended, not required. strictPropertyInitialization often fights with
+        // TypeORM entities and DTOs, so many Nest codebases disable just that flag.
+        "strict": true,
+        "strictPropertyInitialization": false,
+    },
 }
 ```
 
@@ -193,78 +1311,78 @@ import compression from 'compression';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  // NestFactory.create() does the whole container build:
-  //   - recursively scans AppModule's imports
-  //   - registers every controller and provider it finds
-  //   - instantiates providers in dependency order (leaves first)
-  //   - runs onModuleInit hooks
-  // It does NOT bind the port yet — that is app.listen().
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    // bufferLogs delays log output until a custom logger is attached below,
-    // so early bootstrap logs are not lost or printed in the wrong format.
-    bufferLogs: true,
+    // NestFactory.create() does the whole container build:
+    //   - recursively scans AppModule's imports
+    //   - registers every controller and provider it finds
+    //   - instantiates providers in dependency order (leaves first)
+    //   - runs onModuleInit hooks
+    // It does NOT bind the port yet — that is app.listen().
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+        // bufferLogs delays log output until a custom logger is attached below,
+        // so early bootstrap logs are not lost or printed in the wrong format.
+        bufferLogs: true,
 
-    // 'cors: true' would enable permissive CORS; prefer explicit config below.
-    // 'abortOnError: false' makes create() throw instead of process.exit(1),
-    // which matters when you bootstrap inside tests or a serverless handler.
-    abortOnError: false,
-  });
+        // 'cors: true' would enable permissive CORS; prefer explicit config below.
+        // 'abortOnError: false' makes create() throw instead of process.exit(1),
+        // which matters when you bootstrap inside tests or a serverless handler.
+        abortOnError: false,
+    });
 
-  // Express-level middleware still works — the adapter exposes the raw app.
-  app.use(helmet());          // security headers (CSP, HSTS, X-Frame-Options...)
-  app.use(compression());     // gzip/brotli responses over ~1KB
+    // Express-level middleware still works — the adapter exposes the raw app.
+    app.use(helmet()); // security headers (CSP, HSTS, X-Frame-Options...)
+    app.use(compression()); // gzip/brotli responses over ~1KB
 
-  app.enableCors({
-    origin: process.env.CORS_ORIGINS?.split(',') ?? [],
-    credentials: true,        // required for cookie-based auth across origins
-  });
+    app.enableCors({
+        origin: process.env.CORS_ORIGINS?.split(',') ?? [],
+        credentials: true, // required for cookie-based auth across origins
+    });
 
-  // Global prefix: every route becomes /api/... except the exclusions.
-  // Health checks are excluded so load balancers hit a stable, unversioned path.
-  app.setGlobalPrefix('api', { exclude: ['health', 'metrics'] });
+    // Global prefix: every route becomes /api/... except the exclusions.
+    // Health checks are excluded so load balancers hit a stable, unversioned path.
+    app.setGlobalPrefix('api', { exclude: ['health', 'metrics'] });
 
-  // URI versioning: /api/v1/users, /api/v2/users.
-  // Alternatives: VersioningType.HEADER, MEDIA_TYPE, or CUSTOM (extractor fn).
-  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+    // URI versioning: /api/v1/users, /api/v2/users.
+    // Alternatives: VersioningType.HEADER, MEDIA_TYPE, or CUSTOM (extractor fn).
+    app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
-  // ‼️ Global pipe. Applied to EVERY handler's parameters.
-  app.useGlobalPipes(
-    new ValidationPipe({
-      // Strip properties that have no decorator in the DTO. This is the single
-      // most important security setting in a Nest app: without it, a client can
-      // POST { role: 'admin' } and, if you pass the DTO straight to an ORM
-      // .save(), mass-assign a field you never intended to expose.
-      whitelist: true,
+    // ‼️ Global pipe. Applied to EVERY handler's parameters.
+    app.useGlobalPipes(
+        new ValidationPipe({
+            // Strip properties that have no decorator in the DTO. This is the single
+            // most important security setting in a Nest app: without it, a client can
+            // POST { role: 'admin' } and, if you pass the DTO straight to an ORM
+            // .save(), mass-assign a field you never intended to expose.
+            whitelist: true,
 
-      // Instead of silently stripping unknown props, reject the request with
-      // 400. Stricter; good for internal APIs where extra fields signal a bug.
-      forbidNonWhitelisted: true,
+            // Instead of silently stripping unknown props, reject the request with
+            // 400. Stricter; good for internal APIs where extra fields signal a bug.
+            forbidNonWhitelisted: true,
 
-      // Run class-transformer so the handler receives a real DTO class instance
-      // (not a plain object). Required for @Type() nesting and for any method
-      // you define on the DTO to exist.
-      transform: true,
+            // Run class-transformer so the handler receives a real DTO class instance
+            // (not a plain object). Required for @Type() nesting and for any method
+            // you define on the DTO to exist.
+            transform: true,
 
-      transformOptions: {
-        // Coerce "123" → 123 and "true" → true based on the TS type. Convenient
-        // for query params, but it is a lenient coercion — for anything that
-        // must be exact, use an explicit @Type(() => Number) instead.
-        enableImplicitConversion: true,
-      },
+            transformOptions: {
+                // Coerce "123" → 123 and "true" → true based on the TS type. Convenient
+                // for query params, but it is a lenient coercion — for anything that
+                // must be exact, use an explicit @Type(() => Number) instead.
+                enableImplicitConversion: true,
+            },
 
-      // In production, do not leak validation internals to clients if your
-      // error messages might echo back sensitive constraint details.
-      // Usually left false because the messages are genuinely useful.
-      disableErrorMessages: false,
-    }),
-  );
+            // In production, do not leak validation internals to clients if your
+            // error messages might echo back sensitive constraint details.
+            // Usually left false because the messages are genuinely useful.
+            disableErrorMessages: false,
+        }),
+    );
 
-  // Listens for SIGTERM/SIGINT and runs onModuleDestroy / onApplicationShutdown.
-  // Without this, Kubernetes rolling deploys kill in-flight requests. See §15.
-  app.enableShutdownHooks();
+    // Listens for SIGTERM/SIGINT and runs onModuleDestroy / onApplicationShutdown.
+    // Without this, Kubernetes rolling deploys kill in-flight requests. See §15.
+    app.enableShutdownHooks();
 
-  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
-  Logger.log(`Listening on ${await app.getUrl()}`, 'Bootstrap');
+    await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+    Logger.log(`Listening on ${await app.getUrl()}`, 'Bootstrap');
 }
 bootstrap();
 ```
@@ -275,10 +1393,7 @@ bootstrap();
 // Swapping the HTTP engine is a two-line change:
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 
-const app = await NestFactory.create<NestFastifyApplication>(
-  AppModule,
-  new FastifyAdapter({ logger: false, trustProxy: true }),
-);
+const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ logger: false, trustProxy: true }));
 await app.listen(3000, '0.0.0.0'); // Fastify needs an explicit host in containers
 ```
 
@@ -314,21 +1429,21 @@ await app.listen(3000, '0.0.0.0'); // Fastify needs an explicit host in containe
 // ‼️ Nest without HTTP at all — useful for CLI tools, cron workers, migrations,
 // and seed scripts that need the same DI container as the API.
 async function runSeed() {
-  // createApplicationContext() builds the container but registers no HTTP
-  // server and no routes. Everything DI-related works exactly the same.
-  const app = await NestFactory.createApplicationContext(AppModule, {
-    logger: ['error', 'warn'],
-  });
+    // createApplicationContext() builds the container but registers no HTTP
+    // server and no routes. Everything DI-related works exactly the same.
+    const app = await NestFactory.createApplicationContext(AppModule, {
+        logger: ['error', 'warn'],
+    });
 
-  // .get() pulls a provider out of the container by its token.
-  // { strict: false } searches the entire tree instead of only AppModule's
-  // own providers, so you do not have to re-export things just for a script.
-  const seeder = app.get(SeederService, { strict: false });
-  await seeder.run();
+    // .get() pulls a provider out of the container by its token.
+    // { strict: false } searches the entire tree instead of only AppModule's
+    // own providers, so you do not have to re-export things just for a script.
+    const seeder = app.get(SeederService, { strict: false });
+    await seeder.run();
 
-  // Always close: this flushes onModuleDestroy hooks, closes DB pools, and
-  // lets the process exit instead of hanging on open handles.
-  await app.close();
+    // Always close: this flushes onModuleDestroy hooks, closes DB pools, and
+    // lets the process exit instead of hanging on open handles.
+    await app.close();
 }
 ```
 
@@ -357,17 +1472,17 @@ async function runSeed() {
 ```typescript
 // ── 1. FEATURE MODULE — one bounded slice of the domain ──────────────────
 @Module({
-  imports: [TypeOrmModule.forFeature([User])], // repository for this entity only
-  controllers: [UsersController],
-  providers: [UsersService],
-  exports: [UsersService],  // AuthModule needs this; the repo stays private
+    imports: [TypeOrmModule.forFeature([User])], // repository for this entity only
+    controllers: [UsersController],
+    providers: [UsersService],
+    exports: [UsersService], // AuthModule needs this; the repo stays private
 })
 export class UsersModule {}
 
 // ── 2. SHARED MODULE — cross-cutting providers, imported explicitly ──────
 @Module({
-  providers: [PrismaService],
-  exports: [PrismaService],
+    providers: [PrismaService],
+    exports: [PrismaService],
 })
 export class PrismaModule {}
 
@@ -376,8 +1491,8 @@ export class PrismaModule {}
 // It means "put my exports in the global registry so no one has to import me."
 @Global()
 @Module({
-  providers: [ConfigService, LoggerService],
-  exports: [ConfigService, LoggerService],
+    providers: [ConfigService, LoggerService],
+    exports: [ConfigService, LoggerService],
 })
 export class CoreModule {}
 // Use sparingly. Global modules hide the dependency graph: a reader of
@@ -388,8 +1503,8 @@ export class CoreModule {}
 // This is how every third-party Nest module (TypeOrmModule.forRoot,
 // JwtModule.register, BullModule.forRoot...) is built.
 export interface StorageOptions {
-  bucket: string;
-  region: string;
+    bucket: string;
+    region: string;
 }
 
 // A token for the options object. Symbols avoid collisions; strings are fine
@@ -398,62 +1513,58 @@ export const STORAGE_OPTIONS = Symbol('STORAGE_OPTIONS');
 
 @Module({})
 export class StorageModule {
-  // forRoot = synchronous configuration, values known at import time.
-  static forRoot(options: StorageOptions): DynamicModule {
-    return {
-      module: StorageModule,
-      providers: [
-        // useValue registers a plain object under a token. StorageService can
-        // now do @Inject(STORAGE_OPTIONS) to read its configuration.
-        { provide: STORAGE_OPTIONS, useValue: options },
-        StorageService,
-      ],
-      exports: [StorageService],
-      global: true, // optional: same effect as @Global() but decided at call time
-    };
-  }
+    // forRoot = synchronous configuration, values known at import time.
+    static forRoot(options: StorageOptions): DynamicModule {
+        return {
+            module: StorageModule,
+            providers: [
+                // useValue registers a plain object under a token. StorageService can
+                // now do @Inject(STORAGE_OPTIONS) to read its configuration.
+                { provide: STORAGE_OPTIONS, useValue: options },
+                StorageService,
+            ],
+            exports: [StorageService],
+            global: true, // optional: same effect as @Global() but decided at call time
+        };
+    }
 
-  // ‼️ forRootAsync = configuration that depends on OTHER providers, e.g. reading
-  // env vars through ConfigService. This is the pattern to know cold — every
-  // real app wires its database and JWT modules this way.
-  static forRootAsync(options: {
-    imports?: any[];
-    inject?: any[];
-    useFactory: (...args: any[]) => Promise<StorageOptions> | StorageOptions;
-  }): DynamicModule {
-    return {
-      module: StorageModule,
-      // The factory needs ConfigModule in scope to inject ConfigService, and
-      // that scope is local to this dynamic module — hence passing imports in.
-      imports: options.imports ?? [],
-      providers: [
-        {
-          provide: STORAGE_OPTIONS,
-          // useFactory runs at container build time. Nest awaits the result if
-          // it returns a Promise, so async config (fetching secrets from Vault,
-          // AWS Secrets Manager, etc.) is fully supported here.
-          useFactory: options.useFactory,
-          inject: options.inject ?? [],
-        },
-        StorageService,
-      ],
-      exports: [StorageService],
-    };
-  }
+    // ‼️ forRootAsync = configuration that depends on OTHER providers, e.g. reading
+    // env vars through ConfigService. This is the pattern to know cold — every
+    // real app wires its database and JWT modules this way.
+    static forRootAsync(options: { imports?: any[]; inject?: any[]; useFactory: (...args: any[]) => Promise<StorageOptions> | StorageOptions }): DynamicModule {
+        return {
+            module: StorageModule,
+            // The factory needs ConfigModule in scope to inject ConfigService, and
+            // that scope is local to this dynamic module — hence passing imports in.
+            imports: options.imports ?? [],
+            providers: [
+                {
+                    provide: STORAGE_OPTIONS,
+                    // useFactory runs at container build time. Nest awaits the result if
+                    // it returns a Promise, so async config (fetching secrets from Vault,
+                    // AWS Secrets Manager, etc.) is fully supported here.
+                    useFactory: options.useFactory,
+                    inject: options.inject ?? [],
+                },
+                StorageService,
+            ],
+            exports: [StorageService],
+        };
+    }
 }
 
 // Consumer side:
 @Module({
-  imports: [
-    StorageModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        bucket: config.getOrThrow('S3_BUCKET'),
-        region: config.getOrThrow('AWS_REGION'),
-      }),
-    }),
-  ],
+    imports: [
+        StorageModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                bucket: config.getOrThrow('S3_BUCKET'),
+                region: config.getOrThrow('AWS_REGION'),
+            }),
+        }),
+    ],
 })
 export class AppModule {}
 ```
@@ -466,21 +1577,21 @@ export class AppModule {}
 import { ConfigurableModuleBuilder } from '@nestjs/common';
 
 export const {
-  ConfigurableModuleClass,  // base class providing the static methods
-  MODULE_OPTIONS_TOKEN,     // token to @Inject() the resolved options
-  OPTIONS_TYPE,             // TS type of the sync options argument
-  ASYNC_OPTIONS_TYPE,       // TS type of the async options argument
+    ConfigurableModuleClass, // base class providing the static methods
+    MODULE_OPTIONS_TOKEN, // token to @Inject() the resolved options
+    OPTIONS_TYPE, // TS type of the sync options argument
+    ASYNC_OPTIONS_TYPE, // TS type of the async options argument
 } = new ConfigurableModuleBuilder<StorageOptions>()
-  // Renames forRoot/forRootAsync → register/registerAsync if you prefer that
-  // convention (Nest's own convention: forRoot = app-wide once,
-  // register/forFeature = per-feature, possibly many times).
-  .setClassMethodName('forRoot')
-  // Adds an `isGlobal` flag to the options that consumers can pass.
-  .setExtras({ isGlobal: false }, (definition, extras) => ({
-    ...definition,
-    global: extras.isGlobal,
-  }))
-  .build();
+    // Renames forRoot/forRootAsync → register/registerAsync if you prefer that
+    // convention (Nest's own convention: forRoot = app-wide once,
+    // register/forFeature = per-feature, possibly many times).
+    .setClassMethodName('forRoot')
+    // Adds an `isGlobal` flag to the options that consumers can pass.
+    .setExtras({ isGlobal: false }, (definition, extras) => ({
+        ...definition,
+        global: extras.isGlobal,
+    }))
+    .build();
 
 @Module({ providers: [StorageService], exports: [StorageService] })
 export class StorageModule extends ConfigurableModuleClass {}
@@ -488,7 +1599,7 @@ export class StorageModule extends ConfigurableModuleClass {}
 
 @Injectable()
 export class StorageService {
-  constructor(@Inject(MODULE_OPTIONS_TOKEN) private opts: StorageOptions) {}
+    constructor(@Inject(MODULE_OPTIONS_TOKEN) private opts: StorageOptions) {}
 }
 ```
 
@@ -502,26 +1613,26 @@ export class StorageService {
 // forwardRef() defers resolution: it hands Nest a THUNK (() => Module) that is
 // only called after both classes exist, breaking the initialisation cycle.
 @Module({
-  imports: [forwardRef(() => AuthModule)],
-  providers: [UsersService],
-  exports: [UsersService],
+    imports: [forwardRef(() => AuthModule)],
+    providers: [UsersService],
+    exports: [UsersService],
 })
 export class UsersModule {}
 
 @Module({
-  imports: [forwardRef(() => UsersModule)],
-  providers: [AuthService],
-  exports: [AuthService],
+    imports: [forwardRef(() => UsersModule)],
+    providers: [AuthService],
+    exports: [AuthService],
 })
 export class AuthModule {}
 
 // The SAME problem exists at the provider level, and needs its own forwardRef:
 @Injectable()
 export class AuthService {
-  constructor(
-    @Inject(forwardRef(() => UsersService))
-    private readonly usersService: UsersService,
-  ) {}
+    constructor(
+        @Inject(forwardRef(() => UsersService))
+        private readonly usersService: UsersService,
+    ) {}
 }
 
 // ‼️ Interview-grade take: forwardRef is a code smell, not a solution. A cycle
@@ -541,10 +1652,10 @@ export class AuthService {
 ```typescript
 // A module can re-export a module it imports, so consumers get both in one import.
 @Module({
-  imports: [ConfigModule, PrismaModule],
-  exports: [ConfigModule, PrismaModule], // ← re-export: importing CoreModule now
-                                          //   also gives you ConfigService and
-                                          //   PrismaService without listing them
+    imports: [ConfigModule, PrismaModule],
+    exports: [ConfigModule, PrismaModule], // ← re-export: importing CoreModule now
+    //   also gives you ConfigService and
+    //   PrismaService without listing them
 })
 export class CoreModule {}
 ```
@@ -625,34 +1736,34 @@ export class CheckoutService {
 ```typescript
 @Injectable()
 export class ReportService {
-  constructor(
-    // @Optional() — resolves to undefined instead of throwing when the token is
-    // not registered. Use for genuinely optional collaborators (a metrics sink,
-    // a feature-flag client), never to paper over a missing import.
-    @Optional() @Inject('METRICS') private readonly metrics?: MetricsClient,
+    constructor(
+        // @Optional() — resolves to undefined instead of throwing when the token is
+        // not registered. Use for genuinely optional collaborators (a metrics sink,
+        // a feature-flag client), never to paper over a missing import.
+        @Optional() @Inject('METRICS') private readonly metrics?: MetricsClient,
 
-    // @Self() — look ONLY in the current module's injector, never in parents.
-    @Self() private readonly localCache: CacheService,
+        // @Self() — look ONLY in the current module's injector, never in parents.
+        @Self() private readonly localCache: CacheService,
 
-    // @SkipSelf() — skip the current injector, start the lookup at the parent.
-    // Used when a module deliberately overrides a provider but one collaborator
-    // still needs the outer/global version.
-    @SkipSelf() private readonly rootConfig: ConfigService,
+        // @SkipSelf() — skip the current injector, start the lookup at the parent.
+        // Used when a module deliberately overrides a provider but one collaborator
+        // still needs the outer/global version.
+        @SkipSelf() private readonly rootConfig: ConfigService,
 
-    // @Host() — restrict the lookup to the host module (module-scoped
-    // resolution). Rare outside library code.
-    @Host() private readonly hostScoped: SomeService,
-  ) {}
+        // @Host() — restrict the lookup to the host module (module-scoped
+        // resolution). Rare outside library code.
+        @Host() private readonly hostScoped: SomeService,
+    ) {}
 }
 
 // Property injection — works, but avoid it in application code.
 @Injectable()
 export class LegacyService {
-  // ‼️ The dependency is not visible in the constructor, so the class lies about
-  // what it needs, and unit tests must reach in and set the property. The one
-  // legitimate use is a base class that subclasses should not have to thread a
-  // constructor argument through.
-  @Inject(HttpService) private readonly http: HttpService;
+    // ‼️ The dependency is not visible in the constructor, so the class lies about
+    // what it needs, and unit tests must reach in and set the property. The one
+    // legitimate use is a base class that subclasses should not have to thread a
+    // constructor argument through.
+    @Inject(HttpService) private readonly http: HttpService;
 }
 ```
 
@@ -661,40 +1772,40 @@ export class LegacyService {
 ```typescript
 @Injectable()
 export class JobDispatcher implements OnModuleInit {
-  private handlers = new Map<string, JobHandler>();
+    private handlers = new Map<string, JobHandler>();
 
-  // ModuleRef is Nest's handle on the container itself. Inject it when the
-  // dependency you need is only known at runtime (plugin registries, strategy
-  // lookup by name, dynamically chosen handlers).
-  constructor(private readonly moduleRef: ModuleRef) {}
+    // ModuleRef is Nest's handle on the container itself. Inject it when the
+    // dependency you need is only known at runtime (plugin registries, strategy
+    // lookup by name, dynamically chosen handlers).
+    constructor(private readonly moduleRef: ModuleRef) {}
 
-  onModuleInit() {
-    // .get() — SYNCHRONOUS, singleton-scoped providers only.
-    // { strict: false } searches the whole application tree, not just the
-    // current module's injector.
-    this.handlers.set('email', this.moduleRef.get(EmailJobHandler, { strict: false }));
-  }
+    onModuleInit() {
+        // .get() — SYNCHRONOUS, singleton-scoped providers only.
+        // { strict: false } searches the whole application tree, not just the
+        // current module's injector.
+        this.handlers.set('email', this.moduleRef.get(EmailJobHandler, { strict: false }));
+    }
 
-  async dispatchScoped(name: string) {
-    // .resolve() — ASYNCHRONOUS, and the ONLY way to get a REQUEST- or
-    // TRANSIENT-scoped provider. Each call returns a NEW instance because
-    // scoped providers have no single instance to hand out.
-    const handler = await this.moduleRef.resolve(ScopedJobHandler);
-    return handler.run(name);
-  }
+    async dispatchScoped(name: string) {
+        // .resolve() — ASYNCHRONOUS, and the ONLY way to get a REQUEST- or
+        // TRANSIENT-scoped provider. Each call returns a NEW instance because
+        // scoped providers have no single instance to hand out.
+        const handler = await this.moduleRef.resolve(ScopedJobHandler);
+        return handler.run(name);
+    }
 
-  async dispatchInSameContext(contextId: ContextId) {
-    // Passing an existing contextId returns the instance belonging to THAT
-    // request context — so a background task can share the request-scoped
-    // instances (e.g. the same transaction, the same correlation id).
-    return this.moduleRef.resolve(ScopedJobHandler, contextId);
-  }
+    async dispatchInSameContext(contextId: ContextId) {
+        // Passing an existing contextId returns the instance belonging to THAT
+        // request context — so a background task can share the request-scoped
+        // instances (e.g. the same transaction, the same correlation id).
+        return this.moduleRef.resolve(ScopedJobHandler, contextId);
+    }
 
-  async createOutsideContainer() {
-    // .create() instantiates a class that is NOT registered as a provider,
-    // while still injecting its dependencies from the container.
-    return this.moduleRef.create(AdHocReportBuilder);
-  }
+    async createOutsideContainer() {
+        // .create() instantiates a class that is NOT registered as a provider,
+        // while still injecting its dependencies from the container.
+        return this.moduleRef.create(AdHocReportBuilder);
+    }
 }
 ```
 
@@ -706,17 +1817,17 @@ export class JobDispatcher implements OnModuleInit {
 // billing route still pays to construct the reporting, search, and email modules.
 @Injectable()
 export class RouteHandler {
-  constructor(private readonly lazyModuleLoader: LazyModuleLoader) {}
+    constructor(private readonly lazyModuleLoader: LazyModuleLoader) {}
 
-  async handleReport() {
-    // The dynamic import() means the module's code is not even parsed until the
-    // first call. Nest caches the instantiated module, so subsequent calls are
-    // just a map lookup — the cost is paid once per process.
-    const { ReportingModule } = await import('./reporting/reporting.module');
-    const moduleRef = await this.lazyModuleLoader.load(() => ReportingModule);
-    const service = moduleRef.get(ReportingService);
-    return service.generate();
-  }
+    async handleReport() {
+        // The dynamic import() means the module's code is not even parsed until the
+        // first call. Nest caches the instantiated module, so subsequent calls are
+        // just a map lookup — the cost is paid once per process.
+        const { ReportingModule } = await import('./reporting/reporting.module');
+        const moduleRef = await this.lazyModuleLoader.load(() => ReportingModule);
+        const service = moduleRef.get(ReportingService);
+        return service.generate();
+    }
 }
 // Caveat: controllers, resolvers, and enhancers in a lazily-loaded module are
 // NOT registered — routing is fixed at bootstrap. Lazy modules are for
@@ -740,9 +1851,11 @@ export class UsersService {}
 // A new instance per incoming request, destroyed when the response is sent.
 @Injectable({ scope: Scope.REQUEST })
 export class RequestContextService {
-  // REQUEST is a special token holding the raw request object.
-  constructor(@Inject(REQUEST) private readonly request: Request) {}
-  get correlationId() { return this.request.headers['x-correlation-id']; }
+    // REQUEST is a special token holding the raw request object.
+    constructor(@Inject(REQUEST) private readonly request: Request) {}
+    get correlationId() {
+        return this.request.headers['x-correlation-id'];
+    }
 }
 
 // ── TRANSIENT ─────────────────────────────────────────────────────────────
@@ -750,10 +1863,12 @@ export class RequestContextService {
 // injecting the same transient provider get two different objects.
 @Injectable({ scope: Scope.TRANSIENT })
 export class ContextualLogger {
-  // INQUIRER is the class that asked for this instance — this is how a logger
-  // can automatically tag every line with the name of the service using it.
-  constructor(@Inject(INQUIRER) private readonly parent: object) {}
-  log(msg: string) { console.log(`[${this.parent.constructor.name}] ${msg}`); }
+    // INQUIRER is the class that asked for this instance — this is how a logger
+    // can automatically tag every line with the name of the service using it.
+    constructor(@Inject(INQUIRER) private readonly parent: object) {}
+    log(msg: string) {
+        console.log(`[${this.parent.constructor.name}] ${msg}`);
+    }
 }
 ```
 
@@ -791,9 +1906,9 @@ export class ContextualLogger {
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 interface RequestStore {
-  correlationId: string;
-  userId?: string;
-  tenantId?: string;
+    correlationId: string;
+    userId?: string;
+    tenantId?: string;
 }
 
 // A single SINGLETON that holds per-request data in Node's async context.
@@ -802,46 +1917,46 @@ interface RequestStore {
 // function — the same mechanism OpenTelemetry uses for trace context.
 @Injectable()
 export class RequestContext {
-  private readonly als = new AsyncLocalStorage<RequestStore>();
+    private readonly als = new AsyncLocalStorage<RequestStore>();
 
-  // Everything awaited inside `fn` sees this store. Nested async calls inherit it.
-  run<T>(store: RequestStore, fn: () => T): T {
-    return this.als.run(store, fn);
-  }
+    // Everything awaited inside `fn` sees this store. Nested async calls inherit it.
+    run<T>(store: RequestStore, fn: () => T): T {
+        return this.als.run(store, fn);
+    }
 
-  get(): RequestStore | undefined {
-    return this.als.getStore();
-  }
+    get(): RequestStore | undefined {
+        return this.als.getStore();
+    }
 }
 
 // Populate it in middleware, which runs before any handler.
 @Injectable()
 export class ContextMiddleware implements NestMiddleware {
-  constructor(private readonly ctx: RequestContext) {}
+    constructor(private readonly ctx: RequestContext) {}
 
-  use(req: Request, res: Response, next: NextFunction) {
-    this.ctx.run(
-      {
-        correlationId: (req.headers['x-correlation-id'] as string) ?? randomUUID(),
-        userId: (req as any).user?.id,
-      },
-      // Calling next() INSIDE run() is what puts the rest of the request —
-      // guards, interceptors, the handler, the DB calls — inside the context.
-      () => next(),
-    );
-  }
+    use(req: Request, res: Response, next: NextFunction) {
+        this.ctx.run(
+            {
+                correlationId: (req.headers['x-correlation-id'] as string) ?? randomUUID(),
+                userId: (req as any).user?.id,
+            },
+            // Calling next() INSIDE run() is what puts the rest of the request —
+            // guards, interceptors, the handler, the DB calls — inside the context.
+            () => next(),
+        );
+    }
 }
 
 // ‼️ Now every service stays a SINGLETON and still reads per-request data:
 @Injectable()
 export class AuditService {
-  constructor(private readonly ctx: RequestContext) {}
-  record(action: string) {
-    // No request scope, no bubbling, no per-request instantiation cost.
-    return this.db.audit.create({
-      data: { action, correlationId: this.ctx.get()?.correlationId },
-    });
-  }
+    constructor(private readonly ctx: RequestContext) {}
+    record(action: string) {
+        // No request scope, no bubbling, no per-request instantiation cost.
+        return this.db.audit.create({
+            data: { action, correlationId: this.ctx.get()?.correlationId },
+        });
+    }
 }
 ```
 
@@ -853,18 +1968,17 @@ export class AuditService {
 // that tenant's requests, instead of one per request.
 @Injectable()
 export class TenantContextIdStrategy implements ContextIdStrategy {
-  attach(contextId: ContextId, request: Request) {
-    const tenantId = request.headers['x-tenant-id'] as string;
-    if (!tenantId) {
-      // No tenant → fall back to normal per-request behaviour.
-      return () => contextId;
+    attach(contextId: ContextId, request: Request) {
+        const tenantId = request.headers['x-tenant-id'] as string;
+        if (!tenantId) {
+            // No tenant → fall back to normal per-request behaviour.
+            return () => contextId;
+        }
+        // getByRequest returns a STABLE sub-context id per tenant, so Nest reuses
+        // the same durable provider instances for every request from that tenant.
+        const tenantSubTreeId = { id: tenantId } as ContextId;
+        return (info: HostComponentInfo) => (info.isTreeDurable ? tenantSubTreeId : contextId);
     }
-    // getByRequest returns a STABLE sub-context id per tenant, so Nest reuses
-    // the same durable provider instances for every request from that tenant.
-    const tenantSubTreeId = { id: tenantId } as ContextId;
-    return (info: HostComponentInfo) =>
-      info.isTreeDurable ? tenantSubTreeId : contextId;
-  }
 }
 // Register in main.ts: ContextIdFactory.apply(new TenantContextIdStrategy());
 // And mark the provider durable:
@@ -881,62 +1995,62 @@ export class TenantConnection {}
 ```typescript
 @Controller({ path: 'users', version: '1' }) // → /api/v1/users
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+    constructor(private readonly usersService: UsersService) {}
 
-  @Get()
-  findAll(
-    // @Query() with a DTO class + ValidationPipe gives you typed, validated,
-    // coerced query params — far better than reading req.query by hand.
-    @Query() query: ListUsersDto,
-  ) {
-    return this.usersService.findAll(query);
-  }
+    @Get()
+    findAll(
+        // @Query() with a DTO class + ValidationPipe gives you typed, validated,
+        // coerced query params — far better than reading req.query by hand.
+        @Query() query: ListUsersDto,
+    ) {
+        return this.usersService.findAll(query);
+    }
 
-  @Get(':id')
-  findOne(
-    // ParseUUIDPipe rejects a malformed id with 400 BEFORE the handler runs,
-    // so the service never sees invalid input and the DB is never queried with
-    // a value that would throw a driver-level error.
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    return this.usersService.findOne(id);
-  }
+    @Get(':id')
+    findOne(
+        // ParseUUIDPipe rejects a malformed id with 400 BEFORE the handler runs,
+        // so the service never sees invalid input and the DB is never queried with
+        // a value that would throw a driver-level error.
+        @Param('id', ParseUUIDPipe) id: string,
+    ) {
+        return this.usersService.findOne(id);
+    }
 
-  @Post()
-  // @HttpCode overrides Nest's default status. Nest returns 201 for POST and
-  // 200 for everything else; anything different must be declared.
-  @HttpCode(HttpStatus.CREATED)
-  @Header('Cache-Control', 'no-store')
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
-  }
+    @Post()
+    // @HttpCode overrides Nest's default status. Nest returns 201 for POST and
+    // 200 for everything else; anything different must be declared.
+    @HttpCode(HttpStatus.CREATED)
+    @Header('Cache-Control', 'no-store')
+    create(@Body() dto: CreateUserDto) {
+        return this.usersService.create(dto);
+    }
 
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    // You can pull a single body property, with its own pipe.
-    @Body('email') email: string,
-  ) {
-    return this.usersService.updateEmail(id, email);
-  }
+    @Patch(':id')
+    update(
+        @Param('id') id: string,
+        // You can pull a single body property, with its own pipe.
+        @Body('email') email: string,
+    ) {
+        return this.usersService.updateEmail(id, email);
+    }
 
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT) // 204: no body, so return void
-  remove(@Param('id') id: string): Promise<void> {
-    return this.usersService.remove(id);
-  }
+    @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT) // 204: no body, so return void
+    remove(@Param('id') id: string): Promise<void> {
+        return this.usersService.remove(id);
+    }
 
-  @Get('search/*path')     // wildcard segment (Nest 11 / Express 5 syntax;
-                            //  Express 4 / Nest ≤10 used '*')
-  search(@Param('path') path: string) {}
+    @Get('search/*path') // wildcard segment (Nest 11 / Express 5 syntax;
+    //  Express 4 / Nest ≤10 used '*')
+    search(@Param('path') path: string) {}
 
-  // Other parameter decorators worth knowing:
-  //   @Headers('authorization') auth: string
-  //   @Ip() ip: string
-  //   @HostParam('tenant') tenant: string   — with @Controller({ host: ':tenant.example.com' })
-  //   @Session() session: Record<string, any>
-  //   @Next() next: NextFunction            — escape hatch, almost never needed
-  //   @Req() / @Request()                   — the raw request object
+    // Other parameter decorators worth knowing:
+    //   @Headers('authorization') auth: string
+    //   @Ip() ip: string
+    //   @HostParam('tenant') tenant: string   — with @Controller({ host: ':tenant.example.com' })
+    //   @Session() session: Record<string, any>
+    //   @Next() next: NextFunction            — escape hatch, almost never needed
+    //   @Req() / @Request()                   — the raw request object
 }
 ```
 
@@ -945,36 +2059,36 @@ export class UsersController {
 ```typescript
 @Controller('files')
 export class FilesController {
-  // ‼️ Injecting @Res() switches that handler into "library-specific mode":
-  // Nest STOPS handling the response entirely. Your return value is ignored,
-  // interceptors that map the response body no longer apply, and if you forget
-  // to call res.send() the request HANGS until the client times out.
-  @Get('bad')
-  bad(@Res() res: Response) {
-    res.status(200).json({ ok: true }); // you now own the whole response
-  }
+    // ‼️ Injecting @Res() switches that handler into "library-specific mode":
+    // Nest STOPS handling the response entirely. Your return value is ignored,
+    // interceptors that map the response body no longer apply, and if you forget
+    // to call res.send() the request HANGS until the client times out.
+    @Get('bad')
+    bad(@Res() res: Response) {
+        res.status(200).json({ ok: true }); // you now own the whole response
+    }
 
-  // ‼️ The fix when you only need to set a header or a cookie:
-  // passthrough: true keeps Nest in control of sending the response, while
-  // still giving you the raw object for side effects.
-  @Get('good')
-  good(@Res({ passthrough: true }) res: Response) {
-    res.cookie('session', 'abc', { httpOnly: true, sameSite: 'lax' });
-    return { ok: true }; // Nest serialises this normally — interceptors still run
-  }
+    // ‼️ The fix when you only need to set a header or a cookie:
+    // passthrough: true keeps Nest in control of sending the response, while
+    // still giving you the raw object for side effects.
+    @Get('good')
+    good(@Res({ passthrough: true }) res: Response) {
+        res.cookie('session', 'abc', { httpOnly: true, sameSite: 'lax' });
+        return { ok: true }; // Nest serialises this normally — interceptors still run
+    }
 
-  // Streaming a file the idiomatic way — no @Res() needed at all.
-  @Get('download/:id')
-  @Header('Content-Type', 'application/pdf')
-  download(@Param('id') id: string): StreamableFile {
-    const stream = createReadStream(join(process.cwd(), 'files', `${id}.pdf`));
-    // StreamableFile lets Nest pipe the stream and still run the normal
-    // response pipeline, including error handling if the stream fails.
-    return new StreamableFile(stream, {
-      type: 'application/pdf',
-      disposition: `attachment; filename="${id}.pdf"`,
-    });
-  }
+    // Streaming a file the idiomatic way — no @Res() needed at all.
+    @Get('download/:id')
+    @Header('Content-Type', 'application/pdf')
+    download(@Param('id') id: string): StreamableFile {
+        const stream = createReadStream(join(process.cwd(), 'files', `${id}.pdf`));
+        // StreamableFile lets Nest pipe the stream and still run the normal
+        // response pipeline, including error handling if the stream fails.
+        return new StreamableFile(stream, {
+            type: 'application/pdf',
+            disposition: `attachment; filename="${id}.pdf"`,
+        });
+    }
 }
 ```
 
@@ -983,14 +2097,14 @@ export class FilesController {
 ```typescript
 @Controller('users')
 export class UsersController {
-  // ‼️ Nest registers routes in DECLARATION ORDER and Express matches the first
-  // pattern that fits. Declaring @Get(':id') first would make GET /users/me
-  // match it with id === 'me' — a real bug that ships regularly.
-  @Get('me')        // STATIC segments must be declared BEFORE dynamic ones
-  me() {}
+    // ‼️ Nest registers routes in DECLARATION ORDER and Express matches the first
+    // pattern that fits. Declaring @Get(':id') first would make GET /users/me
+    // match it with id === 'me' — a real bug that ships regularly.
+    @Get('me') // STATIC segments must be declared BEFORE dynamic ones
+    me() {}
 
-  @Get(':id')       // this would otherwise swallow /users/me
-  findOne(@Param('id') id: string) {}
+    @Get(':id') // this would otherwise swallow /users/me
+    findOne(@Param('id') id: string) {}
 }
 ```
 
@@ -1098,51 +2212,47 @@ export class UsersV2Controller {}
 // Class-based middleware — injectable, so it can use services.
 @Injectable()
 export class RequestLoggerMiddleware implements NestMiddleware {
-  private readonly logger = new Logger(RequestLoggerMiddleware.name);
+    private readonly logger = new Logger(RequestLoggerMiddleware.name);
 
-  use(req: Request, res: Response, next: NextFunction) {
-    const start = Date.now();
+    use(req: Request, res: Response, next: NextFunction) {
+        const start = Date.now();
 
-    // 'finish' fires when the response headers and body have been handed to the
-    // socket. Listening here (rather than logging up front) is what lets you
-    // record the status code and duration of the completed request.
-    res.on('finish', () => {
-      this.logger.log(
-        `${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms`,
-      );
-    });
+        // 'finish' fires when the response headers and body have been handed to the
+        // socket. Listening here (rather than logging up front) is what lets you
+        // record the status code and duration of the completed request.
+        res.on('finish', () => {
+            this.logger.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms`);
+        });
 
-    // Forgetting next() hangs the request forever. There is no timeout by default.
-    next();
-  }
+        // Forgetting next() hangs the request forever. There is no timeout by default.
+        next();
+    }
 }
 
 // Functional middleware — no DI, but lighter and fine for stateless work.
 export function correlationId(req: Request, res: Response, next: NextFunction) {
-  const id = (req.headers['x-correlation-id'] as string) ?? randomUUID();
-  req.headers['x-correlation-id'] = id;
-  res.setHeader('x-correlation-id', id); // echo it back for client-side tracing
-  next();
+    const id = (req.headers['x-correlation-id'] as string) ?? randomUUID();
+    req.headers['x-correlation-id'] = id;
+    res.setHeader('x-correlation-id', id); // echo it back for client-side tracing
+    next();
 }
 
 // Binding: middleware CANNOT be registered in the `providers` array like other
 // enhancers. It is wired through the module's configure() method.
 @Module({ controllers: [UsersController, AuthController] })
 export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(correlationId, RequestLoggerMiddleware) // order = execution order
-      .exclude(
-        { path: 'health', method: RequestMethod.GET },
-        'metrics',                                    // string shorthand
-      )
-      .forRoutes('*');                                // all routes
+    configure(consumer: MiddlewareConsumer) {
+        consumer
+            .apply(correlationId, RequestLoggerMiddleware) // order = execution order
+            .exclude(
+                { path: 'health', method: RequestMethod.GET },
+                'metrics', // string shorthand
+            )
+            .forRoutes('*'); // all routes
 
-    consumer
-      .apply(RateLimitMiddleware)
-      .forRoutes(AuthController);      // a controller class…
-      // .forRoutes({ path: 'auth/login', method: RequestMethod.POST }); // …or a route
-  }
+        consumer.apply(RateLimitMiddleware).forRoutes(AuthController); // a controller class…
+        // .forRoutes({ path: 'auth/login', method: RequestMethod.POST }); // …or a route
+    }
 }
 ```
 
@@ -1173,48 +2283,45 @@ export class AppModule implements NestModule {
 ```typescript
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(
-    private readonly jwtService: JwtService,
-    private readonly reflector: Reflector,
-  ) {}
+    constructor(
+        private readonly jwtService: JwtService,
+        private readonly reflector: Reflector,
+    ) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    // ‼️ getAllAndOverride reads metadata from the HANDLER first, then falls
-    // back to the CONTROLLER class. That precedence is what lets a single
-    // @Public() route live inside an otherwise-protected controller.
-    // (getAllAndMerge would combine both instead of overriding — use that for
-    // additive metadata like roles.)
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) return true;
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        // ‼️ getAllAndOverride reads metadata from the HANDLER first, then falls
+        // back to the CONTROLLER class. That precedence is what lets a single
+        // @Public() route live inside an otherwise-protected controller.
+        // (getAllAndMerge would combine both instead of overriding — use that for
+        // additive metadata like roles.)
+        const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [context.getHandler(), context.getClass()]);
+        if (isPublic) return true;
 
-    // switchToHttp() is required because ExecutionContext is transport-agnostic:
-    // the same guard class can run over HTTP, WebSockets, gRPC, or a microservice
-    // message, and each transport exposes its arguments differently.
-    const request = context.switchToHttp().getRequest<Request>();
+        // switchToHttp() is required because ExecutionContext is transport-agnostic:
+        // the same guard class can run over HTTP, WebSockets, gRPC, or a microservice
+        // message, and each transport exposes its arguments differently.
+        const request = context.switchToHttp().getRequest<Request>();
 
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    if (type !== 'Bearer' || !token) {
-      throw new UnauthorizedException('Missing bearer token');
+        const [type, token] = request.headers.authorization?.split(' ') ?? [];
+        if (type !== 'Bearer' || !token) {
+            throw new UnauthorizedException('Missing bearer token');
+        }
+
+        try {
+            const payload = await this.jwtService.verifyAsync(token, {
+                secret: process.env.JWT_SECRET,
+            });
+            // Attaching to the request is how downstream code (the @CurrentUser()
+            // param decorator, other guards, interceptors) sees the authenticated user.
+            request['user'] = payload;
+            return true;
+        } catch {
+            // ‼️ Deliberately do not echo the JWT library's error message. "jwt
+            // expired" vs "invalid signature" tells an attacker which half of their
+            // forgery attempt was wrong.
+            throw new UnauthorizedException('Invalid token');
+        }
     }
-
-    try {
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET,
-      });
-      // Attaching to the request is how downstream code (the @CurrentUser()
-      // param decorator, other guards, interceptors) sees the authenticated user.
-      request['user'] = payload;
-      return true;
-    } catch {
-      // ‼️ Deliberately do not echo the JWT library's error message. "jwt
-      // expired" vs "invalid signature" tells an attacker which half of their
-      // forgery attempt was wrong.
-      throw new UnauthorizedException('Invalid token');
-    }
-  }
 }
 
 // The @Public() escape hatch:
@@ -1225,30 +2332,31 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 ### Role-based authorization
 
 ```typescript
-export enum Role { User = 'user', Admin = 'admin', Owner = 'owner' }
+export enum Role {
+    User = 'user',
+    Admin = 'admin',
+    Owner = 'owner',
+}
 
 export const ROLES_KEY = 'roles';
 export const Roles = (...roles: Role[]) => SetMetadata(ROLES_KEY, roles);
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+    constructor(private readonly reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    const required = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    // No @Roles() on the route → authorization is not this guard's concern.
-    // (Authentication was already enforced by JwtAuthGuard running before it.)
-    if (!required?.length) return true;
+    canActivate(context: ExecutionContext): boolean {
+        const required = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [context.getHandler(), context.getClass()]);
+        // No @Roles() on the route → authorization is not this guard's concern.
+        // (Authentication was already enforced by JwtAuthGuard running before it.)
+        if (!required?.length) return true;
 
-    const { user } = context.switchToHttp().getRequest();
-    // ‼️ Guard order matters: RolesGuard assumes request.user exists, which is
-    // only true if JwtAuthGuard ran first. Global guards run in REGISTRATION
-    // order, so JwtAuthGuard must be provided before RolesGuard.
-    return required.some((role) => user?.roles?.includes(role));
-  }
+        const { user } = context.switchToHttp().getRequest();
+        // ‼️ Guard order matters: RolesGuard assumes request.user exists, which is
+        // only true if JwtAuthGuard ran first. Global guards run in REGISTRATION
+        // order, so JwtAuthGuard must be provided before RolesGuard.
+        return required.some(role => user?.roles?.includes(role));
+    }
 }
 ```
 
@@ -1261,28 +2369,28 @@ export class RolesGuard implements CanActivate {
 // the actual record.
 @Injectable()
 export class PostOwnerGuard implements CanActivate {
-  constructor(private readonly posts: PostsService) {}
+    constructor(private readonly posts: PostsService) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest();
-    const post = await this.posts.findOne(req.params.id);
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        const req = context.switchToHttp().getRequest();
+        const post = await this.posts.findOne(req.params.id);
 
-    if (!post) {
-      // ‼️ 404 rather than 403 on a missing record: returning 403 for records
-      // that exist and 404 for ones that do not lets an attacker enumerate
-      // valid ids. Some teams return 404 for "exists but not yours" too, for
-      // exactly this reason.
-      throw new NotFoundException();
+        if (!post) {
+            // ‼️ 404 rather than 403 on a missing record: returning 403 for records
+            // that exist and 404 for ones that do not lets an attacker enumerate
+            // valid ids. Some teams return 404 for "exists but not yours" too, for
+            // exactly this reason.
+            throw new NotFoundException();
+        }
+
+        if (post.authorId !== req.user.id && !req.user.roles.includes(Role.Admin)) {
+            throw new ForbiddenException();
+        }
+
+        // Stash the already-loaded record so the handler does not query it again.
+        req.post = post;
+        return true;
     }
-
-    if (post.authorId !== req.user.id && !req.user.roles.includes(Role.Admin)) {
-      throw new ForbiddenException();
-    }
-
-    // Stash the already-loaded record so the handler does not query it again.
-    req.post = post;
-    return true;
-  }
 }
 ```
 
@@ -1293,9 +2401,9 @@ export class PostOwnerGuard implements CanActivate {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin')
 export class AdminController {
-  @Roles(Role.Admin)
-  @Get('stats')
-  stats() {}
+    @Roles(Role.Admin)
+    @Get('stats')
+    stats() {}
 }
 
 // Global via app.useGlobalGuards(new JwtAuthGuard()) — ‼️ this instance is
@@ -1303,13 +2411,13 @@ export class AdminController {
 
 // ‼️ The correct way to register a global guard that needs DI:
 @Module({
-  providers: [
-    // APP_GUARD is a special token. Nest collects every provider registered
-    // under it and applies them globally — but because they are registered as
-    // normal providers, they are fully injectable.
-    { provide: APP_GUARD, useClass: JwtAuthGuard },  // runs first
-    { provide: APP_GUARD, useClass: RolesGuard },    // runs second
-  ],
+    providers: [
+        // APP_GUARD is a special token. Nest collects every provider registered
+        // under it and applies them globally — but because they are registered as
+        // normal providers, they are fully injectable.
+        { provide: APP_GUARD, useClass: JwtAuthGuard }, // runs first
+        { provide: APP_GUARD, useClass: RolesGuard }, // runs second
+    ],
 })
 export class AppModule {}
 // The same pattern exists for APP_PIPE, APP_INTERCEPTOR, and APP_FILTER.
@@ -1324,22 +2432,22 @@ export class AppModule {}
 ```typescript
 @Injectable()
 export class TimingInterceptor implements NestInterceptor {
-  private readonly logger = new Logger(TimingInterceptor.name);
+    private readonly logger = new Logger(TimingInterceptor.name);
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const start = Date.now();
-    const { method, url } = context.switchToHttp().getRequest();
+    intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+        const start = Date.now();
+        const { method, url } = context.switchToHttp().getRequest();
 
-    // ‼️ next.handle() returns an Observable that has NOT been subscribed yet.
-    // Nest subscribes to it after all interceptors have wrapped it. Everything
-    // before this line runs pre-handler; everything you pipe onto it runs post.
-    return next.handle().pipe(
-      tap({
-        next: () => this.logger.log(`${method} ${url} ${Date.now() - start}ms`),
-        error: (e) => this.logger.error(`${method} ${url} failed: ${e.message}`),
-      }),
-    );
-  }
+        // ‼️ next.handle() returns an Observable that has NOT been subscribed yet.
+        // Nest subscribes to it after all interceptors have wrapped it. Everything
+        // before this line runs pre-handler; everything you pipe onto it runs post.
+        return next.handle().pipe(
+            tap({
+                next: () => this.logger.log(`${method} ${url} ${Date.now() - start}ms`),
+                error: e => this.logger.error(`${method} ${url} failed: ${e.message}`),
+            }),
+        );
+    }
 }
 ```
 
@@ -1347,27 +2455,25 @@ export class TimingInterceptor implements NestInterceptor {
 
 ```typescript
 export interface ApiResponse<T> {
-  data: T;
-  meta: { timestamp: string; correlationId?: string };
+    data: T;
+    meta: { timestamp: string; correlationId?: string };
 }
 
 // Generic so the transformed type is preserved for callers/tests.
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, ApiResponse<T>>
-{
-  intercept(ctx: ExecutionContext, next: CallHandler): Observable<ApiResponse<T>> {
-    const req = ctx.switchToHttp().getRequest();
-    return next.handle().pipe(
-      map((data) => ({
-        data,
-        meta: {
-          timestamp: new Date().toISOString(),
-          correlationId: req.headers['x-correlation-id'],
-        },
-      })),
-    );
-  }
+export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {
+    intercept(ctx: ExecutionContext, next: CallHandler): Observable<ApiResponse<T>> {
+        const req = ctx.switchToHttp().getRequest();
+        return next.handle().pipe(
+            map(data => ({
+                data,
+                meta: {
+                    timestamp: new Date().toISOString(),
+                    correlationId: req.headers['x-correlation-id'],
+                },
+            })),
+        );
+    }
 }
 // ‼️ Two things this breaks if you apply it globally without thinking:
 //   1. Error responses do NOT pass through interceptors — they are handled by
@@ -1382,67 +2488,63 @@ export class TransformInterceptor<T>
 ```typescript
 @Injectable()
 export class TimeoutInterceptor implements NestInterceptor {
-  constructor(private readonly ms = 5000) {}
+    constructor(private readonly ms = 5000) {}
 
-  intercept(_: ExecutionContext, next: CallHandler): Observable<unknown> {
-    return next.handle().pipe(
-      // RxJS timeout() throws TimeoutError if the source has not emitted in
-      // time. ‼️ It does NOT cancel the underlying work — the DB query or HTTP
-      // call keeps running. This protects the CLIENT's latency budget, not the
-      // server's resources. For real cancellation you need AbortSignal support
-      // in the driver, or a statement_timeout at the database level.
-      timeout(this.ms),
-      catchError((err) =>
-        err instanceof TimeoutError
-          ? throwError(() => new RequestTimeoutException())
-          : throwError(() => err),
-      ),
-    );
-  }
+    intercept(_: ExecutionContext, next: CallHandler): Observable<unknown> {
+        return next.handle().pipe(
+            // RxJS timeout() throws TimeoutError if the source has not emitted in
+            // time. ‼️ It does NOT cancel the underlying work — the DB query or HTTP
+            // call keeps running. This protects the CLIENT's latency budget, not the
+            // server's resources. For real cancellation you need AbortSignal support
+            // in the driver, or a statement_timeout at the database level.
+            timeout(this.ms),
+            catchError(err => (err instanceof TimeoutError ? throwError(() => new RequestTimeoutException()) : throwError(() => err))),
+        );
+    }
 }
 
 @Injectable()
 export class HttpRetryInterceptor implements NestInterceptor {
-  intercept(_: ExecutionContext, next: CallHandler): Observable<unknown> {
-    return next.handle().pipe(
-      retry({
-        count: 3,
-        // Exponential backoff with jitter. Without jitter, every client that
-        // failed at the same instant retries at the same instant — a
-        // thundering herd that keeps a recovering service down.
-        delay: (error, retryCount) => {
-          // ‼️ Only retry what is safe to retry. Retrying a 400 wastes calls;
-          // retrying a non-idempotent POST can double-charge a customer.
-          if (error.status && error.status < 500) throw error;
-          const base = Math.pow(2, retryCount) * 100;
-          return timer(base + Math.random() * base);
-        },
-      }),
-    );
-  }
+    intercept(_: ExecutionContext, next: CallHandler): Observable<unknown> {
+        return next.handle().pipe(
+            retry({
+                count: 3,
+                // Exponential backoff with jitter. Without jitter, every client that
+                // failed at the same instant retries at the same instant — a
+                // thundering herd that keeps a recovering service down.
+                delay: (error, retryCount) => {
+                    // ‼️ Only retry what is safe to retry. Retrying a 400 wastes calls;
+                    // retrying a non-idempotent POST can double-charge a customer.
+                    if (error.status && error.status < 500) throw error;
+                    const base = Math.pow(2, retryCount) * 100;
+                    return timer(base + Math.random() * base);
+                },
+            }),
+        );
+    }
 }
 
 @Injectable()
 export class CacheInterceptor implements NestInterceptor {
-  constructor(@Inject(CACHE_MANAGER) private cache: Cache) {}
+    constructor(@Inject(CACHE_MANAGER) private cache: Cache) {}
 
-  async intercept(ctx: ExecutionContext, next: CallHandler) {
-    const req = ctx.switchToHttp().getRequest();
-    if (req.method !== 'GET') return next.handle(); // never cache writes
+    async intercept(ctx: ExecutionContext, next: CallHandler) {
+        const req = ctx.switchToHttp().getRequest();
+        if (req.method !== 'GET') return next.handle(); // never cache writes
 
-    const key = `http:${req.originalUrl}:${req.user?.id ?? 'anon'}`;
-    //                                      ^^^^^^^^^^^^^^^^^^^^^^
-    // ‼️ Include the identity in the key. A shared cache key across users is
-    // how one user's private data ends up served to another — a real incident
-    // pattern, not a theoretical one.
+        const key = `http:${req.originalUrl}:${req.user?.id ?? 'anon'}`;
+        //                                      ^^^^^^^^^^^^^^^^^^^^^^
+        // ‼️ Include the identity in the key. A shared cache key across users is
+        // how one user's private data ends up served to another — a real incident
+        // pattern, not a theoretical one.
 
-    const hit = await this.cache.get(key);
-    // of() wraps the cached value into an Observable so the handler is skipped
-    // entirely while the response pipeline stays identical.
-    if (hit !== undefined) return of(hit);
+        const hit = await this.cache.get(key);
+        // of() wraps the cached value into an Observable so the handler is skipped
+        // entirely while the response pipeline stays identical.
+        if (hit !== undefined) return of(hit);
 
-    return next.handle().pipe(tap((body) => this.cache.set(key, body, 30_000)));
-  }
+        return next.handle().pipe(tap(body => this.cache.set(key, body, 30_000)));
+    }
 }
 ```
 
@@ -1451,38 +2553,40 @@ export class CacheInterceptor implements NestInterceptor {
 ```typescript
 // ‼️ The built-in way to stop leaking password hashes and internal fields.
 export class UserEntity {
-  id: string;
-  email: string;
+    id: string;
+    email: string;
 
-  // @Exclude() drops the field from the serialised output. Combined with
-  // ClassSerializerInterceptor, this is enforced centrally instead of relying
-  // on every service to remember to delete the field.
-  @Exclude()
-  passwordHash: string;
+    // @Exclude() drops the field from the serialised output. Combined with
+    // ClassSerializerInterceptor, this is enforced centrally instead of relying
+    // on every service to remember to delete the field.
+    @Exclude()
+    passwordHash: string;
 
-  // @Expose() with groups: only serialised when the request context asks for
-  // that group — e.g. admins see internal notes, regular users do not.
-  @Expose({ groups: ['admin'] })
-  internalNotes: string;
+    // @Expose() with groups: only serialised when the request context asks for
+    // that group — e.g. admins see internal notes, regular users do not.
+    @Expose({ groups: ['admin'] })
+    internalNotes: string;
 
-  // @Transform() reshapes a value on the way out.
-  @Transform(({ value }) => value.toISOString())
-  createdAt: Date;
+    // @Transform() reshapes a value on the way out.
+    @Transform(({ value }) => value.toISOString())
+    createdAt: Date;
 
-  constructor(partial: Partial<UserEntity>) { Object.assign(this, partial); }
+    constructor(partial: Partial<UserEntity>) {
+        Object.assign(this, partial);
+    }
 }
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('users')
 export class UsersController {
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    // ‼️ MUST return a CLASS INSTANCE. class-transformer reads the decorators
-    // off the prototype, so a plain object from an ORM `select` is passed
-    // through untouched — @Exclude does nothing and the hash leaks. This is
-    // the #1 way this feature silently fails.
-    return new UserEntity(await this.usersService.findOne(id));
-  }
+    @Get(':id')
+    async findOne(@Param('id') id: string) {
+        // ‼️ MUST return a CLASS INSTANCE. class-transformer reads the decorators
+        // off the prototype, so a plain object from an ORM `select` is passed
+        // through untouched — @Exclude does nothing and the hash leaks. This is
+        // the #1 way this feature silently fails.
+        return new UserEntity(await this.usersService.findOne(id));
+    }
 }
 ```
 
@@ -1494,68 +2598,68 @@ export class UsersController {
 
 ```typescript
 export class CreateUserDto {
-  @IsEmail({}, { message: 'A valid email is required' })
-  // Normalising here means every downstream layer — uniqueness checks, lookups,
-  // the DB unique index — sees the same canonical form.
-  @Transform(({ value }) => value?.trim().toLowerCase())
-  email: string;
+    @IsEmail({}, { message: 'A valid email is required' })
+    // Normalising here means every downstream layer — uniqueness checks, lookups,
+    // the DB unique index — sees the same canonical form.
+    @Transform(({ value }) => value?.trim().toLowerCase())
+    email: string;
 
-  @IsString()
-  @MinLength(12, { message: 'Password must be at least 12 characters' })
-  @Matches(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'Password must contain upper, lower, and a digit',
-  })
-  password: string;
+    @IsString()
+    @MinLength(12, { message: 'Password must be at least 12 characters' })
+    @Matches(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+        message: 'Password must contain upper, lower, and a digit',
+    })
+    password: string;
 
-  @IsOptional()          // ‼️ skips ALL other validators when the value is
-                         // undefined/null — this is how you model "not sent"
-                         // as distinct from "sent as empty".
-  @IsString()
-  @MaxLength(100)
-  displayName?: string;
+    @IsOptional() // ‼️ skips ALL other validators when the value is
+    // undefined/null — this is how you model "not sent"
+    // as distinct from "sent as empty".
+    @IsString()
+    @MaxLength(100)
+    displayName?: string;
 
-  @IsEnum(Role)
-  @IsOptional()
-  role?: Role = Role.User;
+    @IsEnum(Role)
+    @IsOptional()
+    role?: Role = Role.User;
 
-  // Nested objects need BOTH decorators:
-  //   @ValidateNested tells class-validator to recurse.
-  //   @Type tells class-transformer which class to instantiate — without it the
-  //   nested value stays a plain object and its decorators never run, so nested
-  //   validation silently passes everything.
-  @ValidateNested()
-  @Type(() => AddressDto)
-  @IsOptional()
-  address?: AddressDto;
+    // Nested objects need BOTH decorators:
+    //   @ValidateNested tells class-validator to recurse.
+    //   @Type tells class-transformer which class to instantiate — without it the
+    //   nested value stays a plain object and its decorators never run, so nested
+    //   validation silently passes everything.
+    @ValidateNested()
+    @Type(() => AddressDto)
+    @IsOptional()
+    address?: AddressDto;
 
-  @IsArray()
-  @ValidateNested({ each: true }) // `each` applies the rule per array element
-  @Type(() => TagDto)
-  @ArrayMaxSize(10)
-  tags: TagDto[];
+    @IsArray()
+    @ValidateNested({ each: true }) // `each` applies the rule per array element
+    @Type(() => TagDto)
+    @ArrayMaxSize(10)
+    tags: TagDto[];
 }
 
 // Query DTOs need explicit coercion because query strings are always strings.
 export class ListUsersDto {
-  @Type(() => Number)   // "2" → 2 before @IsInt runs
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  page = 1;
+    @Type(() => Number) // "2" → 2 before @IsInt runs
+    @IsInt()
+    @Min(1)
+    @IsOptional()
+    page = 1;
 
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)             // ‼️ ALWAYS cap page size. Without it, ?limit=1000000
-                        // is a free denial-of-service against your database.
-  @IsOptional()
-  limit = 20;
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    @Max(100) // ‼️ ALWAYS cap page size. Without it, ?limit=1000000
+    // is a free denial-of-service against your database.
+    @IsOptional()
+    limit = 20;
 
-  @IsIn(['createdAt', 'email'])  // ‼️ allow-list sort columns. Interpolating a
-                                 // user-supplied column into ORDER BY is SQL
-                                 // injection even through an ORM query builder.
-  @IsOptional()
-  sortBy = 'createdAt';
+    @IsIn(['createdAt', 'email']) // ‼️ allow-list sort columns. Interpolating a
+    // user-supplied column into ORDER BY is SQL
+    // injection even through an ORM query builder.
+    @IsOptional()
+    sortBy = 'createdAt';
 }
 ```
 
@@ -1587,23 +2691,23 @@ export class SearchUsersDto extends IntersectionType(ListUsersDto, FilterDto) {}
 // implementing PipeTransform can validate.
 @Injectable()
 export class ZodValidationPipe implements PipeTransform {
-  constructor(private readonly schema: ZodSchema) {}
+    constructor(private readonly schema: ZodSchema) {}
 
-  transform(value: unknown, metadata: ArgumentMetadata) {
-    const result = this.schema.safeParse(value);
-    if (!result.success) {
-      throw new BadRequestException({
-        message: 'Validation failed',
-        errors: result.error.issues.map((i) => ({
-          path: i.path.join('.'),
-          message: i.message,
-        })),
-      });
+    transform(value: unknown, metadata: ArgumentMetadata) {
+        const result = this.schema.safeParse(value);
+        if (!result.success) {
+            throw new BadRequestException({
+                message: 'Validation failed',
+                errors: result.error.issues.map(i => ({
+                    path: i.path.join('.'),
+                    message: i.message,
+                })),
+            });
+        }
+        // The RETURN VALUE becomes the handler's argument — this is why pipes can
+        // transform as well as validate, and why they run before the handler.
+        return result.data;
     }
-    // The RETURN VALUE becomes the handler's argument — this is why pipes can
-    // transform as well as validate, and why they run before the handler.
-    return result.data;
-  }
 }
 // Usage: @Body(new ZodValidationPipe(createUserSchema)) dto: CreateUserInput
 
@@ -1611,15 +2715,15 @@ export class ZodValidationPipe implements PipeTransform {
 // domain object instead of a string it has to look up.
 @Injectable()
 export class ParseUserByIdPipe implements PipeTransform<string, Promise<User>> {
-  constructor(private readonly users: UsersService) {}
+    constructor(private readonly users: UsersService) {}
 
-  async transform(value: string, metadata: ArgumentMetadata): Promise<User> {
-    const user = await this.users.findOne(value);
-    // Throwing from a pipe produces a clean 404 before the handler body runs,
-    // so the handler never has to write the "if (!user) throw" branch.
-    if (!user) throw new NotFoundException(`User ${value} not found`);
-    return user;
-  }
+    async transform(value: string, metadata: ArgumentMetadata): Promise<User> {
+        const user = await this.users.findOne(value);
+        // Throwing from a pipe produces a clean 404 before the handler body runs,
+        // so the handler never has to write the "if (!user) throw" branch.
+        if (!user) throw new NotFoundException(`User ${value} not found`);
+        return user;
+    }
 }
 // Usage: findOne(@Param('id', ParseUserByIdPipe) user: User) { return user; }
 ```
@@ -1644,35 +2748,35 @@ export class ParseUserByIdPipe implements PipeTransform<string, Promise<User>> {
 
 ```typescript
 // Nest maps each of these to the right status code automatically.
-throw new BadRequestException('Invalid payload');            // 400
-throw new UnauthorizedException();                           // 401
-throw new ForbiddenException();                              // 403
-throw new NotFoundException('User not found');               // 404
-throw new ConflictException('Email already registered');     // 409
-throw new UnprocessableEntityException();                    // 422
-throw new TooManyRequestsException();                        // 429
-throw new InternalServerErrorException();                    // 500
-throw new ServiceUnavailableException();                     // 503
+throw new BadRequestException('Invalid payload'); // 400
+throw new UnauthorizedException(); // 401
+throw new ForbiddenException(); // 403
+throw new NotFoundException('User not found'); // 404
+throw new ConflictException('Email already registered'); // 409
+throw new UnprocessableEntityException(); // 422
+throw new TooManyRequestsException(); // 429
+throw new InternalServerErrorException(); // 500
+throw new ServiceUnavailableException(); // 503
 
 // Custom domain exceptions — the right way to keep HTTP concerns out of the
 // domain layer while still getting correct status codes at the edge.
 export class InsufficientFundsException extends HttpException {
-  constructor(
-    public readonly required: number,
-    public readonly available: number,
-  ) {
-    super(
-      {
-        // A stable machine-readable code lets clients branch on the error
-        // without string-matching a human message that will be reworded.
-        code: 'INSUFFICIENT_FUNDS',
-        message: `Requires ${required} but only ${available} available`,
-        required,
-        available,
-      },
-      HttpStatus.PAYMENT_REQUIRED,
-    );
-  }
+    constructor(
+        public readonly required: number,
+        public readonly available: number,
+    ) {
+        super(
+            {
+                // A stable machine-readable code lets clients branch on the error
+                // without string-matching a human message that will be reworded.
+                code: 'INSUFFICIENT_FUNDS',
+                message: `Requires ${required} but only ${available} available`,
+                required,
+                available,
+            },
+            HttpStatus.PAYMENT_REQUIRED,
+        );
+    }
 }
 ```
 
@@ -1683,59 +2787,55 @@ export class InsufficientFundsException extends HttpException {
 // throws (a TypeError, a driver error, a rejected promise).
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
+    private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  // HttpAdapterHost gives a transport-agnostic way to write the response, so
-  // the same filter works under both Express and Fastify.
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+    // HttpAdapterHost gives a transport-agnostic way to write the response, so
+    // the same filter works under both Express and Fastify.
+    constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
 
-  catch(exception: unknown, host: ArgumentsHost): void {
-    const { httpAdapter } = this.httpAdapterHost;
-    const ctx = host.switchToHttp();
-    const request = ctx.getRequest();
+    catch(exception: unknown, host: ArgumentsHost): void {
+        const { httpAdapter } = this.httpAdapterHost;
+        const ctx = host.switchToHttp();
+        const request = ctx.getRequest();
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let payload: Record<string, unknown> = {
-      code: 'INTERNAL_ERROR',
-      message: 'Internal server error',
-    };
+        let status = HttpStatus.INTERNAL_SERVER_ERROR;
+        let payload: Record<string, unknown> = {
+            code: 'INTERNAL_ERROR',
+            message: 'Internal server error',
+        };
 
-    if (exception instanceof HttpException) {
-      status = exception.getStatus();
-      const response = exception.getResponse();
-      payload =
-        typeof response === 'string' ? { message: response } : { ...(response as object) };
-    } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
-      // ‼️ Translate driver errors at the edge so the persistence layer's
-      // vocabulary never reaches the client. P2002 = unique constraint.
-      if (exception.code === 'P2002') {
-        status = HttpStatus.CONFLICT;
-        payload = { code: 'DUPLICATE', message: 'Resource already exists' };
-      }
+        if (exception instanceof HttpException) {
+            status = exception.getStatus();
+            const response = exception.getResponse();
+            payload = typeof response === 'string' ? { message: response } : { ...(response as object) };
+        } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+            // ‼️ Translate driver errors at the edge so the persistence layer's
+            // vocabulary never reaches the client. P2002 = unique constraint.
+            if (exception.code === 'P2002') {
+                status = HttpStatus.CONFLICT;
+                payload = { code: 'DUPLICATE', message: 'Resource already exists' };
+            }
+        }
+
+        // ‼️ Log the FULL error server-side, return a SAFE message to the client.
+        // Stack traces in an HTTP response disclose file paths, package versions,
+        // and sometimes credentials from connection strings.
+        if (status >= 500) {
+            this.logger.error(`${request.method} ${request.url} → ${status}`, exception instanceof Error ? exception.stack : String(exception));
+        }
+
+        httpAdapter.reply(
+            ctx.getResponse(),
+            {
+                ...payload,
+                statusCode: status,
+                timestamp: new Date().toISOString(),
+                path: httpAdapter.getRequestUrl(request),
+                correlationId: request.headers['x-correlation-id'],
+            },
+            status,
+        );
     }
-
-    // ‼️ Log the FULL error server-side, return a SAFE message to the client.
-    // Stack traces in an HTTP response disclose file paths, package versions,
-    // and sometimes credentials from connection strings.
-    if (status >= 500) {
-      this.logger.error(
-        `${request.method} ${request.url} → ${status}`,
-        exception instanceof Error ? exception.stack : String(exception),
-      );
-    }
-
-    httpAdapter.reply(
-      ctx.getResponse(),
-      {
-        ...payload,
-        statusCode: status,
-        timestamp: new Date().toISOString(),
-        path: httpAdapter.getRequestUrl(request),
-        correlationId: request.headers['x-correlation-id'],
-      },
-      status,
-    );
-  }
 }
 
 // Register globally WITH DI:
@@ -1753,9 +2853,9 @@ export class AppModule {}
 
 @Catch(InsufficientFundsException)
 export class PaymentExceptionFilter implements ExceptionFilter {
-  catch(exception: InsufficientFundsException, host: ArgumentsHost) {
-    // Handle only this case; anything else falls through to the global filter.
-  }
+    catch(exception: InsufficientFundsException, host: ArgumentsHost) {
+        // Handle only this case; anything else falls through to the global filter.
+    }
 }
 
 @UseFilters(PaymentExceptionFilter) // controller- or route-level
@@ -1770,35 +2870,26 @@ export class PaymentsController {}
 ```typescript
 // ── Parameter decorator ───────────────────────────────────────────────────
 // createParamDecorator receives (data, ctx) and returns the argument value.
-export const CurrentUser = createParamDecorator(
-  (data: keyof JwtPayload | undefined, ctx: ExecutionContext) => {
+export const CurrentUser = createParamDecorator((data: keyof JwtPayload | undefined, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
     const user = request.user;
     // `data` is whatever the caller passed: @CurrentUser('id') → data === 'id',
     // which lets one decorator serve both the whole object and a single field.
     return data ? user?.[data] : user;
-  },
-);
+});
 // Usage: findMe(@CurrentUser() user: JwtPayload)
 //        findMyId(@CurrentUser('id') userId: string)
 
 // ── Metadata decorator ────────────────────────────────────────────────────
 export const RATE_LIMIT_KEY = 'rateLimit';
-export const RateLimit = (limit: number, windowMs: number) =>
-  SetMetadata(RATE_LIMIT_KEY, { limit, windowMs });
+export const RateLimit = (limit: number, windowMs: number) => SetMetadata(RATE_LIMIT_KEY, { limit, windowMs });
 
 // ── Composed decorator ────────────────────────────────────────────────────
 // ‼️ applyDecorators collapses a repeated stack into one reusable decorator.
 // Without it, every protected admin route repeats five lines and eventually
 // one of them forgets a guard.
 export function AdminOnly() {
-  return applyDecorators(
-    UseGuards(JwtAuthGuard, RolesGuard),
-    Roles(Role.Admin),
-    ApiBearerAuth(),
-    ApiUnauthorizedResponse({ description: 'Missing or invalid token' }),
-    ApiForbiddenResponse({ description: 'Requires admin role' }),
-  );
+    return applyDecorators(UseGuards(JwtAuthGuard, RolesGuard), Roles(Role.Admin), ApiBearerAuth(), ApiUnauthorizedResponse({ description: 'Missing or invalid token' }), ApiForbiddenResponse({ description: 'Requires admin role' }));
 }
 // Usage:
 //   @AdminOnly()
@@ -1828,60 +2919,58 @@ export const Roles2 = Reflector.createDecorator<Role[]>();
 ```typescript
 // ── Namespaced, typed config ──────────────────────────────────────────────
 export default registerAs('database', () => ({
-  url: process.env.DATABASE_URL,
-  poolSize: parseInt(process.env.DB_POOL_SIZE ?? '10', 10),
-  ssl: process.env.DB_SSL === 'true',
+    url: process.env.DATABASE_URL,
+    poolSize: parseInt(process.env.DB_POOL_SIZE ?? '10', 10),
+    ssl: process.env.DB_SSL === 'true',
 }));
 // registerAs gives you a token you can inject with full typing, instead of
 // stringly-typed config.get('database.poolSize') lookups scattered everywhere.
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      // Available everywhere without importing ConfigModule in each feature.
-      isGlobal: true,
+    imports: [
+        ConfigModule.forRoot({
+            // Available everywhere without importing ConfigModule in each feature.
+            isGlobal: true,
 
-      // Later files do NOT override earlier ones — first match wins. So the
-      // environment-specific file must come first.
-      envFilePath: [`.env.${process.env.NODE_ENV}`, '.env'],
+            // Later files do NOT override earlier ones — first match wins. So the
+            // environment-specific file must come first.
+            envFilePath: [`.env.${process.env.NODE_ENV}`, '.env'],
 
-      load: [databaseConfig, authConfig, redisConfig],
+            load: [databaseConfig, authConfig, redisConfig],
 
-      // ‼️ Validate at BOOT. A missing or malformed env var should crash the
-      // process at startup — where a deploy pipeline catches it — not throw on
-      // a random request at 3am. This is the single highest-value line here.
-      validate: (raw) => {
-        const parsed = envSchema.safeParse(raw);
-        if (!parsed.success) {
-          throw new Error(
-            `Invalid environment:\n${JSON.stringify(parsed.error.format(), null, 2)}`,
-          );
-        }
-        return parsed.data;
-      },
+            // ‼️ Validate at BOOT. A missing or malformed env var should crash the
+            // process at startup — where a deploy pipeline catches it — not throw on
+            // a random request at 3am. This is the single highest-value line here.
+            validate: raw => {
+                const parsed = envSchema.safeParse(raw);
+                if (!parsed.success) {
+                    throw new Error(`Invalid environment:\n${JSON.stringify(parsed.error.format(), null, 2)}`);
+                }
+                return parsed.data;
+            },
 
-      // Caches process.env lookups. process.env access is surprisingly slow in
-      // Node (it hits the host environment each time), so this matters on
-      // hot paths that read config per request.
-      cache: true,
+            // Caches process.env lookups. process.env access is surprisingly slow in
+            // Node (it hits the host environment each time), so this matters on
+            // hot paths that read config per request.
+            cache: true,
 
-      // Prevents ConfigModule from mutating process.env, which keeps tests
-      // isolated from one another.
-      ignoreEnvVars: false,
-      expandVariables: true, // supports ${VAR} interpolation inside .env
-    }),
-  ],
+            // Prevents ConfigModule from mutating process.env, which keeps tests
+            // isolated from one another.
+            ignoreEnvVars: false,
+            expandVariables: true, // supports ${VAR} interpolation inside .env
+        }),
+    ],
 })
 export class AppModule {}
 
 // The Zod schema — one source of truth for what the app needs to run.
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().default(3000),
-  DATABASE_URL: z.string().url(),
-  // ‼️ Enforce secret strength in the schema, not in a wiki page nobody reads.
-  JWT_SECRET: z.string().min(32),
-  REDIS_URL: z.string().url().optional(),
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    PORT: z.coerce.number().default(3000),
+    DATABASE_URL: z.string().url(),
+    // ‼️ Enforce secret strength in the schema, not in a wiki page nobody reads.
+    JWT_SECRET: z.string().min(32),
+    REDIS_URL: z.string().url().optional(),
 });
 export type Env = z.infer<typeof envSchema>;
 ```
@@ -1890,32 +2979,32 @@ export type Env = z.infer<typeof envSchema>;
 // ── Consuming config ──────────────────────────────────────────────────────
 @Injectable()
 export class TokenService {
-  constructor(
-    // Injecting the namespaced config gives a fully-typed object with no
-    // string keys and no runtime lookup cost per access.
-    @Inject(authConfig.KEY)
-    private readonly config: ConfigType<typeof authConfig>,
-  ) {}
+    constructor(
+        // Injecting the namespaced config gives a fully-typed object with no
+        // string keys and no runtime lookup cost per access.
+        @Inject(authConfig.KEY)
+        private readonly config: ConfigType<typeof authConfig>,
+    ) {}
 
-  sign(payload: object) {
-    return jwt.sign(payload, this.config.jwtSecret, {
-      expiresIn: this.config.accessTokenTtl,
-    });
-  }
+    sign(payload: object) {
+        return jwt.sign(payload, this.config.jwtSecret, {
+            expiresIn: this.config.accessTokenTtl,
+        });
+    }
 }
 
 @Injectable()
 export class OtherService {
-  constructor(private readonly config: ConfigService<Env, true>) {
-    //                                              ^^^^^^^^^ `true` = infer
-    // types AND treat every key as required, so get() returns a non-optional
-    // type instead of `T | undefined`.
+    constructor(private readonly config: ConfigService<Env, true>) {
+        //                                              ^^^^^^^^^ `true` = infer
+        // types AND treat every key as required, so get() returns a non-optional
+        // type instead of `T | undefined`.
 
-    // ‼️ getOrThrow over get: fail loudly at construction rather than passing
-    // `undefined` into an SDK that will fail with a much less obvious error
-    // several layers deeper.
-    const url = this.config.getOrThrow('DATABASE_URL');
-  }
+        // ‼️ getOrThrow over get: fail loudly at construction rather than passing
+        // `undefined` into an SDK that will fail with a much less obvious error
+        // several layers deeper.
+        const url = this.config.getOrThrow('DATABASE_URL');
+    }
 }
 ```
 
@@ -1941,40 +3030,38 @@ export class OtherService {
 
 ```typescript
 @Injectable()
-export class QueueConsumer
-  implements OnApplicationBootstrap, OnApplicationShutdown
-{
-  private consumer?: KafkaConsumer;
-  private inFlight = 0;
-  private draining = false;
+export class QueueConsumer implements OnApplicationBootstrap, OnApplicationShutdown {
+    private consumer?: KafkaConsumer;
+    private inFlight = 0;
+    private draining = false;
 
-  async onApplicationBootstrap() {
-    // ‼️ Start consuming here, not in onModuleInit: at onModuleInit time other
-    // modules this handler depends on may not be initialised yet, so a message
-    // arriving in that window would hit half-built dependencies.
-    this.consumer = await this.kafka.consumer({ groupId: 'orders' });
-    await this.consumer.run({ eachMessage: (m) => this.handle(m) });
-  }
-
-  async onApplicationShutdown(signal?: string) {
-    this.logger.log(`Shutting down on ${signal}`);
-    this.draining = true;
-
-    // Stop accepting new work FIRST, then drain what is in flight. Doing it in
-    // the other order means new messages keep arriving while you wait.
-    await this.consumer?.disconnect();
-
-    // ‼️ Bounded wait. An unbounded drain loop turns a rolling deploy into a
-    // hang; Kubernetes will SIGKILL at terminationGracePeriodSeconds anyway,
-    // so exiting cleanly before that is strictly better than being killed.
-    const deadline = Date.now() + 15_000;
-    while (this.inFlight > 0 && Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 200));
+    async onApplicationBootstrap() {
+        // ‼️ Start consuming here, not in onModuleInit: at onModuleInit time other
+        // modules this handler depends on may not be initialised yet, so a message
+        // arriving in that window would hit half-built dependencies.
+        this.consumer = await this.kafka.consumer({ groupId: 'orders' });
+        await this.consumer.run({ eachMessage: m => this.handle(m) });
     }
-    if (this.inFlight > 0) {
-      this.logger.warn(`Forcing exit with ${this.inFlight} messages in flight`);
+
+    async onApplicationShutdown(signal?: string) {
+        this.logger.log(`Shutting down on ${signal}`);
+        this.draining = true;
+
+        // Stop accepting new work FIRST, then drain what is in flight. Doing it in
+        // the other order means new messages keep arriving while you wait.
+        await this.consumer?.disconnect();
+
+        // ‼️ Bounded wait. An unbounded drain loop turns a rolling deploy into a
+        // hang; Kubernetes will SIGKILL at terminationGracePeriodSeconds anyway,
+        // so exiting cleanly before that is strictly better than being killed.
+        const deadline = Date.now() + 15_000;
+        while (this.inFlight > 0 && Date.now() < deadline) {
+            await new Promise(r => setTimeout(r, 200));
+        }
+        if (this.inFlight > 0) {
+            this.logger.warn(`Forcing exit with ${this.inFlight} messages in flight`);
+        }
     }
-  }
 }
 ```
 
@@ -2001,40 +3088,40 @@ export class QueueConsumer
 
 ```typescript
 @Module({
-  imports: [
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        url: config.getOrThrow('DATABASE_URL'),
+    imports: [
+        TypeOrmModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                type: 'postgres',
+                url: config.getOrThrow('DATABASE_URL'),
 
-        // autoLoadEntities picks up everything registered via forFeature(),
-        // so you do not maintain a second list of entity paths.
-        autoLoadEntities: true,
+                // autoLoadEntities picks up everything registered via forFeature(),
+                // so you do not maintain a second list of entity paths.
+                autoLoadEntities: true,
 
-        // ‼️ NEVER true outside local development. synchronize alters the live
-        // schema to match your entities on every boot — it will silently drop
-        // a column when you rename a property. Production uses migrations.
-        synchronize: false,
+                // ‼️ NEVER true outside local development. synchronize alters the live
+                // schema to match your entities on every boot — it will silently drop
+                // a column when you rename a property. Production uses migrations.
+                synchronize: false,
 
-        // Also never true in production: it would run pending migrations during
-        // startup, so N replicas racing to migrate the same database.
-        // Run migrations as a separate pipeline step or an init container.
-        migrationsRun: false,
+                // Also never true in production: it would run pending migrations during
+                // startup, so N replicas racing to migrate the same database.
+                // Run migrations as a separate pipeline step or an init container.
+                migrationsRun: false,
 
-        // Connection pool sizing: this is per PROCESS. With 4 replicas × 4
-        // cluster workers × 10 connections you are asking Postgres for 160
-        // connections — past the default max_connections of 100. Size against
-        // the database limit, and put PgBouncer in front if you need more.
-        extra: { max: 10, connectionTimeoutMillis: 5000 },
+                // Connection pool sizing: this is per PROCESS. With 4 replicas × 4
+                // cluster workers × 10 connections you are asking Postgres for 160
+                // connections — past the default max_connections of 100. Size against
+                // the database limit, and put PgBouncer in front if you need more.
+                extra: { max: 10, connectionTimeoutMillis: 5000 },
 
-        // Log slow queries in production; log everything only in development.
-        logging: config.get('NODE_ENV') === 'development' ? 'all' : ['error', 'warn'],
-        maxQueryExecutionTime: 1000, // logs any query slower than 1s
-      }),
-    }),
-  ],
+                // Log slow queries in production; log everything only in development.
+                logging: config.get('NODE_ENV') === 'development' ? 'all' : ['error', 'warn'],
+                maxQueryExecutionTime: 1000, // logs any query slower than 1s
+            }),
+        }),
+    ],
 })
 export class DatabaseModule {}
 ```
@@ -2047,65 +3134,65 @@ export class DatabaseModule {}
 // alongside the query that needs it.
 @Index(['tenantId', 'createdAt'])
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
-  // unique: true creates a UNIQUE INDEX — the only reliable way to prevent
-  // duplicate emails. A "check then insert" in application code is a race:
-  // two concurrent requests both pass the check and both insert.
-  @Column({ unique: true })
-  email: string;
+    // unique: true creates a UNIQUE INDEX — the only reliable way to prevent
+    // duplicate emails. A "check then insert" in application code is a race:
+    // two concurrent requests both pass the check and both insert.
+    @Column({ unique: true })
+    email: string;
 
-  // select: false keeps the column out of every default query, so a forgotten
-  // `find()` cannot leak the hash. You must opt in with addSelect() to read it.
-  @Column({ select: false })
-  passwordHash: string;
+    // select: false keeps the column out of every default query, so a forgotten
+    // `find()` cannot leak the hash. You must opt in with addSelect() to read it.
+    @Column({ select: false })
+    passwordHash: string;
 
-  @Column({ type: 'enum', enum: Role, default: Role.User })
-  role: Role;
+    @Column({ type: 'enum', enum: Role, default: Role.User })
+    role: Role;
 
-  @Column({ type: 'jsonb', nullable: true })
-  preferences: Record<string, unknown> | null;
+    @Column({ type: 'jsonb', nullable: true })
+    preferences: Record<string, unknown> | null;
 
-  // One-to-many: the FK lives on the OTHER table (posts.authorId).
-  @OneToMany(() => Post, (post) => post.author)
-  posts: Post[];
+    // One-to-many: the FK lives on the OTHER table (posts.authorId).
+    @OneToMany(() => Post, post => post.author)
+    posts: Post[];
 
-  @ManyToMany(() => Team, (team) => team.members)
-  @JoinTable({ name: 'user_teams' }) // owning side creates the join table
-  teams: Team[];
+    @ManyToMany(() => Team, team => team.members)
+    @JoinTable({ name: 'user_teams' }) // owning side creates the join table
+    teams: Team[];
 
-  @CreateDateColumn() createdAt: Date;
-  @UpdateDateColumn() updatedAt: Date;
+    @CreateDateColumn() createdAt: Date;
+    @UpdateDateColumn() updatedAt: Date;
 
-  // Soft delete: rows get deletedAt set instead of being removed, and TypeORM
-  // adds `WHERE deletedAt IS NULL` to queries automatically.
-  // ‼️ Caveat: a UNIQUE index still sees soft-deleted rows, so a user who
-  // deletes their account cannot re-register with the same email unless you
-  // use a partial unique index (WHERE deleted_at IS NULL).
-  @DeleteDateColumn() deletedAt: Date | null;
+    // Soft delete: rows get deletedAt set instead of being removed, and TypeORM
+    // adds `WHERE deletedAt IS NULL` to queries automatically.
+    // ‼️ Caveat: a UNIQUE index still sees soft-deleted rows, so a user who
+    // deletes their account cannot re-register with the same email unless you
+    // use a partial unique index (WHERE deleted_at IS NULL).
+    @DeleteDateColumn() deletedAt: Date | null;
 
-  @VersionColumn() version: number; // optimistic locking — see §19
+    @VersionColumn() version: number; // optimistic locking — see §19
 }
 
 @Entity('posts')
 export class Post {
-  @PrimaryGeneratedColumn('uuid') id: string;
+    @PrimaryGeneratedColumn('uuid') id: string;
 
-  @ManyToOne(() => User, (user) => user.posts, {
-    // RESTRICT/CASCADE decides what the DATABASE does when the parent is
-    // deleted. Prefer letting the database enforce it over application code —
-    // it holds even for writes that bypass your app.
-    onDelete: 'CASCADE',
-    nullable: false,
-  })
-  @JoinColumn({ name: 'author_id' })
-  author: User;
+    @ManyToOne(() => User, user => user.posts, {
+        // RESTRICT/CASCADE decides what the DATABASE does when the parent is
+        // deleted. Prefer letting the database enforce it over application code —
+        // it holds even for writes that bypass your app.
+        onDelete: 'CASCADE',
+        nullable: false,
+    })
+    @JoinColumn({ name: 'author_id' })
+    author: User;
 
-  // ‼️ Mapping the FK as its own column lets you set/read the relation without
-  // loading the whole User entity — a large and easily-missed win.
-  @Column({ name: 'author_id' })
-  authorId: string;
+    // ‼️ Mapping the FK as its own column lets you set/read the relation without
+    // loading the whole User entity — a large and easily-missed win.
+    @Column({ name: 'author_id' })
+    authorId: string;
 }
 ```
 
@@ -2114,77 +3201,81 @@ export class Post {
 ```typescript
 @Injectable()
 export class UsersService {
-  constructor(
-    // @InjectRepository provides the repository token registered by forFeature.
-    @InjectRepository(User) private readonly repo: Repository<User>,
-    private readonly dataSource: DataSource, // for transactions / raw queries
-  ) {}
+    constructor(
+        // @InjectRepository provides the repository token registered by forFeature.
+        @InjectRepository(User) private readonly repo: Repository<User>,
+        private readonly dataSource: DataSource, // for transactions / raw queries
+    ) {}
 
-  // ‼️ THE N+1 PROBLEM — the most common ORM performance bug, and a guaranteed
-  // interview topic.
-  async badFindAll() {
-    const users = await this.repo.find();            // 1 query
-    for (const user of users) {
-      user.posts = await this.postsRepo.find({       // N more queries
-        where: { authorId: user.id },
-      });
-    }
-    // 100 users → 101 round trips. Each is only ~1ms, but 101 sequential
-    // round trips is ~100ms of pure latency doing nothing.
-  }
-
-  async goodFindAll() {
-    // relations generates a LEFT JOIN — one query, all data.
-    return this.repo.find({
-      relations: { posts: true },
-      // ‼️ Always select explicitly on hot paths. `SELECT *` on a table with a
-      // jsonb blob or a text column pulls megabytes you immediately discard.
-      select: { id: true, email: true, posts: { id: true, title: true } },
-      // ‼️ Never return an unbounded list from an API.
-      take: 20,
-      skip: 0,
-      order: { createdAt: 'DESC' },
-    });
-  }
-
-  // ‼️ The JOIN + LIMIT trap: with a one-to-many join, `take` applies to the
-  // JOINED ROWS, not the parent entities — a user with 5 posts consumes 5 of
-  // your 20 rows. TypeORM's `find` handles this by issuing two queries, but a
-  // hand-written QueryBuilder does NOT unless you say so.
-  async paginatedWithRelations(page: number, limit: number) {
-    return this.repo
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user.posts', 'post')
-      .where('user.tenantId = :tenantId', { tenantId })
-      //          ^^^^^^^^^^^^ parameterised — NEVER template-interpolate user
-      //          input into a query string, even inside an ORM.
-      .orderBy('user.createdAt', 'DESC')
-      .take(limit)   // take/skip = entity-aware pagination (two queries)
-      .skip((page - 1) * limit)
-      // limit/offset = raw SQL LIMIT/OFFSET — wrong here, right for flat queries
-      .getManyAndCount(); // returns [rows, total] for the pagination envelope
-  }
-
-  // ‼️ Keyset (cursor) pagination — what you use once the table is large.
-  // OFFSET 100000 makes Postgres read and discard 100,000 rows; a WHERE on an
-  // indexed column jumps straight to the right place. Cost stays flat as the
-  // offset grows, which is why every large API paginates by cursor.
-  async keysetPage(cursor?: { createdAt: Date; id: string }, limit = 20) {
-    const qb = this.repo.createQueryBuilder('user')
-      .orderBy('user.createdAt', 'DESC')
-      .addOrderBy('user.id', 'DESC') // tiebreaker keeps the order total/stable
-      .take(limit + 1);              // fetch one extra to detect "has more"
-
-    if (cursor) {
-      // Row-value comparison — the clean way to express "strictly after this
-      // (createdAt, id) pair" without nested OR conditions.
-      qb.where('(user.createdAt, user.id) < (:createdAt, :id)', cursor);
+    // ‼️ THE N+1 PROBLEM — the most common ORM performance bug, and a guaranteed
+    // interview topic.
+    async badFindAll() {
+        const users = await this.repo.find(); // 1 query
+        for (const user of users) {
+            user.posts = await this.postsRepo.find({
+                // N more queries
+                where: { authorId: user.id },
+            });
+        }
+        // 100 users → 101 round trips. Each is only ~1ms, but 101 sequential
+        // round trips is ~100ms of pure latency doing nothing.
     }
 
-    const rows = await qb.getMany();
-    const hasMore = rows.length > limit;
-    return { items: hasMore ? rows.slice(0, limit) : rows, hasMore };
-  }
+    async goodFindAll() {
+        // relations generates a LEFT JOIN — one query, all data.
+        return this.repo.find({
+            relations: { posts: true },
+            // ‼️ Always select explicitly on hot paths. `SELECT *` on a table with a
+            // jsonb blob or a text column pulls megabytes you immediately discard.
+            select: { id: true, email: true, posts: { id: true, title: true } },
+            // ‼️ Never return an unbounded list from an API.
+            take: 20,
+            skip: 0,
+            order: { createdAt: 'DESC' },
+        });
+    }
+
+    // ‼️ The JOIN + LIMIT trap: with a one-to-many join, `take` applies to the
+    // JOINED ROWS, not the parent entities — a user with 5 posts consumes 5 of
+    // your 20 rows. TypeORM's `find` handles this by issuing two queries, but a
+    // hand-written QueryBuilder does NOT unless you say so.
+    async paginatedWithRelations(page: number, limit: number) {
+        return (
+            this.repo
+                .createQueryBuilder('user')
+                .leftJoinAndSelect('user.posts', 'post')
+                .where('user.tenantId = :tenantId', { tenantId })
+                //          ^^^^^^^^^^^^ parameterised — NEVER template-interpolate user
+                //          input into a query string, even inside an ORM.
+                .orderBy('user.createdAt', 'DESC')
+                .take(limit) // take/skip = entity-aware pagination (two queries)
+                .skip((page - 1) * limit)
+                // limit/offset = raw SQL LIMIT/OFFSET — wrong here, right for flat queries
+                .getManyAndCount()
+        ); // returns [rows, total] for the pagination envelope
+    }
+
+    // ‼️ Keyset (cursor) pagination — what you use once the table is large.
+    // OFFSET 100000 makes Postgres read and discard 100,000 rows; a WHERE on an
+    // indexed column jumps straight to the right place. Cost stays flat as the
+    // offset grows, which is why every large API paginates by cursor.
+    async keysetPage(cursor?: { createdAt: Date; id: string }, limit = 20) {
+        const qb = this.repo
+            .createQueryBuilder('user')
+            .orderBy('user.createdAt', 'DESC')
+            .addOrderBy('user.id', 'DESC') // tiebreaker keeps the order total/stable
+            .take(limit + 1); // fetch one extra to detect "has more"
+
+        if (cursor) {
+            // Row-value comparison — the clean way to express "strictly after this
+            // (createdAt, id) pair" without nested OR conditions.
+            qb.where('(user.createdAt, user.id) < (:createdAt, :id)', cursor);
+        }
+
+        const rows = await qb.getMany();
+        const hasMore = rows.length > limit;
+        return { items: hasMore ? rows.slice(0, limit) : rows, hasMore };
+    }
 }
 ```
 
@@ -2193,10 +3284,10 @@ export class UsersService {
 ```typescript
 // data-source.ts — the CLI needs its own DataSource, separate from the Nest module.
 export default new DataSource({
-  type: 'postgres',
-  url: process.env.DATABASE_URL,
-  entities: ['src/**/*.entity.ts'],
-  migrations: ['src/migrations/*.ts'],
+    type: 'postgres',
+    url: process.env.DATABASE_URL,
+    entities: ['src/**/*.entity.ts'],
+    migrations: ['src/migrations/*.ts'],
 });
 
 // npm run typeorm -- migration:generate src/migrations/AddUserRole -d data-source.ts
@@ -2206,29 +3297,27 @@ export default new DataSource({
 
 ```typescript
 export class AddUserRole1730000000000 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    // ‼️ Adding a NOT NULL column with a DEFAULT rewrites the whole table and
-    // holds an ACCESS EXCLUSIVE lock on older Postgres (<11). The zero-downtime
-    // sequence is: add nullable → backfill in batches → add the NOT NULL
-    // constraint (NOT VALID, then VALIDATE) → deploy code that writes it.
-    await queryRunner.query(`ALTER TABLE "users" ADD "role" varchar`);
-    await queryRunner.query(`UPDATE "users" SET "role" = 'user' WHERE "role" IS NULL`);
-    await queryRunner.query(`ALTER TABLE "users" ALTER COLUMN "role" SET NOT NULL`);
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        // ‼️ Adding a NOT NULL column with a DEFAULT rewrites the whole table and
+        // holds an ACCESS EXCLUSIVE lock on older Postgres (<11). The zero-downtime
+        // sequence is: add nullable → backfill in batches → add the NOT NULL
+        // constraint (NOT VALID, then VALIDATE) → deploy code that writes it.
+        await queryRunner.query(`ALTER TABLE "users" ADD "role" varchar`);
+        await queryRunner.query(`UPDATE "users" SET "role" = 'user' WHERE "role" IS NULL`);
+        await queryRunner.query(`ALTER TABLE "users" ALTER COLUMN "role" SET NOT NULL`);
 
-    // CONCURRENTLY builds the index without blocking writes. It cannot run
-    // inside a transaction, so this migration must be marked transactional:false
-    // (or run as its own migration) — otherwise it errors out.
-    await queryRunner.query(
-      `CREATE INDEX CONCURRENTLY "idx_users_role" ON "users" ("role")`,
-    );
-  }
+        // CONCURRENTLY builds the index without blocking writes. It cannot run
+        // inside a transaction, so this migration must be marked transactional:false
+        // (or run as its own migration) — otherwise it errors out.
+        await queryRunner.query(`CREATE INDEX CONCURRENTLY "idx_users_role" ON "users" ("role")`);
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    // ‼️ Always write down(). Untested rollbacks are how a bad deploy becomes
-    // a two-hour incident instead of a two-minute one.
-    await queryRunner.query(`DROP INDEX "idx_users_role"`);
-    await queryRunner.query(`ALTER TABLE "users" DROP COLUMN "role"`);
-  }
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        // ‼️ Always write down(). Untested rollbacks are how a bad deploy becomes
+        // a two-hour incident instead of a two-minute one.
+        await queryRunner.query(`DROP INDEX "idx_users_role"`);
+        await queryRunner.query(`ALTER TABLE "users" DROP COLUMN "role"`);
+    }
 }
 ```
 
@@ -2239,40 +3328,37 @@ export class AddUserRole1730000000000 implements MigrationInterface {
 ```typescript
 // ── PrismaService ─────────────────────────────────────────────────────────
 @Injectable()
-export class PrismaService
-  extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy
-{
-  constructor(config: ConfigService) {
-    super({
-      datasources: { db: { url: config.getOrThrow('DATABASE_URL') } },
-      // Emitting as events (rather than 'stdout') lets you route query logs
-      // into your real logger with correlation ids attached.
-      log: [
-        { emit: 'event', level: 'query' },
-        { emit: 'stdout', level: 'error' },
-      ],
-    });
-  }
+export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+    constructor(config: ConfigService) {
+        super({
+            datasources: { db: { url: config.getOrThrow('DATABASE_URL') } },
+            // Emitting as events (rather than 'stdout') lets you route query logs
+            // into your real logger with correlation ids attached.
+            log: [
+                { emit: 'event', level: 'query' },
+                { emit: 'stdout', level: 'error' },
+            ],
+        });
+    }
 
-  async onModuleInit() {
-    // ‼️ Connecting eagerly means a bad DATABASE_URL fails the health check at
-    // boot instead of surfacing on the first user request. Prisma would connect
-    // lazily otherwise.
-    await this.$connect();
+    async onModuleInit() {
+        // ‼️ Connecting eagerly means a bad DATABASE_URL fails the health check at
+        // boot instead of surfacing on the first user request. Prisma would connect
+        // lazily otherwise.
+        await this.$connect();
 
-    this.$on('query' as never, (e: Prisma.QueryEvent) => {
-      if (e.duration > 500) {
-        this.logger.warn(`Slow query (${e.duration}ms): ${e.query}`);
-      }
-    });
-  }
+        this.$on('query' as never, (e: Prisma.QueryEvent) => {
+            if (e.duration > 500) {
+                this.logger.warn(`Slow query (${e.duration}ms): ${e.query}`);
+            }
+        });
+    }
 
-  async onModuleDestroy() {
-    // Closes the connection pool so the process can exit and Postgres does not
-    // hold orphaned connections open until its own timeout.
-    await this.$disconnect();
-  }
+    async onModuleDestroy() {
+        // Closes the connection pool so the process can exit and Postgres does not
+        // hold orphaned connections open until its own timeout.
+        await this.$disconnect();
+    }
 }
 
 @Global()
@@ -2284,56 +3370,56 @@ export class PrismaModule {}
 // ── Querying ──────────────────────────────────────────────────────────────
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(params: ListUsersDto) {
-    // ‼️ $transaction with an ARRAY runs both queries in one round trip inside
-    // one transaction, so the count and the page are consistent with each other.
-    // Two separate awaits can return a count that does not match the page if a
-    // row is inserted between them.
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.user.findMany({
-        // `select` beats `include`: include returns every scalar column of the
-        // relation, select returns exactly what you asked for.
-        select: {
-          id: true,
-          email: true,
-          // Nested select solves N+1 — Prisma issues one extra query per
-          // relation level (not per row), then stitches the results.
-          posts: { select: { id: true, title: true }, take: 5 },
-          _count: { select: { posts: true } }, // aggregate without loading rows
-        },
-        where: {
-          // undefined is IGNORED by Prisma, so optional filters compose
-          // cleanly with no conditional query building.
-          email: params.search ? { contains: params.search, mode: 'insensitive' } : undefined,
-          deletedAt: null,
-        },
-        orderBy: { [params.sortBy]: 'desc' },
-        skip: (params.page - 1) * params.limit,
-        take: params.limit,
-      }),
-      this.prisma.user.count({ where: { deletedAt: null } }),
-    ]);
-    return { items, total };
-  }
-
-  async create(dto: CreateUserDto) {
-    try {
-      return await this.prisma.user.create({
-        data: { email: dto.email, passwordHash: await hash(dto.password) },
-      });
-    } catch (e) {
-      // ‼️ Catch the unique-constraint violation instead of pre-checking with a
-      // findUnique. The pre-check is a TOCTOU race under concurrency: two
-      // requests both find nothing, both insert, one crashes with a 500. Let
-      // the database be the arbiter and translate its error.
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-        throw new ConflictException('Email already registered');
-      }
-      throw e;
+    async findAll(params: ListUsersDto) {
+        // ‼️ $transaction with an ARRAY runs both queries in one round trip inside
+        // one transaction, so the count and the page are consistent with each other.
+        // Two separate awaits can return a count that does not match the page if a
+        // row is inserted between them.
+        const [items, total] = await this.prisma.$transaction([
+            this.prisma.user.findMany({
+                // `select` beats `include`: include returns every scalar column of the
+                // relation, select returns exactly what you asked for.
+                select: {
+                    id: true,
+                    email: true,
+                    // Nested select solves N+1 — Prisma issues one extra query per
+                    // relation level (not per row), then stitches the results.
+                    posts: { select: { id: true, title: true }, take: 5 },
+                    _count: { select: { posts: true } }, // aggregate without loading rows
+                },
+                where: {
+                    // undefined is IGNORED by Prisma, so optional filters compose
+                    // cleanly with no conditional query building.
+                    email: params.search ? { contains: params.search, mode: 'insensitive' } : undefined,
+                    deletedAt: null,
+                },
+                orderBy: { [params.sortBy]: 'desc' },
+                skip: (params.page - 1) * params.limit,
+                take: params.limit,
+            }),
+            this.prisma.user.count({ where: { deletedAt: null } }),
+        ]);
+        return { items, total };
     }
-  }
+
+    async create(dto: CreateUserDto) {
+        try {
+            return await this.prisma.user.create({
+                data: { email: dto.email, passwordHash: await hash(dto.password) },
+            });
+        } catch (e) {
+            // ‼️ Catch the unique-constraint violation instead of pre-checking with a
+            // findUnique. The pre-check is a TOCTOU race under concurrency: two
+            // requests both find nothing, both insert, one crashes with a 500. Let
+            // the database be the arbiter and translate its error.
+            if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+                throw new ConflictException('Email already registered');
+            }
+            throw e;
+        }
+    }
 }
 ```
 
@@ -2350,7 +3436,7 @@ export class UsersService {
 // Prisma generates the exact return type of a query shape, so your DTOs stay
 // in sync with the schema automatically.
 const userWithPosts = Prisma.validator<Prisma.UserDefaultArgs>()({
-  include: { posts: true },
+    include: { posts: true },
 });
 export type UserWithPosts = Prisma.UserGetPayload<typeof userWithPosts>;
 ```
@@ -2361,31 +3447,33 @@ export type UserWithPosts = Prisma.UserGetPayload<typeof userWithPosts>;
 
 ```typescript
 @Schema({
-  timestamps: true,    // adds createdAt / updatedAt
-  collection: 'users',
-  toJSON: {
-    virtuals: true,
-    // ‼️ Strip Mongo internals and the password on the way out, centrally.
-    transform: (_doc, ret) => {
-      ret.id = ret._id;
-      delete ret._id; delete ret.__v; delete ret.passwordHash;
-      return ret;
+    timestamps: true, // adds createdAt / updatedAt
+    collection: 'users',
+    toJSON: {
+        virtuals: true,
+        // ‼️ Strip Mongo internals and the password on the way out, centrally.
+        transform: (_doc, ret) => {
+            ret.id = ret._id;
+            delete ret._id;
+            delete ret.__v;
+            delete ret.passwordHash;
+            return ret;
+        },
     },
-  },
 })
 export class User {
-  @Prop({ required: true, unique: true, lowercase: true, trim: true })
-  email: string;
+    @Prop({ required: true, unique: true, lowercase: true, trim: true })
+    email: string;
 
-  @Prop({ required: true, select: false })
-  passwordHash: string;
+    @Prop({ required: true, select: false })
+    passwordHash: string;
 
-  // A reference to another document — the Mongo equivalent of a foreign key,
-  // except nothing enforces referential integrity, so orphans are your problem.
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Post' }] })
-  posts: Post[];
+    // A reference to another document — the Mongo equivalent of a foreign key,
+    // except nothing enforces referential integrity, so orphans are your problem.
+    @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Post' }] })
+    posts: Post[];
 
-  @Prop({ type: Object }) metadata: Record<string, unknown>;
+    @Prop({ type: Object }) metadata: Record<string, unknown>;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
@@ -2394,23 +3482,25 @@ UserSchema.index({ email: 1, createdAt: -1 });
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private readonly model: Model<UserDocument>) {}
+    constructor(@InjectModel(User.name) private readonly model: Model<UserDocument>) {}
 
-  findAll() {
-    return this.model
-      .find()
-      // populate is Mongo's join. ‼️ It is a SECOND query per populate call,
-      // executed client-side by Mongoose — the N+1 risk here is even higher
-      // than in SQL because there is no real join to fall back on. For hot
-      // paths use an aggregation $lookup, or denormalise.
-      .populate('posts', 'title createdAt')
-      // .lean() returns plain objects instead of hydrated Mongoose documents:
-      // significantly faster and less memory, but no .save() and no virtuals.
-      // Use it for every read-only query.
-      .lean()
-      .limit(20)
-      .exec();
-  }
+    findAll() {
+        return (
+            this.model
+                .find()
+                // populate is Mongo's join. ‼️ It is a SECOND query per populate call,
+                // executed client-side by Mongoose — the N+1 risk here is even higher
+                // than in SQL because there is no real join to fall back on. For hot
+                // paths use an aggregation $lookup, or denormalise.
+                .populate('posts', 'title createdAt')
+                // .lean() returns plain objects instead of hydrated Mongoose documents:
+                // significantly faster and less memory, but no .save() and no virtuals.
+                // Use it for every read-only query.
+                .lean()
+                .limit(20)
+                .exec()
+        );
+    }
 }
 ```
 
@@ -2423,57 +3513,57 @@ export class UsersService {
 ```typescript
 @Injectable()
 export class TransferService {
-  constructor(private readonly dataSource: DataSource) {}
+    constructor(private readonly dataSource: DataSource) {}
 
-  // ‼️ The callback form is the safe default: it commits on return and rolls
-  // back on throw, and it cannot leak a connection.
-  async transfer(fromId: string, toId: string, amount: number) {
-    return this.dataSource.transaction(async (manager) => {
-      // ‼️ EVERY query in the transaction must go through `manager`. Using the
-      // injected repository instead silently runs OUTSIDE the transaction on a
-      // different connection — the classic bug: the debit rolls back, the
-      // credit does not, and money is created.
-      const from = await manager.findOne(Account, {
-        where: { id: fromId },
-        // Pessimistic write lock: SELECT ... FOR UPDATE. Without it, two
-        // concurrent transfers both read balance=100, both write 50, and one
-        // withdrawal vanishes (lost update).
-        lock: { mode: 'pessimistic_write' },
-      });
+    // ‼️ The callback form is the safe default: it commits on return and rolls
+    // back on throw, and it cannot leak a connection.
+    async transfer(fromId: string, toId: string, amount: number) {
+        return this.dataSource.transaction(async manager => {
+            // ‼️ EVERY query in the transaction must go through `manager`. Using the
+            // injected repository instead silently runs OUTSIDE the transaction on a
+            // different connection — the classic bug: the debit rolls back, the
+            // credit does not, and money is created.
+            const from = await manager.findOne(Account, {
+                where: { id: fromId },
+                // Pessimistic write lock: SELECT ... FOR UPDATE. Without it, two
+                // concurrent transfers both read balance=100, both write 50, and one
+                // withdrawal vanishes (lost update).
+                lock: { mode: 'pessimistic_write' },
+            });
 
-      if (!from || from.balance < amount) {
-        // Throwing rolls the whole transaction back automatically.
-        throw new InsufficientFundsException(amount, from?.balance ?? 0);
-      }
+            if (!from || from.balance < amount) {
+                // Throwing rolls the whole transaction back automatically.
+                throw new InsufficientFundsException(amount, from?.balance ?? 0);
+            }
 
-      await manager.decrement(Account, { id: fromId }, 'balance', amount);
-      await manager.increment(Account, { id: toId }, 'balance', amount);
+            await manager.decrement(Account, { id: fromId }, 'balance', amount);
+            await manager.increment(Account, { id: toId }, 'balance', amount);
 
-      // ‼️ Deadlock note: two concurrent transfers in opposite directions can
-      // lock the same two rows in opposite order and deadlock. Fix by always
-      // locking in a deterministic order (e.g. sorted by id).
-    });
-  }
-
-  // Manual form — needed when the lifecycle spans more than one function.
-  async manual() {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction('SERIALIZABLE'); // isolation level
-
-    try {
-      await queryRunner.manager.save(entity);
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      // ‼️ MUST release, in a finally, always. A forgotten release leaks a
-      // pooled connection; enough of them and the pool is exhausted and every
-      // request hangs waiting for a connection that will never come back.
-      await queryRunner.release();
+            // ‼️ Deadlock note: two concurrent transfers in opposite directions can
+            // lock the same two rows in opposite order and deadlock. Fix by always
+            // locking in a deterministic order (e.g. sorted by id).
+        });
     }
-  }
+
+    // Manual form — needed when the lifecycle spans more than one function.
+    async manual() {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction('SERIALIZABLE'); // isolation level
+
+        try {
+            await queryRunner.manager.save(entity);
+            await queryRunner.commitTransaction();
+        } catch (err) {
+            await queryRunner.rollbackTransaction();
+            throw err;
+        } finally {
+            // ‼️ MUST release, in a finally, always. A forgotten release leaks a
+            // pooled connection; enough of them and the pool is exhausted and every
+            // request hangs waiting for a connection that will never come back.
+            await queryRunner.release();
+        }
+    }
 }
 ```
 
@@ -2519,36 +3609,36 @@ async update(id: string, dto: UpdateDocumentDto, expectedVersion: number) {
 // for an ambient transaction and joins it if present.
 @Injectable()
 export class TransactionContext {
-  private readonly als = new AsyncLocalStorage<EntityManager>();
+    private readonly als = new AsyncLocalStorage<EntityManager>();
 
-  constructor(private readonly dataSource: DataSource) {}
+    constructor(private readonly dataSource: DataSource) {}
 
-  async run<T>(fn: () => Promise<T>): Promise<T> {
-    // Reuse the outer transaction if we are already inside one — this makes
-    // nested run() calls safe, which matters when a service that manages its
-    // own transaction is called from another that also does.
-    const existing = this.als.getStore();
-    if (existing) return fn();
+    async run<T>(fn: () => Promise<T>): Promise<T> {
+        // Reuse the outer transaction if we are already inside one — this makes
+        // nested run() calls safe, which matters when a service that manages its
+        // own transaction is called from another that also does.
+        const existing = this.als.getStore();
+        if (existing) return fn();
 
-    return this.dataSource.transaction((manager) => this.als.run(manager, fn));
-  }
+        return this.dataSource.transaction(manager => this.als.run(manager, fn));
+    }
 
-  // Repositories call this instead of using the injected repository directly.
-  getManager(): EntityManager {
-    return this.als.getStore() ?? this.dataSource.manager;
-  }
+    // Repositories call this instead of using the injected repository directly.
+    getManager(): EntityManager {
+        return this.als.getStore() ?? this.dataSource.manager;
+    }
 }
 
 // An interceptor makes it declarative — see §13 for how to compose it into a
 // single @Transactional() decorator.
 @Injectable()
 export class TransactionInterceptor implements NestInterceptor {
-  constructor(private readonly ctx: TransactionContext) {}
+    constructor(private readonly ctx: TransactionContext) {}
 
-  intercept(_: ExecutionContext, next: CallHandler): Observable<unknown> {
-    // from() converts the promise back into the Observable the pipeline expects.
-    return from(this.ctx.run(() => firstValueFrom(next.handle())));
-  }
+    intercept(_: ExecutionContext, next: CallHandler): Observable<unknown> {
+        // from() converts the promise back into the Observable the pipeline expects.
+        return from(this.ctx.run(() => firstValueFrom(next.handle())));
+    }
 }
 
 // ‼️ Interview-grade caveat: this pattern makes the transaction boundary
@@ -2587,62 +3677,60 @@ export class TransactionInterceptor implements NestInterceptor {
 ```typescript
 // ── Command (an intent to change state; returns little or nothing) ────────
 export class CreateOrderCommand {
-  constructor(
-    public readonly userId: string,
-    public readonly items: OrderItem[],
-    // The idempotency key lets a retried request be recognised as a duplicate
-    // rather than creating a second order — essential for any payment flow
-    // where the client may retry after a timeout.
-    public readonly idempotencyKey: string,
-  ) {}
+    constructor(
+        public readonly userId: string,
+        public readonly items: OrderItem[],
+        // The idempotency key lets a retried request be recognised as a duplicate
+        // rather than creating a second order — essential for any payment flow
+        // where the client may retry after a timeout.
+        public readonly idempotencyKey: string,
+    ) {}
 }
 
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand> {
-  constructor(
-    private readonly repo: OrderRepository,
-    private readonly publisher: EventPublisher,
-  ) {}
+    constructor(
+        private readonly repo: OrderRepository,
+        private readonly publisher: EventPublisher,
+    ) {}
 
-  async execute(command: CreateOrderCommand): Promise<{ id: string }> {
-    const existing = await this.repo.findByIdempotencyKey(command.idempotencyKey);
-    if (existing) return { id: existing.id }; // safe replay
+    async execute(command: CreateOrderCommand): Promise<{ id: string }> {
+        const existing = await this.repo.findByIdempotencyKey(command.idempotencyKey);
+        if (existing) return { id: existing.id }; // safe replay
 
-    // mergeObjectContext attaches the event-publishing machinery to the
-    // aggregate, so the aggregate can record domain events internally and
-    // they are dispatched only when commit() is called.
-    const order = this.publisher.mergeObjectContext(
-      Order.create(command.userId, command.items),
-    );
+        // mergeObjectContext attaches the event-publishing machinery to the
+        // aggregate, so the aggregate can record domain events internally and
+        // they are dispatched only when commit() is called.
+        const order = this.publisher.mergeObjectContext(Order.create(command.userId, command.items));
 
-    await this.repo.save(order);
+        await this.repo.save(order);
 
-    // ‼️ commit() dispatches the events the aggregate recorded. Doing it AFTER
-    // the save means subscribers never see an event for a write that failed.
-    // (Full correctness under crashes needs the transactional outbox pattern:
-    // write the events to an outbox table in the SAME transaction as the
-    // order, and have a relay publish them. Otherwise a crash between the
-    // commit and the publish loses the event.)
-    order.commit();
+        // ‼️ commit() dispatches the events the aggregate recorded. Doing it AFTER
+        // the save means subscribers never see an event for a write that failed.
+        // (Full correctness under crashes needs the transactional outbox pattern:
+        // write the events to an outbox table in the SAME transaction as the
+        // order, and have a relay publish them. Otherwise a crash between the
+        // commit and the publish loses the event.)
+        order.commit();
 
-    return { id: order.id };
-  }
+        return { id: order.id };
+    }
 }
 
 // ── Query (read-only; can bypass the domain model entirely) ───────────────
 export class GetOrderSummaryQuery {
-  constructor(public readonly orderId: string) {}
+    constructor(public readonly orderId: string) {}
 }
 
 @QueryHandler(GetOrderSummaryQuery)
 export class GetOrderSummaryHandler implements IQueryHandler<GetOrderSummaryQuery> {
-  constructor(private readonly db: PrismaService) {}
+    constructor(private readonly db: PrismaService) {}
 
-  execute(query: GetOrderSummaryQuery) {
-    // ‼️ Query handlers are allowed to hit a read replica, a materialised view,
-    // Elasticsearch, or raw SQL. Not loading the aggregate for a read is the
-    // whole point of the separation.
-    return this.db.$queryRaw`
+    execute(query: GetOrderSummaryQuery) {
+        // ‼️ Query handlers are allowed to hit a read replica, a materialised view,
+        // Elasticsearch, or raw SQL. Not loading the aggregate for a read is the
+        // whole point of the separation.
+        return this.db.$queryRaw`
       SELECT o.id, o.total, u.email, COUNT(i.id) AS item_count
       FROM orders o
       JOIN users u ON u.id = o.user_id
@@ -2650,34 +3738,34 @@ export class GetOrderSummaryHandler implements IQueryHandler<GetOrderSummaryQuer
       WHERE o.id = ${query.orderId}
       GROUP BY o.id, u.email
     `;
-  }
+    }
 }
 
 // ── Event handler (reacts to something that already happened) ─────────────
 @EventsHandler(OrderCreatedEvent)
 export class OrderCreatedHandler implements IEventHandler<OrderCreatedEvent> {
-  async handle(event: OrderCreatedEvent) {
-    // ‼️ The in-process EventBus is synchronous and NOT durable — if the
-    // process dies here, the email is simply never sent, and a throw here can
-    // surface as a failure of the original request. For anything that must
-    // happen, publish to a real queue (§22) and handle it in a worker.
-    await this.mailer.sendOrderConfirmation(event.orderId);
-  }
+    async handle(event: OrderCreatedEvent) {
+        // ‼️ The in-process EventBus is synchronous and NOT durable — if the
+        // process dies here, the email is simply never sent, and a throw here can
+        // surface as a failure of the original request. For anything that must
+        // happen, publish to a real queue (§22) and handle it in a worker.
+        await this.mailer.sendOrderConfirmation(event.orderId);
+    }
 }
 
 // ── Saga (long-running process manager: event in → command out) ───────────
 @Injectable()
 export class OrderSaga {
-  @Saga()
-  // A saga is an RxJS stream over the event bus, so you get the full operator
-  // set: debounce, buffer, combine multiple event types, time windows.
-  orderCreated = (events$: Observable<any>): Observable<ICommand> =>
-    events$.pipe(
-      ofType(OrderCreatedEvent),
-      // delay models "reserve stock 5s after the order, unless cancelled".
-      delay(5000),
-      map((event) => new ReserveInventoryCommand(event.orderId)),
-    );
+    @Saga()
+    // A saga is an RxJS stream over the event bus, so you get the full operator
+    // set: debounce, buffer, combine multiple event types, time windows.
+    orderCreated = (events$: Observable<any>): Observable<ICommand> =>
+        events$.pipe(
+            ofType(OrderCreatedEvent),
+            // delay models "reserve stock 5s after the order, unless cancelled".
+            delay(5000),
+            map(event => new ReserveInventoryCommand(event.orderId)),
+        );
 }
 
 @Module({ imports: [CqrsModule] })
@@ -2687,34 +3775,34 @@ export class OrdersModule {}
 ```typescript
 // ── The aggregate ─────────────────────────────────────────────────────────
 export class Order extends AggregateRoot {
-  private constructor(
-    public readonly id: string,
-    private status: OrderStatus,
-  ) {
-    super();
-  }
-
-  static create(userId: string, items: OrderItem[]): Order {
-    // ‼️ Invariants live in the aggregate, not in the service. This is what
-    // makes the domain model worth having: there is exactly one place that can
-    // create an invalid order, and it refuses to.
-    if (items.length === 0) throw new BadRequestException('Order requires items');
-
-    const order = new Order(randomUUID(), OrderStatus.Pending);
-    // apply() records the event internally; nothing is published until commit().
-    order.apply(new OrderCreatedEvent(order.id, userId, items));
-    return order;
-  }
-
-  cancel(reason: string) {
-    // State transitions are guarded by the current state — an illegal
-    // transition is impossible to express rather than merely discouraged.
-    if (this.status === OrderStatus.Shipped) {
-      throw new ConflictException('Cannot cancel a shipped order');
+    private constructor(
+        public readonly id: string,
+        private status: OrderStatus,
+    ) {
+        super();
     }
-    this.status = OrderStatus.Cancelled;
-    this.apply(new OrderCancelledEvent(this.id, reason));
-  }
+
+    static create(userId: string, items: OrderItem[]): Order {
+        // ‼️ Invariants live in the aggregate, not in the service. This is what
+        // makes the domain model worth having: there is exactly one place that can
+        // create an invalid order, and it refuses to.
+        if (items.length === 0) throw new BadRequestException('Order requires items');
+
+        const order = new Order(randomUUID(), OrderStatus.Pending);
+        // apply() records the event internally; nothing is published until commit().
+        order.apply(new OrderCreatedEvent(order.id, userId, items));
+        return order;
+    }
+
+    cancel(reason: string) {
+        // State transitions are guarded by the current state — an illegal
+        // transition is impossible to express rather than merely discouraged.
+        if (this.status === OrderStatus.Shipped) {
+            throw new ConflictException('Cannot cancel a shipped order');
+        }
+        this.status = OrderStatus.Cancelled;
+        this.apply(new OrderCancelledEvent(this.id, reason));
+    }
 }
 ```
 
@@ -2761,33 +3849,33 @@ export class Order extends AggregateRoot {
 ```typescript
 @Controller()
 export class OrdersMicroservice {
-  // ‼️ @MessagePattern = REQUEST/RESPONSE. The caller waits for a reply.
-  // Under the hood the transport creates a reply channel and correlates the
-  // response by id. The caller is COUPLED to this service being up.
-  @MessagePattern({ cmd: 'get_order' })
-  getOrder(@Payload() data: { id: string }, @Ctx() context: RmqContext) {
-    return this.ordersService.findOne(data.id);
-  }
+    // ‼️ @MessagePattern = REQUEST/RESPONSE. The caller waits for a reply.
+    // Under the hood the transport creates a reply channel and correlates the
+    // response by id. The caller is COUPLED to this service being up.
+    @MessagePattern({ cmd: 'get_order' })
+    getOrder(@Payload() data: { id: string }, @Ctx() context: RmqContext) {
+        return this.ordersService.findOne(data.id);
+    }
 
-  // ‼️ @EventPattern = FIRE AND FORGET. No reply channel, the caller does not
-  // wait, and the return value is discarded. This is what you want for domain
-  // events — the publisher must not care who is listening.
-  @EventPattern('order.created')
-  async handleOrderCreated(@Payload() data: OrderCreatedEvent, @Ctx() ctx: RmqContext) {
-    await this.inventory.reserve(data.orderId);
+    // ‼️ @EventPattern = FIRE AND FORGET. No reply channel, the caller does not
+    // wait, and the return value is discarded. This is what you want for domain
+    // events — the publisher must not care who is listening.
+    @EventPattern('order.created')
+    async handleOrderCreated(@Payload() data: OrderCreatedEvent, @Ctx() ctx: RmqContext) {
+        await this.inventory.reserve(data.orderId);
 
-    // ‼️ MANUAL ACK. With noAck: false, the message stays on the queue until
-    // you ack it, so a crash mid-processing redelivers rather than loses it.
-    // Ack AFTER the work succeeds — acking first converts a crash into silent
-    // data loss.
-    const channel = ctx.getChannelRef();
-    channel.ack(ctx.getMessage());
-  }
+        // ‼️ MANUAL ACK. With noAck: false, the message stays on the queue until
+        // you ack it, so a crash mid-processing redelivers rather than loses it.
+        // Ack AFTER the work succeeds — acking first converts a crash into silent
+        // data loss.
+        const channel = ctx.getChannelRef();
+        channel.ack(ctx.getMessage());
+    }
 
-  // ‼️ Every handler must be IDEMPOTENT. All of these transports are
-  // at-least-once: a redelivery after a timeout, a consumer rebalance, or a
-  // network blip WILL happen. Guard with a processed-message table keyed by
-  // message id, or make the operation naturally idempotent (upsert, not insert).
+    // ‼️ Every handler must be IDEMPOTENT. All of these transports are
+    // at-least-once: a redelivery after a timeout, a consumer rebalance, or a
+    // network blip WILL happen. Guard with a processed-message table keyed by
+    // message id, or make the operation naturally idempotent (upsert, not insert).
 }
 ```
 
@@ -2796,17 +3884,17 @@ export class OrdersMicroservice {
 ```typescript
 // ── A pure microservice (no HTTP) ─────────────────────────────────────────
 const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
-  transport: Transport.RMQ,
-  options: {
-    urls: [process.env.RABBITMQ_URL],
-    queue: 'orders_queue',
-    queueOptions: { durable: true }, // survives a broker restart
-    noAck: false,                    // manual ack (see above)
-    // ‼️ Without prefetchCount, RabbitMQ pushes the whole queue at one consumer
-    // and the others sit idle. prefetchCount:1 gives fair round-robin dispatch;
-    // higher values trade fairness for throughput.
-    prefetchCount: 1,
-  },
+    transport: Transport.RMQ,
+    options: {
+        urls: [process.env.RABBITMQ_URL],
+        queue: 'orders_queue',
+        queueOptions: { durable: true }, // survives a broker restart
+        noAck: false, // manual ack (see above)
+        // ‼️ Without prefetchCount, RabbitMQ pushes the whole queue at one consumer
+        // and the others sit idle. prefetchCount:1 gives fair round-robin dispatch;
+        // higher values trade fairness for throughput.
+        prefetchCount: 1,
+    },
 });
 await app.listen();
 
@@ -2814,15 +3902,15 @@ await app.listen();
 // The common real-world shape — an API that also consumes a queue.
 const app = await NestFactory.create(AppModule);
 app.connectMicroservice<MicroserviceOptions>({
-  transport: Transport.KAFKA,
-  options: {
-    client: { brokers: [process.env.KAFKA_BROKER] },
-    // ‼️ The consumer GROUP ID determines load balancing and offset tracking.
-    // Two instances with the SAME group id split the partitions between them;
-    // with DIFFERENT ids they each receive every message. Getting this wrong
-    // means either duplicate processing or idle consumers.
-    consumer: { groupId: 'orders-consumer' },
-  },
+    transport: Transport.KAFKA,
+    options: {
+        client: { brokers: [process.env.KAFKA_BROKER] },
+        // ‼️ The consumer GROUP ID determines load balancing and offset tracking.
+        // Two instances with the SAME group id split the partitions between them;
+        // with DIFFERENT ids they each receive every message. Getting this wrong
+        // means either duplicate processing or idle consumers.
+        consumer: { groupId: 'orders-consumer' },
+    },
 });
 await app.startAllMicroservices(); // must come BEFORE listen()
 await app.listen(3000);
@@ -2832,53 +3920,51 @@ await app.listen(3000);
 
 ```typescript
 @Module({
-  imports: [
-    ClientsModule.registerAsync([
-      {
-        name: 'INVENTORY_SERVICE', // the injection token
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (config: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: { urls: [config.getOrThrow('RABBITMQ_URL')], queue: 'inventory_queue' },
-        }),
-      },
-    ]),
-  ],
+    imports: [
+        ClientsModule.registerAsync([
+            {
+                name: 'INVENTORY_SERVICE', // the injection token
+                imports: [ConfigModule],
+                inject: [ConfigService],
+                useFactory: (config: ConfigService) => ({
+                    transport: Transport.RMQ,
+                    options: { urls: [config.getOrThrow('RABBITMQ_URL')], queue: 'inventory_queue' },
+                }),
+            },
+        ]),
+    ],
 })
 export class OrdersModule {}
 
 @Injectable()
 export class OrdersService implements OnApplicationBootstrap {
-  constructor(@Inject('INVENTORY_SERVICE') private readonly client: ClientProxy) {}
+    constructor(@Inject('INVENTORY_SERVICE') private readonly client: ClientProxy) {}
 
-  async onApplicationBootstrap() {
-    // ‼️ Connect eagerly. Otherwise the FIRST request pays the connection
-    // handshake, and connection failures surface as a user-facing error
-    // instead of a startup failure your deploy can catch.
-    await this.client.connect();
-  }
+    async onApplicationBootstrap() {
+        // ‼️ Connect eagerly. Otherwise the FIRST request pays the connection
+        // handshake, and connection failures surface as a user-facing error
+        // instead of a startup failure your deploy can catch.
+        await this.client.connect();
+    }
 
-  async reserve(orderId: string) {
-    // send() → request/response, returns a COLD Observable. Nothing is sent
-    // until something subscribes, which is why you must await/subscribe it.
-    return firstValueFrom(
-      this.client.send({ cmd: 'reserve' }, { orderId }).pipe(
-        // ‼️ Always bound a cross-service call. Without a timeout, one slow
-        // downstream service exhausts this service's connections and the
-        // failure cascades — the classic distributed-systems outage shape.
-        timeout(3000),
-        catchError((err) =>
-          throwError(() => new ServiceUnavailableException('Inventory unavailable')),
-        ),
-      ),
-    );
-  }
+    async reserve(orderId: string) {
+        // send() → request/response, returns a COLD Observable. Nothing is sent
+        // until something subscribes, which is why you must await/subscribe it.
+        return firstValueFrom(
+            this.client.send({ cmd: 'reserve' }, { orderId }).pipe(
+                // ‼️ Always bound a cross-service call. Without a timeout, one slow
+                // downstream service exhausts this service's connections and the
+                // failure cascades — the classic distributed-systems outage shape.
+                timeout(3000),
+                catchError(err => throwError(() => new ServiceUnavailableException('Inventory unavailable'))),
+            ),
+        );
+    }
 
-  notify(orderId: string) {
-    // emit() → fire and forget. Returns immediately; no reply channel.
-    this.client.emit('order.created', { orderId });
-  }
+    notify(orderId: string) {
+        // emit() → fire and forget. Returns immediately; no reply channel.
+        this.client.emit('order.created', { orderId });
+    }
 }
 ```
 
@@ -2901,17 +3987,17 @@ message Order { string id = 1; string status = 2; double total = 3; }
 ```typescript
 @Controller()
 export class OrdersGrpcController {
-  // The strings must match the proto service and method names exactly.
-  @GrpcMethod('OrdersService', 'FindOne')
-  findOne(data: { id: string }, metadata: Metadata): Order {
-    return this.ordersService.findOne(data.id);
-  }
+    // The strings must match the proto service and method names exactly.
+    @GrpcMethod('OrdersService', 'FindOne')
+    findOne(data: { id: string }, metadata: Metadata): Order {
+        return this.ordersService.findOne(data.id);
+    }
 
-  // Streaming: return an Observable and each emission is a message on the wire.
-  @GrpcStreamMethod('OrdersService', 'FindMany')
-  findMany(data$: Observable<{ id: string }>): Observable<Order> {
-    return data$.pipe(mergeMap((req) => from(this.ordersService.findOne(req.id))));
-  }
+    // Streaming: return an Observable and each emission is a message on the wire.
+    @GrpcStreamMethod('OrdersService', 'FindMany')
+    findMany(data$: Observable<{ id: string }>): Observable<Order> {
+        return data$.pipe(mergeMap(req => from(this.ordersService.findOne(req.id))));
+    }
 }
 ```
 
@@ -2924,38 +4010,36 @@ export class OrdersGrpcController {
 // a cascading failure.
 @Injectable()
 export class ResilientInventoryClient {
-  private failures = 0;
-  private openedAt = 0;
-  private readonly threshold = 5;
-  private readonly resetMs = 30_000;
+    private failures = 0;
+    private openedAt = 0;
+    private readonly threshold = 5;
+    private readonly resetMs = 30_000;
 
-  async reserve(orderId: string) {
-    // OPEN: fail fast without even attempting the call.
-    if (this.isOpen()) {
-      throw new ServiceUnavailableException('Inventory circuit open');
+    async reserve(orderId: string) {
+        // OPEN: fail fast without even attempting the call.
+        if (this.isOpen()) {
+            throw new ServiceUnavailableException('Inventory circuit open');
+        }
+        try {
+            const result = await firstValueFrom(this.client.send({ cmd: 'reserve' }, { orderId }).pipe(timeout(2000)));
+            // HALF-OPEN → CLOSED: a success resets the breaker.
+            this.failures = 0;
+            return result;
+        } catch (err) {
+            if (++this.failures >= this.threshold) this.openedAt = Date.now();
+            throw err;
+        }
     }
-    try {
-      const result = await firstValueFrom(
-        this.client.send({ cmd: 'reserve' }, { orderId }).pipe(timeout(2000)),
-      );
-      // HALF-OPEN → CLOSED: a success resets the breaker.
-      this.failures = 0;
-      return result;
-    } catch (err) {
-      if (++this.failures >= this.threshold) this.openedAt = Date.now();
-      throw err;
-    }
-  }
 
-  private isOpen() {
-    if (this.failures < this.threshold) return false;
-    // After the reset window, allow ONE trial request through (half-open).
-    if (Date.now() - this.openedAt > this.resetMs) {
-      this.failures = this.threshold - 1;
-      return false;
+    private isOpen() {
+        if (this.failures < this.threshold) return false;
+        // After the reset window, allow ONE trial request through (half-open).
+        if (Date.now() - this.openedAt > this.resetMs) {
+            this.failures = this.threshold - 1;
+            return false;
+        }
+        return true;
     }
-    return true;
-  }
 }
 // In production use a library (opossum) rather than hand-rolling: it handles
 // half-open concurrency limits, rolling windows, and metrics.
@@ -2969,98 +4053,104 @@ export class ResilientInventoryClient {
 
 ```typescript
 @Module({
-  imports: [
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        connection: { url: config.getOrThrow('REDIS_URL') },
-        defaultJobOptions: {
-          attempts: 3,
-          // Exponential backoff: 2s, 4s, 8s. Gives a flapping dependency time
-          // to recover instead of hammering it three times in a row.
-          backoff: { type: 'exponential', delay: 2000 },
-          // ‼️ Without these, completed and failed jobs accumulate in Redis
-          // forever and eventually exhaust its memory. This is a real
-          // production incident, not a theoretical one.
-          removeOnComplete: { age: 3600, count: 1000 },
-          removeOnFail: { age: 86_400 },
-        },
-      }),
-    }),
-    BullModule.registerQueue({ name: 'emails' }),
-  ],
+    imports: [
+        BullModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                connection: { url: config.getOrThrow('REDIS_URL') },
+                defaultJobOptions: {
+                    attempts: 3,
+                    // Exponential backoff: 2s, 4s, 8s. Gives a flapping dependency time
+                    // to recover instead of hammering it three times in a row.
+                    backoff: { type: 'exponential', delay: 2000 },
+                    // ‼️ Without these, completed and failed jobs accumulate in Redis
+                    // forever and eventually exhaust its memory. This is a real
+                    // production incident, not a theoretical one.
+                    removeOnComplete: { age: 3600, count: 1000 },
+                    removeOnFail: { age: 86_400 },
+                },
+            }),
+        }),
+        BullModule.registerQueue({ name: 'emails' }),
+    ],
 })
 export class JobsModule {}
 
 // ── Producer ──────────────────────────────────────────────────────────────
 @Injectable()
 export class EmailQueueService {
-  constructor(@InjectQueue('emails') private readonly queue: Queue) {}
+    constructor(@InjectQueue('emails') private readonly queue: Queue) {}
 
-  async sendWelcome(userId: string) {
-    await this.queue.add(
-      'welcome',
-      { userId },
-      {
-        // ‼️ A deterministic jobId makes enqueueing idempotent: BullMQ refuses
-        // a duplicate id, so a retried HTTP request cannot send two emails.
-        jobId: `welcome:${userId}`,
-        delay: 60_000,        // send one minute after signup
-        priority: 1,          // lower number = higher priority
-      },
-    );
-  }
+    async sendWelcome(userId: string) {
+        await this.queue.add(
+            'welcome',
+            { userId },
+            {
+                // ‼️ A deterministic jobId makes enqueueing idempotent: BullMQ refuses
+                // a duplicate id, so a retried HTTP request cannot send two emails.
+                jobId: `welcome:${userId}`,
+                delay: 60_000, // send one minute after signup
+                priority: 1, // lower number = higher priority
+            },
+        );
+    }
 
-  async scheduleDigest() {
-    await this.queue.add('digest', {}, {
-      // A repeatable job — BullMQ's cron. Survives restarts because the
-      // schedule lives in Redis, not in process memory.
-      repeat: { pattern: '0 9 * * *', tz: 'America/New_York' },
-    });
-  }
+    async scheduleDigest() {
+        await this.queue.add(
+            'digest',
+            {},
+            {
+                // A repeatable job — BullMQ's cron. Survives restarts because the
+                // schedule lives in Redis, not in process memory.
+                repeat: { pattern: '0 9 * * *', tz: 'America/New_York' },
+            },
+        );
+    }
 }
 
 // ── Consumer ──────────────────────────────────────────────────────────────
 @Processor('emails', {
-  // ‼️ Concurrency is PER WORKER PROCESS. Four replicas at concurrency 5 means
-  // 20 jobs in flight — size this against the downstream rate limit, not
-  // against what one machine can handle.
-  concurrency: 5,
-  limiter: { max: 100, duration: 60_000 }, // 100 jobs/minute across this worker
+    // ‼️ Concurrency is PER WORKER PROCESS. Four replicas at concurrency 5 means
+    // 20 jobs in flight — size this against the downstream rate limit, not
+    // against what one machine can handle.
+    concurrency: 5,
+    limiter: { max: 100, duration: 60_000 }, // 100 jobs/minute across this worker
 })
 export class EmailProcessor extends WorkerHost {
-  private readonly logger = new Logger(EmailProcessor.name);
+    private readonly logger = new Logger(EmailProcessor.name);
 
-  constructor(private readonly mailer: MailerService) { super(); }
-
-  // In BullMQ (@nestjs/bullmq), one process() handles all job names for the
-  // queue and dispatches on job.name — unlike legacy Bull's @Process('name').
-  async process(job: Job): Promise<void> {
-    switch (job.name) {
-      case 'welcome':
-        // Reporting progress lets a dashboard show long jobs advancing, and
-        // BullMQ uses recent activity to distinguish stalled from slow.
-        await job.updateProgress(10);
-        await this.mailer.sendWelcome(job.data.userId);
-        await job.updateProgress(100);
-        break;
-      default:
-        // ‼️ Throwing marks the job failed and triggers the retry policy.
-        // Swallowing the error marks it COMPLETE and loses the work silently.
-        throw new Error(`Unknown job name: ${job.name}`);
+    constructor(private readonly mailer: MailerService) {
+        super();
     }
-  }
 
-  // Lifecycle events for metrics and alerting.
-  @OnWorkerEvent('failed')
-  onFailed(job: Job, err: Error) {
-    // attemptsMade === opts.attempts means retries are exhausted: this job is
-    // dead and needs a human. Alert here, not on every individual failure.
-    if (job.attemptsMade >= (job.opts.attempts ?? 1)) {
-      this.logger.error(`Job ${job.id} dead-lettered: ${err.message}`, err.stack);
+    // In BullMQ (@nestjs/bullmq), one process() handles all job names for the
+    // queue and dispatches on job.name — unlike legacy Bull's @Process('name').
+    async process(job: Job): Promise<void> {
+        switch (job.name) {
+            case 'welcome':
+                // Reporting progress lets a dashboard show long jobs advancing, and
+                // BullMQ uses recent activity to distinguish stalled from slow.
+                await job.updateProgress(10);
+                await this.mailer.sendWelcome(job.data.userId);
+                await job.updateProgress(100);
+                break;
+            default:
+                // ‼️ Throwing marks the job failed and triggers the retry policy.
+                // Swallowing the error marks it COMPLETE and loses the work silently.
+                throw new Error(`Unknown job name: ${job.name}`);
+        }
     }
-  }
+
+    // Lifecycle events for metrics and alerting.
+    @OnWorkerEvent('failed')
+    onFailed(job: Job, err: Error) {
+        // attemptsMade === opts.attempts means retries are exhausted: this job is
+        // dead and needs a human. Alert here, not on every individual failure.
+        if (job.attemptsMade >= (job.opts.attempts ?? 1)) {
+            this.logger.error(`Job ${job.id} dead-lettered: ${err.message}`, err.stack);
+        }
+    }
 }
 ```
 
@@ -3084,31 +4174,31 @@ export class EmailProcessor extends WorkerHost {
 ```typescript
 @Injectable()
 export class TasksService {
-  // Declarative cron. Runs in-process, so it only fires while the app is up.
-  @Cron('0 2 * * *', { name: 'nightly-cleanup', timeZone: 'UTC' })
-  async cleanup() {
-    // ‼️ THE multi-replica trap: @Cron runs in EVERY replica. Three pods means
-    // the job runs three times, concurrently. Guard it with a distributed lock
-    // (Redis SET NX PX), a leader election, or move the schedule to a BullMQ
-    // repeatable job (which Redis coordinates for you).
-    const lock = await this.redis.set('lock:cleanup', '1', 'NX', 'PX', 300_000);
-    if (!lock) return; // another replica already has it
+    // Declarative cron. Runs in-process, so it only fires while the app is up.
+    @Cron('0 2 * * *', { name: 'nightly-cleanup', timeZone: 'UTC' })
+    async cleanup() {
+        // ‼️ THE multi-replica trap: @Cron runs in EVERY replica. Three pods means
+        // the job runs three times, concurrently. Guard it with a distributed lock
+        // (Redis SET NX PX), a leader election, or move the schedule to a BullMQ
+        // repeatable job (which Redis coordinates for you).
+        const lock = await this.redis.set('lock:cleanup', '1', 'NX', 'PX', 300_000);
+        if (!lock) return; // another replica already has it
 
-    await this.repo.deleteExpiredSessions();
-  }
+        await this.repo.deleteExpiredSessions();
+    }
 
-  @Interval(30_000)              // every 30s from app start
-  heartbeat() {}
+    @Interval(30_000) // every 30s from app start
+    heartbeat() {}
 
-  @Timeout(5000)                 // once, 5s after app start
-  warmCache() {}
+    @Timeout(5000) // once, 5s after app start
+    warmCache() {}
 
-  // Programmatic control, e.g. to disable a job via a feature flag at runtime.
-  constructor(private readonly registry: SchedulerRegistry) {}
+    // Programmatic control, e.g. to disable a job via a feature flag at runtime.
+    constructor(private readonly registry: SchedulerRegistry) {}
 
-  pauseCleanup() {
-    this.registry.getCronJob('nightly-cleanup').stop();
-  }
+    pauseCleanup() {
+        this.registry.getCronJob('nightly-cleanup').stop();
+    }
 }
 ```
 
@@ -3119,33 +4209,33 @@ export class TasksService {
 // dependencies between modules, not as a substitute for a real queue.
 @Injectable()
 export class UsersService {
-  constructor(private readonly events: EventEmitter2) {}
+    constructor(private readonly events: EventEmitter2) {}
 
-  async create(dto: CreateUserDto) {
-    const user = await this.repo.save(dto);
-    // ‼️ emit() is SYNCHRONOUS and in-memory: a listener that throws can
-    // propagate into this call, and nothing survives a process restart.
-    // emitAsync() awaits all listeners, which is usually worse here — it makes
-    // the HTTP response wait on the side effects.
-    this.events.emit('user.created', new UserCreatedEvent(user.id));
-    return user;
-  }
+    async create(dto: CreateUserDto) {
+        const user = await this.repo.save(dto);
+        // ‼️ emit() is SYNCHRONOUS and in-memory: a listener that throws can
+        // propagate into this call, and nothing survives a process restart.
+        // emitAsync() awaits all listeners, which is usually worse here — it makes
+        // the HTTP response wait on the side effects.
+        this.events.emit('user.created', new UserCreatedEvent(user.id));
+        return user;
+    }
 }
 
 @Injectable()
 export class WelcomeEmailListener {
-  @OnEvent('user.created', {
-    // async: true runs the listener without blocking the emitter.
-    async: true,
-    // ‼️ suppressErrors (the default) means a throw here is swallowed. Set it
-    // false and add your own try/catch + logging, or failures are invisible.
-    suppressErrors: false,
-  })
-  async handle(event: UserCreatedEvent) {
-    // The durable version: enqueue rather than send inline, so the email
-    // survives a crash and gets retries.
-    await this.emailQueue.sendWelcome(event.userId);
-  }
+    @OnEvent('user.created', {
+        // async: true runs the listener without blocking the emitter.
+        async: true,
+        // ‼️ suppressErrors (the default) means a throw here is swallowed. Set it
+        // false and add your own try/catch + logging, or failures are invisible.
+        suppressErrors: false,
+    })
+    async handle(event: UserCreatedEvent) {
+        // The durable version: enqueue rather than send inline, so the email
+        // survives a crash and gets retries.
+        await this.emailQueue.sendWelcome(event.userId);
+    }
 }
 ```
 
@@ -3155,91 +4245,86 @@ export class WelcomeEmailListener {
 
 ```typescript
 @WebSocketGateway({
-  namespace: '/chat',
-  cors: { origin: process.env.CORS_ORIGINS?.split(',') },
-  // ‼️ In a multi-instance deployment, sockets on instance A cannot reach
-  // sockets on instance B without a shared adapter. The Redis adapter
-  // broadcasts across instances via pub/sub — without it, users connected to
-  // different pods simply do not see each other's messages, and it works
-  // perfectly in local development, so it ships broken.
-  transports: ['websocket'],
+    namespace: '/chat',
+    cors: { origin: process.env.CORS_ORIGINS?.split(',') },
+    // ‼️ In a multi-instance deployment, sockets on instance A cannot reach
+    // sockets on instance B without a shared adapter. The Redis adapter
+    // broadcasts across instances via pub/sub — without it, users connected to
+    // different pods simply do not see each other's messages, and it works
+    // perfectly in local development, so it ships broken.
+    transports: ['websocket'],
 })
-export class ChatGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
-{
-  @WebSocketServer() server: Server;
+export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
+    @WebSocketServer() server: Server;
 
-  constructor(private readonly jwt: JwtService) {}
+    constructor(private readonly jwt: JwtService) {}
 
-  afterInit(server: Server) {
-    // ‼️ Authenticate at the HANDSHAKE, not per message. A socket that is not
-    // authenticated should never be allowed to connect at all.
-    server.use(async (socket, next) => {
-      try {
-        const token = socket.handshake.auth?.token;
-        socket.data.user = await this.jwt.verifyAsync(token);
-        next();
-      } catch {
-        // Rejecting here closes the connection before any handler can run.
-        next(new Error('Unauthorized'));
-      }
-    });
-  }
+    afterInit(server: Server) {
+        // ‼️ Authenticate at the HANDSHAKE, not per message. A socket that is not
+        // authenticated should never be allowed to connect at all.
+        server.use(async (socket, next) => {
+            try {
+                const token = socket.handshake.auth?.token;
+                socket.data.user = await this.jwt.verifyAsync(token);
+                next();
+            } catch {
+                // Rejecting here closes the connection before any handler can run.
+                next(new Error('Unauthorized'));
+            }
+        });
+    }
 
-  async handleConnection(client: Socket) {
-    // A per-user room makes targeted server→client pushes trivial, and works
-    // across instances via the Redis adapter.
-    client.join(`user:${client.data.user.sub}`);
-  }
+    async handleConnection(client: Socket) {
+        // A per-user room makes targeted server→client pushes trivial, and works
+        // across instances via the Redis adapter.
+        client.join(`user:${client.data.user.sub}`);
+    }
 
-  handleDisconnect(client: Socket) {
-    // ‼️ Clean up any per-socket state here — presence entries, subscriptions,
-    // timers. Leaking them is the standard cause of a gateway whose memory
-    // grows all day and gets OOM-killed every night.
-  }
+    handleDisconnect(client: Socket) {
+        // ‼️ Clean up any per-socket state here — presence entries, subscriptions,
+        // timers. Leaking them is the standard cause of a gateway whose memory
+        // grows all day and gets OOM-killed every night.
+    }
 
-  @SubscribeMessage('message')
-  // Pipes, guards, and interceptors work here too, but ValidationPipe must be
-  // applied explicitly — the global HTTP pipe does not cover WS payloads
-  // unless registered via APP_PIPE.
-  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async onMessage(
-    @MessageBody() dto: SendMessageDto,
-    @ConnectedSocket() client: Socket,
-  ): Promise<WsResponse<{ id: string }>> {
-    // ‼️ Re-check authorization per message. Room membership at connect time
-    // does not prove the user still has access — they may have been removed
-    // from the conversation since.
-    await this.assertMember(client.data.user.sub, dto.roomId);
+    @SubscribeMessage('message')
+    // Pipes, guards, and interceptors work here too, but ValidationPipe must be
+    // applied explicitly — the global HTTP pipe does not cover WS payloads
+    // unless registered via APP_PIPE.
+    @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+    async onMessage(@MessageBody() dto: SendMessageDto, @ConnectedSocket() client: Socket): Promise<WsResponse<{ id: string }>> {
+        // ‼️ Re-check authorization per message. Room membership at connect time
+        // does not prove the user still has access — they may have been removed
+        // from the conversation since.
+        await this.assertMember(client.data.user.sub, dto.roomId);
 
-    const saved = await this.messages.create(dto, client.data.user.sub);
+        const saved = await this.messages.create(dto, client.data.user.sub);
 
-    // .to(room) excludes nobody; client.to(room) excludes the sender.
-    this.server.to(`room:${dto.roomId}`).emit('message', saved);
+        // .to(room) excludes nobody; client.to(room) excludes the sender.
+        this.server.to(`room:${dto.roomId}`).emit('message', saved);
 
-    // Returning a WsResponse sends an ack back to just this client.
-    return { event: 'message:ack', data: { id: saved.id } };
-  }
+        // Returning a WsResponse sends an ack back to just this client.
+        return { event: 'message:ack', data: { id: saved.id } };
+    }
 }
 
 // Redis adapter for horizontal scaling — register in main.ts BEFORE listen().
 export class RedisIoAdapter extends IoAdapter {
-  private adapterConstructor: ReturnType<typeof createAdapter>;
+    private adapterConstructor: ReturnType<typeof createAdapter>;
 
-  async connectToRedis(url: string): Promise<void> {
-    const pubClient = createClient({ url });
-    // Two connections are required: a Redis client in subscribe mode cannot
-    // issue publish commands, so pub and sub need separate connections.
-    const subClient = pubClient.duplicate();
-    await Promise.all([pubClient.connect(), subClient.connect()]);
-    this.adapterConstructor = createAdapter(pubClient, subClient);
-  }
+    async connectToRedis(url: string): Promise<void> {
+        const pubClient = createClient({ url });
+        // Two connections are required: a Redis client in subscribe mode cannot
+        // issue publish commands, so pub and sub need separate connections.
+        const subClient = pubClient.duplicate();
+        await Promise.all([pubClient.connect(), subClient.connect()]);
+        this.adapterConstructor = createAdapter(pubClient, subClient);
+    }
 
-  createIOServer(port: number, options?: ServerOptions): any {
-    const server = super.createIOServer(port, options);
-    server.adapter(this.adapterConstructor);
-    return server;
-  }
+    createIOServer(port: number, options?: ServerOptions): any {
+        const server = super.createIOServer(port, options);
+        server.adapter(this.adapterConstructor);
+        return server;
+    }
 }
 ```
 
@@ -3287,29 +4372,29 @@ notifications(@CurrentUser('id') userId: string): Observable<MessageEvent> {
 // Schema-first is the inverse — write SDL, generate types. Prefer it only when
 // a non-TS team owns the schema.
 @Module({
-  imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      sortSchema: true, // deterministic output, so schema diffs are readable
+    imports: [
+        GraphQLModule.forRoot<ApolloDriverConfig>({
+            driver: ApolloDriver,
+            autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+            sortSchema: true, // deterministic output, so schema diffs are readable
 
-      // ‼️ Turn off introspection and the playground in production: they let
-      // anyone enumerate your entire API surface, including admin mutations.
-      introspection: process.env.NODE_ENV !== 'production',
-      playground: false,
+            // ‼️ Turn off introspection and the playground in production: they let
+            // anyone enumerate your entire API surface, including admin mutations.
+            introspection: process.env.NODE_ENV !== 'production',
+            playground: false,
 
-      // The context is per-request and is where DataLoaders must live (below).
-      context: ({ req, res }) => ({ req, res, loaders: createLoaders() }),
+            // The context is per-request and is where DataLoaders must live (below).
+            context: ({ req, res }) => ({ req, res, loaders: createLoaders() }),
 
-      formatError: (error) => {
-        // Do not leak stack traces or internal messages to GraphQL clients.
-        if (error.extensions?.code === 'INTERNAL_SERVER_ERROR') {
-          return { message: 'Internal server error', extensions: { code: 'INTERNAL' } };
-        }
-        return error;
-      },
-    }),
-  ],
+            formatError: error => {
+                // Do not leak stack traces or internal messages to GraphQL clients.
+                if (error.extensions?.code === 'INTERNAL_SERVER_ERROR') {
+                    return { message: 'Internal server error', extensions: { code: 'INTERNAL' } };
+                }
+                return error;
+            },
+        }),
+    ],
 })
 export class AppModule {}
 ```
@@ -3317,42 +4402,42 @@ export class AppModule {}
 ```typescript
 @ObjectType()
 export class User {
-  @Field(() => ID) id: string;
-  @Field() email: string;
-  // Simply omitting @Field() keeps a property out of the schema entirely —
-  // the GraphQL equivalent of @Exclude().
-  passwordHash: string;
-  @Field(() => [Post]) posts: Post[];
+    @Field(() => ID) id: string;
+    @Field() email: string;
+    // Simply omitting @Field() keeps a property out of the schema entirely —
+    // the GraphQL equivalent of @Exclude().
+    passwordHash: string;
+    @Field(() => [Post]) posts: Post[];
 }
 
 @Resolver(() => User)
 export class UsersResolver {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly postsLoader: PostsLoader,
-  ) {}
+    constructor(
+        private readonly usersService: UsersService,
+        private readonly postsLoader: PostsLoader,
+    ) {}
 
-  @Query(() => [User])
-  @UseGuards(GqlAuthGuard)
-  users(@Args() args: ListUsersArgs) {
-    return this.usersService.findAll(args);
-  }
+    @Query(() => [User])
+    @UseGuards(GqlAuthGuard)
+    users(@Args() args: ListUsersArgs) {
+        return this.usersService.findAll(args);
+    }
 
-  // ‼️ A @ResolveField is called ONCE PER PARENT OBJECT. Query 100 users with
-  // their posts and this runs 100 times — the GraphQL N+1 problem, and it is
-  // worse than the REST version because the client controls the query shape,
-  // so you cannot predict which fields will be requested.
-  @ResolveField(() => [Post])
-  posts(@Parent() user: User) {
-    // DataLoader batches all calls made within one tick of the event loop into
-    // a single query, and caches by key for the request's lifetime.
-    return this.postsLoader.byUserId.load(user.id);
-  }
+    // ‼️ A @ResolveField is called ONCE PER PARENT OBJECT. Query 100 users with
+    // their posts and this runs 100 times — the GraphQL N+1 problem, and it is
+    // worse than the REST version because the client controls the query shape,
+    // so you cannot predict which fields will be requested.
+    @ResolveField(() => [Post])
+    posts(@Parent() user: User) {
+        // DataLoader batches all calls made within one tick of the event loop into
+        // a single query, and caches by key for the request's lifetime.
+        return this.postsLoader.byUserId.load(user.id);
+    }
 
-  @Mutation(() => User)
-  createUser(@Args('input') input: CreateUserInput) {
-    return this.usersService.create(input);
-  }
+    @Mutation(() => User)
+    createUser(@Args('input') input: CreateUserInput) {
+        return this.usersService.create(input);
+    }
 }
 ```
 
@@ -3360,25 +4445,25 @@ export class UsersResolver {
 // ── DataLoader ────────────────────────────────────────────────────────────
 @Injectable({ scope: Scope.REQUEST }) // ‼️ MUST be request-scoped
 export class PostsLoader {
-  constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) {}
 
-  readonly byUserId = new DataLoader<string, Post[]>(async (userIds) => {
-    // One query for all the ids collected during this tick.
-    const posts = await this.prisma.post.findMany({
-      where: { authorId: { in: [...userIds] } },
+    readonly byUserId = new DataLoader<string, Post[]>(async userIds => {
+        // One query for all the ids collected during this tick.
+        const posts = await this.prisma.post.findMany({
+            where: { authorId: { in: [...userIds] } },
+        });
+
+        const grouped = new Map<string, Post[]>();
+        for (const post of posts) {
+            grouped.set(post.authorId, [...(grouped.get(post.authorId) ?? []), post]);
+        }
+
+        // ‼️ The returned array MUST be the same length and ORDER as the input
+        // keys — DataLoader matches results to keys positionally. Returning the
+        // raw query result (which is in database order, and omits users with no
+        // posts) hands each user someone else's data.
+        return userIds.map(id => grouped.get(id) ?? []);
     });
-
-    const grouped = new Map<string, Post[]>();
-    for (const post of posts) {
-      grouped.set(post.authorId, [...(grouped.get(post.authorId) ?? []), post]);
-    }
-
-    // ‼️ The returned array MUST be the same length and ORDER as the input
-    // keys — DataLoader matches results to keys positionally. Returning the
-    // raw query result (which is in database order, and omits users with no
-    // posts) hands each user someone else's data.
-    return userIds.map((id) => grouped.get(id) ?? []);
-  });
 }
 // ‼️ A SINGLETON DataLoader would cache across requests and across users —
 // serving one user's data to another, and never seeing updates. Request scope
@@ -3390,9 +4475,9 @@ export class PostsLoader {
 // arguments array is (root, args, context, info), not (req, res, next).
 @Injectable()
 export class GqlAuthGuard extends AuthGuard('jwt') {
-  getRequest(context: ExecutionContext) {
-    return GqlExecutionContext.create(context).getContext().req;
-  }
+    getRequest(context: ExecutionContext) {
+        return GqlExecutionContext.create(context).getContext().req;
+    }
 }
 ```
 
@@ -3409,31 +4494,31 @@ export class GqlAuthGuard extends AuthGuard('jwt') {
 
 ```typescript
 @Module({
-  imports: [
-    CacheModule.registerAsync({
-      isGlobal: true,
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        stores: [createKeyv(config.getOrThrow('REDIS_URL'))],
-        ttl: 30_000, // milliseconds
-      }),
-    }),
-    ThrottlerModule.forRoot({
-      throttlers: [
-        // Layered limits: a short burst window plus a longer sustained window.
-        // One limit alone either blocks legitimate bursts or permits sustained
-        // abuse; two together allow normal usage and stop scripted hammering.
-        { name: 'short', ttl: 1000, limit: 10 },
-        { name: 'long', ttl: 60_000, limit: 100 },
-      ],
-      // ‼️ The in-memory default is PER PROCESS. With four replicas the real
-      // limit is 4× what you configured, and it resets on every deploy. Use
-      // the Redis storage adapter for a limit that actually holds.
-      storage: new ThrottlerStorageRedisService(process.env.REDIS_URL),
-    }),
-  ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+    imports: [
+        CacheModule.registerAsync({
+            isGlobal: true,
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                stores: [createKeyv(config.getOrThrow('REDIS_URL'))],
+                ttl: 30_000, // milliseconds
+            }),
+        }),
+        ThrottlerModule.forRoot({
+            throttlers: [
+                // Layered limits: a short burst window plus a longer sustained window.
+                // One limit alone either blocks legitimate bursts or permits sustained
+                // abuse; two together allow normal usage and stop scripted hammering.
+                { name: 'short', ttl: 1000, limit: 10 },
+                { name: 'long', ttl: 60_000, limit: 100 },
+            ],
+            // ‼️ The in-memory default is PER PROCESS. With four replicas the real
+            // limit is 4× what you configured, and it resets on every deploy. Use
+            // the Redis storage adapter for a limit that actually holds.
+            storage: new ThrottlerStorageRedisService(process.env.REDIS_URL),
+        }),
+    ],
+    providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
 ```
@@ -3441,17 +4526,17 @@ export class AppModule {}
 ```typescript
 @Controller('auth')
 export class AuthController {
-  // ‼️ Login needs a much tighter limit than the global default — this is the
-  // control that turns credential stuffing from "feasible" into "impractical".
-  // Rate-limit per IP AND per account: per-IP alone is defeated by a botnet,
-  // per-account alone lets one IP spray many accounts.
-  @Throttle({ short: { ttl: 60_000, limit: 5 } })
-  @Post('login')
-  login(@Body() dto: LoginDto) {}
+    // ‼️ Login needs a much tighter limit than the global default — this is the
+    // control that turns credential stuffing from "feasible" into "impractical".
+    // Rate-limit per IP AND per account: per-IP alone is defeated by a botnet,
+    // per-account alone lets one IP spray many accounts.
+    @Throttle({ short: { ttl: 60_000, limit: 5 } })
+    @Post('login')
+    login(@Body() dto: LoginDto) {}
 
-  @SkipThrottle()  // exempt a route entirely (health checks, webhooks)
-  @Get('status')
-  status() {}
+    @SkipThrottle() // exempt a route entirely (health checks, webhooks)
+    @Get('status')
+    status() {}
 }
 ```
 
@@ -3459,40 +4544,40 @@ export class AuthController {
 // ── Cache-aside, written correctly ────────────────────────────────────────
 @Injectable()
 export class ProductsService {
-  constructor(@Inject(CACHE_MANAGER) private readonly cache: Cache) {}
+    constructor(@Inject(CACHE_MANAGER) private readonly cache: Cache) {}
 
-  async findOne(id: string): Promise<Product> {
-    const key = `product:${id}`;
+    async findOne(id: string): Promise<Product> {
+        const key = `product:${id}`;
 
-    const cached = await this.cache.get<Product>(key);
-    // ‼️ Check for undefined, not falsiness. `if (cached)` treats a legitimately
-    // cached `0`, `''`, or `false` as a miss and re-queries every time.
-    if (cached !== undefined) return cached;
+        const cached = await this.cache.get<Product>(key);
+        // ‼️ Check for undefined, not falsiness. `if (cached)` treats a legitimately
+        // cached `0`, `''`, or `false` as a miss and re-queries every time.
+        if (cached !== undefined) return cached;
 
-    const product = await this.repo.findOneBy({ id });
-    if (!product) throw new NotFoundException();
+        const product = await this.repo.findOneBy({ id });
+        if (!product) throw new NotFoundException();
 
-    // ‼️ Jitter the TTL. Identical TTLs make everything cached at the same
-    // moment expire at the same moment — a cache stampede that dumps the full
-    // read load onto the database at once.
-    await this.cache.set(key, product, 300_000 + Math.random() * 60_000);
-    return product;
-  }
+        // ‼️ Jitter the TTL. Identical TTLs make everything cached at the same
+        // moment expire at the same moment — a cache stampede that dumps the full
+        // read load onto the database at once.
+        await this.cache.set(key, product, 300_000 + Math.random() * 60_000);
+        return product;
+    }
 
-  async update(id: string, dto: UpdateProductDto) {
-    const updated = await this.repo.save({ id, ...dto });
+    async update(id: string, dto: UpdateProductDto) {
+        const updated = await this.repo.save({ id, ...dto });
 
-    // ‼️ INVALIDATE, do not update, the cache. Writing the new value into the
-    // cache races with concurrent readers that may write a stale value after
-    // you. Deletion is idempotent and always safe; the next read repopulates.
-    await this.cache.del(`product:${id}`);
-    // Remember every derived key too — list pages, search results, and any
-    // aggregate that included this product. Forgetting these is the usual
-    // cause of "the detail page updated but the list still shows the old name".
-    await this.cache.del(`products:list`);
+        // ‼️ INVALIDATE, do not update, the cache. Writing the new value into the
+        // cache races with concurrent readers that may write a stale value after
+        // you. Deletion is idempotent and always safe; the next read repopulates.
+        await this.cache.del(`product:${id}`);
+        // Remember every derived key too — list pages, search results, and any
+        // aggregate that included this product. Forgetting these is the usual
+        // cause of "the detail page updated but the list still shows the old name".
+        await this.cache.del(`products:list`);
 
-    return updated;
-  }
+        return updated;
+    }
 }
 ```
 
@@ -3525,12 +4610,12 @@ export class ProductsService {
 ```typescript
 // main.ts
 const config = new DocumentBuilder()
-  .setTitle('Orders API')
-  .setVersion('1.0')
-  // The name ('bearer') is referenced by @ApiBearerAuth('bearer') on routes.
-  .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'bearer')
-  .addServer('https://api.example.com', 'Production')
-  .build();
+    .setTitle('Orders API')
+    .setVersion('1.0')
+    // The name ('bearer') is referenced by @ApiBearerAuth('bearer') on routes.
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'bearer')
+    .addServer('https://api.example.com', 'Production')
+    .build();
 
 const document = SwaggerModule.createDocument(app, config);
 
@@ -3538,10 +4623,10 @@ const document = SwaggerModule.createDocument(app, config);
 // is a complete map of your API — every route, parameter, and error shape —
 // which is exactly what an attacker wants first.
 if (process.env.NODE_ENV !== 'production') {
-  SwaggerModule.setup('docs', app, document, {
-    // Keeps the bearer token across page reloads while developing.
-    swaggerOptions: { persistAuthorization: true },
-  });
+    SwaggerModule.setup('docs', app, document, {
+        // Keeps the bearer token across page reloads while developing.
+        swaggerOptions: { persistAuthorization: true },
+    });
 }
 ```
 
@@ -3550,24 +4635,24 @@ if (process.env.NODE_ENV !== 'production') {
 @ApiBearerAuth('bearer')
 @Controller('users')
 export class UsersController {
-  @Post()
-  @ApiOperation({ summary: 'Create a user', operationId: 'createUser' })
-  @ApiCreatedResponse({ type: UserDto })
-  @ApiConflictResponse({ description: 'Email already registered' })
-  create(@Body() dto: CreateUserDto) {}
+    @Post()
+    @ApiOperation({ summary: 'Create a user', operationId: 'createUser' })
+    @ApiCreatedResponse({ type: UserDto })
+    @ApiConflictResponse({ description: 'Email already registered' })
+    create(@Body() dto: CreateUserDto) {}
 }
 
 export class CreateUserDto {
-  // @ApiProperty feeds the schema. `example` is what shows in the UI's
-  // "Try it out" body, so a realistic example makes the docs self-testing.
-  @ApiProperty({ example: 'ada@example.com', format: 'email' })
-  @IsEmail()
-  email: string;
+    // @ApiProperty feeds the schema. `example` is what shows in the UI's
+    // "Try it out" body, so a realistic example makes the docs self-testing.
+    @ApiProperty({ example: 'ada@example.com', format: 'email' })
+    @IsEmail()
+    email: string;
 
-  @ApiPropertyOptional({ enum: Role, default: Role.User })
-  @IsEnum(Role)
-  @IsOptional()
-  role?: Role;
+    @ApiPropertyOptional({ enum: Role, default: Role.User })
+    @IsEnum(Role)
+    @IsOptional()
+    role?: Role;
 }
 ```
 
@@ -3576,18 +4661,18 @@ export class CreateUserDto {
 // and class-validator decorators, so you stop writing @ApiProperty twice for
 // every field. Big reduction in boilerplate and in doc drift.
 {
-  "compilerOptions": {
-    "plugins": [
-      {
-        "name": "@nestjs/swagger",
-        "options": {
-          "classValidatorShim": true,     // derive constraints from validators
-          "introspectComments": true,     // use JSDoc as descriptions
-          "dtoFileNameSuffix": [".dto.ts", ".entity.ts"]
-        }
-      }
-    ]
-  }
+    "compilerOptions": {
+        "plugins": [
+            {
+                "name": "@nestjs/swagger",
+                "options": {
+                    "classValidatorShim": true, // derive constraints from validators
+                    "introspectComments": true, // use JSDoc as descriptions
+                    "dtoFileNameSuffix": [".dto.ts", ".entity.ts"],
+                },
+            },
+        ],
+    },
 }
 ```
 
@@ -3599,44 +4684,44 @@ export class CreateUserDto {
 
 ```typescript
 describe('UsersService', () => {
-  let service: UsersService;
-  let repo: jest.Mocked<Repository<User>>;
+    let service: UsersService;
+    let repo: jest.Mocked<Repository<User>>;
 
-  beforeEach(async () => {
-    // Test.createTestingModule builds a REAL Nest container with only what you
-    // list — so DI, custom providers, and module wiring are all exercised, but
-    // nothing outside the unit under test is constructed.
-    const module = await Test.createTestingModule({
-      providers: [
-        UsersService,
-        {
-          // getRepositoryToken produces the same token @InjectRepository uses,
-          // which is how you substitute a mock repository.
-          provide: getRepositoryToken(User),
-          useValue: {
-            find: jest.fn(),
-            findOneBy: jest.fn(),
-            save: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
+    beforeEach(async () => {
+        // Test.createTestingModule builds a REAL Nest container with only what you
+        // list — so DI, custom providers, and module wiring are all exercised, but
+        // nothing outside the unit under test is constructed.
+        const module = await Test.createTestingModule({
+            providers: [
+                UsersService,
+                {
+                    // getRepositoryToken produces the same token @InjectRepository uses,
+                    // which is how you substitute a mock repository.
+                    provide: getRepositoryToken(User),
+                    useValue: {
+                        find: jest.fn(),
+                        findOneBy: jest.fn(),
+                        save: jest.fn(),
+                    },
+                },
+            ],
+        }).compile();
 
-    service = module.get(UsersService);
-    repo = module.get(getRepositoryToken(User));
-  });
+        service = module.get(UsersService);
+        repo = module.get(getRepositoryToken(User));
+    });
 
-  // ‼️ Reset between tests or call counts and queued return values leak across
-  // them, producing tests that pass alone and fail in suite order.
-  afterEach(() => jest.resetAllMocks());
+    // ‼️ Reset between tests or call counts and queued return values leak across
+    // them, producing tests that pass alone and fail in suite order.
+    afterEach(() => jest.resetAllMocks());
 
-  it('throws NotFoundException for a missing user', async () => {
-    repo.findOneBy.mockResolvedValue(null);
+    it('throws NotFoundException for a missing user', async () => {
+        repo.findOneBy.mockResolvedValue(null);
 
-    // Assert on the EXCEPTION TYPE, not the message: messages get reworded,
-    // and the type is what determines the HTTP status the client sees.
-    await expect(service.findOne('missing')).rejects.toThrow(NotFoundException);
-  });
+        // Assert on the EXCEPTION TYPE, not the message: messages get reworded,
+        // and the type is what determines the HTTP status the client sees.
+        await expect(service.findOne('missing')).rejects.toThrow(NotFoundException);
+    });
 });
 ```
 
@@ -3644,67 +4729,71 @@ describe('UsersService', () => {
 
 ```typescript
 const module = await Test.createTestingModule({ imports: [AppModule] })
-  // Replace a provider anywhere in the tree, however deeply nested.
-  .overrideProvider(MailerService).useValue({ send: jest.fn() })
+    // Replace a provider anywhere in the tree, however deeply nested.
+    .overrideProvider(MailerService)
+    .useValue({ send: jest.fn() })
 
-  // ‼️ Guards must be overridden to test protected routes without minting real
-  // tokens. Returning a canActivate that stamps a user onto the request keeps
-  // the handler code identical to production.
-  .overrideGuard(JwtAuthGuard).useValue({
-    canActivate: (ctx: ExecutionContext) => {
-      ctx.switchToHttp().getRequest().user = { id: 'test-user', roles: ['admin'] };
-      return true;
-    },
-  })
+    // ‼️ Guards must be overridden to test protected routes without minting real
+    // tokens. Returning a canActivate that stamps a user onto the request keeps
+    // the handler code identical to production.
+    .overrideGuard(JwtAuthGuard)
+    .useValue({
+        canActivate: (ctx: ExecutionContext) => {
+            ctx.switchToHttp().getRequest().user = { id: 'test-user', roles: ['admin'] };
+            return true;
+        },
+    })
 
-  .overrideInterceptor(CacheInterceptor).useValue({ intercept: (_, n) => n.handle() })
-  .overrideFilter(AllExceptionsFilter).useClass(TestFilter)
+    .overrideInterceptor(CacheInterceptor)
+    .useValue({ intercept: (_, n) => n.handle() })
+    .overrideFilter(AllExceptionsFilter)
+    .useClass(TestFilter)
 
-  // Replace a whole module — e.g. swap the real database module for an
-  // in-memory one — without touching application code.
-  .overrideModule(DatabaseModule).useModule(TestDatabaseModule)
-  .compile();
+    // Replace a whole module — e.g. swap the real database module for an
+    // in-memory one — without touching application code.
+    .overrideModule(DatabaseModule)
+    .useModule(TestDatabaseModule)
+    .compile();
 ```
 
 ### E2E tests
 
 ```typescript
 describe('Users (e2e)', () => {
-  let app: INestApplication;
+    let app: INestApplication;
 
-  beforeAll(async () => {
-    const module = await Test.createTestingModule({ imports: [AppModule] })
-      .overrideProvider(MailerService).useValue({ send: jest.fn() })
-      .compile();
+    beforeAll(async () => {
+        const module = await Test.createTestingModule({ imports: [AppModule] })
+            .overrideProvider(MailerService)
+            .useValue({ send: jest.fn() })
+            .compile();
 
-    app = module.createNestApplication();
+        app = module.createNestApplication();
 
-    // ‼️ Global pipes/filters/interceptors registered in main.ts do NOT apply
-    // automatically here — createNestApplication does not run your bootstrap
-    // function. Re-register them or your e2e tests exercise a DIFFERENT
-    // pipeline than production, and validation bugs sail through.
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+        // ‼️ Global pipes/filters/interceptors registered in main.ts do NOT apply
+        // automatically here — createNestApplication does not run your bootstrap
+        // function. Re-register them or your e2e tests exercise a DIFFERENT
+        // pipeline than production, and validation bugs sail through.
+        app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-    // init() runs onModuleInit/onApplicationBootstrap and readies the HTTP
-    // server WITHOUT binding a port — supertest talks to the handle directly.
-    await app.init();
-  });
+        // init() runs onModuleInit/onApplicationBootstrap and readies the HTTP
+        // server WITHOUT binding a port — supertest talks to the handle directly.
+        await app.init();
+    });
 
-  // ‼️ Always close. A leaked app keeps DB pools and timers alive, and Jest
-  // hangs with "did not exit one second after test run completed".
-  afterAll(async () => await app.close());
+    // ‼️ Always close. A leaked app keeps DB pools and timers alive, and Jest
+    // hangs with "did not exit one second after test run completed".
+    afterAll(async () => await app.close());
 
-  it('POST /users rejects an invalid email', () => {
-    return request(app.getHttpServer())
-      .post('/users')
-      .send({ email: 'not-an-email', password: 'short' })
-      .expect(400)
-      .expect((res) => {
-        expect(res.body.message).toEqual(
-          expect.arrayContaining([expect.stringContaining('email')]),
-        );
-      });
-  });
+    it('POST /users rejects an invalid email', () => {
+        return request(app.getHttpServer())
+            .post('/users')
+            .send({ email: 'not-an-email', password: 'short' })
+            .expect(400)
+            .expect(res => {
+                expect(res.body.message).toEqual(expect.arrayContaining([expect.stringContaining('email')]));
+            });
+    });
 });
 ```
 
@@ -3718,28 +4807,28 @@ describe('Users (e2e)', () => {
 let container: StartedPostgreSqlContainer;
 
 beforeAll(async () => {
-  container = await new PostgreSqlContainer('postgres:16-alpine').start();
-  process.env.DATABASE_URL = container.getConnectionUri();
+    container = await new PostgreSqlContainer('postgres:16-alpine').start();
+    process.env.DATABASE_URL = container.getConnectionUri();
 
-  const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
-  app = module.createNestApplication();
-  await app.init();
+    const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = module.createNestApplication();
+    await app.init();
 
-  // Run the real migrations — this also makes every test run a migration test.
-  await app.get(DataSource).runMigrations();
+    // Run the real migrations — this also makes every test run a migration test.
+    await app.get(DataSource).runMigrations();
 }, 60_000); // generous timeout: pulling the image the first time is slow
 
 afterAll(async () => {
-  await app.close();
-  await container.stop();
+    await app.close();
+    await container.stop();
 });
 
 // Isolate tests from each other by truncating between them. Faster and more
 // reliable than recreating the schema, and avoids order-dependent tests.
 afterEach(async () => {
-  const ds = app.get(DataSource);
-  const tables = ds.entityMetadatas.map((e) => `"${e.tableName}"`).join(', ');
-  await ds.query(`TRUNCATE ${tables} RESTART IDENTITY CASCADE`);
+    const ds = app.get(DataSource);
+    const tables = ds.entityMetadatas.map(e => `"${e.tableName}"`).join(', ');
+    await ds.query(`TRUNCATE ${tables} RESTART IDENTITY CASCADE`);
 });
 ```
 
@@ -3750,43 +4839,35 @@ afterEach(async () => {
 ```typescript
 // ── Structured logging with Pino ──────────────────────────────────────────
 @Module({
-  imports: [
-    LoggerModule.forRoot({
-      pinoHttp: {
-        // ‼️ JSON in production so log aggregators (Datadog, CloudWatch, Loki)
-        // can index fields; pretty-printed only for human eyes locally.
-        transport: process.env.NODE_ENV !== 'production'
-          ? { target: 'pino-pretty' }
-          : undefined,
-        level: process.env.LOG_LEVEL ?? 'info',
+    imports: [
+        LoggerModule.forRoot({
+            pinoHttp: {
+                // ‼️ JSON in production so log aggregators (Datadog, CloudWatch, Loki)
+                // can index fields; pretty-printed only for human eyes locally.
+                transport: process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
+                level: process.env.LOG_LEVEL ?? 'info',
 
-        // ‼️ REDACT SECRETS. Logging the full request headers is how bearer
-        // tokens, cookies, and API keys end up permanently stored in a log
-        // index that far more people can read than can read the database.
-        redact: {
-          paths: [
-            'req.headers.authorization',
-            'req.headers.cookie',
-            'req.body.password',
-            'req.body.token',
-            '*.creditCard',
-          ],
-          censor: '[REDACTED]',
-        },
+                // ‼️ REDACT SECRETS. Logging the full request headers is how bearer
+                // tokens, cookies, and API keys end up permanently stored in a log
+                // index that far more people can read than can read the database.
+                redact: {
+                    paths: ['req.headers.authorization', 'req.headers.cookie', 'req.body.password', 'req.body.token', '*.creditCard'],
+                    censor: '[REDACTED]',
+                },
 
-        // Attach a correlation id to every log line of a request, so one
-        // filter in the log tool reconstructs the whole request.
-        genReqId: (req, res) => {
-          const id = req.headers['x-correlation-id'] ?? randomUUID();
-          res.setHeader('x-correlation-id', id);
-          return id;
-        },
+                // Attach a correlation id to every log line of a request, so one
+                // filter in the log tool reconstructs the whole request.
+                genReqId: (req, res) => {
+                    const id = req.headers['x-correlation-id'] ?? randomUUID();
+                    res.setHeader('x-correlation-id', id);
+                    return id;
+                },
 
-        // Health checks at 1/sec would otherwise dominate the log volume.
-        autoLogging: { ignore: (req) => req.url === '/health' },
-      },
-    }),
-  ],
+                // Health checks at 1/sec would otherwise dominate the log volume.
+                autoLogging: { ignore: req => req.url === '/health' },
+            },
+        }),
+    ],
 })
 export class LoggingModule {}
 ```
@@ -3800,17 +4881,17 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 
 export const otelSDK = new NodeSDK({
-  traceExporter: new OTLPTraceExporter({ url: process.env.OTEL_ENDPOINT }),
-  instrumentations: [
-    getNodeAutoInstrumentations({
-      // Filesystem spans are enormous in volume and almost never useful.
-      '@opentelemetry/instrumentation-fs': { enabled: false },
+    traceExporter: new OTLPTraceExporter({ url: process.env.OTEL_ENDPOINT }),
+    instrumentations: [
+        getNodeAutoInstrumentations({
+            // Filesystem spans are enormous in volume and almost never useful.
+            '@opentelemetry/instrumentation-fs': { enabled: false },
+        }),
+    ],
+    resource: new Resource({
+        [SemanticResourceAttributes.SERVICE_NAME]: 'orders-api',
+        [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV,
     }),
-  ],
-  resource: new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'orders-api',
-    [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV,
-  }),
 });
 
 // main.ts:  import './tracing'; then otelSDK.start(); then bootstrap();
@@ -3820,35 +4901,30 @@ export const otelSDK = new NodeSDK({
 // ── Health checks ─────────────────────────────────────────────────────────
 @Controller('health')
 export class HealthController {
-  constructor(
-    private readonly health: HealthCheckService,
-    private readonly db: TypeOrmHealthIndicator,
-    private readonly memory: MemoryHealthIndicator,
-    private readonly disk: DiskHealthIndicator,
-  ) {}
+    constructor(
+        private readonly health: HealthCheckService,
+        private readonly db: TypeOrmHealthIndicator,
+        private readonly memory: MemoryHealthIndicator,
+        private readonly disk: DiskHealthIndicator,
+    ) {}
 
-  // ‼️ LIVENESS: "is the process wedged?" It must NOT check dependencies.
-  // If liveness fails when the database is down, Kubernetes restarts every
-  // pod — turning a database blip into a full outage with a crash-loop.
-  @Get('live')
-  @HealthCheck()
-  liveness() {
-    return this.health.check([
-      () => this.memory.checkHeap('memory_heap', 512 * 1024 * 1024),
-    ]);
-  }
+    // ‼️ LIVENESS: "is the process wedged?" It must NOT check dependencies.
+    // If liveness fails when the database is down, Kubernetes restarts every
+    // pod — turning a database blip into a full outage with a crash-loop.
+    @Get('live')
+    @HealthCheck()
+    liveness() {
+        return this.health.check([() => this.memory.checkHeap('memory_heap', 512 * 1024 * 1024)]);
+    }
 
-  // ‼️ READINESS: "can I serve traffic right now?" This one DOES check
-  // dependencies. Failing it removes the pod from the load balancer without
-  // killing it, so it can rejoin when the dependency recovers.
-  @Get('ready')
-  @HealthCheck()
-  readiness() {
-    return this.health.check([
-      () => this.db.pingCheck('database', { timeout: 1500 }),
-      () => this.disk.checkStorage('disk', { thresholdPercent: 0.9, path: '/' }),
-    ]);
-  }
+    // ‼️ READINESS: "can I serve traffic right now?" This one DOES check
+    // dependencies. Failing it removes the pod from the load balancer without
+    // killing it, so it can rejoin when the dependency recovers.
+    @Get('ready')
+    @HealthCheck()
+    readiness() {
+        return this.health.check([() => this.db.pingCheck('database', { timeout: 1500 }), () => this.disk.checkStorage('disk', { thresholdPercent: 0.9, path: '/' })]);
+    }
 }
 ```
 
@@ -3856,31 +4932,31 @@ export class HealthController {
 // ── Prometheus metrics ────────────────────────────────────────────────────
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
-  private readonly histogram = new Histogram({
-    name: 'http_request_duration_seconds',
-    help: 'HTTP request duration',
-    // ‼️ Label with the ROUTE PATTERN (/users/:id), never the actual URL
-    // (/users/abc-123). Using raw URLs creates one time series per id — a
-    // cardinality explosion that will take down your metrics backend.
-    labelNames: ['method', 'route', 'status'],
-    buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
-  });
+    private readonly histogram = new Histogram({
+        name: 'http_request_duration_seconds',
+        help: 'HTTP request duration',
+        // ‼️ Label with the ROUTE PATTERN (/users/:id), never the actual URL
+        // (/users/abc-123). Using raw URLs creates one time series per id — a
+        // cardinality explosion that will take down your metrics backend.
+        labelNames: ['method', 'route', 'status'],
+        buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
+    });
 
-  intercept(ctx: ExecutionContext, next: CallHandler) {
-    const req = ctx.switchToHttp().getRequest();
-    const end = this.histogram.startTimer();
-    return next.handle().pipe(
-      // finalize runs on success AND error AND unsubscribe, so no request is
-      // ever unmeasured. tap(next) alone would miss the error path.
-      finalize(() =>
-        end({
-          method: req.method,
-          route: req.route?.path ?? 'unknown',
-          status: ctx.switchToHttp().getResponse().statusCode,
-        }),
-      ),
-    );
-  }
+    intercept(ctx: ExecutionContext, next: CallHandler) {
+        const req = ctx.switchToHttp().getRequest();
+        const end = this.histogram.startTimer();
+        return next.handle().pipe(
+            // finalize runs on success AND error AND unsubscribe, so no request is
+            // ever unmeasured. tap(next) alone would miss the error path.
+            finalize(() =>
+                end({
+                    method: req.method,
+                    route: req.route?.path ?? 'unknown',
+                    status: ctx.switchToHttp().getResponse().statusCode,
+                }),
+            ),
+        );
+    }
 }
 ```
 
@@ -3997,20 +5073,20 @@ async refresh(userId: string, presentedToken: string) {
 // ── Do not block the event loop ───────────────────────────────────────────
 @Injectable()
 export class ReportService {
-  // ‼️ Node runs your JS on ONE thread. A 2-second CPU-bound loop does not slow
-  // down one request — it freezes EVERY concurrent request, including health
-  // checks, which then fail and get the pod restarted mid-report.
-  async generateBad(rows: Row[]) {
-    return rows.map(expensiveTransform); // blocks for seconds
-  }
+    // ‼️ Node runs your JS on ONE thread. A 2-second CPU-bound loop does not slow
+    // down one request — it freezes EVERY concurrent request, including health
+    // checks, which then fail and get the pod restarted mid-report.
+    async generateBad(rows: Row[]) {
+        return rows.map(expensiveTransform); // blocks for seconds
+    }
 
-  // Worker threads move CPU work off the main thread. Piscina manages a pool
-  // so you are not paying ~30ms of worker startup per call.
-  private pool = new Piscina({ filename: resolve(__dirname, 'report.worker.js') });
+    // Worker threads move CPU work off the main thread. Piscina manages a pool
+    // so you are not paying ~30ms of worker startup per call.
+    private pool = new Piscina({ filename: resolve(__dirname, 'report.worker.js') });
 
-  async generateGood(rows: Row[]) {
-    return this.pool.run(rows);
-  }
+    async generateGood(rows: Row[]) {
+        return this.pool.run(rows);
+    }
 }
 ```
 
@@ -4097,39 +5173,39 @@ src/
 // ── Controller: thin. Translate HTTP ↔ domain, nothing else. ──────────────
 @Controller('orders')
 export class OrdersController {
-  @Post()
-  create(@Body() dto: CreateOrderDto, @CurrentUser('id') userId: string) {
-    // No business logic here. If there is an `if` in a controller that is not
-    // about HTTP, it belongs in the service.
-    return this.ordersService.create(userId, dto);
-  }
+    @Post()
+    create(@Body() dto: CreateOrderDto, @CurrentUser('id') userId: string) {
+        // No business logic here. If there is an `if` in a controller that is not
+        // about HTTP, it belongs in the service.
+        return this.ordersService.create(userId, dto);
+    }
 }
 
 // ── Service: business rules. Framework-agnostic enough to unit test easily. ─
 @Injectable()
 export class OrdersService {
-  async create(userId: string, dto: CreateOrderDto) {
-    const items = await this.pricing.price(dto.items);
-    if (Order.total(items) > MAX_ORDER_VALUE) {
-      // ‼️ Pragmatic compromise most Nest codebases make: HttpException in the
-      // service. Purists throw a domain error and map it in a filter. Either
-      // is defensible — just be consistent, and prefer domain errors if the
-      // same service is also called from a queue consumer or a CLI, where
-      // HTTP status codes are meaningless.
-      throw new BadRequestException('Order exceeds maximum value');
+    async create(userId: string, dto: CreateOrderDto) {
+        const items = await this.pricing.price(dto.items);
+        if (Order.total(items) > MAX_ORDER_VALUE) {
+            // ‼️ Pragmatic compromise most Nest codebases make: HttpException in the
+            // service. Purists throw a domain error and map it in a filter. Either
+            // is defensible — just be consistent, and prefer domain errors if the
+            // same service is also called from a queue consumer or a CLI, where
+            // HTTP status codes are meaningless.
+            throw new BadRequestException('Order exceeds maximum value');
+        }
+        return this.repo.create(userId, items);
     }
-    return this.repo.create(userId, items);
-  }
 }
 
 // ── Repository: persistence only. Hides the ORM from the domain. ──────────
 @Injectable()
 export class OrderRepository {
-  // The payoff: swapping TypeORM for Prisma, or adding a read replica, touches
-  // this file only. Services that call `repo.findById` do not change.
-  findById(id: string) {
-    return this.prisma.order.findUnique({ where: { id }, include: { items: true } });
-  }
+    // The payoff: swapping TypeORM for Prisma, or adding a read replica, touches
+    // this file only. Services that call `repo.findById` do not change.
+    findById(id: string) {
+        return this.prisma.order.findUnique({ where: { id }, include: { items: true } });
+    }
 }
 ```
 
