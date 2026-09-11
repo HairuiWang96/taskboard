@@ -38,7 +38,7 @@ Good architecture:
 
 ## 1. Project Structure
 
-### Layer-based (bad for large apps)
+### Layer-based (bad for large apps)‼️
 
 ```text
 src/
@@ -52,7 +52,7 @@ Problem: as the app grows, each folder becomes a dumping ground.
 Finding everything related to "checkout" means searching across all folders.
 ```
 
-### Feature-based (recommended for large apps)
+### Feature-based (recommended for large apps)✅
 
 ```text
 src/
@@ -63,7 +63,7 @@ src/
       api/            auth.api.ts (API calls for this feature)
       store/          auth.slice.ts (state for this feature)
       types/          auth.types.ts
-      index.ts        public API — what other features can import
+      index.ts        public API — what other features can import‼️
     checkout/
       components/
       hooks/
@@ -82,7 +82,7 @@ src/
     store.ts          root store setup
     App.tsx
 
-Key rule: features can import from shared/, but NOT from each other.
+Key rule: features can import from shared/, but NOT from each other.‼️
 If two features need to share something, move it to shared/.
 This enforces clear boundaries between features.
 ```
@@ -101,7 +101,7 @@ export type { User, AuthState } from './types/auth.types';
 // - authHelpers.ts (internal utilities)
 // - auth.slice.ts (internal state — exposed via useAuth hook)
 
-// Other features import from the index, not from internals:
+// Other features import from the index, not from internals:‼️
 // ✓ import { useAuth } from '@/features/auth'
 // ✗ import { useAuth } from '@/features/auth/hooks/useAuth' — breaks encapsulation
 ```
@@ -200,7 +200,7 @@ function UserProfile({ user }: { user: User }) {
 
 ```typescript
 // API: <Select> with nested <Select.Option> sub-components
-// Better than passing everything as props — more flexible, readable
+// Better than passing everything as props — more flexible, readable‼️
 
 const SelectContext = React.createContext<SelectContextType | null>(null);
 
@@ -246,18 +246,18 @@ This is the most important architectural decision. The rule: **state should live
    - Has a lifecycle: loading, success, error, stale, refetching
    - Examples: user profile, product list, order history
    - Tool: TanStack Query (React Query) or SWR — NOT Redux
-   
+
 2. Global client state (shared UI state)
    - Data that multiple components need but doesn't come from the server
    - Should be minimal — most devs put too much here
    - Examples: auth user object, theme, sidebar open/closed, active modal
    - Tool: Zustand, Jotai, or React Context (for rarely-changing data)
 
-3. URL state (navigation state)
+3. URL state (navigation state)‼️
    - State that should be in the URL (so links are shareable)
    - Examples: search query, filters, pagination, sort order, tab selection
    - Tool: router (Next.js, React Router) — use query params
-   - Rule: if the user would expect the state to survive a page refresh or be shareable, put it in the URL
+   - Rule: if the user would expect the state to survive a page refresh or be shareable, put it in the URL‼️
 
 4. Local component state
    - State only one component needs
@@ -268,16 +268,16 @@ This is the most important architectural decision. The rule: **state should live
 ```typescript
 // Example: search page state architecture
 
-// URL state — search query, page, filters (shareable link)
+// URL state — search query, page, filters (shareable link)‼️
 // /products?q=shoes&category=running&sort=price&page=2
-const [searchParams, setSearchParams] = useSearchParams();
+const [searchParams, setSearchParams] = useSearchParams();‼️
 const query = searchParams.get('q') ?? '';
 const page = Number(searchParams.get('page') ?? 1);
 
 // Server state — fetched data (TanStack Query)
 const { data: products, isLoading } = useQuery({
-  queryKey: ['products', query, page],
-  queryFn: () => api.products.search({ query, page }),
+    queryKey: ['products', query, page],
+    queryFn: () => api.products.search({ query, page }),
 });
 
 // Global state — auth (Zustand)
@@ -295,37 +295,106 @@ const hasResults = (products?.items?.length ?? 0) > 0;
 
 ```typescript
 // The right way to handle server state
-// Replaces useEffect + useState for data fetching
+// Replaces useEffect + useState for data fetching‼️
 
-// Define queries in a dedicated file — queryKeys pattern
+// Define queries in a dedicated file — queryKeys pattern‼️
 // features/products/api/products.queries.ts
+
+// This is the query key factory pattern from TanStack Query. Its purpose is to
+// make cache keys hierarchical and centralised.‼️
+//
+// WHAT THE KEYS ACTUALLY EVALUATE TO
+//
+//   productQueries.all()                        // ['products']
+//   productQueries.lists()                      // ['products', 'list']
+//   productQueries.list({ category: 'shoes' })  // ['products', 'list', { category: 'shoes' }]
+//   productQueries.details()                    // ['products', 'detail']
+//   productQueries.detail('123')                // ['products', 'detail', '123']
+//
+// Each level builds on the one above by spreading it. That nesting isn't
+// cosmetic — it's the whole point.‼️
+//
+// WHY NESTED: INVALIDATION DOES PREFIX MATCHING‼️
+//
+// TanStack Query matches invalidateQueries by key prefix, so the hierarchy
+// gives you precise control over how much cache to blow away:
+//
+//   // Everything product-related — all lists AND all details
+//   queryClient.invalidateQueries({ queryKey: productQueries.all() });
+//
+//   // Every list, regardless of filters — details untouched
+//   queryClient.invalidateQueries({ queryKey: productQueries.lists() });
+//
+//   // Just this one product's detail
+//   queryClient.invalidateQueries({ queryKey: productQueries.detail('123') });
+//
+// That middle one is what the useDeleteProduct mutation below relies on after a
+// delete. There may be dozens of cached lists — {category:'shoes'},
+// {category:'shoes', page:2}, {sort:'price'} — and you have no idea which ones
+// the user has visited. lists() invalidates all of them in one call, without
+// touching the detail caches that are still valid.‼️
+//
+// Without the hierarchy you'd have to enumerate every filter combination you'd
+// ever cached, which is impossible.
+//
+// WHY A FACTORY INSTEAD OF INLINE ARRAYS
+//
+// The alternative is writing the array literal at each call site:
+//
+//   useQuery({ queryKey: ['products', 'list', filters], ... });  // component A
+//   useQuery({ queryKey: ['product', 'list', filters], ... });   // component B — typo
+//
+// That typo is silent. No type error, no runtime error — B just gets its own
+// separate cache entry, refetches unnecessarily, and never updates when A
+// invalidates. You find out when a user reports stale data.
+//
+// The factory gives you one definition, autocomplete at every call site, and a
+// single place to change if the entity is ever renamed.‼️
+//
+// WHY `as const`
+//
+// Without it, TypeScript widens the return to string[]. With it you get a
+// readonly tuple of literal types:‼️
+//
+//   // without: string[]
+//   // with:    readonly ["products", "list", ProductFilters]
+//
+// This matters if you write helpers that are typed against specific key shapes,
+// and it stops anyone mutating the array in place.
+//
+// ONE CAVEAT WORTH KNOWING
+//
+// Keys are hashed structurally, not by reference, so { category: 'shoes' } as a
+// fresh object each render is fine. But key order inside the object matters for
+// readability only — TanStack sorts object keys before hashing, so {a:1, b:2}
+// and {b:2, a:1} are the same cache entry.
 export const productQueries = {
-  all: () => ['products'] as const,
-  lists: () => [...productQueries.all(), 'list'] as const,
-  list: (filters: ProductFilters) => [...productQueries.lists(), filters] as const,
-  details: () => [...productQueries.all(), 'detail'] as const,
-  detail: (id: string) => [...productQueries.details(), id] as const,
+    all: () => ['products'] as const,
+    lists: () => [...productQueries.all(), 'list'] as const,
+    list: (filters: ProductFilters) => [...productQueries.lists(), filters] as const,
+    details: () => [...productQueries.all(), 'detail'] as const,
+    detail: (id: string) => [...productQueries.details(), id] as const,
 };
 
 // Use in components
 function ProductList({ filters }: { filters: ProductFilters }) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: productQueries.list(filters),
-    queryFn: () => api.products.list(filters),
-    staleTime: 1000 * 60 * 5,  // 5 minutes before refetching
-  });
+    const { data, isLoading, error } = useQuery({
+        queryKey: productQueries.list(filters),
+        queryFn: () => api.products.list(filters),
+        staleTime: 1000 * 60 * 5, // 5 minutes before refetching
+    });
 }
 
 // Mutations with cache invalidation
 function useDeleteProduct() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api.products.delete(id),
-    onSuccess: () => {
-      // Invalidate the list — will refetch automatically
-      queryClient.invalidateQueries({ queryKey: productQueries.lists() });
-    },
-  });
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => api.products.delete(id),
+        onSuccess: () => {
+            // Invalidate the list — will refetch automatically‼️
+            queryClient.invalidateQueries({ queryKey: productQueries.lists() });
+        },
+    });
 }
 ```
 
@@ -415,25 +484,23 @@ function ParentComponent() {
 
 ```typescript
 // Next.js App Router — file-system routing
-app/
-  layout.tsx            // root layout (nav, footer)
-  page.tsx              // home page /
-  (auth)/               // route group — shared layout, no URL segment
-    login/page.tsx      // /login
-    signup/page.tsx     // /signup
-  dashboard/
-    layout.tsx          // dashboard shell (sidebar)
-    page.tsx            // /dashboard
-    settings/
-      page.tsx          // /dashboard/settings
-  products/
-    page.tsx            // /products (list)
-    [id]/
-      page.tsx          // /products/123 (detail)
-      loading.tsx       // Suspense boundary for this route
-      error.tsx         // Error boundary for this route
-  api/
-    products/route.ts   // /api/products (API route)
+app / layout.tsx; // root layout (nav, footer)
+page.tsx(
+    // home page /
+    auth,
+) / // route group — shared layout, no URL segment
+    login /
+    page.tsx; // /login
+signup / page.tsx; // /signup
+dashboard / layout.tsx; // dashboard shell (sidebar)
+page.tsx; // /dashboard
+settings / page.tsx; // /dashboard/settings
+products /
+    page.tsx[id] / // /products (list)
+    page.tsx; // /products/123 (detail)
+loading.tsx; // Suspense boundary for this route
+error.tsx; // Error boundary for this route
+api / products / route.ts; // /api/products (API route)
 
 // Code splitting is automatic — each page is a separate bundle
 // Users only download the code for the route they're on
@@ -581,21 +648,21 @@ When NOT to use a monorepo:
 ```json
 // turbo.json — build pipeline
 {
-  "$schema": "https://turbo.build/schema.json",
-  "tasks": {
-    "build": {
-      "dependsOn": ["^build"],  // build dependencies first
-      "outputs": [".next/**", "dist/**"]
-    },
-    "test": {
-      "dependsOn": ["^build"]
-    },
-    "lint": {},
-    "dev": {
-      "cache": false,
-      "persistent": true
+    "$schema": "https://turbo.build/schema.json",
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build"], // build dependencies first
+            "outputs": [".next/**", "dist/**"]
+        },
+        "test": {
+            "dependsOn": ["^build"]
+        },
+        "lint": {},
+        "dev": {
+            "cache": false,
+            "persistent": true
+        }
     }
-  }
 }
 ```
 
