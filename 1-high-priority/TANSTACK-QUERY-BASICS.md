@@ -12,20 +12,25 @@
 
 ## Table of Contents
 
-1. [The Problem It Solves](#1-the-problem-it-solves)
-2. [Server State vs Client State](#2-server-state-vs-client-state)
-3. [Setup](#3-setup)
-4. [`useQuery` — Reading Data](#4-usequery--reading-data)
-5. [Query Keys](#5-query-keys)
-6. [`staleTime` vs `gcTime`](#6-staletime-vs-gctime)
-7. [`useMutation` — Writing Data](#7-usemutation--writing-data)
-8. [Invalidation — Keeping the Cache Fresh](#8-invalidation--keeping-the-cache-fresh)
-9. [Dependent & Conditional Queries](#9-dependent--conditional-queries)
-10. [Loading & Error States Done Properly](#10-loading--error-states-done-properly)
-11. [Pagination](#11-pagination)
-12. [Common Beginner Mistakes](#12-common-beginner-mistakes)
-13. [Cheat Sheet](#13-cheat-sheet)
-14. [Where to Go Next](#14-where-to-go-next)
+- [TanStack Query — Beginner's Guide](#tanstack-query--beginners-guide)
+    - [Table of Contents](#table-of-contents)
+    - [1. The Problem It Solves](#1-the-problem-it-solves)
+    - [2. Server State vs Client State](#2-server-state-vs-client-state)
+    - [3. Setup](#3-setup)
+    - [4. `useQuery` — Reading Data](#4-usequery--reading-data)
+        - [The status flags](#the-status-flags)
+    - [5. Query Keys](#5-query-keys)
+        - [Structuring keys](#structuring-keys)
+    - [6. `staleTime` vs `gcTime`](#6-staletime-vs-gctime)
+    - [7. `useMutation` — Writing Data](#7-usemutation--writing-data)
+    - [8. Invalidation — Keeping the Cache Fresh](#8-invalidation--keeping-the-cache-fresh)
+    - [9. Dependent \& Conditional Queries](#9-dependent--conditional-queries)
+    - [10. Loading \& Error States Done Properly](#10-loading--error-states-done-properly)
+    - [11. Pagination](#11-pagination)
+    - [12. Common Beginner Mistakes](#12-common-beginner-mistakes)
+    - [13. Cheat Sheet](#13-cheat-sheet)
+    - [14. Where to Go Next](#14-where-to-go-next)
+    - [Related Files](#related-files)
 
 ---
 
@@ -65,17 +70,17 @@ function UserProfile({ userId }) {
 
   RACE CONDITIONS     Change userId from 1 → 2 quickly. Request 1 is slower and
                       lands last. You now display user 1's data while the URL
-                      says user 2. This bug is silent and intermittent.
+                      says user 2. This bug is silent and intermittent.‼️
 
   NO REFETCH ON FOCUS Leave the tab open for an hour, come back — the data on
-                      screen is an hour stale with no indication.
+                      screen is an hour stale with no indication.‼️
 
   MEMORY LEAK RISK    The component unmounts mid-request, setState fires on an
                       unmounted component.
 
-  NO RETRY            A single flaky network blip becomes a permanent error state.
+  NO RETRY            A single flaky network blip becomes a permanent error state.‼️
 
-  NO SHARED STATE     Another component updates the user — this one has no idea.
+  NO SHARED STATE     Another component updates the user — this one has no idea.‼️
 
   BOILERPLATE         Three useState calls and a useEffect, repeated in every
                       component that fetches anything.
@@ -145,7 +150,7 @@ The practical rule:
 
 ```bash
 npm install @tanstack/react-query
-npm install -D @tanstack/react-query-devtools    # strongly recommended
+npm install -D @tanstack/react-query-devtools    # strongly recommended‼️
 ```
 
 ```tsx
@@ -153,31 +158,31 @@ npm install -D @tanstack/react-query-devtools    # strongly recommended
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-// The QueryClient IS the cache. One instance for the whole app.
+// The QueryClient IS the cache.‼️ One instance for the whole app.
 // ‼️ Create it OUTSIDE the component. Creating it inside means a new, empty
 // cache on every render — everything refetches constantly and nothing works.
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // See §6 — this is the most important default to change, and the one
-      // beginners most often leave wrong.
-      staleTime: 1000 * 60,        // 1 minute
-      retry: 1,                     // retry failed requests once (default is 3)
+    defaultOptions: {
+        queries: {
+            // See §6 — this is the most important default to change, and the one
+            // beginners most often leave wrong.
+            staleTime: 1000 * 60, // 1 minute
+            retry: 1, // retry failed requests once (default is 3)
+        },
     },
-  },
 });
 
 function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <YourApp />
-      {/* A floating panel showing every cached query, its state, and its data.
+    return (
+        <QueryClientProvider client={queryClient}>
+            <YourApp />
+            {/* A floating panel showing every cached query, its state, and its data.
           ‼️ Install this on day one. Watching the cache is by far the fastest
           way to understand what the library is doing. It is automatically
           excluded from production builds. */}
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
-  );
+            <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
+    );
 }
 ```
 
@@ -187,11 +192,11 @@ function App() {
 
 ```tsx
 const { data, isPending, isError, error, isFetching, refetch } = useQuery({
-  // WHAT you are fetching. Also the cache key. See §5.
-  queryKey: ['todos'],
+    // WHAT you are fetching. Also the cache key. See §5.
+    queryKey: ['todos'],
 
-  // HOW to fetch it. Must return a Promise, and must THROW on failure.
-  queryFn: fetchTodos,
+    // HOW to fetch it. Must return a Promise, and must THROW on failure.‼️
+    queryFn: fetchTodos,
 });
 ```
 
@@ -201,18 +206,18 @@ const { data, isPending, isError, error, isFetching, refetch } = useQuery({
 //
 // This is the #1 setup mistake with `fetch`, because fetch does NOT reject on
 // a 404 or 500 — it resolves with ok: false. So a failed request looks like a
-// successful one and you get `undefined` data with no error.
+// successful one and you get `undefined` data with no error.‼️
 async function fetchTodos() {
-  const res = await fetch('/api/todos');
+    const res = await fetch('/api/todos');
 
-  // This line is what makes error handling work. Without it, isError is never
-  // true no matter what the server returns.
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+    // This line is what makes error handling work. Without it, isError is never
+    // true no matter what the server returns.‼️
+    if (!res.ok) throw new Error(`Request failed: ${res.status}`);
 
-  return res.json();
+    return res.json();
 }
 
-// axios throws automatically on non-2xx, so it needs no equivalent line.
+// axios throws automatically on non-2xx, so it needs no equivalent line.‼️
 ```
 
 ### The status flags
@@ -221,9 +226,9 @@ async function fetchTodos() {
 ‼️ There are two independent questions, and confusing them causes the most
    common UI bug in TanStack Query apps.
 
-  isPending   "Do I have data yet?"     — true only when there is NOTHING cached
+  isPending   "Do I have data yet?"     — true only when there is NOTHING cached‼️
   isFetching  "Is a request in flight?" — true for the FIRST fetch AND every
-                                          background refetch
+                                          background refetch‼️
 
   The scenario that shows why this matters:
 
@@ -235,31 +240,33 @@ async function fetchTodos() {
 
   If you write `if (isFetching) return <Spinner />`, that last line replaces
   your perfectly good data with a spinner every time the window regains focus.
-  The whole point of the cache is that the user never sees that.
+  The whole point of the cache is that the user never sees that.‼️
 
   RULE: gate your spinner on isPending. Use isFetching only for a subtle
-        indicator — a small spinner in the corner, a dimmed background.
+        indicator — a small spinner in the corner, a dimmed background.‼️
 ```
 
 ```tsx
 function TodoList() {
-  const { data, isPending, isError, error, isFetching } = useQuery({
-    queryKey: ['todos'],
-    queryFn: fetchTodos,
-  });
+    const { data, isPending, isError, error, isFetching } = useQuery({
+        queryKey: ['todos'],
+        queryFn: fetchTodos,
+    });
 
-  // Full-screen loading — only when there is genuinely nothing to show.
-  if (isPending) return <Spinner />;
+    // Full-screen loading — only when there is genuinely nothing to show.
+    if (isPending) return <Spinner />;
 
-  if (isError) return <ErrorMessage error={error} />;
+    if (isError) return <ErrorMessage error={error} />;
 
-  return (
-    <div>
-      {/* A quiet hint that fresh data is on its way, without hiding what we have. */}
-      {isFetching && <RefreshingIndicator />}
-      {data.map((todo) => <Todo key={todo.id} todo={todo} />)}
-    </div>
-  );
+    return (
+        <div>
+            {/* A quiet hint that fresh data is on its way, without hiding what we have. */}
+            {isFetching && <RefreshingIndicator />}
+            {data.map(todo => (
+                <Todo key={todo.id} todo={todo} />
+            ))}
+        </div>
+    );
 }
 ```
 
@@ -273,15 +280,15 @@ function TodoList() {
    - which cached entry a component is subscribing to
    - what to refetch when you invalidate
 
-Keys are ARRAYS, and they are hashed by VALUE, not by reference.
+Keys are ARRAYS, and they are hashed by VALUE, not by reference.‼️
 So a fresh object literal every render is fine — { page: 1 } always hashes the
 same as { page: 1 }. Key order inside an object does not matter either.
 ```
 
 ```typescript
-// Same key → same cache entry. These two components share ONE request.
-useQuery({ queryKey: ['todos'], queryFn: fetchTodos });   // ComponentA
-useQuery({ queryKey: ['todos'], queryFn: fetchTodos });   // ComponentB
+// Same key → same cache entry. These two components share ONE request.‼️
+useQuery({ queryKey: ['todos'], queryFn: fetchTodos }); // ComponentA
+useQuery({ queryKey: ['todos'], queryFn: fetchTodos }); // ComponentB
 
 // Different key → different cache entry, separate fetch.
 useQuery({ queryKey: ['todos', 1], queryFn: () => fetchTodo(1) });
@@ -292,42 +299,39 @@ useQuery({ queryKey: ['todos', 2], queryFn: () => fetchTodo(2) });
 // ‼️ EVERYTHING THE queryFn USES MUST BE IN THE KEY.
 // This is the rule that prevents the stale-data bugs.
 
-// WRONG — the key never changes, so changing the filter shows the old results
+// WRONG — the key never changes, so changing the filter shows the old results‼️
 useQuery({
-  queryKey: ['todos'],
-  queryFn: () => fetchTodos(filter),   // filter is used but not in the key
+    queryKey: ['todos'],
+    queryFn: () => fetchTodos(filter), // filter is used but not in the key
 });
 
 // RIGHT — a new filter is a new key, which is a new cache entry and a new fetch
 useQuery({
-  queryKey: ['todos', filter],
-  queryFn: () => fetchTodos(filter),
+    queryKey: ['todos', filter],
+    queryFn: () => fetchTodos(filter),
 });
 
 // ‼️ Think of the key as the arguments to the fetch. If two calls would return
 // different data, they must have different keys. The ESLint plugin
-// @tanstack/eslint-plugin-query catches this automatically — worth installing.
+// @tanstack/eslint-plugin-query catches this automatically — worth installing.‼️
 ```
 
 ### Structuring keys
 
 ```typescript
-// Order keys from GENERAL to SPECIFIC. This matters because invalidation
+// Order keys from GENERAL to SPECIFIC. ‼️ This matters because invalidation
 // matches by PREFIX (§8), so the hierarchy is what gives you control.
 
-['todos']                          // everything todo-related
-['todos', 'list']                  // all lists
-['todos', 'list', { done: false }] // one specific filtered list
-['todos', 'detail', '123']         // one specific todo
+['todos'][('todos', 'list')][('todos', 'list', { done: false })][('todos', 'detail', '123')]; // everything todo-related // all lists // one specific filtered list // one specific todo
 
-// Once you have more than a handful, centralise them in a factory so a typo
+// ‼️ Once you have more than a handful, centralise them in a factory so a typo
 // cannot silently create a second cache entry:
 export const todoKeys = {
-  all: ['todos'] as const,
-  lists: () => [...todoKeys.all, 'list'] as const,
-  list: (filters: Filters) => [...todoKeys.lists(), filters] as const,
-  details: () => [...todoKeys.all, 'detail'] as const,
-  detail: (id: string) => [...todoKeys.details(), id] as const,
+    all: ['todos'] as const,
+    lists: () => [...todoKeys.all, 'list'] as const,
+    list: (filters: Filters) => [...todoKeys.lists(), filters] as const,
+    details: () => [...todoKeys.all, 'detail'] as const,
+    detail: (id: string) => [...todoKeys.details(), id] as const,
 };
 ```
 
@@ -339,7 +343,7 @@ export const todoKeys = {
 ‼️ THE SINGLE MOST MISUNDERSTOOD PART OF THE LIBRARY, and a guaranteed
    interview question. They sound similar and do completely different things.
 
-staleTime — "how long is this data considered FRESH?"
+staleTime — "how long is this data considered FRESH?"‼️
   Default: 0  (data is stale immediately)
 
   FRESH data  → reused from cache, NO network request
@@ -347,9 +351,9 @@ staleTime — "how long is this data considered FRESH?"
 
   ‼️ Note what "stale" does NOT mean: it does not mean deleted, and it does not
   mean a spinner. Stale data is still displayed. It just triggers a background
-  refresh on the next trigger (mount, window focus, reconnect).
+  refresh on the next trigger‼️ (mount, window focus, reconnect).
 
-gcTime — "how long do I keep UNUSED data before deleting it?"
+gcTime — "how long do I keep UNUSED data before deleting it?"‼️
   Default: 5 minutes   (gc = garbage collection; called cacheTime in v4)
 
   The countdown starts when the LAST component using that query unmounts.
@@ -360,7 +364,7 @@ gcTime — "how long do I keep UNUSED data before deleting it?"
 THE RELATIONSHIP
   staleTime controls REFETCHING.  gcTime controls DELETION.
   staleTime should always be less than gcTime — data you have thrown away
-  cannot be "fresh".
+  cannot be "fresh".‼️
 ```
 
 ```typescript
@@ -376,10 +380,10 @@ useQuery({ queryKey: ['todos'], queryFn: fetchTodos, staleTime: 1000 * 60 * 5 })
 
 // Data that almost never changes — countries, categories, config
 useQuery({
-  queryKey: ['countries'],
-  queryFn: fetchCountries,
-  staleTime: Infinity,      // never refetch automatically
-  gcTime: Infinity,         // never evict from cache
+    queryKey: ['countries'],
+    queryFn: fetchCountries,
+    staleTime: Infinity, // never refetch automatically
+    gcTime: Infinity, // never evict from cache
 });
 ```
 
@@ -403,38 +407,35 @@ WORKED EXAMPLE — staleTime: 60_000, gcTime: 300_000
 
 ```tsx
 // Queries READ. Mutations WRITE (POST/PUT/PATCH/DELETE).
-// The key difference: queries run automatically, mutations run when you call them.
+// The key difference: queries run automatically, ‼️ mutations run when you call them.
 function AddTodo() {
-  const { mutate, isPending, isError, error } = useMutation({
-    mutationFn: (newTodo: { title: string }) =>
-      fetch('/api/todos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTodo),
-      }).then((res) => {
-        if (!res.ok) throw new Error('Failed to create todo');
-        return res.json();
-      }),
+    const { mutate, isPending, isError, error } = useMutation({
+        mutationFn: (newTodo: { title: string }) =>
+            fetch('/api/todos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newTodo),
+            }).then(res => {
+                if (!res.ok) throw new Error('Failed to create todo');
+                return res.json();
+            }),
 
-    onSuccess: (data) => {
-      // Runs after a successful mutation. This is where cache updates go (§8).
-    },
-    onError: (error) => {
-      // Runs on failure — show a toast, log it.
-    },
-    onSettled: () => {
-      // Runs after either outcome. Good for cleanup.
-    },
-  });
+        onSuccess: data => {
+            // Runs after a successful mutation. This is where cache updates go (§8).
+        },
+        onError: error => {
+            // Runs on failure — show a toast, log it.
+        },
+        onSettled: () => {
+            // Runs after either outcome. Good for cleanup.‼️
+        },
+    });
 
-  return (
-    <button
-      onClick={() => mutate({ title: 'Learn TanStack Query' })}
-      disabled={isPending}
-    >
-      {isPending ? 'Saving...' : 'Add todo'}
-    </button>
-  );
+    return (
+        <button onClick={() => mutate({ title: 'Learn TanStack Query' })} disabled={isPending}>
+            {isPending ? 'Saving...' : 'Add todo'}
+        </button>
+    );
 }
 ```
 
@@ -449,10 +450,10 @@ mutate(newTodo);
 // ‼️ If it rejects and you have no try/catch, you get an unhandled rejection
 // that can crash the app. Only use it when you genuinely need to await.
 try {
-  const created = await mutateAsync(newTodo);
-  navigate(`/todos/${created.id}`);
+    const created = await mutateAsync(newTodo);
+    navigate(`/todos/${created.id}`);
 } catch (e) {
-  // you MUST handle it here
+    // you MUST handle it here
 }
 ```
 
@@ -472,17 +473,17 @@ try {
 
 ```tsx
 function useAddTodo() {
-  // useQueryClient gives you the cache instance from context.
-  const queryClient = useQueryClient();
+    // useQueryClient gives you the cache instance from context.
+    const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: createTodo,
-    onSuccess: () => {
-      // Marks matching queries stale and refetches the active ones.
-      // Every component showing a todo list updates automatically.
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
-    },
-  });
+    return useMutation({
+        mutationFn: createTodo,
+        onSuccess: () => {
+            // Marks matching queries stale and refetches the active ones.
+            // Every component showing a todo list updates automatically.
+            queryClient.invalidateQueries({ queryKey: ['todos'] });
+        },
+    });
 }
 ```
 
@@ -503,7 +504,7 @@ queryClient.invalidateQueries({ queryKey: ['todos', 'list'] });
 queryClient.invalidateQueries({ queryKey: ['todos', 'detail', '1'] });
 // → invalidates only that one
 
-// exact: true turns prefix matching off — match this key and nothing below it.
+// exact: true turns prefix matching off — match this key and nothing below it.‼️
 queryClient.invalidateQueries({ queryKey: ['todos'], exact: true });
 ```
 
@@ -529,25 +530,25 @@ onSuccess: (updatedTodo) => {
 ## 9. Dependent & Conditional Queries
 
 ```tsx
-// ‼️ You cannot put a query inside an `if` — hooks must run unconditionally.
+// ‼️ You cannot put a query inside an `if` — hooks must run unconditionally.‼️
 // `enabled` is how you express "don't run this yet".
 function UserOrders({ userId }: { userId?: string }) {
-  const { data: user } = useQuery({
-    queryKey: ['users', userId],
-    queryFn: () => fetchUser(userId!),
-    enabled: !!userId,        // wait until userId exists
-  });
+    const { data: user } = useQuery({
+        queryKey: ['users', userId],
+        queryFn: () => fetchUser(userId!),
+        enabled: !!userId, // wait until userId exists‼️
+    });
 
-  const { data: orders } = useQuery({
-    queryKey: ['orders', user?.id],
-    queryFn: () => fetchOrders(user!.id),
-    // This query waits for the first one to produce a user.
-    enabled: !!user?.id,
-  });
+    const { data: orders } = useQuery({
+        queryKey: ['orders', user?.id],
+        queryFn: () => fetchOrders(user!.id),
+        // This query waits for the first one to produce a user.‼️
+        enabled: !!user?.id,
+    });
 }
 
 // ‼️ A query that is disabled reports isPending: true but is NOT fetching —
-// it has no data and never asked for any. If you gate a spinner on isPending
+// it has no data and never asked for any. ‼️ If you gate a spinner on isPending
 // alone, a disabled query shows a spinner forever. Check `isLoading` instead,
 // which is (isPending && isFetching), or handle the disabled case explicitly.
 ```
@@ -561,39 +562,39 @@ function UserOrders({ userId }: { userId?: string }) {
 import { keepPreviousData } from '@tanstack/react-query';
 
 const { data, isFetching } = useQuery({
-  queryKey: ['todos', page],
-  queryFn: () => fetchTodos(page),
+    queryKey: ['todos', page],
+    queryFn: () => fetchTodos(page),
 
-  // Without this, changing page unmounts the list (new key = no data yet) and
-  // the layout collapses to a spinner, then jumps back. With it, page 1 stays
-  // on screen — dimmed, if you like — until page 2 arrives.
-  placeholderData: keepPreviousData,
+    // Without this, changing page unmounts the list (new key = no data yet) and
+    // the layout collapses to a spinner, then jumps back. With it, page 1 stays
+    // on screen — dimmed, if you like — until page 2 arrives.
+    placeholderData: keepPreviousData,
 });
 ```
 
 ```tsx
 // ── retry ─────────────────────────────────────────────────────────────────
 useQuery({
-  queryKey: ['todos'],
-  queryFn: fetchTodos,
+    queryKey: ['todos'],
+    queryFn: fetchTodos,
 
-  // Default is 3 retries with exponential backoff. Usually good — but retrying
-  // a 404 is pointless, and retrying a 401 delays the login redirect.
-  retry: (failureCount, error) => {
-    if (error.status >= 400 && error.status < 500) return false;  // client error
-    return failureCount < 3;
-  },
+    // Default is 3 retries with exponential backoff. Usually good — but retrying
+    // a 404 is pointless, and retrying a 401 delays the login redirect.
+    retry: (failureCount, error) => {
+        if (error.status >= 400 && error.status < 500) return false; // client error
+        return failureCount < 3;
+    },
 });
 ```
 
 ```tsx
 // ── Error boundaries instead of per-component error UI ────────────────────
 useQuery({
-  queryKey: ['todos'],
-  queryFn: fetchTodos,
-  // Throws the error during render so a React error boundary catches it,
-  // rather than every component writing its own `if (isError)` branch.
-  throwOnError: true,
+    queryKey: ['todos'],
+    queryFn: fetchTodos,
+    // Throws the error during render so a React error boundary catches it,
+    // rather than every component writing its own `if (isError)` branch.
+    throwOnError: true,
 });
 ```
 
@@ -604,50 +605,46 @@ useQuery({
 ```tsx
 // ── Page-based ────────────────────────────────────────────────────────────
 function TodoList() {
-  const [page, setPage] = useState(1);
+    const [page, setPage] = useState(1);
 
-  const { data, isFetching } = useQuery({
-    queryKey: ['todos', 'list', page],   // page in the key = one entry per page
-    queryFn: () => fetchTodos(page),
-    placeholderData: keepPreviousData,   // no layout collapse between pages
-  });
+    const { data, isFetching } = useQuery({
+        queryKey: ['todos', 'list', page], // page in the key = one entry per page
+        queryFn: () => fetchTodos(page),
+        placeholderData: keepPreviousData, // no layout collapse between pages
+    });
 
-  return (
-    <>
-      {data?.items.map((t) => <Todo key={t.id} todo={t} />)}
-      <button onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
-        Previous
-      </button>
-      {/* Already-visited pages are cached, so going back is instant. */}
-      <button onClick={() => setPage((p) => p + 1)} disabled={!data?.hasMore}>
-        Next
-      </button>
-    </>
-  );
+    return (
+        <>
+            {data?.items.map(t => (
+                <Todo key={t.id} todo={t} />
+            ))}
+            <button onClick={() => setPage(p => p - 1)} disabled={page === 1}>
+                Previous
+            </button>
+            {/* Already-visited pages are cached, so going back is instant. */}‼️
+            <button onClick={() => setPage(p => p + 1)} disabled={!data?.hasMore}>
+                Next
+            </button>
+        </>
+    );
 }
 ```
 
 ```tsx
 // ── Infinite scroll / "load more" ─────────────────────────────────────────
-const {
-  data,
-  fetchNextPage,
-  hasNextPage,
-  isFetchingNextPage,
-} = useInfiniteQuery({
-  queryKey: ['todos', 'infinite'],
-  // pageParam is supplied by getNextPageParam below (or initialPageParam first).
-  queryFn: ({ pageParam }) => fetchTodos(pageParam),
-  initialPageParam: 1,
+const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryKey: ['todos', 'infinite'],
+    // pageParam is supplied by getNextPageParam below (or initialPageParam first).
+    queryFn: ({ pageParam }) => fetchTodos(pageParam),
+    initialPageParam: 1,
 
-  // Returning undefined means "no more pages" and sets hasNextPage to false.
-  getNextPageParam: (lastPage, allPages) =>
-    lastPage.hasMore ? allPages.length + 1 : undefined,
+    // Returning undefined means "no more pages" and sets hasNextPage to false.
+    getNextPageParam: (lastPage, allPages) => (lastPage.hasMore ? allPages.length + 1 : undefined),
 });
 
 // ‼️ data is NOT a flat array. It is { pages: [...], pageParams: [...] },
-// where each entry is one page's response. Flatten before rendering:
-const todos = data?.pages.flatMap((page) => page.items) ?? [];
+// where each entry is one page's response. Flatten before rendering:‼️
+const todos = data?.pages.flatMap(page => page.items) ?? [];
 ```
 
 ---
@@ -709,38 +706,38 @@ const todos = data?.pages.flatMap((page) => page.items) ?? [];
 ```typescript
 // ── READ ──────────────────────────────────────────────────────────────────
 const { data, isPending, isError, error, isFetching, refetch } = useQuery({
-  queryKey: ['todos', filter],     // cache key — include every queryFn input
-  queryFn: () => fetchTodos(filter),
-  staleTime: 1000 * 60 * 5,        // how long data counts as fresh
-  gcTime: 1000 * 60 * 30,          // how long unused data is kept
-  enabled: !!filter,               // skip the query until this is true
-  placeholderData: keepPreviousData,
-  select: (data) => data.items,    // transform without extra re-renders
-  retry: 1,
+    queryKey: ['todos', filter], // cache key — include every queryFn input
+    queryFn: () => fetchTodos(filter),
+    staleTime: 1000 * 60 * 5, // how long data counts as fresh
+    gcTime: 1000 * 60 * 30, // how long unused data is kept
+    enabled: !!filter, // skip the query until this is true‼️
+    placeholderData: keepPreviousData,
+    select: data => data.items, // transform without extra re-renders‼️
+    retry: 1,
 });
 
 // ── WRITE ─────────────────────────────────────────────────────────────────
 const { mutate, isPending } = useMutation({
-  mutationFn: createTodo,
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
-  onError: (err) => toast.error(err.message),
-  onSettled: () => {},
+    mutationFn: createTodo,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+    onError: err => toast.error(err.message),
+    onSettled: () => {},
 });
-mutate(newTodo);                   // fire and forget (preferred)
-await mutateAsync(newTodo);        // awaitable — needs try/catch
+mutate(newTodo); // fire and forget (preferred)
+await mutateAsync(newTodo); // awaitable — needs try/catch
 
 // ── CACHE OPERATIONS ──────────────────────────────────────────────────────
 const queryClient = useQueryClient();
-queryClient.invalidateQueries({ queryKey: ['todos'] });    // mark stale, refetch
-queryClient.setQueryData(['todos', id], newData);          // write directly
-queryClient.getQueryData(['todos', id]);                   // read without subscribing
-queryClient.removeQueries({ queryKey: ['todos'] });        // delete from cache
-queryClient.prefetchQuery({ queryKey, queryFn });          // warm the cache early
+queryClient.invalidateQueries({ queryKey: ['todos'] }); // mark stale, refetch
+queryClient.setQueryData(['todos', id], newData); // write directly
+queryClient.getQueryData(['todos', id]); // read without subscribing‼️
+queryClient.removeQueries({ queryKey: ['todos'] }); // delete from cache
+queryClient.prefetchQuery({ queryKey, queryFn }); // warm the cache early‼️
 
 // ── STATUS FLAGS ──────────────────────────────────────────────────────────
 // isPending   no data yet                → full-page spinner
 // isFetching  a request is in flight     → subtle refresh indicator only
-// isLoading   isPending && isFetching    → first load, excluding disabled queries
+// isLoading   isPending && isFetching‼️  → first load, excluding disabled queries‼️
 // isError / error
 // isSuccess
 
@@ -775,7 +772,7 @@ ONCE THE BASICS ARE COMFORTABLE:
 
 ‼️ THE MOST USEFUL HABIT: keep the Devtools panel open while you build. Watch
    entries go fresh → stale → inactive → garbage collected as you navigate.
-   Ten minutes of that teaches the caching model better than any article.
+   Ten minutes of that teaches the caching model better than any article.‼️
 ```
 
 ---
