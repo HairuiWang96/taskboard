@@ -409,11 +409,11 @@ Anti-pattern: fetch data in a useEffect inside the component
   - Error handling scattered everywhere
   - No caching — refetches on every mount
 
-Pattern: data fetching belongs in the route or in custom hooks
+Pattern: data fetching belongs in the route or in custom hooks‼️
 
 Option A: Route-level fetching (Next.js App Router / React Router loaders)
   - Data is loaded before the component renders
-  - No loading spinners for initial page load
+  - No loading spinners for initial page load‼️
   - Better UX for critical data
 
 Option B: Component-level with TanStack Query
@@ -431,7 +431,7 @@ async function ProductPage({ params }: { params: { id: string } }) {
   return <ProductDetail product={product} />;
 }
 
-// React Router v6 — loader pattern
+// React Router v6 — loader pattern‼️
 // router.tsx
 {
   path: '/products/:id',
@@ -466,14 +466,14 @@ function ChildComponent({ userId }: { userId: string }) {
   });
 }
 
-// Parallel (good): both start at the same time
+// Parallel (good): both start at the same time‼️
 function ParentComponent() {
   // Prefetch or fetch at the same level
   const { data: user } = useQuery({ queryKey: ['user'], queryFn: fetchUser });
   const { data: orders } = useQuery({
     queryKey: ['orders', user?.id],
     queryFn: () => fetchOrders(user!.id),
-    enabled: !!user?.id, // only run when user is available, but both are registered
+    enabled: !!user?.id, // only run when user is available, but both are registered‼️
   });
 }
 ```
@@ -482,28 +482,34 @@ function ParentComponent() {
 
 ## 5. Routing Architecture
 
-```typescript
-// Next.js App Router — file-system routing
-app / layout.tsx; // root layout (nav, footer)
-page.tsx(
-    // home page /
-    auth,
-) / // route group — shared layout, no URL segment
-    login /
-    page.tsx; // /login
-signup / page.tsx; // /signup
-dashboard / layout.tsx; // dashboard shell (sidebar)
-page.tsx; // /dashboard
-settings / page.tsx; // /dashboard/settings
-products /
-    page.tsx[id] / // /products (list)
-    page.tsx; // /products/123 (detail)
-loading.tsx; // Suspense boundary for this route
-error.tsx; // Error boundary for this route
-api / products / route.ts; // /api/products (API route)
+```text
+Next.js App Router — file-system routing
 
-// Code splitting is automatic — each page is a separate bundle
-// Users only download the code for the route they're on
+app/
+  layout.tsx                  # root layout (nav, footer)
+  page.tsx                    # home page — /
+  (auth)/                     # route group — shared layout, no URL segment
+    login/
+      page.tsx                # /login
+    signup/
+      page.tsx                # /signup
+  dashboard/
+    layout.tsx                # dashboard shell (sidebar)
+    page.tsx                  # /dashboard
+    settings/
+      page.tsx                # /dashboard/settings
+  products/
+    page.tsx                  # /products (list)
+    [id]/
+      page.tsx                # /products/123 (detail)
+  loading.tsx                 # Suspense boundary for this route
+  error.tsx                   # Error boundary for this route
+  api/
+    products/
+      route.ts                # /api/products (API route)
+
+Code splitting is automatic — each page is a separate bundle.‼️
+Users only download the code for the route they're on.
 ```
 
 ```typescript
@@ -552,7 +558,7 @@ CSR (Client-Side Rendering):
   - Example: plain React app (Create React App)
 
 SSR (Server-Side Rendering):
-  - Server renders HTML, sends to browser, JS hydrates
+  - Server renders HTML, sends to browser, JS hydrates‼️
   - Good for: SEO, faster initial paint, dynamic content
   - Bad for: server cost, more complex infrastructure
   - Example: Next.js with server components
@@ -614,7 +620,7 @@ async function ProductPage({ params }) {
 For large products with multiple apps or teams.
 
 ```text
-Turborepo structure:
+Turborepo structure:‼️
 apps/
   web/          main Next.js app
   admin/        admin dashboard
@@ -670,7 +676,7 @@ When NOT to use a monorepo:
 
 ## 8. Module Boundary Rules
 
-In a large codebase, without rules on what can import what, everything becomes interdependent and impossible to refactor.
+In a large codebase, without rules on what can import what, everything becomes interdependent and impossible to refactor.‼️
 
 ```text
 Import rules (enforce with ESLint eslint-plugin-boundaries):
@@ -682,7 +688,7 @@ shared/           → can import from: nothing (no feature dependencies)
 app/              → can import from: features/, shared/
 
 Why this matters:
-  - Circular dependencies → impossible to tree-shake, hard to test
+  - Circular dependencies → impossible to tree-shake, hard to test‼️
   - Feature imports → change in auth breaks checkout
   - Uncontrolled deps → refactoring one thing breaks many others
 ```
@@ -708,13 +714,13 @@ Why this matters:
 
 ## Common Interview Questions
 
-### "How would you structure a large React application?"
+### "How would you structure a large React application?"‼️
 
 > I use feature-based structure. Each feature (auth, checkout, dashboard) gets its own folder with components, hooks, API calls, and state — everything related to that feature in one place. Shared things (design system, utilities, common types) go in a `shared/` folder. Each feature exposes a public API via `index.ts` and other features can only import from that index, not from internal files. This enforces boundaries: changing one feature's internals doesn't break others. The app layer wires up routing and the root store. The benefit is that a new developer can open the `checkout` folder and find everything they need — no hunting across `components/`, `hooks/`, `utils/` trying to piece together what belongs together.
 
 ### "Where should state live in a React application?"
 
-> Four types of state, each with the right home. **Server state** (API data) belongs in TanStack Query — it handles caching, background refetching, and loading states automatically. Don't put API data in Redux or Zustand. **URL state** (filters, search, pagination) belongs in the URL as query params — it makes links shareable and survives page refresh. **Global UI state** (auth user, theme, modal open) belongs in Zustand or Context — but keep this minimal, most devs put too much here. **Local state** (form values, dropdown open) belongs in `useState` close to where it's used. The rule: state should live as close to where it's used as possible. Lift it up only when multiple components genuinely need it — and even then, reach for the URL or TanStack Query before reaching for a global store.
+> Four types of state, each with the right home. **Server state** (API data) belongs in TanStack Query — it handles caching, background refetching, and loading states automatically. Don't put API data in Redux or Zustand. **URL state** (filters, search, pagination) belongs in the URL as query params — it makes links shareable and survives page refresh. **Global UI state** (auth user, theme, modal open) belongs in Zustand or Context — but keep this minimal, most devs put too much here. **Local state** (form values, dropdown open) belongs in `useState` close to where it's used. The rule: state should live as close to where it's used as possible. Lift it up only when multiple components genuinely need it — and even then, reach for the URL or TanStack Query before reaching for a global store.‼️
 
 ### "What is a rendering strategy and how do you choose?"
 
