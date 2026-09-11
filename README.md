@@ -1,14 +1,14 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-117 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+118 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    46 files — study these first, highest interview ROI
+1-high-priority/    47 files — study these first, highest interview ROI
 2-medium-priority/  33 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
@@ -35,6 +35,7 @@ Root files (start here):
 | [REACT-INTERVIEW-LIVE-CODING-TS.md](1-high-priority/REACT-INTERVIEW-LIVE-CODING-TS.md) | React live coding in TypeScript |
 | [REACT-INTERVIEW-LIVE-CODING.md](1-high-priority/REACT-INTERVIEW-LIVE-CODING.md) | React live coding in JS |
 | [STATE-MANAGEMENT-DEEP.md](1-high-priority/STATE-MANAGEMENT-DEEP.md) | Redux, Zustand, Jotai, TanStack Query |
+| [TANSTACK-QUERY-BASICS.md](1-high-priority/TANSTACK-QUERY-BASICS.md) | Beginner guide — server state, useQuery/useMutation, keys, caching, invalidation |
 | [ALGORITHMS-DEEP.md](1-high-priority/ALGORITHMS-DEEP.md) | Patterns + implementations (sliding window, two-pointer, BFS/DFS) |
 | [DATA-STRUCTURES-DEEP.md](1-high-priority/DATA-STRUCTURES-DEEP.md) | Linked list, tree, heap, trie, graph from scratch |
 | [INTERVIEW-CODING-PATTERNS-DEEP.md](1-high-priority/INTERVIEW-CODING-PATTERNS-DEEP.md) | Pattern recognition + templates |
