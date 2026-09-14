@@ -328,7 +328,7 @@ font-size: clamp(1rem, 2.5vw, 2rem); /* scales with the window, bounded */‼️
 /* Takes the FULL width available, always starts on a new line.
    Default for: div, p, h1-h6, section, header, footer, ul, li */
 display: block;
-/* You CAN set width and height. */
+/* You CAN set width and height. */‼️
 
 /* ── inline ───────────────────────────────────────────────────────────── */
 /* Flows within text, only as wide as its content, does NOT start a new line.
@@ -336,13 +336,13 @@ display: block;
 display: inline;
 /* ‼️ width, height, and vertical margin/padding DO NOT WORK on inline elements.
    Setting height on a <span> and seeing nothing happen is this rule.
-   Fix: make it inline-block or block. */
+   Fix: make it inline-block or block. */‼️
 
 /* ── inline-block ─────────────────────────────────────────────────────── */
 /* Flows inline like text, but accepts width, height, and all padding.
    Was the standard way to lay things out horizontally before Flexbox. */
 display: inline-block;
-/* ‼️ Has an annoying quirk: whitespace in your HTML becomes a visible ~4px
+/* ‼️ Has an annoying quirk: whitespace in your HTML becomes a visible ~4px‼️
    gap between items, because they are still being treated as text. Flexbox
    does not have this problem, which is one reason it replaced this approach. */
 
@@ -358,8 +358,8 @@ display: grid;
 /* ── none ─────────────────────────────────────────────────────────────── */
 display: none; /* removed entirely — takes up no space */
 /* Compare with: */
-visibility: hidden; /* invisible but STILL OCCUPIES its space */
-opacity: 0; /* invisible, occupies space, and is still CLICKABLE */
+visibility: hidden; /* invisible but STILL OCCUPIES its space */‼️
+opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
 ```
 
 ```text
@@ -367,7 +367,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */
 
   One row or one column of items?          → flex
   Rows AND columns together (a real grid)? → grid
-  A card grid that wraps responsively?     → grid with auto-fit (§6)
+  A card grid that wraps responsively?     → grid with auto-fit (§6)‼️
   Text flowing inside a paragraph?         → inline (leave it alone)
 
   You will use flex far more often than grid. When in doubt, start with flex.
@@ -406,11 +406,11 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */
     align-items: center; /* ‼️ vertically centres a row. Used constantly. */
     align-items: flex-start;
     align-items: flex-end;
-    align-items: baseline; /* align text baselines — good for mixed sizes */
+    align-items: baseline; /* align text baselines — good for mixed sizes */‼️
 
     /* ── GAP — space between items ───────────────────────────────────────── */
     /* ‼️ Use this instead of margins on children. No "last item has a trailing
-     margin" problem, no :last-child overrides. */
+     margin" problem, no :last-child overrides. */‼️
     gap: 1rem;
     gap: 1rem 2rem; /* row-gap | column-gap */
 
@@ -418,7 +418,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */
     flex-wrap: nowrap; /* ‼️ default — items SHRINK rather than wrap, which
                           is why a flex row can squash its contents instead
                           of moving them to the next line */
-    flex-wrap: wrap; /* items move to a new line when they run out of room */
+    flex-wrap: wrap; /* items move to a new line when they run out of room */‼️
 }
 
 /* ── PROPERTIES ON THE ITEMS ─────────────────────────────────────────── */
@@ -427,12 +427,12 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */
                        Two items both with flex: 1 → each takes half. */
     flex: 2; /* takes twice as much of the free space as a flex: 1 */
     flex: 0 0 200px; /* don't grow, don't shrink, stay 200px — a fixed sidebar */
-    flex-shrink: 0; /* ‼️ "never let this get squashed". The fix when an icon
+    flex-shrink: 0; /* ‼️ "never let this get squashed". ‼️ The fix when an icon
                        or button gets crushed next to long text. */
     align-self: center; /* override the container's align-items for one item */
     margin-left: auto; /* ‼️ push THIS item (and everything after it) to the
                           far end. The classic "one link on the right of the
-                          navbar" trick. */
+                          navbar" trick. */‼️
 }
 ```
 
@@ -516,12 +516,12 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */
     gap: 1.5rem;
 }
 /* How to read that:
-     repeat(auto-fit, ...)  →  fit as many columns as will fit
+     repeat(auto-fit, ...)  →  fit as many columns as will fit‼️
      minmax(250px, 1fr)     →  each column is at least 250px, and shares any
-                               leftover space equally
+                               leftover space equally‼️
 
    Result: 4 columns on a desktop, 2 on a tablet, 1 on a phone — automatically,
-   at every width in between, without a single breakpoint.
+   at every width in between, without a single breakpoint.‼️
 
    ‼️ auto-fit vs auto-fill: with few items, auto-fit STRETCHES them to fill
    the row; auto-fill leaves empty invisible columns. auto-fit is usually
@@ -533,8 +533,8 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */
 .featured {
     grid-column: span 2; /* this item is two columns wide */
     grid-row: span 2; /* and two rows tall */
-    grid-column: 1 / 3; /* from grid line 1 to line 3 (i.e. 2 columns) */
-    grid-column: 1 / -1; /* ‼️ full width, whatever the column count */
+    grid-column: 1 / 3; /* from grid line 1 to line 3 (i.e. 2 columns) */‼️
+    grid-column: 1 / -1; /* ‼️ full width, whatever the column count */‼️
 }
 
 /* ── NAMED AREAS — the most readable way to do a page shell ──────────── */
@@ -567,7 +567,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */
 .grid {
     justify-items: center; /* horizontal position of items inside their cell */
     align-items: center; /* vertical position of items inside their cell */
-    place-items: center; /* both at once */
+    place-items: center; /* both at once */‼️
 }
 ```
 
