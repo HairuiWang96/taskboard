@@ -1,7 +1,7 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-119 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+120 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
@@ -9,7 +9,7 @@ A complete self-study system for senior JavaScript / fullstack engineering inter
 
 ```
 1-high-priority/    47 files — study these first, highest interview ROI
-2-medium-priority/  34 files — once high-priority is solid
+2-medium-priority/  35 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
 
@@ -65,6 +65,7 @@ Root files (start here):
 |---|---|
 | [ALGORITHMS-PARADIGMS-DEEP.md](2-medium-priority/ALGORITHMS-PARADIGMS-DEEP.md) | DP, Greedy, Backtracking, Divide & Conquer |
 | [AUTH-DEEP.md](2-medium-priority/AUTH-DEEP.md) | JWT, OAuth2, OIDC, RBAC, sessions |
+| [TESTING-BASICS.md](2-medium-priority/TESTING-BASICS.md) | Beginner guide — types of tests, tool choice, backend/API/database testing, mocking, E2E |
 | [TESTING-STRATEGY-DEEP.md](2-medium-priority/TESTING-STRATEGY-DEEP.md) | RTL, MSW, Playwright, TDD, CI strategy |
 | [NEXTJS-DEEP.md](2-medium-priority/NEXTJS-DEEP.md) | App router, SSR/SSG/ISR, server components |
 | [NESTJS-DEEP.md](2-medium-priority/NESTJS-DEEP.md) | DI container, lifecycle, guards/interceptors/pipes, TypeORM/Prisma, CQRS, microservices, queues, testing |
