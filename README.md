@@ -1,7 +1,7 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-118 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+119 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
@@ -9,7 +9,7 @@ A complete self-study system for senior JavaScript / fullstack engineering inter
 
 ```
 1-high-priority/    47 files — study these first, highest interview ROI
-2-medium-priority/  33 files — once high-priority is solid
+2-medium-priority/  34 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
 
@@ -72,6 +72,7 @@ Root files (start here):
 | [API-DESIGN-DEEP.md](2-medium-priority/API-DESIGN-DEEP.md) | REST, versioning, pagination, error handling |
 | [GRAPHQL-DEEP.md](2-medium-priority/GRAPHQL-DEEP.md) | Schema, resolvers, N+1, DataLoader, subscriptions |
 | [REDIS-CACHING-DEEP.md](2-medium-priority/REDIS-CACHING-DEEP.md) | Caching strategies, data structures, pub/sub |
+| [CSS-BASICS.md](2-medium-priority/CSS-BASICS.md) | Beginner guide — box model, units, Flexbox, Grid, centring, responsive, reading Tailwind, troubleshooting |
 | [CSS-DEEP.md](2-medium-priority/CSS-DEEP.md) | Flexbox, Grid, specificity, animations |
 | [BROWSER-INTERNALS-DEEP.md](2-medium-priority/BROWSER-INTERNALS-DEEP.md) | Rendering pipeline, critical path, reflow/repaint |
 | [PERFORMANCE-DEEP.md](2-medium-priority/PERFORMANCE-DEEP.md) | Core Web Vitals, bundle optimisation, lazy loading |
