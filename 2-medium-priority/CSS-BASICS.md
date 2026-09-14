@@ -13,23 +13,31 @@
 
 ## Table of Contents
 
-1. [How CSS Actually Works](#1-how-css-actually-works)
-2. [The Box Model](#2-the-box-model)
-3. [Units — px, rem, %, vh, fr](#3-units--px-rem-vh-fr)
-4. [Display — Why Things Sit Where They Do](#4-display--why-things-sit-where-they-do)
-5. [Flexbox — The 90% You Need](#5-flexbox--the-90-you-need)
-6. [Grid — The 90% You Need](#6-grid--the-90-you-need)
-7. [Centring Things](#7-centring-things)
-8. [Spacing — margin, padding, gap](#8-spacing--margin-padding-gap)
-9. [Positioning & z-index](#9-positioning--z-index)
-10. [Colours, Borders, Shadows](#10-colours-borders-shadows)
-11. [Typography](#11-typography)
-12. [Responsive Design](#12-responsive-design)
-13. [Transitions & Hover Effects](#13-transitions--hover-effects)
-14. [Reading Tailwind](#14-reading-tailwind)
-15. [Debugging CSS](#15-debugging-css)
-16. [Troubleshooting — "Why Won't This Work?"](#16-troubleshooting--why-wont-this-work)
-17. [Cheat Sheet](#17-cheat-sheet)
+- [CSS — Beginner's Practical Guide](#css--beginners-practical-guide)
+    - [Table of Contents](#table-of-contents)
+    - [1. How CSS Actually Works](#1-how-css-actually-works)
+        - [Selectors you will actually see](#selectors-you-will-actually-see)
+        - [The cascade — which rule wins](#the-cascade--which-rule-wins)
+        - [Inheritance](#inheritance)
+    - [2. The Box Model](#2-the-box-model)
+        - [box-sizing — the one line every project needs](#box-sizing--the-one-line-every-project-needs)
+        - [Shorthand values](#shorthand-values)
+    - [3. Units — px, rem, %, vh, fr](#3-units--px-rem--vh-fr)
+    - [4. Display — Why Things Sit Where They Do](#4-display--why-things-sit-where-they-do)
+    - [5. Flexbox — The 90% You Need](#5-flexbox--the-90-you-need)
+    - [6. Grid — The 90% You Need](#6-grid--the-90-you-need)
+    - [7. Centring Things](#7-centring-things)
+    - [8. Spacing — margin, padding, gap](#8-spacing--margin-padding-gap)
+    - [9. Positioning \& z-index](#9-positioning--z-index)
+    - [10. Colours, Borders, Shadows](#10-colours-borders-shadows)
+    - [11. Typography](#11-typography)
+    - [12. Responsive Design](#12-responsive-design)
+    - [13. Transitions \& Hover Effects](#13-transitions--hover-effects)
+    - [14. Reading Tailwind](#14-reading-tailwind)
+    - [15. Debugging CSS](#15-debugging-css)
+    - [16. Troubleshooting — "Why Won't This Work?"](#16-troubleshooting--why-wont-this-work)
+    - [17. Cheat Sheet](#17-cheat-sheet)
+    - [Related Files](#related-files)
 
 ---
 
@@ -38,9 +46,10 @@
 ```css
 /* A CSS rule has three parts. */
 
-.card {              /* SELECTOR — which elements this applies to */
-  color: red;        /* PROPERTY: VALUE — what to change, and to what */
-  padding: 16px;     /* each line is one DECLARATION */
+.card {
+    /* SELECTOR — which elements this applies to */
+    color: red; /* PROPERTY: VALUE — what to change, and to what */
+    padding: 16px; /* each line is one DECLARATION */
 }
 ```
 
@@ -48,41 +57,58 @@
 
 ```css
 /* By tag name — every <p> on the page */
-p { }
+p {
+}
 
 /* By class — every element with class="card". THE ONE YOU USE 95% OF THE TIME. */
-.card { }
+.card {
+}
 
-/* By id — the single element with id="header". Avoid in practice: ids are
+/* By id — the single element with id="header". ‼️ Avoid in practice: ids are
    hard to override (see specificity below) and can only be used once. */
-#header { }
+#header {
+}
 
 /* Multiple selectors, same rules — comma-separated */
-h1, h2, h3 { }
+h1,
+h2,
+h3 {
+}
 
-/* DESCENDANT — any .title ANYWHERE inside .card, however deeply nested */
-.card .title { }
+/* DESCENDANT — ‼️any .title ANYWHERE inside .card, however deeply nested */
+‼️ .card .title {
+}
 
-/* DIRECT CHILD — only a .title that is an immediate child of .card.
+/* DIRECT CHILD — only a .title that is an immediate child of .card.‼️
    The > matters: with .card > .title, a .title inside .card > .body is NOT matched. */
-.card > .title { }
+.card > .title {
+}
 
 /* An element with BOTH classes (no space between them) */
-.card.featured { }
+‼️ .card.featured {
+}
 
 /* ‼️ Note the difference — this trips people up constantly:
      .card.featured   →  ONE element with class="card featured"
      .card .featured  →  a .featured element INSIDE a .card             */
 
 /* STATE — pseudo-classes */
-.button:hover { }        /* mouse is over it */
-.button:focus { }        /* keyboard-focused / clicked into */
-.button:disabled { }     /* has the disabled attribute */
-.input:focus-visible { } /* focused via KEYBOARD only — use for focus rings */
-.item:first-child { }
-.item:last-child { }
-.item:nth-child(2) { }
-.item:not(.active) { }   /* everything except .active */
+.button:hover {
+} /* mouse is over it */
+.button:focus {
+} /* keyboard-focused ‼️/ clicked into */
+.button:disabled {
+} /* has the disabled attribute */
+.input:focus-visible {
+} /* focused via KEYBOARD only‼️ — use for focus rings */
+.item:first-child {
+}
+.item:last-child {
+}
+.item:nth-child(2) {
+}
+.item:not(.active) {
+} /* everything except .active */
 ```
 
 ### The cascade — which rule wins
@@ -91,16 +117,24 @@ h1, h2, h3 { }
 /* When two rules target the same element, the browser decides by SPECIFICITY.
    The practical ranking, from weakest to strongest: */
 
-p { color: blue; }             /* 1 — tag selector        (weakest) */
-.text { color: green; }        /* 2 — class selector */
-#intro { color: orange; }      /* 3 — id selector */
-/* style="color: purple"  */   /* 4 — inline style */
-p { color: red !important; }   /* 5 — !important          (strongest) */
+p {
+    color: blue;
+} /* 1 — tag selector        (weakest) */
+.text {
+    color: green;
+} /* 2 — class selector */
+#intro {
+    color: orange;
+} /* 3 — id selector */
+/* style="color: purple"  */ /* 4 — inline style */
+p {
+    color: red !important;
+} /* 5 — !important          (strongest) */
 
 /* ‼️ Two practical rules that save a lot of pain:
    1. If two rules have the SAME specificity, the one written LATER wins.
       This is why the order of your CSS file matters, and why an imported
-      library's styles can override yours (or not) depending on import order.
+      library's styles can override yours (or not) depending on import order.‼️
 
    2. Do not reach for !important to fix an override problem. It works, then
       the next thing that needs to override it needs !important too, and
@@ -111,16 +145,16 @@ p { color: red !important; }   /* 5 — !important          (strongest) */
 ### Inheritance
 
 ```css
-/* Some properties pass down to children automatically — mostly text ones:
+/* Some properties pass down to children automatically‼️ — mostly text ones:
      color, font-family, font-size, line-height, text-align
 
-   Most do not — layout and box properties:
+   Most do not — layout and box properties:‼️
      padding, margin, border, background, width, display */
 
 body {
-  font-family: system-ui, sans-serif;   /* every element inherits this */
-  color: #333;                          /* and this */
-  padding: 20px;                        /* ‼️ NOT inherited — body only */
+    font-family: system-ui, sans-serif; /* every element inherits this */
+    color: #333; /* and this */
+    padding: 20px; /* ‼️ NOT inherited — body only */
 }
 
 /* This is why setting the font once on <body> styles the whole page, but you
@@ -149,10 +183,10 @@ body {
   │   └─────────────────────────────────────┘   │
   └─────────────────────────────────────────────┘
 
-  PADDING  space INSIDE the border. The background colour extends into it.
+  PADDING  space INSIDE the border. The background colour extends into it.‼️
            Use it to stop text touching the edge of a box.
 
-  MARGIN   space OUTSIDE the border. Always transparent.
+  MARGIN   space OUTSIDE the border. Always transparent.‼️
            Use it to push this box away from its neighbours.
 
   THE RULE OF THUMB: padding pushes the content IN, margin pushes other
@@ -166,23 +200,23 @@ body {
 /* ‼️ THE DEFAULT IS COUNTERINTUITIVE AND CAUSES CONSTANT LAYOUT BUGS. */
 
 .box {
-  width: 200px;
-  padding: 20px;
-  border: 2px solid black;
+    width: 200px;
+    padding: 20px;
+    border: 2px solid black;
 }
 /* By default (box-sizing: content-box), that box is NOT 200px wide.
    It is 200 + 20 + 20 + 2 + 2 = 244px.
-   The width applies to the CONTENT only; padding and border are added on top.
+   The width applies to the CONTENT only;‼️ padding and border are added on top.
 
    So two 50%-wide boxes with padding do not fit side by side, and you get a
    mystery overflow or an unexpected wrap. */
 
 /* THE FIX — put this at the top of every project. It is the first thing in
    almost every CSS reset, and there is no downside. */
-*,
+‼️ *,
 *::before,
 *::after {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 /* With border-box, width means the TOTAL width including padding and border.
@@ -195,21 +229,21 @@ body {
 ```css
 /* Padding and margin take 1 to 4 values. The order is CLOCKWISE from the top. */
 
-padding: 10px;                    /* all four sides */
-padding: 10px 20px;               /* vertical | horizontal */
-padding: 10px 20px 30px;          /* top | horizontal | bottom */
-padding: 10px 20px 30px 40px;     /* top | right | bottom | left  (clockwise) */
+padding: 10px; /* all four sides */
+padding: 10px 20px; /* vertical | horizontal */
+padding: 10px 20px 30px; /* top | horizontal | bottom */
+padding: 10px 20px 30px 40px; /* top | right | bottom | left  (clockwise) */
 
 /* Or set one side at a time when you only need one: */
 padding-top: 10px;
 margin-bottom: 24px;
 
-/* ‼️ margin: 0 auto is the classic "centre this block horizontally".
+/* ‼️ margin: 0 auto is the classic "centre this block horizontally".‼️
    `auto` means "split the leftover space equally between left and right",
    which only works on a block element with a set width. */
 .container {
-  max-width: 1200px;
-  margin: 0 auto;      /* 0 top/bottom, auto left/right → centred */
+    max-width: 1200px;
+    margin: 0 auto; /* 0 top/bottom, auto left/right → centred */‼️
 }
 ```
 
@@ -219,7 +253,7 @@ margin-bottom: 24px;
 
 ```css
 /* ── px — absolute pixels ─────────────────────────────────────────────── */
-/* Fixed size, never scales. Fine for borders, small fixed details,
+/* Fixed size, never scales.‼️ Fine for borders, small fixed details,
    and shadows. ‼️ Avoid for font-size: it ignores the user's browser font
    setting, which is an accessibility problem for anyone who has increased it. */
 border: 1px solid #ddd;
@@ -228,45 +262,45 @@ border-radius: 8px;
 /* ── rem — relative to the ROOT font size ─────────────────────────────── */
 /* 1rem = the <html> font-size, which is 16px by default.
    So: 1rem = 16px, 1.5rem = 24px, 0.5rem = 8px, 0.875rem = 14px.
-   ‼️ THE DEFAULT CHOICE for font sizes, padding, margins, and widths.
+   ‼️ THE DEFAULT CHOICE for font sizes, padding, margins, and widths.‼️
    Everything scales together if the user changes their font size. */
-font-size: 1.125rem;   /* 18px */
-padding: 1.5rem;       /* 24px */
+font-size: 1.125rem; /* 18px */
+padding: 1.5rem; /* 24px */
 
 /* ── em — relative to THIS element's font size ────────────────────────── */
-/* Useful for spacing that should scale WITH the text of the component. */
+/* Useful for spacing that should scale WITH the text of the component. */‼️
 .button {
-  font-size: 1.125rem;      /* 18px */
-  padding: 0.5em 1em;       /* 9px 18px — scales with the button's own text */
+    font-size: 1.125rem; /* 18px */
+    padding: 0.5em 1em; /* 9px 18px — scales with the button's own text */‼️
 }
 /* ‼️ em COMPOUNDS when nested. A 1.2em inside a 1.2em is 1.44× the root.
-   Nest a few levels and sizes drift unpredictably. This is exactly why rem
+   Nest a few levels and sizes drift unpredictably. ‼️ This is exactly why rem
    exists — it always resolves against the root and never compounds. */
 
 /* ── % — relative to the PARENT ───────────────────────────────────────── */
-width: 50%;        /* half the parent's width */
-/* ‼️ A percentage HEIGHT only works if the parent has an explicit height.
-   height: 100% on a child of a parent with no height does nothing — this is
+width: 50%; /* half the parent's width */
+/* ‼️ A percentage HEIGHT only works if the parent has an explicit height.‼️
+   height: 100% on a child of a parent with no height does nothing‼️ — this is
    one of the most common "why isn't this filling the screen?" questions. */
 
-/* ── vh / vw — relative to the VIEWPORT (browser window) ───────────────── */
-min-height: 100vh;   /* full screen height — for hero sections, page shells */
-width: 100vw;        /* full screen width */
-/* ‼️ Prefer 100dvh over 100vh on mobile. 100vh counts the area BEHIND the
+/* ── vh / vw — relative to the VIEWPORT (browser window) ───────────────── */‼️
+min-height: 100vh; /* full screen height — for hero sections, page shells */
+width: 100vw; /* full screen width */
+/* ‼️ Prefer 100dvh over 100vh on mobile. ‼️100vh counts the area BEHIND the
    browser's address bar, so a full-height section gets cut off or causes an
-   unexpected scroll. dvh ("dynamic viewport height") adjusts as the bar
+   unexpected scroll. ‼️dvh ("dynamic viewport height") adjusts as the bar
    shows and hides. */
 min-height: 100dvh;
 
 /* ── fr — a fraction of free space (Grid only) ────────────────────────── */
-grid-template-columns: 1fr 2fr;   /* second column is twice as wide */
+grid-template-columns: 1fr 2fr; /* second column is twice as wide */
 
 /* ── Useful functions ─────────────────────────────────────────────────── */
-width: min(90%, 1200px);      /* whichever is SMALLER — caps at 1200px */
-width: max(50%, 300px);       /* whichever is LARGER — never below 300px */
-width: clamp(300px, 90%, 1200px);  /* min, preferred, max — responsive with
-                                      no media query at all */
-font-size: clamp(1rem, 2.5vw, 2rem);   /* scales with the window, bounded */
+width: min(90%, 1200px); /* whichever is SMALLER — caps at 1200px */
+width: max(50%, 300px); /* whichever is LARGER — never below 300px */
+width: clamp(300px, 90%, 1200px); /* min, preferred, max — responsive with
+                                      no media query at all */‼️
+font-size: clamp(1rem, 2.5vw, 2rem); /* scales with the window, bounded */‼️
 ```
 
 ```text
@@ -322,10 +356,10 @@ display: flex;
 display: grid;
 
 /* ── none ─────────────────────────────────────────────────────────────── */
-display: none;      /* removed entirely — takes up no space */
+display: none; /* removed entirely — takes up no space */
 /* Compare with: */
 visibility: hidden; /* invisible but STILL OCCUPIES its space */
-opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
+opacity: 0; /* invisible, occupies space, and is still CLICKABLE */
 ```
 
 ```text
@@ -348,55 +382,55 @@ opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
    ITEMS inside it. Most of the time you only touch the container. */
 
 .container {
-  display: flex;
+    display: flex;
 
-  /* ── DIRECTION — which way do items flow? ───────────────────────────── */
-  flex-direction: row;         /* → default: left to right */
-  flex-direction: column;      /* ↓ top to bottom — used constantly for
+    /* ── DIRECTION — which way do items flow? ───────────────────────────── */
+    flex-direction: row; /* → default: left to right */
+    flex-direction: column; /* ↓ top to bottom — used constantly for
                                      stacking things with even spacing */
 
-  /* ── JUSTIFY-CONTENT — alignment ALONG the direction ─────────────────── */
-  /* For row: horizontal. For column: vertical. */
-  justify-content: flex-start;    /* default — packed at the start */
-  justify-content: center;        /* centred */
-  justify-content: flex-end;      /* packed at the end */
-  justify-content: space-between; /* first at start, last at end, even gaps.
+    /* ── JUSTIFY-CONTENT — alignment ALONG the direction ─────────────────── */
+    /* For row: horizontal. For column: vertical. */
+    justify-content: flex-start; /* default — packed at the start */
+    justify-content: center; /* centred */
+    justify-content: flex-end; /* packed at the end */
+    justify-content: space-between; /* first at start, last at end, even gaps.
                                      ‼️ THE navbar/header layout: logo left,
                                      nav right, with one line of CSS. */
-  justify-content: space-around;  /* equal space around each item */
-  justify-content: space-evenly;  /* equal space between AND at the edges */
+    justify-content: space-around; /* equal space around each item */
+    justify-content: space-evenly; /* equal space between AND at the edges */
 
-  /* ── ALIGN-ITEMS — alignment ACROSS the direction ────────────────────── */
-  /* For row: vertical. For column: horizontal. */
-  align-items: stretch;      /* default — items fill the cross axis */
-  align-items: center;       /* ‼️ vertically centres a row. Used constantly. */
-  align-items: flex-start;
-  align-items: flex-end;
-  align-items: baseline;     /* align text baselines — good for mixed sizes */
+    /* ── ALIGN-ITEMS — alignment ACROSS the direction ────────────────────── */
+    /* For row: vertical. For column: horizontal. */
+    align-items: stretch; /* default — items fill the cross axis */
+    align-items: center; /* ‼️ vertically centres a row. Used constantly. */
+    align-items: flex-start;
+    align-items: flex-end;
+    align-items: baseline; /* align text baselines — good for mixed sizes */
 
-  /* ── GAP — space between items ───────────────────────────────────────── */
-  /* ‼️ Use this instead of margins on children. No "last item has a trailing
+    /* ── GAP — space between items ───────────────────────────────────────── */
+    /* ‼️ Use this instead of margins on children. No "last item has a trailing
      margin" problem, no :last-child overrides. */
-  gap: 1rem;
-  gap: 1rem 2rem;            /* row-gap | column-gap */
+    gap: 1rem;
+    gap: 1rem 2rem; /* row-gap | column-gap */
 
-  /* ── WRAP — allow items onto a new line ──────────────────────────────── */
-  flex-wrap: nowrap;   /* ‼️ default — items SHRINK rather than wrap, which
+    /* ── WRAP — allow items onto a new line ──────────────────────────────── */
+    flex-wrap: nowrap; /* ‼️ default — items SHRINK rather than wrap, which
                           is why a flex row can squash its contents instead
                           of moving them to the next line */
-  flex-wrap: wrap;     /* items move to a new line when they run out of room */
+    flex-wrap: wrap; /* items move to a new line when they run out of room */
 }
 
 /* ── PROPERTIES ON THE ITEMS ─────────────────────────────────────────── */
 .item {
-  flex: 1;          /* ‼️ "grow to fill the available space, share it equally".
+    flex: 1; /* ‼️ "grow to fill the available space, share it equally".
                        Two items both with flex: 1 → each takes half. */
-  flex: 2;          /* takes twice as much of the free space as a flex: 1 */
-  flex: 0 0 200px;  /* don't grow, don't shrink, stay 200px — a fixed sidebar */
-  flex-shrink: 0;   /* ‼️ "never let this get squashed". The fix when an icon
+    flex: 2; /* takes twice as much of the free space as a flex: 1 */
+    flex: 0 0 200px; /* don't grow, don't shrink, stay 200px — a fixed sidebar */
+    flex-shrink: 0; /* ‼️ "never let this get squashed". The fix when an icon
                        or button gets crushed next to long text. */
-  align-self: center;  /* override the container's align-items for one item */
-  margin-left: auto;   /* ‼️ push THIS item (and everything after it) to the
+    align-self: center; /* override the container's align-items for one item */
+    margin-left: auto; /* ‼️ push THIS item (and everything after it) to the
                           far end. The classic "one link on the right of the
                           navbar" trick. */
 }
@@ -407,41 +441,47 @@ opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
 
 /* 1. Navbar: logo left, links right */
 .navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
 }
 
 /* 2. Icon next to text, vertically aligned */
 .button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 /* 3. A vertical stack with even spacing — replaces margin on every child */
 .stack {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 /* 4. Sidebar fixed, main content fills the rest */
 .layout {
-  display: flex;
-  gap: 2rem;
+    display: flex;
+    gap: 2rem;
 }
-.sidebar { flex: 0 0 250px; }   /* fixed 250px */
-.main    { flex: 1; }           /* everything else */
+.sidebar {
+    flex: 0 0 250px;
+} /* fixed 250px */
+.main {
+    flex: 1;
+} /* everything else */
 
 /* 5. Footer pinned to the bottom even on short pages */
 .page {
-  display: flex;
-  flex-direction: column;
-  min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
 }
-.content { flex: 1; }   /* content grows, pushing the footer down */
+.content {
+    flex: 1;
+} /* content grows, pushing the footer down */
 ```
 
 ---
@@ -452,18 +492,18 @@ opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
 /* Grid is for two-dimensional layout: rows AND columns at the same time. */
 
 .grid {
-  display: grid;
+    display: grid;
 
-  /* ── COLUMNS ─────────────────────────────────────────────────────────── */
-  grid-template-columns: 200px 1fr;        /* fixed sidebar + flexible main */
-  grid-template-columns: 1fr 1fr 1fr;      /* three equal columns */
-  grid-template-columns: repeat(3, 1fr);   /* same thing, less typing */
-  grid-template-columns: 2fr 1fr;          /* first column twice as wide */
+    /* ── COLUMNS ─────────────────────────────────────────────────────────── */
+    grid-template-columns: 200px 1fr; /* fixed sidebar + flexible main */
+    grid-template-columns: 1fr 1fr 1fr; /* three equal columns */
+    grid-template-columns: repeat(3, 1fr); /* same thing, less typing */
+    grid-template-columns: 2fr 1fr; /* first column twice as wide */
 
-  /* ── ROWS (often you can leave these automatic) ──────────────────────── */
-  grid-template-rows: auto 1fr auto;       /* header | content | footer */
+    /* ── ROWS (often you can leave these automatic) ──────────────────────── */
+    grid-template-rows: auto 1fr auto; /* header | content | footer */
 
-  gap: 1rem;          /* space between cells — same idea as in flexbox */
+    gap: 1rem; /* space between cells — same idea as in flexbox */
 }
 ```
 
@@ -471,9 +511,9 @@ opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
 /* ‼️ THE ONE GRID PATTERN TO MEMORISE — a responsive card grid with NO
    media queries at all. */
 .card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
 }
 /* How to read that:
      repeat(auto-fit, ...)  →  fit as many columns as will fit
@@ -491,35 +531,43 @@ opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
 ```css
 /* ── PLACING ITEMS ACROSS CELLS ──────────────────────────────────────── */
 .featured {
-  grid-column: span 2;      /* this item is two columns wide */
-  grid-row: span 2;         /* and two rows tall */
-  grid-column: 1 / 3;       /* from grid line 1 to line 3 (i.e. 2 columns) */
-  grid-column: 1 / -1;      /* ‼️ full width, whatever the column count */
+    grid-column: span 2; /* this item is two columns wide */
+    grid-row: span 2; /* and two rows tall */
+    grid-column: 1 / 3; /* from grid line 1 to line 3 (i.e. 2 columns) */
+    grid-column: 1 / -1; /* ‼️ full width, whatever the column count */
 }
 
 /* ── NAMED AREAS — the most readable way to do a page shell ──────────── */
 .page {
-  display: grid;
-  grid-template-areas:
-    "header header"
-    "sidebar main"
-    "footer footer";
-  grid-template-columns: 250px 1fr;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100dvh;
+    display: grid;
+    grid-template-areas:
+        'header header'
+        'sidebar main'
+        'footer footer';
+    grid-template-columns: 250px 1fr;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100dvh;
 }
-.page > header  { grid-area: header; }
-.page > aside   { grid-area: sidebar; }
-.page > main    { grid-area: main; }
-.page > footer  { grid-area: footer; }
+.page > header {
+    grid-area: header;
+}
+.page > aside {
+    grid-area: sidebar;
+}
+.page > main {
+    grid-area: main;
+}
+.page > footer {
+    grid-area: footer;
+}
 /* The ASCII picture in the CSS IS the layout — you can see the page shape by
    reading it, and rearranging the page means rearranging those strings. */
 
 /* ── ALIGNMENT — same vocabulary as flexbox ──────────────────────────── */
 .grid {
-  justify-items: center;   /* horizontal position of items inside their cell */
-  align-items: center;     /* vertical position of items inside their cell */
-  place-items: center;     /* both at once */
+    justify-items: center; /* horizontal position of items inside their cell */
+    align-items: center; /* vertical position of items inside their cell */
+    place-items: center; /* both at once */
 }
 ```
 
@@ -545,47 +593,51 @@ opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
 
 /* ── HORIZONTALLY: a block element with a width ──────────────────────── */
 .box {
-  max-width: 600px;
-  margin: 0 auto;      /* auto left/right splits the leftover space */
+    max-width: 600px;
+    margin: 0 auto; /* auto left/right splits the leftover space */
 }
 
 /* ── HORIZONTALLY: text, or inline content ───────────────────────────── */
-.box { text-align: center; }
+.box {
+    text-align: center;
+}
 
 /* ── BOTH DIRECTIONS: flexbox — the everyday answer ──────────────────── */
 .parent {
-  display: flex;
-  justify-content: center;   /* horizontal */
-  align-items: center;       /* vertical */
-  min-height: 300px;         /* ‼️ needs a height to centre WITHIN */
+    display: flex;
+    justify-content: center; /* horizontal */
+    align-items: center; /* vertical */
+    min-height: 300px; /* ‼️ needs a height to centre WITHIN */
 }
 
 /* ── BOTH DIRECTIONS: grid — shortest version ────────────────────────── */
 .parent {
-  display: grid;
-  place-items: center;
-  min-height: 300px;
+    display: grid;
+    place-items: center;
+    min-height: 300px;
 }
 
 /* ── BOTH DIRECTIONS: absolute positioning — for overlays and modals ──── */
-.parent { position: relative; }
+.parent {
+    position: relative;
+}
 .child {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  /* ‼️ The translate is essential. top/left position the child's TOP-LEFT
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* ‼️ The translate is essential. top/left position the child's TOP-LEFT
      CORNER at the centre, so without this the box sits down-and-right of
      where you want it. translate(-50%, -50%) shifts it back by half its own
      size — and works without knowing that size in advance. */
-  transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
 }
 
 /* ── A CENTRED PAGE CONTAINER — the pattern every site uses ──────────── */
 .container {
-  width: 100%;
-  max-width: 1200px;   /* never wider than this */
-  margin: 0 auto;      /* centred */
-  padding: 0 1rem;     /* ‼️ breathing room so text never touches the phone
+    width: 100%;
+    max-width: 1200px; /* never wider than this */
+    margin: 0 auto; /* centred */
+    padding: 0 1rem; /* ‼️ breathing room so text never touches the phone
                           screen edge */
 }
 ```
@@ -600,18 +652,18 @@ opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
 
 /* ── THE OLD WAY — margin on each child ──────────────────────────────── */
 .list-item {
-  margin-bottom: 1rem;
+    margin-bottom: 1rem;
 }
 .list-item:last-child {
-  margin-bottom: 0;      /* ‼️ the extra rule you always have to remember,
+    margin-bottom: 0; /* ‼️ the extra rule you always have to remember,
                             or you get a stray gap at the bottom */
 }
 
 /* ── THE MODERN WAY ──────────────────────────────────────────────────── */
 .list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;             /* space BETWEEN items only — no trailing gap, no
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* space BETWEEN items only — no trailing gap, no
                             :last-child rule, nothing to forget */
 }
 ```
@@ -620,14 +672,22 @@ opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
 /* ‼️ MARGIN COLLAPSING — the "why is there a gap I didn't ask for?" bug.
    VERTICAL margins between siblings MERGE into one, taking the larger value. */
 
-.a { margin-bottom: 20px; }
-.b { margin-top: 30px; }
+.a {
+    margin-bottom: 20px;
+}
+.b {
+    margin-top: 30px;
+}
 /* The gap between them is 30px, NOT 50px. */
 
 /* Worse, a child's top margin can "escape" its parent and push the PARENT
    down instead of the child:  */
-.parent { background: grey; }        /* no padding, no border */
-.child  { margin-top: 20px; }        /* pushes .parent down, not .child */
+.parent {
+    background: grey;
+} /* no padding, no border */
+.child {
+    margin-top: 20px;
+} /* pushes .parent down, not .child */
 
 /* Fixes, in order of preference:
      1. Use gap on a flex/grid parent — collapsing does not happen at all.
@@ -639,14 +699,17 @@ opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
 ```css
 /* ── A SPACING SCALE — pick from a set, don't invent numbers ──────────── */
 :root {
-  --space-1: 0.25rem;   /*  4px */
-  --space-2: 0.5rem;    /*  8px */
-  --space-3: 1rem;      /* 16px */
-  --space-4: 1.5rem;    /* 24px */
-  --space-5: 2rem;      /* 32px */
-  --space-6: 3rem;      /* 48px */
+    --space-1: 0.25rem; /*  4px */
+    --space-2: 0.5rem; /*  8px */
+    --space-3: 1rem; /* 16px */
+    --space-4: 1.5rem; /* 24px */
+    --space-5: 2rem; /* 32px */
+    --space-6: 3rem; /* 48px */
 }
-.card { padding: var(--space-4); gap: var(--space-3); }
+.card {
+    padding: var(--space-4);
+    gap: var(--space-3);
+}
 /* ‼️ Why bother: consistent spacing is most of what makes a design look
    "professional" rather than homemade. Choosing from six values instead of
    typing 13px here and 18px there is the single easiest visual upgrade. */
@@ -658,12 +721,12 @@ opacity: 0;         /* invisible, occupies space, and is still CLICKABLE */
 
 ```css
 /* ── static — the default ────────────────────────────────────────────── */
-position: static;   /* normal document flow; top/left/right/bottom do nothing */
+position: static; /* normal document flow; top/left/right/bottom do nothing */
 
 /* ── relative — nudge it, and become an anchor ───────────────────────── */
 .box {
-  position: relative;
-  top: 10px;        /* moves 10px down from where it WOULD have been */
+    position: relative;
+    top: 10px; /* moves 10px down from where it WOULD have been */
 }
 /* ‼️ Its original space is still reserved — nothing else moves. The far more
    common use is as an ANCHOR: an absolutely positioned child positions itself
@@ -671,27 +734,29 @@ position: static;   /* normal document flow; top/left/right/bottom do nothing */
    offsets is how you say "position children against THIS box". */
 
 /* ── absolute — removed from flow, positioned against an ancestor ────── */
-.parent { position: relative; }     /* ‼️ without this, .badge positions
+.parent {
+    position: relative;
+} /* ‼️ without this, .badge positions
                                        against the whole page instead */
 .badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;      /* a notification dot on the corner of an icon */
+    position: absolute;
+    top: -8px;
+    right: -8px; /* a notification dot on the corner of an icon */
 }
 
 /* ── fixed — pinned to the viewport, ignores scrolling ───────────────── */
 .floating-button {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;      /* stays put while the page scrolls */
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem; /* stays put while the page scrolls */
 }
 
 /* ── sticky — normal until it hits a scroll threshold, then pinned ───── */
 .header {
-  position: sticky;
-  top: 0;           /* ‼️ REQUIRED — sticky with no offset does nothing at all,
+    position: sticky;
+    top: 0; /* ‼️ REQUIRED — sticky with no offset does nothing at all,
                        and this is the usual reason "sticky isn't working" */
-  z-index: 10;
+    z-index: 10;
 }
 /* ‼️ Second common sticky failure: it only sticks within its PARENT. If the
    parent is only as tall as the header, there is nothing to stick across.
@@ -700,8 +765,14 @@ position: static;   /* normal document flow; top/left/right/bottom do nothing */
 
 ```css
 /* ── z-index — what stacks on top ────────────────────────────────────── */
-.modal { position: fixed; z-index: 100; }
-.tooltip { position: absolute; z-index: 50; }
+.modal {
+    position: fixed;
+    z-index: 100;
+}
+.tooltip {
+    position: absolute;
+    z-index: 50;
+}
 
 /* ‼️ Two rules that explain most z-index confusion:
    1. z-index ONLY works on positioned elements (relative/absolute/fixed/sticky).
@@ -715,11 +786,11 @@ position: static;   /* normal document flow; top/left/right/bottom do nothing */
 
 /* Keep a small documented scale rather than escalating numbers: */
 :root {
-  --z-dropdown: 10;
-  --z-sticky-header: 20;
-  --z-modal-backdrop: 40;
-  --z-modal: 50;
-  --z-toast: 60;
+    --z-dropdown: 10;
+    --z-sticky-header: 20;
+    --z-modal-backdrop: 40;
+    --z-modal: 50;
+    --z-toast: 60;
 }
 ```
 
@@ -729,65 +800,65 @@ position: static;   /* normal document flow; top/left/right/bottom do nothing */
 
 ```css
 /* ── COLOUR FORMATS ──────────────────────────────────────────────────── */
-color: #3b82f6;                    /* hex — most common */
-color: #3b82f680;                  /* hex with alpha (last two digits) */
-color: rgb(59 130 246);            /* modern space-separated syntax */
-color: rgb(59 130 246 / 50%);      /* with transparency */
-color: hsl(217 91% 60%);           /* hue, saturation, lightness */
+color: #3b82f6; /* hex — most common */
+color: #3b82f680; /* hex with alpha (last two digits) */
+color: rgb(59 130 246); /* modern space-separated syntax */
+color: rgb(59 130 246 / 50%); /* with transparency */
+color: hsl(217 91% 60%); /* hue, saturation, lightness */
 /* ‼️ HSL is worth knowing: to make a colour lighter or darker for a hover
    state, change ONLY the lightness number. With hex you have to guess a whole
    new value. hsl(217 91% 60%) → hsl(217 91% 50%) is the same blue, darker. */
 
 /* ── CSS VARIABLES — define your palette once ────────────────────────── */
 :root {
-  --color-primary: #3b82f6;
-  --color-primary-dark: #2563eb;
-  --color-text: #1f2937;
-  --color-text-muted: #6b7280;
-  --color-border: #e5e7eb;
-  --color-bg: #ffffff;
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-text: #1f2937;
+    --color-text-muted: #6b7280;
+    --color-border: #e5e7eb;
+    --color-bg: #ffffff;
 }
 .button {
-  background: var(--color-primary);
-  color: white;
+    background: var(--color-primary);
+    color: white;
 }
 .button:hover {
-  background: var(--color-primary-dark);
+    background: var(--color-primary-dark);
 }
 /* ‼️ The payoff: changing the brand colour is one line, and dark mode is a
    matter of redefining the same names under a media query — no rewriting of
    every rule that used the colour. */
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-text: #f9fafb;
-    --color-bg: #111827;
-    --color-border: #374151;
-  }
+    :root {
+        --color-text: #f9fafb;
+        --color-bg: #111827;
+        --color-border: #374151;
+    }
 }
 
 /* ── BORDERS ─────────────────────────────────────────────────────────── */
-border: 1px solid var(--color-border);   /* width | style | colour */
+border: 1px solid var(--color-border); /* width | style | colour */
 border-radius: 8px;
-border-radius: 50%;              /* a circle, on a square element */
-border-radius: 9999px;           /* a pill shape, on a wide element */
-border-bottom: 2px solid red;    /* one side only — underlines, active tabs */
+border-radius: 50%; /* a circle, on a square element */
+border-radius: 9999px; /* a pill shape, on a wide element */
+border-bottom: 2px solid red; /* one side only — underlines, active tabs */
 
 /* ── SHADOWS ─────────────────────────────────────────────────────────── */
 /*           x-offset | y-offset | blur | spread | colour */
-box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);                  /* subtle card lift */
-box-shadow: 0 4px 12px rgb(0 0 0 / 0.15);                /* more elevated */
-box-shadow: 0 20px 25px rgb(0 0 0 / 0.15);               /* modal */
-box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.1);            /* pressed inward */
-box-shadow: 0 0 0 3px rgb(59 130 246 / 0.5);             /* focus ring */
+box-shadow: 0 1px 3px rgb(0 0 0 / 0.1); /* subtle card lift */
+box-shadow: 0 4px 12px rgb(0 0 0 / 0.15); /* more elevated */
+box-shadow: 0 20px 25px rgb(0 0 0 / 0.15); /* modal */
+box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.1); /* pressed inward */
+box-shadow: 0 0 0 3px rgb(59 130 246 / 0.5); /* focus ring */
 
 /* ‼️ Shadows should be subtle and consistent. A realistic shadow is mostly
    soft and low-opacity — big blur, small offset, 10-15% black. Harsh dark
    shadows are the fastest way to make a UI look amateur. Layering two
    shadows (one tight, one soft) looks noticeably better than one: */
 box-shadow:
-  0 1px 2px rgb(0 0 0 / 0.08),
-  0 4px 12px rgb(0 0 0 / 0.08);
+    0 1px 2px rgb(0 0 0 / 0.08),
+    0 4px 12px rgb(0 0 0 / 0.08);
 ```
 
 ---
@@ -796,57 +867,62 @@ box-shadow:
 
 ```css
 body {
-  /* ‼️ The system font stack — uses the OS's own UI font. Loads instantly
+    /* ‼️ The system font stack — uses the OS's own UI font. Loads instantly
      (no download), and looks native on every platform. A good default before
      you commit to a custom font. */
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-family:
+        system-ui,
+        -apple-system,
+        'Segoe UI',
+        Roboto,
+        sans-serif;
 
-  font-size: 1rem;         /* 16px — do not go below this for body text */
-  line-height: 1.5;        /* ‼️ unitless. 1.5 = 1.5× the element's own font
+    font-size: 1rem; /* 16px — do not go below this for body text */
+    line-height: 1.5; /* ‼️ unitless. 1.5 = 1.5× the element's own font
                               size, and it scales correctly for headings that
                               inherit it. Never use line-height: 24px. */
-  color: #1f2937;          /* near-black reads better than pure #000 */
+    color: #1f2937; /* near-black reads better than pure #000 */
 }
 
 h1 {
-  font-size: 2rem;
-  line-height: 1.2;        /* ‼️ tighter for large text — 1.5 looks unnaturally
+    font-size: 2rem;
+    line-height: 1.2; /* ‼️ tighter for large text — 1.5 looks unnaturally
                               airy on headings */
-  font-weight: 700;
+    font-weight: 700;
 }
 
 p {
-  /* ‼️ THE most effective readability fix there is. `ch` is the width of one
+    /* ‼️ THE most effective readability fix there is. `ch` is the width of one
      "0" character, so 65ch is roughly 65 characters per line — the range
      typographers consider comfortable. Full-width paragraphs on a wide
      monitor are genuinely hard to read. */
-  max-width: 65ch;
+    max-width: 65ch;
 }
 
 /* ── PROPERTIES YOU WILL ACTUALLY USE ────────────────────────────────── */
-font-weight: 400;          /* normal */
-font-weight: 500;          /* medium — good for UI labels */
-font-weight: 600;          /* semibold — good for headings in UI */
-font-weight: 700;          /* bold */
+font-weight: 400; /* normal */
+font-weight: 500; /* medium — good for UI labels */
+font-weight: 600; /* semibold — good for headings in UI */
+font-weight: 700; /* bold */
 
 text-align: left | center | right;
 text-transform: uppercase | capitalize | lowercase;
-letter-spacing: 0.05em;    /* slight tracking — pairs well with uppercase */
-text-decoration: none;     /* removes the underline from links */
+letter-spacing: 0.05em; /* slight tracking — pairs well with uppercase */
+text-decoration: none; /* removes the underline from links */
 
 /* Truncate one line with an ellipsis */
 .truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;     /* ‼️ all three are required — any one alone does nothing */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap; /* ‼️ all three are required — any one alone does nothing */
 }
 
 /* Truncate after N lines */
 .clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 ```
 
@@ -865,19 +941,23 @@ text-decoration: none;     /* removes the underline from links */
 
 /* Base — phones. No media query. */
 .grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
 }
 
 /* Tablet and up */
 @media (min-width: 768px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /* Desktop and up */
 @media (min-width: 1024px) {
-  .grid { grid-template-columns: repeat(3, 1fr); }
+    .grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 ```
 
@@ -890,12 +970,15 @@ text-decoration: none;     /* removes the underline from links */
 /* 1536px  2xl  large desktop    */
 
 /* ── OTHER USEFUL QUERIES ────────────────────────────────────────────── */
-@media (prefers-color-scheme: dark) { }      /* user has dark mode on */
-@media (prefers-reduced-motion: reduce) { }  /* ‼️ user asked for less motion —
+@media (prefers-color-scheme: dark) {
+} /* user has dark mode on */
+@media (prefers-reduced-motion: reduce) {
+} /* ‼️ user asked for less motion —
                                                 disable animations here; it is
                                                 an accessibility requirement,
                                                 not a nicety */
-@media print { }                              /* printed version */
+@media print {
+} /* printed version */
 ```
 
 ```css
@@ -903,22 +986,31 @@ text-decoration: none;     /* removes the underline from links */
    Prefer these — fewer breakpoints means fewer places to keep in sync. */
 
 /* Fluid font size between two bounds */
-h1 { font-size: clamp(1.75rem, 5vw, 3.5rem); }
+h1 {
+    font-size: clamp(1.75rem, 5vw, 3.5rem);
+}
 
 /* Auto-wrapping card grid — see §6 */
-.cards { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.cards {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
 
 /* Row on wide screens, column on narrow — no breakpoint needed.
    Items stay in a row until they'd drop below 300px, then they wrap. */
 .split {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
-.split > * { flex: 1 1 300px; }
+.split > * {
+    flex: 1 1 300px;
+}
 
 /* A container that is never wider than the screen, with side padding */
-.container { width: min(100% - 2rem, 1200px); margin-inline: auto; }
+.container {
+    width: min(100% - 2rem, 1200px);
+    margin-inline: auto;
+}
 ```
 
 ```html
@@ -936,15 +1028,17 @@ h1 { font-size: clamp(1.75rem, 5vw, 3.5rem); }
 ```css
 /* A transition animates a property when its value changes. */
 .button {
-  background: var(--color-primary);
-  transform: translateY(0);
+    background: var(--color-primary);
+    transform: translateY(0);
 
-  /*          what        | how long | easing */
-  transition: background 150ms ease, transform 150ms ease;
+    /*          what        | how long | easing */
+    transition:
+        background 150ms ease,
+        transform 150ms ease;
 }
 .button:hover {
-  background: var(--color-primary-dark);
-  transform: translateY(-2px);      /* lifts slightly */
+    background: var(--color-primary-dark);
+    transform: translateY(-2px); /* lifts slightly */
 }
 
 /* ‼️ Put the transition on the BASE element, not on :hover. On :hover only,
@@ -969,34 +1063,44 @@ h1 { font-size: clamp(1.75rem, 5vw, 3.5rem); }
 /* 200-300ms  dropdowns, modals opening */
 /* 500ms+  usually too slow for UI; feels sluggish */
 
-transition-timing-function: ease;        /* gentle default */
-transition-timing-function: ease-out;    /* ‼️ best for things ENTERING —
+transition-timing-function: ease; /* gentle default */
+transition-timing-function: ease-out; /* ‼️ best for things ENTERING —
                                             fast start, soft landing */
-transition-timing-function: ease-in;     /* best for things LEAVING */
+transition-timing-function: ease-in; /* best for things LEAVING */
 
 /* ── KEYFRAME ANIMATION — for repeating or multi-step motion ─────────── */
 @keyframes spin {
-  to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 .spinner {
-  animation: spin 1s linear infinite;
+    animation: spin 1s linear infinite;
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
-.modal { animation: fade-in 200ms ease-out; }
+.modal {
+    animation: fade-in 200ms ease-out;
+}
 
 /* ‼️ ACCESSIBILITY — always include this. Motion triggers nausea and migraines
    for some people, and they have told their OS so. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 ```
 
@@ -1055,10 +1159,11 @@ RESPONSIVE PREFIXES  (‼️ mobile-first: unprefixed = all sizes, prefix = that
 
 ```html
 <!-- Putting it together — a typical AI-generated button, translated: -->
-<button class="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600
-               text-white font-medium rounded-lg shadow-sm disabled:opacity-50">
-
-<!-- Which is exactly this CSS:
+<button
+    class="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600
+               text-white font-medium rounded-lg shadow-sm disabled:opacity-50"
+>
+    <!-- Which is exactly this CSS:
      display: flex;
      align-items: center;
      gap: 0.5rem;
@@ -1070,6 +1175,7 @@ RESPONSIVE PREFIXES  (‼️ mobile-first: unprefixed = all sizes, prefix = that
      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
      &:hover    { background: #2563eb; }
      &:disabled { opacity: 0.5; }                                          -->
+</button>
 ```
 
 ```text
@@ -1121,7 +1227,9 @@ RESPONSIVE PREFIXES  (‼️ mobile-first: unprefixed = all sizes, prefix = that
 
 ```css
 /* ── THE OUTLINE TRICK — see every box on the page ───────────────────── */
-* { outline: 1px solid red; }
+* {
+    outline: 1px solid red;
+}
 /* Paste into devtools when a layout is mysteriously wrong. Instantly shows
    which element is too wide, overflowing, or not where you think it is.
    ‼️ Use `outline`, not `border` — border adds to the element's size and
@@ -1130,8 +1238,12 @@ RESPONSIVE PREFIXES  (‼️ mobile-first: unprefixed = all sizes, prefix = that
 /* ── FIND WHAT IS CAUSING HORIZONTAL SCROLL ──────────────────────────── */
 /* An element wider than the screen creates a horizontal scrollbar on mobile.
    Paste this in devtools to highlight the culprit: */
-* { outline: 1px solid red; }
-body { overflow-x: hidden; }   /* ‼️ a temporary diagnostic, NOT the fix —
+* {
+    outline: 1px solid red;
+}
+body {
+    overflow-x: hidden;
+} /* ‼️ a temporary diagnostic, NOT the fix —
                                   it hides the symptom and the element is
                                   still too wide */
 ```
@@ -1213,58 +1325,75 @@ MY IMAGE IS STRETCHED OR SQUASHED
 
 ```css
 /* ── ALWAYS START WITH THIS ──────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, sans-serif; line-height: 1.5; }
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    line-height: 1.5;
+}
 
 /* ── LAYOUT ──────────────────────────────────────────────────────────── */
-display: flex;                /* one row or column of items */
-display: grid;                /* two-dimensional layout */
-gap: 1rem;                    /* space between children — prefer over margin */
+display: flex; /* one row or column of items */
+display: grid; /* two-dimensional layout */
+gap: 1rem; /* space between children — prefer over margin */
 
 /* Flex container */
 flex-direction: row | column;
-justify-content: flex-start | center | space-between;   /* along the axis */
-align-items: stretch | center | flex-start;             /* across the axis */
+justify-content: flex-start | center | space-between; /* along the axis */
+align-items: stretch | center | flex-start; /* across the axis */
 flex-wrap: wrap;
 
 /* Flex item */
-flex: 1;                      /* grow to fill */
-flex: 0 0 250px;              /* fixed size, never grow or shrink */
-flex-shrink: 0;               /* don't let this be squashed */
-margin-left: auto;            /* push this and everything after it right */
+flex: 1; /* grow to fill */
+flex: 0 0 250px; /* fixed size, never grow or shrink */
+flex-shrink: 0; /* don't let this be squashed */
+margin-left: auto; /* push this and everything after it right */
 
 /* Grid */
-grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));   /* responsive cards */
-grid-template-columns: 250px 1fr;                              /* sidebar + main */
-grid-column: 1 / -1;                                           /* full width */
+grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* responsive cards */
+grid-template-columns: 250px 1fr; /* sidebar + main */
+grid-column: 1 / -1; /* full width */
 
 /* ── CENTRING ────────────────────────────────────────────────────────── */
-margin: 0 auto;                                    /* horizontal, block element */
-display: flex; justify-content: center; align-items: center;   /* both */
-display: grid; place-items: center;                            /* both, shorter */
+margin: 0 auto; /* horizontal, block element */
+display: flex;
+justify-content: center;
+align-items: center; /* both */
+display: grid;
+place-items: center; /* both, shorter */
 
 /* ── SIZING ──────────────────────────────────────────────────────────── */
-width: min(100% - 2rem, 1200px);   /* responsive container with side padding */
-max-width: 65ch;                    /* readable paragraph width */
-min-height: 100dvh;                 /* full screen, mobile-safe */
-font-size: clamp(1rem, 2.5vw, 2rem);   /* fluid, bounded */
+width: min(100% - 2rem, 1200px); /* responsive container with side padding */
+max-width: 65ch; /* readable paragraph width */
+min-height: 100dvh; /* full screen, mobile-safe */
+font-size: clamp(1rem, 2.5vw, 2rem); /* fluid, bounded */
 
 /* ── POSITION ────────────────────────────────────────────────────────── */
-position: relative;    /* anchor for absolutely positioned children */
-position: absolute;    /* placed against the nearest positioned ancestor */
-position: fixed;       /* pinned to the viewport */
-position: sticky; top: 0;   /* the offset is required */
+position: relative; /* anchor for absolutely positioned children */
+position: absolute; /* placed against the nearest positioned ancestor */
+position: fixed; /* pinned to the viewport */
+position: sticky;
+top: 0; /* the offset is required */
 
 /* ── VISUAL ──────────────────────────────────────────────────────────── */
 border-radius: 8px;
 box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
-transition: background 150ms ease, transform 150ms ease;
-transform: translateY(-2px);   /* animate transform/opacity, not width/top */
+transition:
+    background 150ms ease,
+    transform 150ms ease;
+transform: translateY(-2px); /* animate transform/opacity, not width/top */
 
 /* ── RESPONSIVE (mobile-first) ───────────────────────────────────────── */
-@media (min-width: 768px)  { }   /* tablet and up */
-@media (min-width: 1024px) { }   /* desktop and up */
-@media (prefers-reduced-motion: reduce) { }   /* respect motion preferences */
+@media (min-width: 768px) {
+} /* tablet and up */
+@media (min-width: 1024px) {
+} /* desktop and up */
+@media (prefers-reduced-motion: reduce) {
+} /* respect motion preferences */
 
 /* ── UNITS ───────────────────────────────────────────────────────────── */
 /* rem    sizes, spacing (1rem = 16px)      px   borders, radii, shadows    */
