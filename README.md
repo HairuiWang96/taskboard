@@ -1,7 +1,7 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-120 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+121 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
@@ -9,7 +9,7 @@ A complete self-study system for senior JavaScript / fullstack engineering inter
 
 ```
 1-high-priority/    47 files — study these first, highest interview ROI
-2-medium-priority/  35 files — once high-priority is solid
+2-medium-priority/  36 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
 
@@ -85,6 +85,7 @@ Root files (start here):
 | [CSS-HTML-LIVE-CODING.md](2-medium-priority/CSS-HTML-LIVE-CODING.md) | CSS live coding: flexbox, grid, components from scratch, responsive design |
 | [ANXIETY-MINDSET-MANAGEMENT.md](2-medium-priority/ANXIETY-MINDSET-MANAGEMENT.md) | Managing nerves, second-language tactics, reframing rejection |
 | [AI-MULTIMODAL-VISION-DEEP.md](2-medium-priority/AI-MULTIMODAL-VISION-DEEP.md) | Vision AI, sending images to Claude/GPT-4o, PDF processing, document extraction |
+| [PDF-RENDERING-INTERNALS.md](2-medium-priority/PDF-RENDERING-INTERNALS.md) | PDF file format, PDF.js rendering pipeline, generation strategies, architecture, libraries |
 | [AI-FINE-TUNING-DEEP.md](2-medium-priority/AI-FINE-TUNING-DEEP.md) | LoRA, QLoRA, when to fine-tune, data prep, OpenAI and Together fine-tuning APIs |
 | [AI-OBSERVABILITY-DEEP.md](2-medium-priority/AI-OBSERVABILITY-DEEP.md) | LangSmith, Helicone, Braintrust, tracing agents, prompt versioning, alerting |
 | [BUILD-TOOLS-DEEP.md](2-medium-priority/BUILD-TOOLS-DEEP.md) | Vite, Webpack, esbuild, tree shaking, code splitting, bundle analysis, Module Federation |
