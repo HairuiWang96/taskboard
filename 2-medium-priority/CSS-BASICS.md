@@ -607,7 +607,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
     display: flex;
     justify-content: center; /* horizontal */
     align-items: center; /* vertical */
-    min-height: 300px; /* ‼️ needs a height to centre WITHIN */
+    min-height: 300px; /* ‼️ needs a height to centre WITHIN */‼️
 }
 
 /* ── BOTH DIRECTIONS: grid — shortest version ────────────────────────── */
@@ -617,7 +617,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
     min-height: 300px;
 }
 
-/* ── BOTH DIRECTIONS: absolute positioning — for overlays and modals ──── */
+/* ── BOTH DIRECTIONS: absolute positioning — for overlays and modals ──── */‼️
 .parent {
     position: relative;
 }
@@ -638,7 +638,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
     max-width: 1200px; /* never wider than this */
     margin: 0 auto; /* centred */
     padding: 0 1rem; /* ‼️ breathing room so text never touches the phone
-                          screen edge */
+                          screen edge */‼️
 }
 ```
 
@@ -647,7 +647,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
 ## 8. Spacing — margin, padding, gap
 
 ```css
-/* ‼️ MODERN ADVICE: reach for `gap` first. It only works inside flex or grid,
+/* ‼️ MODERN ADVICE: reach for `gap` first. It only works inside flex or grid,‼️
    but that covers most layout, and it avoids every margin headache below. */
 
 /* ── THE OLD WAY — margin on each child ──────────────────────────────── */
