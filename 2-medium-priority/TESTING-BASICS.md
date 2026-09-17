@@ -507,7 +507,7 @@ describe('UserService.register', () => {
     // return values leaking from the previous test. Tests that share mutable
     // state pass alone and fail in suite order, which is miserable to debug.
     beforeEach(() => {
-        // vi.fn() creates a fake function that records how it was called and
+        // ‼️‼️vi.fn() creates a fake function that records how it was called and
         // returns whatever you tell it to. (jest.fn() in Jest — identical.)
         repo = {
             findByEmail: vi.fn(),
@@ -519,6 +519,34 @@ describe('UserService.register', () => {
         // swapping in fakes is trivial. This is dependency injection paying off:
         // if the service did `new MailerService()` internally there would be no
         // seam here and this test would send real email.
+        //
+        // ── IN PLAIN WORDS ────────────────────────────────────────────────
+        // The service does not create its own tools. You hand them to it.
+        // So in a test you can hand it FAKE ones.
+        //
+        //   // If UserService made its own mailer:
+        //   class UserService {
+        //     constructor() {
+        //       this.mailer = new MailerService();  // ← locked in, can't change‼️‼️
+        //     }
+        //   }
+        //   // Your test would send a REAL email every time it runs.
+        //
+        //   // Instead it takes the mailer as an argument:
+        //   class UserService {
+        //     constructor(repo, mailer) { ... }     // ← you decide what goes in‼️
+        //   }
+        //   // So the test passes a fake:
+        //   //   new UserService(fakeRepo, fakeMailer)
+        //   // No real email, no real database.
+        //
+        // "SEAM" just means a place where you can swap something out.
+        // Constructor arguments are that place.
+        //
+        // The `as any` below is unrelated to all of this — it is a TypeScript
+        // shortcut meaning "trust me, this fake is close enough". The fakes
+        // only have the couple of methods this test needs, not every method of
+        // the real class, so without `as any` TypeScript would complain.
         service = new UserService(repo as any, mailer as any);
     });
 
@@ -588,7 +616,7 @@ describe('POST /api/users', () => {
     let app: Express;
 
     beforeAll(async () => {
-        // Build the real app. supertest talks to it directly in memory, so no
+        // Build the real app. supertest talks to it directly in memory,‼️ so no
         // port is bound and tests can run in parallel without clashing.
         app = await createApp();
     });
@@ -612,7 +640,7 @@ describe('POST /api/users', () => {
         const response = await request(app).post('/api/users').send({ email: 'not-an-email', password: 'a-long-password' }).expect(400);
 
         // ‼️ Assert on the SHAPE of the error, not its exact wording. Messages get
-        // reworded; a test that breaks when someone improves a message is noise.
+        // reworded; a test that breaks when someone improves a message is noise.‼️
         expect(response.body.message).toBeDefined();
     });
 
@@ -673,7 +701,7 @@ describe('POST /api/users', () => {
     thing that actually runs in production: real SQL, real constraints, real
     transactions, real migrations.
 
-  ‼️ RECOMMENDATION: use a real database for repository and endpoint tests.
+  ‼️ RECOMMENDATION: ‼️use a real database for repository and endpoint tests.
      It is the single highest-value testing upgrade for a backend, and with
      Testcontainers the setup is about fifteen lines.
 
@@ -762,7 +790,7 @@ describe('UserRepository', () => {
      - the current time
      - randomness
 
-THE VOCABULARY (used loosely in practice — do not lose sleep over it)
+THE VOCABULARY (used loosely in practice — do not lose sleep over it)‼️‼️‼️
 
   STUB   Returns a canned answer. "When asked for user 123, return this object."
          Used to SET UP a scenario.
@@ -780,9 +808,121 @@ THE VOCABULARY (used loosely in practice — do not lose sleep over it)
      vi.spyOn() does the spy job. That is 95% of what you need.
 ```
 
+```text
+‼️ THE SAME FOUR WORDS, EXPLAINED THE EASY WAY.
+
+Imagine you are testing a robot waiter. The robot needs a KITCHEN to get food
+from. You do not want to build a real kitchen just to test the robot, so you
+put something fake in its place. What kind of fake depends on what you want
+to find out.
+
+  STUB — "just give it an answer"
+    A cardboard kitchen that always hands out the same plate of pasta.
+    You use it because the robot NEEDS something back to carry on.
+    QUESTION IT ANSWERS: "what does the robot do when the kitchen says X?"
+
+  MOCK — "write down what happened"
+    A cardboard kitchen with a notepad. Every time the robot shouts an order,
+    it writes it down. Afterwards you read the notepad.
+    QUESTION IT ANSWERS: "did the robot actually order the soup?"
+
+  SPY — "the real thing, but watched"
+    The REAL kitchen, with a camera on it. Food is genuinely cooked, and you
+    also get a recording of every order.
+    QUESTION IT ANSWERS: "it still works normally, but let me also check
+    what was ordered."
+
+  FAKE — "a cheap version that really works"
+    A microwave instead of a full kitchen. It genuinely makes food, just in a
+    simple way. Not a cardboard prop — it actually functions.
+    QUESTION IT ANSWERS: "does everything work end to end, without the slow
+    real thing?"
+
+‼️ THE SHORT VERSION:
+    STUB  = gives answers        (you control what comes OUT)
+    MOCK  = remembers questions  (you check what went IN)
+    SPY   = real + watched
+    FAKE  = a simple working replacement
+```
+
+```javascript
+// ── THE SAME FOUR, IN ACTUAL CODE ───────────────────────────────────────
+// One example throughout: a service that emails a user their order total.
+
+// ── STUB — I just need it to return something ──────────────────────────
+// I am testing the TOTAL calculation. I do not care about the database,
+// I just need it to hand me an order so the code can run.
+const priceRepo = {
+    getOrder: vi.fn().mockReturnValue({ items: [10, 20] }), // canned answer
+};
+// Now getOrder() always returns { items: [10, 20] }, no database involved.
+// I then check the TOTAL: expect(service.total()).toBe(30)
+// ‼️ The stub is just scaffolding. The thing I assert on is the RESULT.
+
+// ── MOCK — I need to prove something was called ────────────────────────
+// I am testing that an email actually gets sent. There is no return value
+// to check — the whole point IS the action.
+const mailer = { send: vi.fn() }; // records every call
+
+await service.checkout('ada@example.com');
+
+// Now I read the notepad:
+expect(mailer.send).toHaveBeenCalledWith('ada@example.com', 'Your total: £30');
+// ‼️ Nothing was returned. The ASSERTION IS ON THE CALL ITSELF.
+
+// ── Note: vi.fn() did both jobs above ──────────────────────────────────
+// That is why people use "mock" and "stub" interchangeably in JavaScript —
+// the same tool does both. The difference is only in HOW YOU USE IT:
+//   gave it a return value and checked the result?  → you used it as a stub
+//   checked toHaveBeenCalled afterwards?            → you used it as a mock
+
+// ── SPY — keep the real behaviour, but watch it ────────────────────────
+// I want the real logger to keep logging (so I can see output), AND I want
+// to check that it logged an error.
+const spy = vi.spyOn(logger, 'error'); // wraps the REAL logger.error
+
+await service.checkout('bad-email');
+
+expect(spy).toHaveBeenCalled(); // it really logged, AND I can check it
+spy.mockRestore(); // ‼️ put the original back afterwards
+
+// ── FAKE — a simple but genuinely working replacement ──────────────────
+// Instead of a real database, an array. It really stores and retrieves —
+// it is not a prop, it just is not Postgres.
+class FakeUserRepo {
+    private users = [];
+    async create(user) {
+        this.users.push(user);
+        return user;
+    }
+    async findByEmail(email) {
+        return this.users.find((u) => u.email === email) ?? null;
+    }
+}
+// ‼️ Why bother: with a stub, "create a user then find them" cannot work —
+// the stub does not remember anything. A fake does, so you can test a whole
+// SEQUENCE of operations without a real database.
+```
+
+```text
+‼️ WHICH ONE DO I ACTUALLY REACH FOR? A decision in three lines:
+
+  Does my code need something BACK to continue?        → STUB  (vi.fn()
+                                                          + mockReturnValue)
+  Am I checking that something WAS DONE (email sent,
+  record saved, event published)?                      → MOCK  (vi.fn()
+                                                          + toHaveBeenCalled)
+  Do I want the real thing to still happen?            → SPY   (vi.spyOn)
+  Do I need it to REMEMBER state across several calls? → FAKE  (a small class)
+
+  ‼️ And honestly: 90% of the time it is vi.fn(). Do not agonise over the
+     vocabulary — it matters for reading other people's writing about testing,
+     not for getting your test written.
+```
+
 ```typescript
 // ── Creating and controlling a mock ─────────────────────────────────────
-const sendEmail = vi.fn(); // does nothing, records calls
+const sendEmail = vi.fn(); // does nothing, records calls ‼️‼️
 
 sendEmail.mockReturnValue('sent'); // sync return value
 sendEmail.mockResolvedValue({ id: '1' }); // async resolve
@@ -837,7 +977,7 @@ const server = setupServer(
 beforeAll(() =>
     server.listen({
         // ‼️ Fail loudly if your code calls an endpoint you did not mock, rather
-        // than letting a real request escape to the internet during a test run.
+        // than letting a real request escape to the internet during a test run.‼️
         onUnhandledRequest: 'error',
     }),
 );
@@ -906,7 +1046,7 @@ import userEvent from '@testing-library/user-event';
 
 describe('LoginForm', () => {
     it('submits the email and password', async () => {
-        // user-event simulates real interaction (focus, keydown, keyup, input)
+        // user-event simulates real interaction (focus, keydown, keyup, input)‼️‼️
         // rather than firing a single synthetic event. Closer to reality, and it
         // catches bugs fireEvent misses.
         const user = userEvent.setup();
@@ -916,7 +1056,7 @@ describe('LoginForm', () => {
 
         // ‼️ THE CORE PRINCIPLE OF REACT TESTING LIBRARY:
         // find elements the way a USER would — by their visible label, their role,
-        // their text — NOT by CSS class or component internals.
+        // their text — NOT by CSS class or component internals.‼️
         //
         // Why it matters: a test written against .login-input breaks when someone
         // renames a class, even though nothing user-facing changed. A test written
@@ -940,7 +1080,7 @@ describe('LoginForm', () => {
         await user.click(screen.getByRole('button', { name: 'Log in' }));
 
         // role="alert" is how a screen reader announces an error, so querying by
-        // it tests the behaviour and the accessibility at the same time.
+        // it tests the behaviour and the accessibility at the same time.‼️
         expect(screen.getByRole('alert')).toHaveTextContent('Please enter a valid email');
         expect(onSubmit).not.toHaveBeenCalled();
     });
@@ -948,7 +1088,7 @@ describe('LoginForm', () => {
 ```
 
 ```text
-‼️ THE QUERY METHODS, and when to use each:
+‼️ THE QUERY METHODS, and when to use each:‼️
 
   getBy...     Element MUST exist now. Throws a helpful error if not.
                → your default
@@ -957,7 +1097,7 @@ describe('LoginForm', () => {
                → ONLY for asserting something is ABSENT:
                  expect(screen.queryByText('Error')).not.toBeInTheDocument()
 
-  findBy...    Async — waits up to 1s for it to appear. Returns a promise.
+  findBy...    ‼️Async — waits up to 1s for it to appear. Returns a promise.
                → for anything that appears after a fetch or a transition:
                  expect(await screen.findByText('Welcome')).toBeInTheDocument()
 
@@ -989,7 +1129,7 @@ test('a user can log in and see their dashboard', async ({ page }) => {
     await page.getByRole('button', { name: 'Log in' }).click();
 
     // ‼️ Playwright's expect AUTO-WAITS — it retries for a few seconds until the
-    // condition is true. So you do NOT write sleeps. A hard-coded
+    // condition is true. So you do NOT write sleeps. ‼️A hard-coded
     // waitForTimeout(2000) is both slower than necessary and still flaky on a
     // slow CI machine; auto-waiting is faster and more reliable.
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
@@ -1037,7 +1177,7 @@ npx playwright show-report           # HTML report with screenshots and traces
      state, and reuse it. Repeating a 3-second login in 15 tests wastes most
      of your runtime.
 
-  5. A FLAKY TEST IS WORSE THAN NO TEST. Once people start re-running the
+  5. A FLAKY TEST IS WORSE THAN NO TEST. ‼️Once people start re-running the
      suite instead of reading failures, every test has lost its value. Fix it
      or delete it — do not leave it failing intermittently.
 ```
@@ -1055,7 +1195,7 @@ npx playwright show-report           # HTML report with screenshots and traces
   ✓ AUTH — who can see what, who can do what. The tests that stop a data breach.
   ✓ API CONTRACTS — status codes and response shapes your clients depend on.
   ✓ EDGE CASES AND BOUNDARIES — empty, zero, one, maximum, negative.
-  ✓ BUG FIXES — always write the failing test first, then fix it.
+  ✓ BUG FIXES — always write the failing test first, then fix it.‼️
   ✓ THE CRITICAL USER JOURNEY — one E2E covering the thing your product exists
     to do.
 
@@ -1081,7 +1221,7 @@ npx playwright show-report           # HTML report with screenshots and traces
 ```text
 ‼️ ABOUT CODE COVERAGE — because someone will ask you for a number.
 
-  Coverage measures which LINES ran during your tests. That is all it measures.
+  Coverage measures which LINES ran during your tests. That is all it measures.‼️
 
   This function has 100% coverage and is completely untested:
 
@@ -1166,7 +1306,7 @@ jobs:
 ## 15. Common Beginner Mistakes
 
 ```text
-‼️ 1. Testing implementation instead of behaviour.
+‼️ 1. Testing implementation instead of behaviour.‼️‼️
    Asserting on internal state, private methods, or call order. The test breaks
    on every refactor even though nothing user-visible changed. Test what goes
    IN and what comes OUT.
@@ -1184,7 +1324,7 @@ jobs:
 
 ‼️ 5. Tests that depend on each other or on order.
    Test B only passes because test A created a record. Reset state in
-   beforeEach/afterEach; every test must pass alone.
+   beforeEach/afterEach; every test must pass alone.‼️‼️
 
 ‼️ 6. Not resetting mocks between tests.
    Call counts and queued return values leak. Use vi.resetAllMocks() in
@@ -1201,7 +1341,7 @@ jobs:
    await page.waitForTimeout(2000) is slow AND still flaky. Use auto-waiting
    assertions instead.
 
-‼️ 10. Testing dates without freezing time.
+‼️ 10. Testing dates without freezing time.‼️‼️
    Passes today, fails on the 1st, or at midnight, or in another timezone.
    Use vi.setSystemTime().
 
@@ -1217,7 +1357,7 @@ jobs:
 
 ‼️ 14. Leaving a flaky test in the suite.
    People start ignoring failures, and then all the tests are worthless.
-   Fix it or delete it.
+   Fix it or delete it.‼️
 ```
 
 ---
@@ -1241,8 +1381,8 @@ describe('thing', () => {
 
 // ── ASSERTIONS ────────────────────────────────────────────────────────────
 expect(x).toBe(5); // primitives, ===
-expect(obj).toEqual({ a: 1 }); // objects/arrays, deep compare
-expect(obj).toMatchObject({ a: 1 }); // partial match
+expect(obj).toEqual({ a: 1 }); // objects/arrays, deep compare‼️
+expect(obj).toMatchObject({ a: 1 }); // partial match‼️
 expect(arr).toHaveLength(3);
 expect(arr).toContain('x');
 expect(x).toBeTruthy() / toBeNull() / toBeUndefined();
@@ -1320,13 +1460,13 @@ THEN, WHEN YOU WANT MORE DEPTH:
   - Test data factories and fixtures — for managing setup at scale
   - Contract testing — once you have separate services
   - Load testing with k6 — before a launch or a traffic spike
-  - Mutation testing — tests your tests by breaking your code deliberately
+  - Mutation testing — tests your tests by breaking your code deliberately‼️
 
 ‼️ THE HABIT WORTH BUILDING FIRST: every time you fix a bug, write the failing
    test BEFORE the fix. It forces you to actually reproduce the bug (so you
    know you fixed the right thing), it proves the fix works, and the bug can
    never silently come back. It is the single highest-return testing habit,
-   and it requires no strategy discussion with anyone.
+   and it requires no strategy discussion with anyone.‼️‼️‼️
 ```
 
 ---
