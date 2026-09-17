@@ -21,6 +21,7 @@
     - [3. The Types of Tests](#3-the-types-of-tests)
     - [4. The Testing Pyramid](#4-the-testing-pyramid)
     - [5. The Tools — What to Use for What](#5-the-tools--what-to-use-for-what)
+        - [Vitest vs Jest](#vitest-vs-jest)
     - [6. Your First Unit Test](#6-your-first-unit-test)
     - [7. Backend — Testing a Service](#7-backend--testing-a-service)
     - [8. Backend — Testing an API Endpoint](#8-backend--testing-an-api-endpoint)
@@ -348,6 +349,68 @@ Accessibility                     AXE-CORE / jest-axe        Automated a11y
 
 Manual API poking                 POSTMAN / INSOMNIA /       Exploration, not
                                   Bruno / curl               automated testing.
+```
+
+### Vitest vs Jest
+
+```javascript
+// ‼️ They are NEARLY IDENTICAL TO USE. Vitest deliberately copied Jest's API
+// so that switching costs almost nothing and every Jest tutorial still applies.
+
+// Jest                          // Vitest
+jest.fn();
+vi.fn();
+jest.spyOn();
+vi.spyOn();
+jest.useFakeTimers();
+vi.useFakeTimers();
+jest.mock('./module');
+vi.mock('./module');
+// describe / it / expect and every matcher are exactly the same.
+```
+
+```text
+‼️ THE REAL DIFFERENCE IS THE ENGINE, not the API.‼️‼️
+
+  JEST (Meta, 2014)
+    Built for the CommonJS + Babel era. It is battle-tested, enormously
+    popular, and still perfectly good.
+    ‼️ Its weak spot: ESM and TypeScript need transform configuration
+    (babel-jest or ts-jest). This is a well-known source of pain — "Cannot
+    use import statement outside a module" is one of the most-searched
+    JavaScript errors, and it is almost always a Jest transform problem.
+
+  VITEST (2021, built on Vite)
+    Reuses your existing Vite config, so if your app already builds with Vite
+    your tests need almost no setup at all.
+    ✓ Native ESM and TypeScript via esbuild — no transform config
+    ✓ Noticeably faster, especially in watch mode, where it re-runs only the
+      tests your change actually affects
+    ✓ Same API, so Jest knowledge transfers directly
+
+TWO SMALL GOTCHAS WHEN MOVING TO VITEST
+
+  1. ‼️ Vitest requires you to import the test functions:
+         import { describe, it, expect, vi } from 'vitest';
+     ...unless you set `globals: true` in vitest.config.ts, which makes them
+     available everywhere exactly like Jest. Forgetting this is the usual
+     first error when copying a Jest test across.
+
+  2. Jest still has the bigger ecosystem. Some older libraries and a lot of
+     older blog posts assume it. This gap is closing quickly, but it is real.
+
+‼️ WHICH TO PICK
+
+  New project, especially one already using Vite   → VITEST
+  Existing Jest project that works fine            → LEAVE IT
+
+  Migrating buys you speed and simpler config — not capability. It is rarely
+  worth doing on its own, but it is a very easy migration if you are already
+  touching the build setup.
+
+  ‼️ And for learning: it genuinely does not matter which you start with. The
+     concepts and the API are the same, so anything you learn in one works in
+     the other.
 ```
 
 ```bash
