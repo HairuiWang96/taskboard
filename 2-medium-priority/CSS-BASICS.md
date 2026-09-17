@@ -33,6 +33,7 @@
     - [11. Typography](#11-typography)
     - [12. Responsive Design](#12-responsive-design)
     - [13. Transitions \& Hover Effects](#13-transitions--hover-effects)
+        - [transform vs transition — they are not the same thing](#transform-vs-transition--they-are-not-the-same-thing)
     - [14. Reading Tailwind](#14-reading-tailwind)
     - [15. Debugging CSS](#15-debugging-css)
     - [16. Troubleshooting — "Why Won't This Work?"](#16-troubleshooting--why-wont-this-work)
@@ -76,7 +77,7 @@ h3 {
 }
 
 /* DESCENDANT — ‼️any .title ANYWHERE inside .card, however deeply nested */
-‼️ .card .title {
+‼️ ‼️ .card .title {
 }
 
 /* DIRECT CHILD — only a .title that is an immediate child of .card.‼️
@@ -219,7 +220,7 @@ body {
     box-sizing: border-box;
 }
 
-/* With border-box, width means the TOTAL width including padding and border.
+/* With border-box, width means the TOTAL width including padding and border.‼️‼️
    Now .box really is 200px wide, and 50% really is half. This is what people
    expect, and what every UI framework uses. */
 ```
@@ -243,7 +244,7 @@ margin-bottom: 24px;
    which only works on a block element with a set width. */
 .container {
     max-width: 1200px;
-    margin: 0 auto; /* 0 top/bottom, auto left/right → centred */‼️
+    margin: 0 auto; /* 0 top/bottom, auto left/right → centred */‼️‼️
 }
 ```
 
@@ -344,7 +345,7 @@ display: inline;
 display: inline-block;
 /* ‼️ Has an annoying quirk: whitespace in your HTML becomes a visible ~4px‼️
    gap between items, because they are still being treated as text. Flexbox
-   does not have this problem, which is one reason it replaced this approach. */
+   does not have this problem, which is one reason it replaced this approach.‼️ */
 
 /* ── flex ─────────────────────────────────────────────────────────────── */
 /* Children line up in a row (or column) and can be distributed and aligned.
@@ -426,10 +427,10 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
     flex: 1; /* ‼️ "grow to fill the available space, share it equally".
                        Two items both with flex: 1 → each takes half. */
     flex: 2; /* takes twice as much of the free space as a flex: 1 */
-    flex: 0 0 200px; /* don't grow, don't shrink, stay 200px — a fixed sidebar */
+    flex: 0 0 200px; /* don't grow, don't shrink, stay 200px — a fixed sidebar */‼️
     flex-shrink: 0; /* ‼️ "never let this get squashed". ‼️ The fix when an icon
                        or button gets crushed next to long text. */
-    align-self: center; /* override the container's align-items for one item */
+    align-self: center; /* override the container's align-items for one item */‼️
     margin-left: auto; /* ‼️ push THIS item (and everything after it) to the
                           far end. The classic "one link on the right of the
                           navbar" trick. */‼️
@@ -516,11 +517,11 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
     gap: 1.5rem;
 }
 /* How to read that:
-     repeat(auto-fit, ...)  →  fit as many columns as will fit‼️
+     repeat(auto-fit, ...)  →  fit as many columns as will fit‼️‼️
      minmax(250px, 1fr)     →  each column is at least 250px, and shares any
                                leftover space equally‼️
 
-   Result: 4 columns on a desktop, 2 on a tablet, 1 on a phone — automatically,
+   Result: 4 columns on a desktop, 2 on a tablet, 1 on a phone — automatically,‼️
    at every width in between, without a single breakpoint.‼️
 
    ‼️ auto-fit vs auto-fill: with few items, auto-fit STRETCHES them to fill
@@ -534,7 +535,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
     grid-column: span 2; /* this item is two columns wide */
     grid-row: span 2; /* and two rows tall */
     grid-column: 1 / 3; /* from grid line 1 to line 3 (i.e. 2 columns) */‼️
-    grid-column: 1 / -1; /* ‼️ full width, whatever the column count */‼️
+    grid-column: 1 / -1; /* ‼️ full width, whatever the column count */‼️‼️
 }
 
 /* ── NAMED AREAS — the most readable way to do a page shell ──────────── */
@@ -567,7 +568,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
 .grid {
     justify-items: center; /* horizontal position of items inside their cell */
     align-items: center; /* vertical position of items inside their cell */
-    place-items: center; /* both at once */‼️
+    place-items: center; /* both at once */‼️‼️
 }
 ```
 
@@ -607,7 +608,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
     display: flex;
     justify-content: center; /* horizontal */
     align-items: center; /* vertical */
-    min-height: 300px; /* ‼️ needs a height to centre WITHIN */‼️
+    min-height: 300px; /* ‼️ needs a height to centre WITHIN */‼️‼️
 }
 
 /* ── BOTH DIRECTIONS: grid — shortest version ────────────────────────── */
@@ -617,7 +618,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
     min-height: 300px;
 }
 
-/* ── BOTH DIRECTIONS: absolute positioning — for overlays and modals ──── */‼️
+/* ── BOTH DIRECTIONS: absolute positioning — for overlays and modals ──── */‼️‼️
 .parent {
     position: relative;
 }
@@ -638,7 +639,7 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
     max-width: 1200px; /* never wider than this */
     margin: 0 auto; /* centred */
     padding: 0 1rem; /* ‼️ breathing room so text never touches the phone
-                          screen edge */‼️
+                          screen edge */‼️‼️
 }
 ```
 
@@ -669,8 +670,8 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
 ```
 
 ```css
-/* ‼️ MARGIN COLLAPSING — the "why is there a gap I didn't ask for?" bug.
-   VERTICAL margins between siblings MERGE into one, taking the larger value. */
+/* ‼️ MARGIN COLLAPSING — the "why is there a gap I didn't ask for?" bug.‼️‼️
+   VERTICAL margins between siblings MERGE into one, taking the larger value. */‼️
 
 .a {
     margin-bottom: 20px;
@@ -678,22 +679,22 @@ opacity: 0; /* invisible, occupies space, and is still CLICKABLE */‼️
 .b {
     margin-top: 30px;
 }
-/* The gap between them is 30px, NOT 50px. */
+/* The gap between them is 30px, NOT 50px. */‼️
 
 /* Worse, a child's top margin can "escape" its parent and push the PARENT
-   down instead of the child:  */
+   down instead of the child:  */‼️‼️
 .parent {
     background: grey;
 } /* no padding, no border */
 .child {
     margin-top: 20px;
-} /* pushes .parent down, not .child */
+} /* pushes .parent down, not .child */‼️‼️
 
-/* Fixes, in order of preference:
+/* Fixes, in order of preference:‼️‼️
      1. Use gap on a flex/grid parent — collapsing does not happen at all.
      2. Give the parent padding or a border — that blocks the escape.
      3. Use padding instead of margin.
-   ‼️ Horizontal margins never collapse. This is a vertical-only oddity. */
+   ‼️ Horizontal margins never collapse. This is a vertical-only oddity. */‼️‼️
 ```
 
 ```css
@@ -744,7 +745,7 @@ position: static; /* normal document flow; top/left/right/bottom do nothing */
     right: -8px; /* a notification dot on the corner of an icon */
 }
 
-/* ── fixed — pinned to the viewport, ignores scrolling ───────────────── */
+/* ── fixed — pinned to the viewport, ignores scrolling ───────────────── */‼️
 .floating-button {
     position: fixed;
     bottom: 2rem;
@@ -754,13 +755,13 @@ position: static; /* normal document flow; top/left/right/bottom do nothing */
 /* ── sticky — normal until it hits a scroll threshold, then pinned ───── */
 .header {
     position: sticky;
-    top: 0; /* ‼️ REQUIRED — sticky with no offset does nothing at all,
+    top: 0; /* ‼️ REQUIRED — sticky with no offset does nothing at all,‼️‼️
                        and this is the usual reason "sticky isn't working" */
     z-index: 10;
 }
 /* ‼️ Second common sticky failure: it only sticks within its PARENT. If the
    parent is only as tall as the header, there is nothing to stick across.
-   Also, any ancestor with `overflow: hidden` breaks sticky entirely. */
+   Also, any ancestor with `overflow: hidden` breaks sticky entirely. */‼️‼️
 ```
 
 ```css
@@ -775,11 +776,11 @@ position: static; /* normal document flow; top/left/right/bottom do nothing */
 }
 
 /* ‼️ Two rules that explain most z-index confusion:
-   1. z-index ONLY works on positioned elements (relative/absolute/fixed/sticky).
+   1. z-index ONLY works on positioned elements (relative/absolute/fixed/sticky).‼️‼️
       Adding it to a static element does nothing.
-   2. z-index is compared only among SIBLINGS in the same stacking context.
+   2. z-index is compared only among SIBLINGS in the same stacking context.‼️‼️
       A child with z-index: 9999 inside a parent with z-index: 1 will still
-      sit below a sibling of that parent with z-index: 2. The child cannot
+      sit below a sibling of that parent with z-index: 2. ‼️The child cannot
       escape its parent's layer. This is why "I set z-index to 9999 and it
       still doesn't show" happens — the fix is to move the element up the DOM,
       or change the PARENT's z-index. */
@@ -806,7 +807,7 @@ color: rgb(59 130 246); /* modern space-separated syntax */
 color: rgb(59 130 246 / 50%); /* with transparency */
 color: hsl(217 91% 60%); /* hue, saturation, lightness */
 /* ‼️ HSL is worth knowing: to make a colour lighter or darker for a hover
-   state, change ONLY the lightness number. With hex you have to guess a whole
+   state, change ONLY the lightness number. ‼️‼️With hex you have to guess a whole
    new value. hsl(217 91% 60%) → hsl(217 91% 50%) is the same blue, darker. */
 
 /* ── CSS VARIABLES — define your palette once ────────────────────────── */
@@ -838,14 +839,14 @@ color: hsl(217 91% 60%); /* hue, saturation, lightness */
 }
 
 /* ── BORDERS ─────────────────────────────────────────────────────────── */
-border: 1px solid var(--color-border); /* width | style | colour */
+border: 1px solid var(--color-border); /* width | style | colour */‼️
 border-radius: 8px;
-border-radius: 50%; /* a circle, on a square element */
+border-radius: 50%; /* a circle, on a square element */‼️
 border-radius: 9999px; /* a pill shape, on a wide element */
 border-bottom: 2px solid red; /* one side only — underlines, active tabs */
 
 /* ── SHADOWS ─────────────────────────────────────────────────────────── */
-/*           x-offset | y-offset | blur | spread | colour */
+/*           x-offset | y-offset | blur | spread | colour */‼️
 box-shadow: 0 1px 3px rgb(0 0 0 / 0.1); /* subtle card lift */
 box-shadow: 0 4px 12px rgb(0 0 0 / 0.15); /* more elevated */
 box-shadow: 0 20px 25px rgb(0 0 0 / 0.15); /* modal */
@@ -869,7 +870,7 @@ box-shadow:
 body {
     /* ‼️ The system font stack — uses the OS's own UI font. Loads instantly
      (no download), and looks native on every platform. A good default before
-     you commit to a custom font. */
+     you commit to a custom font. */‼️‼️
     font-family:
         system-ui,
         -apple-system,
@@ -880,8 +881,8 @@ body {
     font-size: 1rem; /* 16px — do not go below this for body text */
     line-height: 1.5; /* ‼️ unitless. 1.5 = 1.5× the element's own font
                               size, and it scales correctly for headings that
-                              inherit it. Never use line-height: 24px. */
-    color: #1f2937; /* near-black reads better than pure #000 */
+                              inherit it. Never use line-height: 24px. */‼️‼️
+    color: #1f2937; /* near-black reads better than pure #000 */‼️
 }
 
 h1 {
@@ -895,11 +896,11 @@ p {
     /* ‼️ THE most effective readability fix there is. `ch` is the width of one
      "0" character, so 65ch is roughly 65 characters per line — the range
      typographers consider comfortable. Full-width paragraphs on a wide
-     monitor are genuinely hard to read. */
+     monitor are genuinely hard to read. */‼️‼️
     max-width: 65ch;
 }
 
-/* ── PROPERTIES YOU WILL ACTUALLY USE ────────────────────────────────── */
+/* ── PROPERTIES YOU WILL ACTUALLY USE ────────────────────────────────── */‼️
 font-weight: 400; /* normal */
 font-weight: 500; /* medium — good for UI labels */
 font-weight: 600; /* semibold — good for headings in UI */
@@ -908,16 +909,16 @@ font-weight: 700; /* bold */
 text-align: left | center | right;
 text-transform: uppercase | capitalize | lowercase;
 letter-spacing: 0.05em; /* slight tracking — pairs well with uppercase */
-text-decoration: none; /* removes the underline from links */
+text-decoration: none; /* removes the underline from links */‼️
 
-/* Truncate one line with an ellipsis */
+/* Truncate one line with an ellipsis */‼️
 .truncate {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap; /* ‼️ all three are required — any one alone does nothing */
 }
 
-/* Truncate after N lines */
+/* Truncate after N lines */‼️
 .clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -963,13 +964,14 @@ text-decoration: none; /* removes the underline from links */
 
 ```css
 /* ── COMMON BREAKPOINTS (Tailwind's, which are a reasonable default) ──── */
+‼️
 /* 640px   sm   large phone      */
 /* 768px   md   tablet           */
 /* 1024px  lg   laptop           */
 /* 1280px  xl   desktop          */
 /* 1536px  2xl  large desktop    */
 
-/* ── OTHER USEFUL QUERIES ────────────────────────────────────────────── */
+/* ── OTHER USEFUL QUERIES ────────────────────────────────────────────── */‼️
 @media (prefers-color-scheme: dark) {
 } /* user has dark mode on */
 @media (prefers-reduced-motion: reduce) {
@@ -984,6 +986,7 @@ text-decoration: none; /* removes the underline from links */
 ```css
 /* ‼️ MODERN CSS THAT REPLACES MANY MEDIA QUERIES ENTIRELY.
    Prefer these — fewer breakpoints means fewer places to keep in sync. */
+‼️
 
 /* Fluid font size between two bounds */
 h1 {
@@ -995,7 +998,7 @@ h1 {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
-/* Row on wide screens, column on narrow — no breakpoint needed.
+/* Row on wide screens, column on narrow — no breakpoint needed.‼️
    Items stay in a row until they'd drop below 300px, then they wrap. */
 .split {
     display: flex;
@@ -1015,7 +1018,7 @@ h1 {
 
 ```html
 <!-- ‼️ WITHOUT THIS TAG IN YOUR HTML <head>, NONE OF YOUR RESPONSIVE CSS
-     WORKS ON A PHONE. The browser pretends to be 980px wide and zooms out,
+     WORKS ON A PHONE. ‼️‼️ The browser pretends to be 980px wide and zooms out,
      so your media queries never fire. Every framework's starter template
      includes it — but if you hand-wrote your HTML, check it is there. -->
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -1025,9 +1028,69 @@ h1 {
 
 ## 13. Transitions & Hover Effects
 
+### transform vs transition — they are not the same thing
+
+```text
+‼️ These get confused constantly, because they are almost always written
+   together. They do completely different jobs.
+
+  TRANSFORM   = WHAT the change is.‼️
+                Move, rotate, scale, skew. It is a STATE, not a motion.
+                On its own it happens INSTANTLY.
+
+  TRANSITION  = HOW the change happens.
+                "Animate smoothly over time instead of jumping."
+                It changes nothing itself — it watches OTHER properties and
+                eases between the old value and the new one.
+
+  THE ONE-LINE VERSION:
+    transform moves the thing. transition makes the move smooth.‼️
+```
+
+```css
+.box {
+    transform: translateY(0); /* WHAT: current position */
+    transition: transform 200ms ease; /* HOW:  animate changes to transform */
+}
+.box:hover {
+    transform: translateY(-10px); /* change the WHAT... */
+    /* ...and transition makes it glide instead of jumping */
+}
+
+/* ‼️ TEST YOUR UNDERSTANDING BY DELETING EACH ONE:
+     Remove the transition line → the box STILL MOVES on hover, it just snaps
+                                  there instantly with no animation.
+     Remove the transform lines → NOTHING MOVES AT ALL, because there is no
+                                  longer any change for transition to animate.
+   That is the clearest demonstration that they are independent. */
+
+/* They do not need each other at all: */
+.fade {
+    transition: background 200ms ease; /* animates colour — no transform involved */
+}
+.tilted {
+    transform: rotate(45deg); /* permanently rotated — no animation involved */
+}
+```
+
+```text
+‼️ WHY YOU SEE transform IN ALMOST EVERY HOVER EFFECT:
+
+   transform and opacity are the two CHEAPEST things to animate.‼️‼️ The GPU
+   handles them without re-laying-out the page, so they stay smooth at 60fps.
+
+   Animating top/left/width/height forces the browser to recalculate layout on
+   every single frame, which visibly stutters on slower devices.‼️
+
+     Instead of  top: -2px        →  transform: translateY(-2px)
+     Instead of  width: 110%      →  transform: scaleX(1.1)
+
+   Same visual result, far better performance. This is covered again below.‼️
+```
+
 ```css
 /* A transition animates a property when its value changes. */
-.button {
+‼️ .button {
     background: var(--color-primary);
     transform: translateY(0);
 
@@ -1042,7 +1105,7 @@ h1 {
 }
 
 /* ‼️ Put the transition on the BASE element, not on :hover. On :hover only,
-   the animation plays on the way in but snaps back instantly on the way out. */
+   the animation plays on the way in but snaps back instantly on the way out. */‼️
 
 /* ‼️ AVOID `transition: all`. It animates properties you did not intend
    (including layout ones), which is both slower and a source of odd glitches.
@@ -1068,7 +1131,7 @@ transition-timing-function: ease-out; /* ‼️ best for things ENTERING —
                                             fast start, soft landing */
 transition-timing-function: ease-in; /* best for things LEAVING */
 
-/* ── KEYFRAME ANIMATION — for repeating or multi-step motion ─────────── */
+/* ── KEYFRAME ANIMATION — for repeating or multi-step motion ─────────── */‼️‼️
 @keyframes spin {
     to {
         transform: rotate(360deg);
@@ -1092,7 +1155,7 @@ transition-timing-function: ease-in; /* best for things LEAVING */
     animation: fade-in 200ms ease-out;
 }
 
-/* ‼️ ACCESSIBILITY — always include this. Motion triggers nausea and migraines
+/* ‼️ ACCESSIBILITY — always include this.‼️ Motion triggers nausea and migraines
    for some people, and they have told their OS so. */
 @media (prefers-reduced-motion: reduce) {
     *,
@@ -1115,46 +1178,109 @@ transition-timing-function: ease-in; /* best for things LEAVING */
 
 THE NAMING PATTERN
 
-  Most classes are:  <property-abbreviation>-<value>
+  Most classes are:  <property-abbreviation>-<value>‼️‼️
 
   The spacing scale is the key: the number is in units of 0.25rem (4px).
     p-1 = 4px    p-2 = 8px    p-4 = 16px    p-6 = 24px    p-8 = 32px
-    (so: multiply by 4 to get pixels)
+    (so: multiply by 4 to get pixels)‼️
 ```
 
 ```text
-SPACING                          LAYOUT
-  p-4    padding: 1rem             flex      display: flex
-  px-4   padding left+right        grid      display: grid
-  py-2   padding top+bottom        hidden    display: none
-  pt-4   padding-top               block     display: block
-  m-4    margin: 1rem
-  mx-auto  margin: 0 auto        FLEX / GRID
-  mt-8   margin-top: 2rem          items-center      align-items: center
-  gap-4  gap: 1rem                 justify-between   justify-content: space-between
-                                    justify-center    justify-content: center
-SIZING                             flex-col          flex-direction: column
-  w-full   width: 100%              flex-1            flex: 1
-  w-1/2    width: 50%               grid-cols-3       3 equal columns
-  h-screen height: 100vh
-  max-w-md max-width: 28rem       TYPOGRAPHY
-  min-h-screen  min-height: 100vh   text-sm    font-size: 0.875rem
-                                    text-lg    font-size: 1.125rem
-COLOURS                             text-2xl   font-size: 1.5rem
-  bg-blue-500   background          font-bold  font-weight: 700
-  text-gray-700 text colour         text-center  text-align: center
-  border-gray-200  border colour
-  (50 = lightest, 900 = darkest)  BORDERS / EFFECTS
-                                    rounded-lg   border-radius: 0.5rem
-STATE PREFIXES                      rounded-full border-radius: 9999px
-  hover:bg-blue-600                 border       border-width: 1px
-  focus:ring-2                      shadow-md    a medium box-shadow
-  disabled:opacity-50               opacity-50   opacity: 0.5
+─── SPACING ────────────────────────────────────────────────────────────────
+  p-4            padding: 1rem
+  px-4           padding-left + padding-right
+  py-2           padding-top + padding-bottom
+  pt-4           padding-top       (also pr- pb- pl-)
+  m-4            margin: 1rem
+  mt-8           margin-top: 2rem  (also mr- mb- ml- mx- my-)
+  mx-auto        margin-left: auto; margin-right: auto   ← centres a block
+  gap-4          gap: 1rem         ← space between flex/grid children
+  space-y-4      vertical space between children (older alternative to gap)
 
-RESPONSIVE PREFIXES  (‼️ mobile-first: unprefixed = all sizes, prefix = that
-                        breakpoint AND UP)
-  md:flex        flex from 768px up
-  lg:grid-cols-3  3 columns from 1024px up
+─── LAYOUT / DISPLAY ───────────────────────────────────────────────────────
+  flex           display: flex
+  grid           display: grid
+  block          display: block
+  inline-block   display: inline-block
+  hidden         display: none‼️
+
+─── FLEXBOX ────────────────────────────────────────────────────────────────
+  flex-col          flex-direction: column      (flex-row is the default)
+  flex-wrap         flex-wrap: wrap
+  items-center      align-items: center         ← vertical, in a row
+  items-start       align-items: flex-start
+  justify-center    justify-content: center     ← horizontal, in a row
+  justify-between   justify-content: space-between   ← logo left, nav right
+  flex-1            flex: 1                     ← grow to fill space
+  shrink-0          flex-shrink: 0              ← never get squashed
+
+─── GRID ───────────────────────────────────────────────────────────────────
+  grid-cols-3       three equal columns
+  grid-cols-[200px_1fr]   custom columns (underscore = space)
+  col-span-2        span two columns
+  row-span-2        span two rows
+
+─── SIZING ─────────────────────────────────────────────────────────────────
+  w-full         width: 100%
+  w-1/2          width: 50%
+  w-64           width: 16rem        (same ×4 scale as spacing)
+  h-screen       height: 100vh‼️
+  min-h-screen   min-height: 100vh
+  max-w-md       max-width: 28rem    ← sm/md/lg/xl/2xl... up to 7xl‼️
+  size-10        width AND height: 2.5rem‼️
+
+─── COLOURS ────────────────────────────────────────────────────────────────
+  bg-blue-500       background colour
+  text-gray-700     text colour
+  border-gray-200   border colour
+  ‼️ The number is the SHADE: 50 = lightest, 900 = darkest.‼️‼️
+     So bg-blue-600 is a darker version of bg-blue-500 — which is why hover
+     states are almost always "the same colour, one step up".
+
+─── TYPOGRAPHY ─────────────────────────────────────────────────────────────
+  text-sm        font-size: 0.875rem   ← xs / sm / base / lg / xl / 2xl ...
+  text-base      font-size: 1rem
+  text-lg        font-size: 1.125rem
+  text-2xl       font-size: 1.5rem
+  font-medium    font-weight: 500‼️
+  font-bold      font-weight: 700
+  text-center    text-align: center
+  leading-tight  line-height: 1.25‼️
+  truncate       one line + ellipsis (the three-property trick from §11)‼️
+
+─── BORDERS & EFFECTS ──────────────────────────────────────────────────────
+  border         border-width: 1px‼️
+  border-2       border-width: 2px
+  rounded-lg     border-radius: 0.5rem   ← sm / md / lg / xl / 2xl
+  rounded-full   border-radius: 9999px   ← pill or circle
+  shadow-sm      a subtle box-shadow     ← sm / md / lg / xl / 2xl
+  opacity-50     opacity: 0.5
+
+─── POSITIONING ────────────────────────────────────────────────────────────
+  relative       position: relative
+  absolute       position: absolute
+  fixed          position: fixed
+  sticky top-0   position: sticky; top: 0
+  z-10           z-index: 10
+  inset-0        top/right/bottom/left all 0  ← fills the parent‼️
+
+─── STATE PREFIXES ─────────────────────────────────────────────────────────
+  hover:bg-blue-600       on mouse over
+  focus:ring-2            on focus
+  disabled:opacity-50     when disabled
+  group-hover:text-white  when a parent marked `group` is hovered‼️
+  dark:bg-gray-900        in dark mode
+
+─── RESPONSIVE PREFIXES ────────────────────────────────────────────────────
+  ‼️ MOBILE-FIRST: no prefix = ALL sizes. A prefix means "at that breakpoint
+     AND UP". So `flex-col md:flex-row` is a column on phones, a row from
+     768px upward.
+
+  sm:   from 640px      lg:   from 1024px      2xl:  from 1536px
+  md:   from 768px      xl:   from 1280px
+
+  md:flex          display: flex, from 768px up
+  lg:grid-cols-3   three columns, from 1024px up
 ```
 
 ```html
@@ -1179,7 +1305,7 @@ RESPONSIVE PREFIXES  (‼️ mobile-first: unprefixed = all sizes, prefix = that
 ```
 
 ```text
-‼️ HOW TO ADJUST AI-GENERATED TAILWIND WITHOUT UNDERSTANDING ALL OF IT:
+‼️ HOW TO ADJUST AI-GENERATED TAILWIND WITHOUT UNDERSTANDING ALL OF IT:‼️
 
   "Too cramped"        → increase the p-* or gap-* number (p-2 → p-4)
   "Too much space"     → decrease it
@@ -1191,7 +1317,7 @@ RESPONSIVE PREFIXES  (‼️ mobile-first: unprefixed = all sizes, prefix = that
   "Stacks when it shouldn't on desktop" → add md:flex-row to the flex-col
 
   Hovering an element in devtools shows the computed CSS for those classes,
-  which is the fastest way to confirm what a class you don't recognise does.
+  which is the fastest way to confirm what a class you don't recognize does.‼️
 ```
 
 ---
@@ -1205,29 +1331,29 @@ RESPONSIVE PREFIXES  (‼️ mobile-first: unprefixed = all sizes, prefix = that
 
   2. THE STYLES PANEL (right side) shows every rule matching it, in priority
      order, with the winning rule at the top.
-     ‼️ A rule with a LINE THROUGH IT was overridden by something above it.
+     ‼️ A rule with a LINE THROUGH IT was overridden by something above it.‼️
      That instantly answers "why isn't my style applying?" — you can see what
      beat it and where that rule lives.
 
   3. THE COMPUTED TAB shows the final value of every property after the
-     cascade. Use it when you cannot find where a value is coming from —
+     cascade. ‼️Use it when you cannot find where a value is coming from —
      expand a property and it names the exact rule that set it.
 
   4. THE BOX MODEL DIAGRAM (bottom of Styles) shows this element's actual
-     content size, padding, border, and margin in pixels. This is how you
+     content size, padding, border, and margin in pixels.‼️ This is how you
      find an unexpected gap in about five seconds.
 
   5. EDIT LIVE. Click any value and type a new one. Arrow keys nudge numbers
      up and down. Tick and untick properties. Nothing is saved, so experiment
      freely, then copy what worked into your file.
 
-  6. THE :hov BUTTON forces :hover / :focus / :active states on, so you can
+  6. ‼️THE :hov BUTTON forces :hover / :focus / :active states on, so you can
      inspect a hover style without needing to keep the mouse in place.
 ```
 
 ```css
 /* ── THE OUTLINE TRICK — see every box on the page ───────────────────── */
-* {
+‼️ * {
     outline: 1px solid red;
 }
 /* Paste into devtools when a layout is mysteriously wrong. Instantly shows
@@ -1259,7 +1385,7 @@ MY STYLE ISN'T APPLYING AT ALL
   - Check devtools: is the rule struck through? Something more specific won.
   - Is the selector right? .card vs #card vs card — and a typo in a class
     name fails silently, with no error anywhere.
-  - Is the stylesheet actually loaded? Check the Network tab.
+  - Is the stylesheet actually loaded? Check the Network tab.‼️
   - In React, is it className and not class?
   - Is there a syntax error EARLIER in the file? One missing } silently kills
     every rule after it.
@@ -1276,12 +1402,12 @@ height: 100% DOES NOTHING
     the parent a height, or use min-height: 100dvh, or use flex/grid instead.
 
 THINGS WON'T SIT SIDE BY SIDE
-  - The parent needs display: flex (or grid). Block elements always stack.
+  - The parent needs display: flex (or grid). Block elements always stack.‼️
 
 THERE'S A GAP I DIDN'T ADD
   - Margin collapsing (§8) — vertical margins merging or escaping the parent.
-  - inline-block whitespace — the newline in your HTML renders as a space.
-  - A default margin you forgot: <p>, <h1>, <ul> all have browser margins.
+  - inline-block whitespace — the newline in your HTML renders as a space.‼️
+  - A default margin you forgot: <p>, <h1>, <ul> all have browser margins.‼️
   - Check the box model diagram in devtools to see exactly which layer it is.
 
 MY FLEX ITEM IS SQUASHED / TEXT IS CRUSHED
@@ -1290,17 +1416,17 @@ MY FLEX ITEM IS SQUASHED / TEXT IS CRUSHED
 
 FLEXBOX ISN'T CENTRING VERTICALLY
   - The container has no height, so there is no vertical space to centre
-    within. Add min-height.
+    within. Add min-height.‼️
 
 position: sticky ISN'T STICKING
-  - You must set an offset: top: 0 (or bottom/left/right). No offset, no stick.
-  - An ancestor has overflow: hidden / auto / scroll — that breaks sticky.
+  - You must set an offset: top: 0 (or bottom/left/right). No offset, no stick.‼️‼️
+  - An ancestor has overflow: hidden / auto / scroll — that breaks sticky.‼️
   - The parent is not tall enough for there to be anywhere to stick across.
 
 z-index: 9999 STILL DOESN'T SHOW ON TOP
   - z-index needs position (relative/absolute/fixed/sticky) to do anything.
   - Stacking context: a child cannot escape its parent's layer. Raise the
-    PARENT's z-index, or move the element higher in the DOM (a modal usually
+    PARENT's z-index, or move the element higher in the DOM (‼️a modal usually
     belongs at the end of <body>, via a portal in React).
 
 MY MEDIA QUERIES DON'T WORK ON MOBILE
@@ -1309,12 +1435,12 @@ MY MEDIA QUERIES DON'T WORK ON MOBILE
 THE PAGE SCROLLS SIDEWAYS ON MOBILE
   - Something is wider than the screen: a fixed width, an unwrapped long
     string, a negative margin, or 100vw (which includes the scrollbar width).
-  - Use the outline trick in §15 to find it. Prefer width: 100% over 100vw.
+  - Use the outline trick in §15 to find it. ‼️Prefer width: 100% over 100vw.
 
 MY HOVER ANIMATION SNAPS BACK INSTANTLY
   - The transition is declared on :hover instead of on the base element.
 
-MY IMAGE IS STRETCHED OR SQUASHED
+MY IMAGE IS STRETCHED OR SQUASHED‼️
   - Set object-fit: cover (fills the box, crops the overflow) or
     object-fit: contain (fits entirely, may letterbox).
 ```
@@ -1339,7 +1465,7 @@ body {
 /* ── LAYOUT ──────────────────────────────────────────────────────────── */
 display: flex; /* one row or column of items */
 display: grid; /* two-dimensional layout */
-gap: 1rem; /* space between children — prefer over margin */
+gap: 1rem; /* space between children — prefer over margin */‼️
 
 /* Flex container */
 flex-direction: row | column;
@@ -1349,7 +1475,7 @@ flex-wrap: wrap;
 
 /* Flex item */
 flex: 1; /* grow to fill */
-flex: 0 0 250px; /* fixed size, never grow or shrink */
+flex: 0 0 250px; /* fixed size, never grow or shrink */‼️
 flex-shrink: 0; /* don't let this be squashed */
 margin-left: auto; /* push this and everything after it right */
 
@@ -1393,10 +1519,10 @@ transform: translateY(-2px); /* animate transform/opacity, not width/top */
 @media (min-width: 1024px) {
 } /* desktop and up */
 @media (prefers-reduced-motion: reduce) {
-} /* respect motion preferences */
+} /* respect motion preferences */‼️
 
 /* ── UNITS ───────────────────────────────────────────────────────────── */
-/* rem    sizes, spacing (1rem = 16px)      px   borders, radii, shadows    */
+/* rem    sizes, spacing (1rem = 16px)‼️    px   borders, radii, shadows    */
 /* %      relative to parent                dvh  full screen height         */
 /* fr     grid fraction                     ch   character width (text)     */
 ```
