@@ -1,7 +1,7 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-121 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+122 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
@@ -9,7 +9,7 @@ A complete self-study system for senior JavaScript / fullstack engineering inter
 
 ```
 1-high-priority/    47 files — study these first, highest interview ROI
-2-medium-priority/  36 files — once high-priority is solid
+2-medium-priority/  37 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
 
@@ -78,6 +78,7 @@ Root files (start here):
 | [BROWSER-INTERNALS-DEEP.md](2-medium-priority/BROWSER-INTERNALS-DEEP.md) | Rendering pipeline, critical path, reflow/repaint |
 | [PERFORMANCE-DEEP.md](2-medium-priority/PERFORMANCE-DEEP.md) | Core Web Vitals, bundle optimisation, lazy loading |
 | [MICROSERVICES-DEEP.md](2-medium-priority/MICROSERVICES-DEEP.md) | Architecture, service mesh, distributed patterns |
+| [NON-FUNCTIONAL-REQUIREMENTS.md](2-medium-priority/NON-FUNCTIONAL-REQUIREMENTS.md) | Beginner guide — performance, scalability, availability, security, the -ilities and their trade-offs |
 | [PRINCIPLES-DEEP.md](2-medium-priority/PRINCIPLES-DEEP.md) | SOLID, DRY, clean code |
 | [DESIGN-PATTERNS-LOW-DEEP.md](2-medium-priority/DESIGN-PATTERNS-LOW-DEEP.md) | GoF patterns in JS/TS |
 | [WEBSOCKETS-REALTIME-DEEP.md](2-medium-priority/WEBSOCKETS-REALTIME-DEEP.md) | WebSocket, SSE, real-time patterns |
