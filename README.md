@@ -1,15 +1,15 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-122 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+128 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    47 files — study these first, highest interview ROI
-2-medium-priority/  37 files — once high-priority is solid
+1-high-priority/    52 files — study these first, highest interview ROI
+2-medium-priority/  38 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
 
@@ -48,6 +48,11 @@ Root files (start here):
 | [MOCK-INTERVIEW-QA.md](1-high-priority/MOCK-INTERVIEW-QA.md) | Top 50 Q&A — drill the actual interview moment |
 | [NEGOTIATION-OFFER-DEEP.md](1-high-priority/NEGOTIATION-OFFER-DEEP.md) | Salary negotiation, equity evaluation, offer strategy |
 | [INTERVIEW-PREP.md](1-high-priority/INTERVIEW-PREP.md) | General preparation framework |
+| [ENGINEERING-FAILURES-DEEP.md](1-high-priority/ENGINEERING-FAILURES-DEEP.md) | Famous outages, decisions that kill projects, blameless post-mortems |
+| [TECHNICAL-DECISION-MAKING-DEEP.md](1-high-priority/TECHNICAL-DECISION-MAKING-DEEP.md) | Reversibility, build vs buy, boring technology, ADRs, RFCs, making the case |
+| [STAFF-PLUS-ENGINEER-DEEP.md](1-high-priority/STAFF-PLUS-ENGINEER-DEEP.md) | Senior to staff to principal — archetypes, influence, sponsorship, promotion |
+| [LEGACY-MIGRATION-DEEP.md](1-high-priority/LEGACY-MIGRATION-DEEP.md) | Strangler fig, expand-contract, zero-downtime data migration, monolith decomposition |
+| [INCIDENT-RESPONSE-DEEP.md](1-high-priority/INCIDENT-RESPONSE-DEEP.md) | Severity, incident command, mitigation, SLOs, error budgets, on-call |
 | [TAKE-HOME-PROJECT-GUIDE.md](1-high-priority/TAKE-HOME-PROJECT-GUIDE.md) | How to approach, prioritise, and present take-home assignments |
 | [JOB-SEARCH-STRATEGY.md](1-high-priority/JOB-SEARCH-STRATEGY.md) | Referrals, LinkedIn, recruiter outreach, job boards, pipeline tracking |
 | [AI-ENGINEERING-AGENTS-DEEP.md](1-high-priority/AI-ENGINEERING-AGENTS-DEEP.md) | AI agents, tool use, RAG, LangChain, MCP, evals, the modern AI stack |
@@ -79,6 +84,7 @@ Root files (start here):
 | [PERFORMANCE-DEEP.md](2-medium-priority/PERFORMANCE-DEEP.md) | Core Web Vitals, bundle optimisation, lazy loading |
 | [MICROSERVICES-DEEP.md](2-medium-priority/MICROSERVICES-DEEP.md) | Architecture, service mesh, distributed patterns |
 | [NON-FUNCTIONAL-REQUIREMENTS.md](2-medium-priority/NON-FUNCTIONAL-REQUIREMENTS.md) | Beginner guide — performance, scalability, availability, security, the -ilities and their trade-offs |
+| [TECHNICAL-DEBT-DEEP.md](2-medium-priority/TECHNICAL-DEBT-DEEP.md) | The four quadrants, measuring it, making the business case, when not to pay |
 | [PRINCIPLES-DEEP.md](2-medium-priority/PRINCIPLES-DEEP.md) | SOLID, DRY, clean code |
 | [DESIGN-PATTERNS-LOW-DEEP.md](2-medium-priority/DESIGN-PATTERNS-LOW-DEEP.md) | GoF patterns in JS/TS |
 | [WEBSOCKETS-REALTIME-DEEP.md](2-medium-priority/WEBSOCKETS-REALTIME-DEEP.md) | WebSocket, SSE, real-time patterns |
