@@ -13,15 +13,24 @@
 
 ## Table of Contents
 
-1. [Why Study Failure](#1-why-study-failure)
-2. [The Anatomy of a Failure](#2-the-anatomy-of-a-failure)
-3. [Famous Outages, and the Real Cause](#3-famous-outages-and-the-real-cause)
-4. [Catastrophic Software Failures](#4-catastrophic-software-failures)
-5. [Architectural Decisions That Kill Projects](#5-architectural-decisions-that-kill-projects)
-6. [Organisational Failure Modes](#6-organisational-failure-modes)
-7. [The Blameless Post-Mortem](#7-the-blameless-post-mortem)
-8. [Patterns Across Every Failure](#8-patterns-across-every-failure)
-9. [Talking About Failure in Interviews](#9-talking-about-failure-in-interviews)
+- [Engineering Failures — What Goes Wrong and Why](#engineering-failures--what-goes-wrong-and-why)
+    - [Table of Contents](#table-of-contents)
+    - [1. Why Study Failure](#1-why-study-failure)
+    - [2. The Anatomy of a Failure](#2-the-anatomy-of-a-failure)
+    - [3. Famous Outages, and the Real Cause](#3-famous-outages-and-the-real-cause)
+        - [Knight Capital — $440M in 45 minutes (2012)](#knight-capital--440m-in-45-minutes-2012)
+        - [AWS S3 — half the internet, 4 hours (Feb 2017)](#aws-s3--half-the-internet-4-hours-feb-2017)
+        - [GitLab — deleted the production database (2017)](#gitlab--deleted-the-production-database-2017)
+        - [Cloudflare — a regex took down the web (July 2019)](#cloudflare--a-regex-took-down-the-web-july-2019)
+        - [Meta/Facebook — locked out of their own buildings (Oct 2021)](#metafacebook--locked-out-of-their-own-buildings-oct-2021)
+        - [Fastly — one customer's config, global outage (June 2021)](#fastly--one-customers-config-global-outage-june-2021)
+    - [4. Catastrophic Software Failures](#4-catastrophic-software-failures)
+    - [5. Architectural Decisions That Kill Projects](#5-architectural-decisions-that-kill-projects)
+    - [6. Organisational Failure Modes](#6-organisational-failure-modes)
+    - [7. The Blameless Post-Mortem](#7-the-blameless-post-mortem)
+    - [8. Patterns Across Every Failure](#8-patterns-across-every-failure)
+    - [9. Talking About Failure in Interviews](#9-talking-about-failure-in-interviews)
+    - [Related Files](#related-files)
 
 ---
 
@@ -46,7 +55,7 @@ WHY THIS MATTERS MORE AS YOU GET SENIOR
 
   ‼️ The distinguishing skill of a staff+ engineer is not writing better code.
      It is anticipating how a design will fail, and how the ORGANISATION will
-     fail around it.
+     fail around it.‼️‼️
 
 OTHER INDUSTRIES DO THIS DELIBERATELY
 
@@ -67,7 +76,7 @@ OTHER INDUSTRIES DO THIS DELIBERATELY
 ```text
 ‼️ THE SINGLE MOST IMPORTANT IDEA IN THIS FILE:
 
-   THERE IS ALMOST NEVER A "ROOT CAUSE". There is a CHAIN.
+   THERE IS ALMOST NEVER A "ROOT CAUSE". There is a CHAIN.‼️‼️
 
    Every significant outage is multiple small problems lining up. Any one of
    them alone would have been harmless. Asking "what was the root cause?"
@@ -91,7 +100,7 @@ THE SWISS CHEESE MODEL (from aviation safety)
    ‼️ THE PRACTICAL CONSEQUENCE: after an incident, do not ask "whose fault?"
       Ask "how many layers did this pass through, and why was each one open?"
       Fixing ONE layer is usually enough to prevent recurrence — and it is
-      almost always cheaper than trying to make humans perfect.
+      almost always cheaper than trying to make humans perfect.‼️‼️
 
 THE THREE QUESTIONS THAT ACTUALLY MATTER
 
@@ -101,7 +110,7 @@ THE THREE QUESTIONS THAT ACTUALLY MATTER
 
    ‼️ Most teams only answer #1. The biggest wins usually live in #2 and #3:
       an outage you detect in 60 seconds and roll back in 5 minutes is a
-      non-event, whatever caused it.
+      non-event, whatever caused it.‼️‼️
 ```
 
 ---
