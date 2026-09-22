@@ -2,32 +2,44 @@
 
 **Priority: MEDIUM**
 
-> What a PDF actually is at the byte level, how browsers render one, how to generate one on a
-> backend, where PDF work belongs in your architecture, and which library to reach for.
+> What a PDF actually is at the byte level, the version and conformance standards, how
+> browsers render one, how to generate one on a backend, where PDF work belongs in your
+> architecture, and which libraries are actually maintained.
 >
 > Covers both halves of the problem: displaying PDFs (frontend) and producing them (backend).
+> Library status checked September 2026 — see §18, and re-check before adopting.
 
 ---
 
 ## Table of Contents
 
-1. [What a PDF Actually Is](#1-what-a-pdf-actually-is)
-2. [Inside the File Format](#2-inside-the-file-format)
-3. [Why PDFs Are Harder Than They Look](#3-why-pdfs-are-harder-than-they-look)
-4. [The Two Problems: Rendering vs Generating](#4-the-two-problems-rendering-vs-generating)
-5. [Frontend — How PDF.js Renders a PDF](#5-frontend--how-pdfjs-renders-a-pdf)
-6. [Frontend — Displaying PDFs in Practice](#6-frontend--displaying-pdfs-in-practice)
-7. [Backend — The Three Generation Strategies](#7-backend--the-three-generation-strategies)
-8. [Backend — HTML to PDF with Headless Chrome](#8-backend--html-to-pdf-with-headless-chrome)
-9. [Backend — Programmatic Drawing](#9-backend--programmatic-drawing)
-10. [Architecture — Where PDF Work Belongs](#10-architecture--where-pdf-work-belongs)
-11. [Manipulating Existing PDFs](#11-manipulating-existing-pdfs)
-12. [Extracting Text & Data](#12-extracting-text--data)
-13. [Fonts — The Usual Source of Pain](#13-fonts--the-usual-source-of-pain)
-14. [Security](#14-security)
-15. [Performance & Scaling](#15-performance--scaling)
-16. [Library Decision Table](#16-library-decision-table)
-17. [Common Pitfalls](#17-common-pitfalls)
+- [PDF Rendering \& Generation — Internals, Architecture, Libraries](#pdf-rendering--generation--internals-architecture-libraries)
+  - [Table of Contents](#table-of-contents)
+  - [1. What a PDF Actually Is](#1-what-a-pdf-actually-is)
+  - [2. Inside the File Format](#2-inside-the-file-format)
+  - [3. PDF Versions \& Standards](#3-pdf-versions--standards)
+  - [4. Why PDFs Are Harder Than They Look](#4-why-pdfs-are-harder-than-they-look)
+  - [5. The Two Problems: Rendering vs Generating](#5-the-two-problems-rendering-vs-generating)
+  - [6. Frontend — How PDF.js Renders a PDF](#6-frontend--how-pdfjs-renders-a-pdf)
+  - [7. Frontend — Displaying PDFs in Practice](#7-frontend--displaying-pdfs-in-practice)
+  - [8. Backend — The Three Generation Strategies](#8-backend--the-three-generation-strategies)
+  - [9. Backend — HTML to PDF with Headless Chrome](#9-backend--html-to-pdf-with-headless-chrome)
+  - [10. Backend — Programmatic Drawing](#10-backend--programmatic-drawing)
+  - [11. Architecture — Where PDF Work Belongs](#11-architecture--where-pdf-work-belongs)
+  - [12. Manipulating Existing PDFs](#12-manipulating-existing-pdfs)
+  - [13. Embedded Files, Data \& Media](#13-embedded-files-data--media)
+    - [Embedded files (attachments)](#embedded-files-attachments)
+    - [The big use case — hybrid documents and e-invoicing](#the-big-use-case--hybrid-documents-and-e-invoicing)
+    - [Structured metadata](#structured-metadata)
+    - [Audio and video — the honest position](#audio-and-video--the-honest-position)
+    - [Security of embedded content](#security-of-embedded-content)
+  - [14. Extracting Text \& Data](#14-extracting-text--data)
+  - [15. Fonts — The Usual Source of Pain](#15-fonts--the-usual-source-of-pain)
+  - [16. Security](#16-security)
+  - [17. Performance \& Scaling](#17-performance--scaling)
+  - [18. Library Landscape \& Maintenance Status](#18-library-landscape--maintenance-status)
+  - [19. Common Pitfalls](#19-common-pitfalls)
+  - [Related Files](#related-files)
 
 ---
 
@@ -36,7 +48,7 @@
 ```text
 ‼️ THE MENTAL MODEL THAT EXPLAINS EVERYTHING ELSE:
 
-   A PDF is not a document. It is a PROGRAM that draws a document.
+   A PDF is not a document. ‼️It is a PROGRAM that draws a document.‼️
 
    An HTML page is a description of CONTENT and the browser decides where
    things land. A PDF is a list of DRAWING INSTRUCTIONS with absolute
@@ -111,7 +123,7 @@ WHERE PDF CAME FROM — useful context, not trivia
   │ TRAILER       Points at the document catalogue and the xref │
   │               offset. ‼️ Read LAST, not first — which is why │
   │               a PDF viewer needs the END of the file before │
-  │               it can show the beginning.                    │
+  │               it can show the beginning. ‼️                 │
   └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -172,6 +184,54 @@ A MINIMAL PDF, annotated — this is genuinely the whole file:
 ```
 
 ```text
+‼️ HOW THE FILE ACTUALLY FINDS PAGE 200 — the two-step lookup.
+
+   This is the question the structure above raises and does not answer, and
+   getting it straight explains why the whole format is shaped this way.
+
+   ‼️ THE XREF TABLE KNOWS NOTHING ABOUT PAGES. It only maps
+      OBJECT NUMBER → BYTE OFFSET. It is an ADDRESS BOOK, not an index.
+
+   What maps a PAGE NUMBER to an object number is a separate structure: the
+   PAGE TREE.
+
+     Catalog (obj 1)
+       └─ /Pages → obj 2
+            ├─ /Count 1000            ← how many pages live under this node
+            └─ /Kids [obj 3, obj 4, ...]
+                 ├─ obj 3: /Count 500    ← a subtree holding pages 1-500
+                 └─ obj 4: /Count 500    ← a subtree holding pages 501-1000
+
+   SO OPENING PAGE 200 IS TWO LOOKUPS:
+
+     1. WALK THE PAGE TREE.
+        Read /Count at each node and skip whole subtrees. Page 200 is under
+        obj 3, so obj 4 and everything beneath it is never touched. You arrive
+        at "page 200 is object 417" without reading 199 pages.
+        ‼️ /Count is what makes this a fast DESCENT rather than a scan — it is
+           the reason page access is roughly logarithmic, not linear.
+
+     2. LOOK UP OBJECT 417 IN THE XREF TABLE.
+        → byte 2,847,392. Seek there. Read it.
+
+   AND THE IMAGE ON THAT PAGE IS THE SAME PATTERN, ONE LEVEL DEEPER.
+   The page object says:
+
+       /Resources << /XObject << /Im1 892 0 R >> >>
+
+   "892 0 R" is a reference to object 892 — so back to the xref table, get its
+   byte offset, seek, and read the image stream.
+
+   ‼️ THE GENERAL PRINCIPLE, WHICH IS THE WHOLE FORMAT IN ONE LINE:
+      EVERYTHING IS AN OBJECT NUMBER, AND XREF TURNS ANY OBJECT NUMBER INTO A
+      FILE POSITION.
+      The page tree, resources, fonts, annotations and content streams are all
+      just objects pointing at other objects by number. That indirection, plus
+      the offset table, is what makes a PDF RANDOMLY ACCESSIBLE instead of
+      something you must read from front to back.
+```
+
+```text
 ‼️ THE OPERATORS YOU WILL SEE MOST — the content stream "instruction set":
 
   TEXT                         GRAPHICS
@@ -201,7 +261,7 @@ A MINIMAL PDF, annotated — this is genuinely the whole file:
 ```text
 STREAMS AND COMPRESSION
 
-  Content streams and images are almost always compressed — /Filter /FlateDecode
+  Content streams and images are almost always compressed ‼️— /Filter /FlateDecode
   is zlib/deflate. That is why most of a real PDF looks like binary noise in a
   text editor even though the structure above is plain text.
 
@@ -214,7 +274,7 @@ STREAMS AND COMPRESSION
 
   ‼️ DCTDecode matters practically: a JPEG inside a PDF is stored verbatim, so
      extracting images from a PDF can be a byte copy rather than a re-encode —
-     no quality loss, and very fast.
+     no quality loss, and very fast.‼️
 
 OBJECT STREAMS AND INCREMENTAL UPDATES
 
@@ -226,16 +286,114 @@ OBJECT STREAMS AND INCREMENTAL UPDATES
      content is still in there. "Redacting" a PDF by drawing a black box and
      saving does NOT remove the text underneath — it is still in the file and
      trivially extractable. This has caused repeated real-world leaks of
-     redacted court and government documents.
+     redacted court and government documents.‼️
 ```
 
 ---
 
-## 3. Why PDFs Are Harder Than They Look
+## 3. PDF Versions & Standards
+
+```text
+‼️ THE GOOD NEWS FIRST: PDF IS REMARKABLY BACKWARDS COMPATIBLE.
+
+   PDF 2.0 (ISO 32000-2) was expressly designed to remain compatible with
+   ISO 32000-1 (PDF 1.7) and the earlier Adobe specifications. No change in
+   PDF 2.0 broke software built against previous editions.
+
+   ‼️ WHAT THIS MEANS IN PRACTICE: a PDF 1.4 file from 2001 opens fine in any
+      modern viewer, and a viewer that understands 1.7 will open a 2.0 file —
+      ‼️it just ignores the features it does not know about. ‼️Unknown keys are
+      skipped rather than treated as errors, which is the design decision that
+      makes the whole format durable.
+
+      So "which PDF version should I target?" is rarely a real problem. You
+      only care when you need a SPECIFIC feature (see the table) or a
+      SPECIFIC CONFORMANCE STANDARD (see below) — and the latter is where the
+      real requirements live.
+```
+
+```text
+THE VERSION HISTORY — what each one actually added
+
+  PDF 1.0  1993   The original. Adobe proprietary.
+  PDF 1.2  1996   Interactive form fields (AcroForms), compression filters
+  PDF 1.3  2000   Digital signatures, JavaScript, embedded files
+  PDF 1.4  2001   ‼️ TRANSPARENCY, 128-bit RC4. The baseline most older tools
+                  target, and where PDF/A-1 sits.
+  PDF 1.5  2003   ‼️ OBJECT STREAMS and cross-reference streams — the reason
+                  modern PDFs look like binary noise. Also optional content
+                  (layers) and JPEG 2000.
+  PDF 1.6  2004   AES-128 encryption, 3D content, OpenType embedding
+  PDF 1.7  2006   ‼️ Became ISO 32000-1:2008 — the first ISO version, and
+                  still the most widely targeted. If in doubt, target 1.7.
+  PDF 2.0  2017   ‼️ ISO 32000-2. First ISO-led revision, developed
+       (rev 2020)  INDEPENDENTLY OF ADOBE. Adds AES-256, DEPRECATES the
+                  insecure RC4 encryption, adds unencrypted wrappers and
+                  better digital signature support, and — underrated —
+                  clarifies a large number of ambiguities in clauses shared
+                  with 1.7. Those clarifications help even if you only ever
+                  target 1.7.
+
+‼️ THE PRACTICAL POSITION IN 2026
+   - Most tooling writes PDF 1.4 to 1.7. That is fine, and interoperable.
+   - PDF 2.0 support in libraries is still uneven. Do not require it unless
+     you have a reason.
+   - ‼️ THE ONE VERSION FACT WORTH ACTING ON: if you are encrypting PDFs, you
+     want AES-256, which means PDF 2.0 (or the AES-256 revision introduced in
+     Adobe's 1.7 Extension Level 3). RC4 is broken and should never be used.
+```
+
+```text
+‼️ THE CONFORMANCE STANDARDS — THESE MATTER MORE THAN THE VERSION NUMBER.
+
+   These are SUBSETS of PDF with extra rules, each designed for a purpose.
+   When a client or a regulator says "we need PDF/A", they are asking for one
+   of these, and it constrains your tool choice significantly.
+
+  PDF/A  — ARCHIVING (ISO 19005)
+    The most commonly demanded. Rules that make a file readable in 50 years:
+      ‼️ ALL FONTS MUST BE EMBEDDED (no substitution, ever)
+      No JavaScript, no executable content, no external references
+      No encryption
+      Device-independent colour (embedded colour profiles)
+      XMP metadata required
+    VARIANTS: PDF/A-1 (based on 1.4), A-2 (1.7, adds JPEG2000 and
+    transparency), A-3 (allows arbitrary embedded attachments — used for
+    e-invoicing), A-4 (based on PDF 2.0).
+    CONFORMANCE LEVELS: -b (basic, visual fidelity only), -a (accessible,
+    requires full tagging), -u (Unicode mapping required).
+    ‼️ WHO ASKS FOR IT: governments, courts, regulated industries, long-term
+       records. Frequently non-negotiable.
+
+  PDF/UA — ACCESSIBILITY (ISO 14289)
+    Requires a proper TAGGED STRUCTURE TREE: real headings, reading order,
+    table structure, alt text on images, language declaration.
+    ‼️ THE HARD TRUTH: almost nothing generates this by default. Headless
+       Chrome does not produce properly tagged PDFs, and neither do most
+       programmatic libraries. If PDF/UA is a requirement, it changes your
+       tool choice and it is a substantial piece of work — budget for it
+       rather than discovering it late.
+
+  PDF/X  — PRINT PRODUCTION (ISO 15930)
+    Commercial printing. Embedded fonts, CMYK/spot colour, defined bleed and
+    trim boxes, no transparency in some variants.
+    ‼️ WHO ASKS FOR IT: print vendors. If you are generating artwork for
+       physical printing, ask which PDF/X variant they require BEFORE you build.
+
+  PDF/E  — ENGINEERING (ISO 24517). CAD and technical documents, 3D.
+  PDF/VT — VARIABLE DATA printing (ISO 16612-2). Personalised mail at volume.
+
+‼️ THE QUESTION TO ASK AT THE START OF ANY PDF PROJECT:‼️
+   "Does this need to meet PDF/A, PDF/UA, or PDF/X?"
+   Retrofitting conformance is far more expensive than building for it, and
+   it can invalidate your entire tool choice. Ask before you write code.
+```
+
+## 4. Why PDFs Are Harder Than They Look
 
 ```text
 ‼️ The things that surprise people building PDF features. Read this before
-   estimating any PDF ticket.
+   estimating any PDF ticket.‼️
 
   1. TEXT EXTRACTION IS NOT RELIABLE.
      Glyphs have positions, not reading order. Multi-column layouts interleave.
@@ -254,7 +412,7 @@ OBJECT STREAMS AND INCREMENTAL UPDATES
      coordinates and guessing at column boundaries. This is why commercial
      table-extraction products exist.
 
-  4. FONTS MAY OR MAY NOT BE EMBEDDED.
+  4. FONTS MAY OR MAY NOT BE EMBEDDED.‼️
      A non-embedded font is substituted by the viewer, so the document looks
      different on different machines — defeating the point of PDF. And
      subsetted fonts (only the glyphs actually used) break text extraction if
@@ -265,7 +423,7 @@ OBJECT STREAMS AND INCREMENTAL UPDATES
      repeat across pages, or avoiding an orphaned row, is genuinely fiddly in
      every tool.
 
-  6. FILE SIZE EXPLODES EASILY.
+  6. FILE SIZE EXPLODES EASILY.‼️
      Embedding a full Unicode font is megabytes. Unsubsetted fonts, uncompressed
      images, and duplicated resources routinely turn a 3-page invoice into 20MB.
 
@@ -278,7 +436,7 @@ OBJECT STREAMS AND INCREMENTAL UPDATES
 
 ---
 
-## 4. The Two Problems: Rendering vs Generating
+## 5. The Two Problems: Rendering vs Generating
 
 ```text
 ‼️ These are completely different engineering problems with different tools,
@@ -287,34 +445,40 @@ OBJECT STREAMS AND INCREMENTAL UPDATES
   RENDERING (you have a PDF, show it to a user)
     Happens: usually in the BROWSER
     Core question: how do I turn drawing instructions into pixels?
-    Main tool: PDF.js
+    Main tools: PDF.js (pdfjs-dist), react-pdf, @embedpdf/core
     Difficulties: performance on large files, text selection, search,
                   annotations, mobile
 
   GENERATING (you have data, produce a PDF)
     Happens: usually on the BACKEND
     Core question: how do I lay out content and emit drawing instructions?
-    Main tools: headless Chrome, PDFKit, pdf-lib, React-PDF
+    Main tools: headless Chrome, PDFKit, @react-pdf/renderer‼️
     Difficulties: layout control, page breaks, fonts, performance, cost
+
+  ‼️ WATCH THE TWO SIMILARLY-NAMED PACKAGES — they are in DIFFERENT categories
+     and mixing them up is the single most common naming confusion here:
+       react-pdf             (wojtekmaj)  → a VIEWER. Wraps PDF.js. RENDERING.
+       @react-pdf/renderer                → a GENERATOR. JSX → PDF. GENERATING.
+     Same words, opposite jobs.
 
   MANIPULATING (you have a PDF, change it)
     Happens: backend
     Examples: merge, split, stamp a watermark, fill a form, add a signature
-    Main tools: pdf-lib, qpdf, pdftk
+    Main tools: a maintained pdf-lib fork (§17), qpdf, pdftk
 
   EXTRACTING (you have a PDF, get data out)
     Happens: backend
-    Main tools: pdf-parse, pdf.js, pdfplumber (Python), Tesseract for scans,
+    Main tools: unpdf, pdf.js, pdfplumber (Python), Tesseract for scans,
                 or a vision LLM for messy real-world documents
 ```
 
 ---
 
-## 5. Frontend — How PDF.js Renders a PDF
+## 6. Frontend — How PDF.js Renders a PDF
 
 ```text
 ‼️ PDF.js is Mozilla's PDF renderer, written in JavaScript. It is what Firefox
-   uses as its built-in viewer, and it is what essentially every "PDF in a web
+   uses as its built-in viewer, and ‼️it is what essentially every "PDF in a web
    app" feature is built on. Understanding its pipeline explains both its
    performance characteristics and its quirks.
 
@@ -326,7 +490,7 @@ THE PIPELINE
      200MB file can open in under a second.
      ‼️ This requires the server to support HTTP Range requests
      (Accept-Ranges: bytes). Without it, the whole file downloads before
-     anything appears. This is the #1 "why is our viewer so slow" cause.
+     anything appears. This is the #1 "why is our viewer so slow" cause.‼️
 
   2. PARSE
      Read the trailer → xref → catalogue → page tree. Now it knows the page
@@ -431,7 +595,7 @@ async function renderPage(url: string, pageNumber: number, canvas: HTMLCanvasEle
 
 ---
 
-## 6. Frontend — Displaying PDFs in Practice
+## 7. Frontend — Displaying PDFs in Practice
 
 ```text
 ‼️ THE DECISION, in the order you should consider it:
@@ -469,13 +633,10 @@ async function renderPage(url: string, pageNumber: number, canvas: HTMLCanvasEle
 ```tsx
 // ── react-pdf, with the practical details ───────────────────────────────
 import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/Page/TextLayer.css';        // ‼️ required, or text
-import 'react-pdf/dist/Page/AnnotationLayer.css';  // selection is misaligned
+import 'react-pdf/dist/Page/TextLayer.css'; // ‼️ required, or text
+import 'react-pdf/dist/Page/AnnotationLayer.css'; // selection is misaligned
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
 function PdfViewer({ url }: { url: string }) {
   const [numPages, setNumPages] = useState(0);
@@ -489,20 +650,15 @@ function PdfViewer({ url }: { url: string }) {
   const file = useMemo(() => ({ url }), [url]);
 
   return (
-    <Document
-      file={file}
-      onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-      onLoadError={(error) => console.error(error)}
-      loading={<Skeleton />}
-    >
+    <Document file={file} onLoadSuccess={({ numPages }) => setNumPages(numPages)} onLoadError={error => console.error(error)} loading={<Skeleton />}>
       <Page
         pageNumber={pageNumber}
         // ‼️ Render at the container's width rather than a fixed scale, or the
         // document overflows on mobile.
         width={containerWidth}
-        renderTextLayer={true}        // selection + search; disable for pure
-                                      // display to save significant CPU
-        renderAnnotationLayer={true}  // clickable links and form fields
+        renderTextLayer={true} // selection + search; disable for pure
+        // display to save significant CPU
+        renderAnnotationLayer={true} // clickable links and form fields
       />
     </Document>
   );
@@ -533,7 +689,7 @@ function PdfViewer({ url }: { url: string }) {
 
 ---
 
-## 7. Backend — The Three Generation Strategies
+## 8. Backend — The Three Generation Strategies
 
 ```text
 ‼️ THIS IS THE ARCHITECTURAL DECISION THAT MATTERS MOST. Get it right at the
@@ -618,7 +774,7 @@ function PdfViewer({ url }: { url: string }) {
 
 ---
 
-## 8. Backend — HTML to PDF with Headless Chrome
+## 9. Backend — HTML to PDF with Headless Chrome
 
 ```javascript
 // ── Playwright (preferred over Puppeteer for new work: better API, same
@@ -716,32 +872,43 @@ export async function renderPdf(html: string): Promise<Buffer> {
 
 /* ‼️ PAGE BREAK CONTROL — the part you will spend the most time on. */
 .invoice-section {
-  break-inside: avoid;      /* don't split this block across pages */
+  break-inside: avoid; /* don't split this block across pages */
 }
 .chapter {
-  break-before: page;       /* always start on a new page */
+  break-before: page; /* always start on a new page */
 }
 h2 {
-  break-after: avoid;       /* ‼️ never leave a heading alone at the bottom
+  break-after: avoid; /* ‼️ never leave a heading alone at the bottom
                                of a page with its content overleaf */
 }
 p {
-  orphans: 3;               /* min lines left at the bottom of a page */
-  widows: 3;                /* min lines carried to the top of the next */
+  orphans: 3; /* min lines left at the bottom of a page */
+  widows: 3; /* min lines carried to the top of the next */
 }
 
 /* ‼️ REPEATING TABLE HEADERS across page breaks. This works in Chrome and is
    one of the genuine advantages of the HTML approach — doing it by hand in
    PDFKit is real work. */
-thead { display: table-header-group; }
-tfoot { display: table-footer-group; }
+thead {
+  display: table-header-group;
+}
+tfoot {
+  display: table-footer-group;
+}
 
 /* Hide interactive chrome that makes no sense on paper */
 @media print {
-  .no-print, nav, button { display: none !important; }
+  .no-print,
+  nav,
+  button {
+    display: none !important;
+  }
 
   /* Show link destinations, since you cannot click paper */
-  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.8em; }
+  a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.8em;
+  }
 }
 
 /* ‼️ Use mm/cm/pt for print, not px. Pixels have no fixed physical meaning
@@ -769,7 +936,7 @@ tfoot { display: table-footer-group; }
 
 ---
 
-## 9. Backend — Programmatic Drawing
+## 10. Backend — Programmatic Drawing
 
 ```javascript
 // ── PDFKit — the standard Node library for creating PDFs from scratch ───
@@ -867,7 +1034,7 @@ app.get('/invoices/:id/pdf', async (req, res) => {
 
 ---
 
-## 10. Architecture — Where PDF Work Belongs
+## 11. Architecture — Where PDF Work Belongs
 
 ```text
 ‼️ THE MISTAKE ALMOST EVERYONE MAKES FIRST: generating the PDF inside the HTTP
@@ -985,13 +1152,23 @@ async download(@Param('id') id: string, @CurrentUser() user: User) {
 
 ---
 
-## 11. Manipulating Existing PDFs
+## 12. Manipulating Existing PDFs
 
 ```javascript
-// ‼️ pdf-lib is the Node library for EDITING PDFs. It can create them too, but
-// its real strength is reading an existing file and changing it. It is pure
+// ‼️ pdf-lib is the standard Node library for EDITING PDFs. It can create them
+// too, but its real strength is reading an existing file and changing it. Pure
 // JavaScript, works in the browser as well as Node, and needs no binaries.
-import { PDFDocument, rgb, degrees, StandardFonts } from 'pdf-lib';
+//
+// ‼️ IMPORTANT — USE A MAINTAINED FORK, NOT THE ORIGINAL PACKAGE.
+// The original `pdf-lib` (Hopding/pdf-lib) is ARCHIVED and unmaintained. See
+// §17. The forks keep the identical API, so switching is a one-line change:
+//
+//     npm uninstall pdf-lib
+//     npm install @cantoo/pdf-lib          # or @pdfme/pdf-lib
+//
+// ...and then change only the import. Everything below is unchanged.
+import { PDFDocument, rgb, degrees, StandardFonts } from '@cantoo/pdf-lib';
+// was:  from 'pdf-lib'  ← unmaintained, still works, no security patches
 
 // ── MERGE ───────────────────────────────────────────────────────────────
 async function merge(buffers: Buffer[]): Promise<Uint8Array> {
@@ -1054,16 +1231,275 @@ async function fillForm(buf: Buffer, values: Record<string, string>) {
 }
 
 // ── ENCRYPT / PASSWORD-PROTECT ──────────────────────────────────────────
-// ‼️ pdf-lib does NOT support encryption. Use qpdf (a CLI) for this:
+// ‼️ pdf-lib (and its forks) do NOT support encryption. Use qpdf (a CLI):
 //   qpdf --encrypt <userpw> <ownerpw> 256 -- in.pdf out.pdf
 // And note that PDF "permissions" (no printing, no copying) are advisory —
 // the viewer chooses to honour them. They are not a security control; any
 // determined user can strip them in seconds.
 ```
 
+## 13. Embedded Files, Data & Media
+
+```text
+‼️ "EMBEDDING THINGS IN A PDF" MEANS THREE VERY DIFFERENT THINGS, with wildly
+   different levels of real-world support. Separate them before you plan
+   anything.
+
+  1. EMBEDDED FILES / ATTACHMENTS       ✅ WORKS WELL, WIDELY SUPPORTED
+     Arbitrary files carried inside the PDF — XML, CSV, images, other PDFs.
+     Shown in the viewer's attachments panel.
+     ‼️ This is the one that matters commercially. See e-invoicing below.
+
+  2. STRUCTURED METADATA                ✅ WORKS WELL
+     XMP metadata, custom document properties, form field data.
+     Machine-readable, no UI.
+
+  3. AUDIO AND VIDEO                    ❌ LARGELY BROKEN IN PRACTICE
+     Technically in the specification. ‼️ Does not play in browsers, does not
+     play in PDF.js, does not play in most mobile viewers. See below before
+     promising anyone this works.
+```
+
+### Embedded files (attachments)
+
+```text
+HOW IT WORKS IN THE FORMAT
+
+  Attachments live in the document catalogue under /Names → /EmbeddedFiles,
+  as a name tree of file specification dictionaries. Each holds the file's
+  bytes (usually Flate-compressed), its name, MIME type, size and dates.
+
+  ‼️ PDF 2.0 AND PDF/A-3 ADD THE /AF KEY — "ASSOCIATED FILES".
+     This is the important modern mechanism. /AF declares a RELATIONSHIP
+     between the attachment and the document, which is what lets a machine
+     know the attachment is not just a random extra file:
+
+       /Source       the attachment is the source this PDF was made from
+       /Data         the attachment is data used to generate the visual
+       /Alternative  ‼️ the attachment is an ALTERNATIVE REPRESENTATION of the
+                     same content — the key used by e-invoicing
+       /Supplement   supplementary material
+       /Unspecified  no declared relationship
+
+  ‼️ WHY THE RELATIONSHIP MATTERS: it turns "a PDF with a file stapled to it"
+     into "a document that is simultaneously human-readable and
+     machine-readable". That distinction is the whole basis of the hybrid
+     document formats below.
+```
+
+```javascript
+// ── ATTACHING A FILE ─────────────────────────────────────────────────────
+// Using a maintained pdf-lib fork (see §18).
+import { PDFDocument, AFRelationship } from '@cantoo/pdf-lib';
+
+const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+await pdfDoc.attach(xmlBytes, 'factur-x.xml', {
+  mimeType: 'application/xml',
+  description: 'Factur-X EN 16931 invoice data',
+  creationDate: new Date(),
+  modificationDate: new Date(),
+
+  // ‼️ THE CRITICAL FIELD for any machine-readable use. Without the right
+  // relationship the attachment is just a file — validators and automated
+  // processors will not recognise it as the document's data representation.
+  afRelationship: AFRelationship.Alternative,
+});
+
+const bytes = await pdfDoc.save();
+```
+
+```javascript
+// ── EXTRACTING ATTACHMENTS ───────────────────────────────────────────────
+// ‼️ Less convenient than attaching — you walk the catalogue yourself.
+// (Some forks expose a helper; check yours before writing this by hand.)
+const namesDict = pdfDoc.catalog.lookup(PDFName.of('Names'), PDFDict);
+const embedded = namesDict?.lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+const names = embedded?.lookup(PDFName.of('Names'), PDFArray);
+
+// The name tree alternates [name, fileSpec, name, fileSpec, ...]
+for (let i = 0; i < (names?.size() ?? 0); i += 2) {
+  const fileName = names.lookup(i, PDFString).asString();
+  const fileSpec = names.lookup(i + 1, PDFDict);
+  const stream = fileSpec.lookup(PDFName.of('EF'), PDFDict).lookup(PDFName.of('F'), PDFStream);
+  const contents = decodePDFRawStream(stream).decode(); // the file bytes
+}
+
+// ‼️ FOR A ONE-OFF OR A PIPELINE, THE CLI IS FAR EASIER:
+//   pdfdetach -list invoice.pdf          # what's in there
+//   pdfdetach -saveall invoice.pdf       # pull them all out
+// (pdfdetach ships with poppler-utils.)
+```
+
+### The big use case — hybrid documents and e-invoicing
+
+```text
+‼️ THE MOST COMMERCIALLY IMPORTANT APPLICATION OF EMBEDDED FILES, and the
+   reason this section exists at all.
+
+THE PROBLEM IT SOLVES
+  An invoice needs to be readable by a HUMAN (a PDF that looks like an
+  invoice) and by a MACHINE (structured data a system can post automatically,
+  with no OCR and no parsing guesswork). Historically you sent both — a PDF
+  and an XML file — and they drifted apart or one got lost.
+
+THE SOLUTION: A HYBRID DOCUMENT
+  ‼️ One PDF/A-3 file containing BOTH: the visual invoice, plus the structured
+     XML embedded as an Associated File with relationship /Alternative.
+     One file, one source of truth, impossible to separate.
+
+THE STANDARDS
+  FACTUR-X (France) and ZUGFeRD (Germany) are ‼️ TECHNICALLY IDENTICAL since
+  ZUGFeRD 2.1 (2020) — the same XML schema, the same PDF/A-3 container, the
+  same profile hierarchy. One Franco-German specification with two names.
+
+  - The XML uses UN/CEFACT CII (Cross Industry Invoice) syntax, one of the two
+    syntaxes permitted by EN 16931. ‼️ Factur-X is CII only — it does not use
+    UBL, which is the other EN 16931 syntax.
+  - ‼️ THE FILENAME IS FIXED AND MATTERS: `factur-x.xml` for the French
+    flavour, `zugferd-invoice.xml` for the German one. Validators check it.
+  - Relationship must be /Alternative.
+  - The container must be valid PDF/A-3 (see §3).
+  - Profiles run from MINIMUM up through BASIC, EN 16931 (COMFORT) and
+    EXTENDED, with increasing data requirements.
+
+‼️ WHY THIS IS URGENT RIGHT NOW: e-invoicing mandates are live. France's B2B
+   mandate takes effect in September 2026, and for it only the EN 16931 and
+   EXTENDED profiles are legal — MINIMUM and BASIC are not sufficient. Germany
+   and other EU states have their own timelines. ‼️ If you build invoicing
+   software for European customers, this is a requirement, not a nice-to-have.
+
+THE TWO THINGS THAT CATCH PEOPLE OUT
+  1. ‼️ PDF/A-3 CONFORMANCE IS THE HARD PART, not the attachment. Your PDF must
+     embed every font, carry correct XMP metadata, use device-independent
+     colour, and contain no JavaScript. A PDF from headless Chrome is NOT
+     PDF/A-3 out of the box — you need a post-processing step (Ghostscript
+     with a PDF/A definition, or a dedicated library) and then you must
+     actually validate it.
+  2. ‼️ VALIDATE WITH REAL TOOLS: veraPDF for PDF/A conformance, and Mustang
+     (or your buyer's own portal) for the invoice XML. "It opens in Acrobat"
+     is not validation, and a rejected invoice is a payment delayed by weeks.
+
+OTHER HYBRID USES OF THE SAME MECHANISM
+  - CAD drawings with the source model attached
+  - Lab reports with the raw measurement CSV
+  - Contracts with the machine-readable terms
+  - Scientific papers with the dataset
+  ‼️ Note that PDF/A-3 was specifically loosened from PDF/A-2 to permit
+     arbitrary attachments precisely for this pattern — A-2 does not allow it.
+```
+
+### Structured metadata
+
+```text
+XMP METADATA — the standard place for machine-readable document properties.
+  An RDF/XML block embedded in the PDF. Title, author, creation tool,
+  copyright, plus any custom schema you define.
+  ‼️ REQUIRED for PDF/A conformance, and it must AGREE with the document info
+     dictionary — a mismatch fails validation, and it is a common reason a
+     PDF/A validator rejects an otherwise-fine file.
+
+DOCUMENT INFO DICTIONARY — the older, simpler /Info entries (Title, Author,
+  Subject, Keywords, Producer, CreationDate). Still widely read.
+  ‼️ Set both, consistently.
+
+FORM DATA — AcroForm field values live in the PDF itself. They can be
+  exported as FDF or XFDF (an XML form of the same thing) for exchange.
+  ‼️ Remember §12: flatten the form if the values must not be editable.
+
+‼️ AND THE PRIVACY WARNING: metadata leaks. Author names, the software that
+   made it, sometimes local file paths, and in scanned documents the device
+   identity. Strip metadata before distributing documents externally —
+   `exiftool -all= file.pdf`, or your library's equivalent.
+```
+
+### Audio and video — the honest position
+
+```text
+‼️ READ THIS BEFORE PROMISING ANYONE AN "INTERACTIVE PDF WITH VIDEO".
+
+THE THREE MECHANISMS THE SPECIFICATION OFFERS
+
+  1. /Sound AND /Movie ANNOTATIONS — PDF 1.2-era. Legacy, deprecated in
+     practice, poor support. Do not build on these.
+
+  2. /Screen ANNOTATIONS + rendition actions — PDF 1.5. Plays media via a
+     media player. Better, still patchy.
+
+  3. /RichMedia ANNOTATIONS — PDF 1.7 Extension Level 3, the modern one.
+     ‼️ ORIGINALLY BUILT AROUND FLASH/SWF. Flash reached end of life at the
+     end of 2020 and is gone from every browser and operating system, which
+     killed a large share of existing rich-media PDFs outright.
+     RichMedia can also carry H.264 video and MP3 audio directly, which is
+     what current tooling produces.
+
+‼️ WHAT ACTUALLY PLAYS, WHERE — the practical table:
+
+  Adobe Acrobat / Reader (desktop)   ✅ Yes, this is the reference implementation
+  Chrome / Edge / Firefox built-in   ❌ NO. Browsers show a placeholder or
+                                        nothing at all.
+  PDF.js                             ❌ NO. It does not implement media
+                                        playback, and there is no sign of it
+                                        being added.
+  Apple Preview / macOS Quick Look   ⚠️ Partial and unreliable
+  Mobile viewers (iOS/Android built-in) ❌ Generally no
+  Commercial SDKs (Nutrient/PSPDFKit, Apryse)  ✅ Yes — they implement media
+                                        annotations themselves and hand the
+                                        stream to the browser's own player
+
+‼️ THE CONCLUSION, STATED PLAINLY:
+   EMBEDDED AUDIO AND VIDEO IN PDF IS EFFECTIVELY AN ADOBE ACROBAT FEATURE.
+   If your users are on the web, on mobile, or using anything other than
+   Acrobat, it will not play. Any requirement of the form "the PDF should
+   contain a product video" needs this said out loud before work starts.
+
+   It also bloats the file enormously — a few minutes of video turns a 200KB
+   document into 50MB, which breaks email attachment limits and makes the PDF
+   slow to open.
+
+‼️ WHAT TO DO INSTEAD — in order of preference:
+   1. A LINK to hosted media, with a poster image in the PDF. Works
+      everywhere, keeps the file small, lets you change the video later, and
+      gives you analytics. ‼️ Almost always the right answer.
+   2. Attach the media file as a plain ATTACHMENT (above). It will not play
+      inline, but the user can save and open it, and it works in every viewer.
+   3. Use a commercial SDK, if inline playback in a browser is genuinely a
+      hard requirement and you control the viewer.
+   4. ‼️ Question whether it should be a PDF at all. "Rich interactive
+      document" is what HTML is for. PDF's value is fixed, portable,
+      archivable layout — the moment you want video, you are fighting the
+      format's entire purpose.
+```
+
+### Security of embedded content
+
+```text
+‼️ ATTACHMENTS ARE A MALWARE DELIVERY MECHANISM, and a long-standing one.
+   A PDF can carry an executable, a macro-enabled document, or a script.
+   Email gateways scan attachments; many do not recursively scan files
+   embedded INSIDE a PDF attachment. That gap is actively exploited.
+
+  IF YOU ACCEPT PDF UPLOADS:
+    □ Enumerate and inspect embedded files — do not assume there are none
+      (`pdfdetach -list`)
+    □ Scan extracted attachments with the same rules you apply to direct
+      uploads
+    □ ‼️ Consider stripping attachments entirely if your use case does not
+      need them: qpdf and similar can rewrite the file without them
+    □ Never auto-open or auto-execute anything extracted
+    □ Remember PDFs can also contain JavaScript and launch actions — strip
+      those too (see §16)
+
+  IF YOU PRODUCE PDFs WITH ATTACHMENTS:
+    □ Only attach what you generated yourself
+    □ ‼️ Never pass a user-uploaded file straight through into a PDF you then
+      send to someone else — you become the delivery vehicle
+    □ Set the MIME type and relationship honestly
+```
+
 ---
 
-## 12. Extracting Text & Data
+## 14. Extracting Text & Data
 
 ```text
 ‼️ FIRST, ANSWER THIS QUESTION: does the PDF have a text layer, or is it a scan?
@@ -1080,16 +1516,29 @@ async function fillForm(buf: Buffer, values: Record<string, string>) {
 
 ```javascript
 // ── SIMPLE TEXT EXTRACTION ──────────────────────────────────────────────
-import pdfParse from 'pdf-parse';
+// ‼️ USE unpdf, NOT pdf-parse. `pdf-parse` is the package every tutorial
+// recommends and it is UNMAINTAINED (see §18). `unpdf` is the maintained
+// successor: same job, modern API, and it runs in Node, Deno, Bun, edge
+// runtimes and the browser because it ships a serverless build of PDF.js.
+import { extractText, getDocumentProxy, getMeta } from 'unpdf';
 
-const data = await pdfParse(buffer);
-console.log(data.text);        // all text, best-effort reading order
-console.log(data.numpages);
-console.log(data.info);        // Title, Author, Producer...
+const pdf = await getDocumentProxy(new Uint8Array(buffer));
+
+// mergePages: true returns one string; false returns an array, one per page.
+// ‼️ Per-page is usually more useful — it lets you cite a page number, and it
+// keeps a bad page from polluting the whole extraction.
+const { totalPages, text } = await extractText(pdf, { mergePages: false });
+
+const { info, metadata } = await getMeta(pdf); // Title, Author, Producer...
 
 // ‼️ Good enough for search indexing and keyword matching. NOT good enough
 // for anything positional — the reading order of multi-column documents is
 // frequently wrong.
+
+// THE OLD WAY, for reference, since you will meet it in existing code:
+//   import pdfParse from 'pdf-parse';
+//   const data = await pdfParse(buffer);
+//   data.text; data.numpages; data.info;
 
 // ── POSITIONAL EXTRACTION (when layout matters) ─────────────────────────
 // PDF.js gives each text item with its transform matrix, so you can cluster
@@ -1097,7 +1546,7 @@ console.log(data.info);        // Title, Author, Producer...
 const page = await pdf.getPage(1);
 const content = await page.getTextContent();
 for (const item of content.items) {
-  const [, , , , x, y] = item.transform;   // position from the matrix
+  const [, , , , x, y] = item.transform; // position from the matrix
   console.log(item.str, x, y, item.width);
 }
 // ‼️ Note there are often no space characters — words are separated by a gap
@@ -1134,7 +1583,7 @@ for (const item of content.items) {
 
 ---
 
-## 13. Fonts — The Usual Source of Pain
+## 15. Fonts — The Usual Source of Pain
 
 ```text
 ‼️ Fonts cause more PDF bugs than anything else. The rules:
@@ -1180,14 +1629,16 @@ doc.font('Body').text('Café — naïve — Ünicode ✓');
 // script, is open-licensed, and is designed for exactly this.
 
 // pdf-lib — embedding requires fontkit for TTF support
+// ‼️ Match the fontkit package to your fork: @cantoo/pdf-lib ships its own,
+// while the original pairs with @pdf-lib/fontkit. Check your fork's README.
 import fontkit from '@pdf-lib/fontkit';
-doc.registerFontkit(fontkit);              // ‼️ required, easily forgotten
+doc.registerFontkit(fontkit); // ‼️ required, easily forgotten
 const font = await doc.embedFont(fontBytes, { subset: true });
 ```
 
 ---
 
-## 14. Security
+## 16. Security
 
 ```text
 ‼️ PDF GENERATION IS A COMMONLY OVERLOOKED ATTACK SURFACE. If you render HTML
@@ -1248,7 +1699,7 @@ const font = await doc.embedFont(fontBytes, { subset: true });
 
 ---
 
-## 15. Performance & Scaling
+## 17. Performance & Scaling
 
 ```text
 ‼️ TYPICAL NUMBERS, so you can sanity-check your own:
@@ -1300,54 +1751,197 @@ OPTIMISATION, in order of impact:
 
 ---
 
-## 16. Library Decision Table
+## 18. Library Landscape & Maintenance Status
 
 ```text
-NODE / JAVASCRIPT
+‼️ READ THIS FIRST — THE MOST IMPORTANT THING IN THIS SECTION.
 
-  GENERATE FROM HTML
-    playwright / puppeteer   Headless Chrome. ‼️ The default for design-led
-                             documents. Heavy but productive.
-    @sparticuz/chromium      Chrome packaged for AWS Lambda.
+   THE PDF ECOSYSTEM HAS AN UNUSUALLY HIGH ABANDONMENT RATE. PDF is a large,
+   tedious specification, most of these libraries are one-maintainer projects,
+   and maintainers burn out. Several of the most-downloaded PDF packages on
+   npm are no longer maintained — and downloads keep rising anyway, because
+   tutorials and AI-generated code keep recommending them.
 
-  GENERATE PROGRAMMATICALLY
-    pdfkit                   Mature, streaming, good font support. ‼️ The
-                             default for high-volume simple documents.
-    pdf-lib                  Create AND edit. Pure JS, runs in the browser.
-                             ‼️ The only real choice for MODIFYING PDFs.
-    @react-pdf/renderer      JSX + flexbox subset. Good middle ground; works
-                             client-side too.
+   ‼️ SO: DOWNLOAD COUNT IS NOT A HEALTH SIGNAL FOR PDF LIBRARIES. Check the
+      last commit and the last release date yourself, before you adopt.
 
-  RENDER / DISPLAY
-    pdfjs-dist               Mozilla's renderer. The foundation of everything.
-    react-pdf                React wrapper around PDF.js. ‼️ The usual choice.
-    PSPDFKit / Apryse        Commercial. For annotation editing, forms,
-                             signatures, redaction.
+   HOW TO CHECK, IN THIRTY SECONDS:
+     npm view <package> time.modified    # last publish
+     npm view <package> versions --json  # release cadence
+     Then open the GitHub repo: is it archived? When was the last commit?
+     How many open issues, and how old is the newest one with a response?
 
-  EXTRACT
-    pdf-parse                Quick text extraction. Fine for search indexing.
-    pdfjs-dist               Positional extraction when layout matters.
-    tesseract.js             OCR in JS. Slow; prefer a cloud OCR at volume.
+   Status below is as of September 2026 and WILL drift. ‼️ Re-check before
+   you commit to anything here — that is the point of this section.
+```
 
-PYTHON  (worth knowing — often better tooling for extraction)
-    WeasyPrint      HTML/CSS → PDF without a browser. Much lighter than
-                    Chrome; supports a good chunk of paged-media CSS.
-    ReportLab       The mature programmatic library. Very capable.
-    pypdf           Merge, split, rotate, encrypt.
-    pdfplumber      ‼️ The best open-source TABLE extraction available.
-    PyMuPDF         Very fast rendering and extraction (C-backed).
+```text
+── CREATING PDFs PROGRAMMATICALLY ──────────────────────────────────────────
 
-COMMAND LINE  (useful in pipelines and Dockerfiles)
-    qpdf            Structural repair, encryption, decryption, linearisation.
-    pdftk           Merge, split, stamp, form filling.
-    ghostscript     Convert, compress, rasterise. ‼️ Has a history of CVEs —
-                    keep it patched and sandboxed if it touches user input.
-    poppler-utils   pdftotext, pdftoppm, pdfimages. Fast and dependable.
+  PDFKit                                          ✅ HEALTHY
+    ~5.3M weekly downloads. Releases within the last few months.
+    Streaming API, good font support, mature.
+    ‼️ THE SAFE DEFAULT for generating PDFs from scratch in Node.
+
+  pdfmake                                         ✅ ACTIVE
+    ~12k stars, 1M+ weekly downloads. Declarative document definitions
+    built on top of PDFKit — easier than PDFKit for structured documents
+    like invoices and reports.
+    ‼️ Inherits PDFKit's limitations, since it sits on top of it.
+
+  jsPDF                                           ✅ ACTIVE
+    The highest-starred JS PDF library, stable and well maintained.
+    Browser-first. Weaker text layout than PDFKit — good for simple output
+    and client-side generation.
+
+  @react-pdf/renderer                             ✅ ACTIVE
+    JSX with a flexbox-like subset. Works in Node and the browser.
+
+── EDITING EXISTING PDFs ───────────────────────────────────────────────────
+
+  ‼️ pdf-lib (Hopding/pdf-lib)                    ❌ UNMAINTAINED — ARCHIVED
+    THE MOST IMPORTANT ENTRY IN THIS TABLE.
+    The original repository is ARCHIVED. No meaningful development for
+    roughly two years before that. It still receives millions of downloads
+    and is still what most tutorials and AI assistants recommend.
+
+    ‼️ IT STILL WORKS. PDF is a stable format, so an unmaintained library does
+       not stop functioning. The risk is not breakage — it is:
+         - no security patches (‼️ and PDF parsers are a classic
+           memory-safety and DoS target; see §16)
+         - no fixes for malformed real-world PDFs, which is most of the
+           library's actual difficulty
+         - no support for newer runtimes or PDF 2.0 features
+         - open bugs stay open permanently
+
+    USE ONE OF THE MAINTAINED FORKS INSTEAD. Both keep the same API, so
+    migration is a package name change:
+
+      @cantoo/pdf-lib      ✅ Actively maintained. Keeps the original API and
+                              docs, and adds features upstream never shipped
+                              (full SVG drawing, content extraction).
+      @pdfme/pdf-lib       ✅ The continuation the archived repo points at,
+                              maintained under the pdfme project. Bug fixes
+                              and additional features merged.
+
+    ‼️ MIGRATION IS ONE LINE — see the code below.
+
+  qpdf / pdftk (CLI)                              ✅ HEALTHY
+    Structural repair, encryption, linearisation, merging. ‼️ Still the answer
+    for anything pdf-lib cannot do — notably ENCRYPTION, which no maintained
+    pure-JS library handles well.
+
+── RENDERING / DISPLAY ─────────────────────────────────────────────────────
+
+  pdfjs-dist (Mozilla)                            ✅ VERY HEALTHY
+    v6.x, published within the last month. Used by thousands of packages.
+    ‼️ The foundation of essentially everything in this category. Mozilla
+       backing means it is one of the safest dependencies in the ecosystem.
+
+  react-pdf (wojtekmaj)                           ✅ VERY HEALTHY
+    v11.x, published within weeks. Actively tracks pdfjs-dist releases.
+    ‼️ Note v11 supports only current major browsers — check that against
+       your support matrix before upgrading.
+
+  @embedpdf/core (EmbedPDF)                       ✅ ACTIVE, NEWER
+    ‼️ THE INTERESTING ALTERNATIVE, because it is NOT built on PDF.js.
+    It uses PDFIUM — Chrome's own PDF engine — compiled to WebAssembly.
+    Framework-agnostic and HEADLESS: it gives you the engine and state, you
+    build the UI. Wrappers for React, Vue, Svelte, Preact and vanilla JS.
+    `@embedpdf/pdfium` is published standalone if you want PDFium-in-WASM
+    without the viewer layer.
+      ✓ Chrome-identical rendering fidelity; WASM rather than JS on the hot path
+      ✓ Headless by design, rather than fighting a built-in UI
+      ✗ ‼️ Much newer and much smaller than pdfjs-dist. By the rule at the
+        bottom of this section, that makes it the riskier dependency however
+        good the design is — Mozilla has maintained PDF.js for over a decade.
+      ✗ Inherits PDFium's quirks instead of PDF.js's
+      ‼️ Verify the licence before adopting — it is stated inconsistently
+        across the project's site and npm (MIT in one place, Apache-2.0 in
+        another). Both permissive; just know which applies.
+
+  PSPDFKit / Nutrient, Apryse                     ✅ COMMERCIAL
+    For annotation editing, forms, signatures, redaction — and ‼️ the only
+    realistic route to inline audio/video playback on the web (see §13).
+    Expensive, and worth it precisely when the alternative is building those
+    yourself.
+
+── EXTRACTING TEXT ─────────────────────────────────────────────────────────
+
+  ‼️ pdf-parse                                    ⚠️ UNMAINTAINED
+    Still extremely widely used and still recommended everywhere. Works, but
+    no longer maintained.
+
+  unpdf (unjs)                                    ✅ THE MODERN REPLACEMENT
+    ~200k weekly downloads and growing. Explicitly positioned as the
+    maintained successor to pdf-parse.
+    ‼️ WHY IT IS BETTER: ships a serverless-optimised build of PDF.js, so it
+       works in Node, Deno, Bun, edge runtimes AND the browser. Async/await
+       API, TypeScript-native, extracts text, images and metadata.
+    ‼️ THE DEFAULT CHOICE for new work, and especially for anything
+       serverless or edge-deployed.
+
+  pdfjs-dist                                      ✅ For POSITIONAL extraction
+    When you need coordinates, not just a text blob. See §14.
+
+── HTML → PDF ──────────────────────────────────────────────────────────────
+
+  Playwright                                      ✅ VERY HEALTHY
+    ‼️ PREFER OVER PUPPETEER for new work: better API, first-class Docker
+       images, same Chromium engine, much better maintained tooling around it.
+
+  Puppeteer                                       ✅ ACTIVE
+    Still fine, still maintained. No reason to migrate an existing
+    integration, but no reason to choose it fresh either.
+
+  @sparticuz/chromium                             ✅ ACTIVE
+    Chromium packaged for AWS Lambda. ‼️ The community successor to the long-
+    dead chrome-aws-lambda — if you find chrome-aws-lambda in a codebase or a
+    tutorial, it is abandoned; replace it.
+
+  WeasyPrint (Python)                             ✅ ACTIVE
+    HTML/CSS → PDF with no browser. Much lighter than Chromium and supports a
+    good deal of paged-media CSS. ‼️ Worth knowing even in a JS shop — it is a
+    genuinely different cost profile, and you can run it behind a small
+    service.
+
+  wkhtmltopdf                                     ❌ DEAD
+    ‼️ ARCHIVED AND UNMAINTAINED. Built on an ancient WebKit fork, so it fails
+       on modern CSS (no flexbox or grid support worth the name) and carries
+       unpatched security issues. Still all over the internet in tutorials.
+       DO NOT START ANYTHING NEW WITH IT. Migrate to Playwright or WeasyPrint.
+
+── PYTHON (often better for extraction) ────────────────────────────────────
+
+  pypdf                ✅ Active. Merge, split, rotate, encrypt. (‼️ PyPDF2 is
+                          deprecated and merged back into pypdf — if you see
+                          PyPDF2, update it.)
+  pdfplumber           ✅ Active. ‼️ Still the best open-source TABLE
+                          extraction available in any language.
+  PyMuPDF              ✅ Very active. Fast C-backed rendering and extraction.
+                          ‼️ Check the licence — AGPL, with a commercial
+                          option. This catches teams out.
+  ReportLab            ✅ Active. The mature programmatic library.
+  WeasyPrint           ✅ Active. See above.
+```
+
+```text
+‼️ THE STANDING RULE FOR THIS ECOSYSTEM
+
+  BEFORE ADOPTING ANY PDF LIBRARY:
+    1. Check the last release date and whether the repo is archived.
+    2. Check whether a maintained FORK has become the de facto successor —
+       ‼️ this is unusually common in PDF specifically (pdf-lib, PyPDF2,
+       chrome-aws-lambda all follow this pattern).
+    3. Prefer libraries with institutional backing (Mozilla's pdfjs-dist) or
+       genuine multi-maintainer projects over single-author packages.
+    4. Assume you may need to fork or replace it within three years, and keep
+       your own code loosely coupled to it.
 ```
 
 ---
 
-## 17. Common Pitfalls
+## 19. Common Pitfalls
 
 ```text
 ‼️ 1. Generating PDFs inside the HTTP request.
@@ -1407,6 +2001,27 @@ COMMAND LINE  (useful in pipelines and Dockerfiles)
 ‼️ 16. Treating PDF permissions as security.
    "Printing not allowed" is a request the viewer may ignore. It is not a
    control.
+
+‼️ 17. Adopting an unmaintained library because it has millions of downloads.
+   ‼️ THE PDF-SPECIFIC PITFALL. pdf-lib, pdf-parse and wkhtmltopdf are all
+   heavily used, heavily recommended, and no longer maintained — and AI
+   assistants confidently suggest all three, because they dominate the
+   training data. Check the last release date and whether the repo is
+   archived BEFORE you install. See §17 for the current successors.
+
+‼️ 18. Promising embedded video or audio in a PDF.
+   ‼️ It plays in Adobe Acrobat and essentially nowhere else — not in
+   browsers, not in PDF.js, not on mobile. Link to hosted media instead.
+   See §13.
+
+‼️ 19. Shipping a "PDF/A-3 e-invoice" that is not valid PDF/A-3.
+   The attachment is the easy part; the conformance is not. A PDF from
+   headless Chrome is not PDF/A-3. Validate with veraPDF before you send
+   anything to a customer's portal. See §13.
+
+‼️ 20. Discovering a conformance requirement late.
+   PDF/A, PDF/UA or PDF/X is a constraint on your whole tool choice, not a
+   flag you set at the end. Ask at the start of the project (§3).
 ```
 
 ---
