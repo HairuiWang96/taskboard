@@ -81,6 +81,7 @@ Root files (start here):
 | [CSS-BASICS.md](2-medium-priority/CSS-BASICS.md) | Beginner guide — box model, units, Flexbox, Grid, centring, responsive, reading Tailwind, troubleshooting |
 | [CSS-DEEP.md](2-medium-priority/CSS-DEEP.md) | Flexbox, Grid, specificity, animations |
 | [BROWSER-INTERNALS-DEEP.md](2-medium-priority/BROWSER-INTERNALS-DEEP.md) | Rendering pipeline, critical path, reflow/repaint |
+| [BROWSER-COMPATIBILITY-DEEP.md](2-medium-priority/BROWSER-COMPATIBILITY-DEEP.md) | Engines (Blink/WebKit/Gecko), Chrome/Safari/Firefox/Edge/Samsung quirks, iOS vs Android, in-app browsers, support policy, cross-browser testing |
 | [PERFORMANCE-DEEP.md](2-medium-priority/PERFORMANCE-DEEP.md) | Core Web Vitals, bundle optimisation, lazy loading |
 | [MICROSERVICES-DEEP.md](2-medium-priority/MICROSERVICES-DEEP.md) | Architecture, service mesh, distributed patterns |
 | [NON-FUNCTIONAL-REQUIREMENTS.md](2-medium-priority/NON-FUNCTIONAL-REQUIREMENTS.md) | Beginner guide — performance, scalability, availability, security, the -ilities and their trade-offs |
