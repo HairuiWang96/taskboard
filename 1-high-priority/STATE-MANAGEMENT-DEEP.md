@@ -6,7 +6,7 @@
 Server state (async, remote)?      → TanStack Query
 Global UI state (complex logic)?   → Redux Toolkit
 Simple global state?               → Zustand
-Atomic/derived state?              → Jotai or Recoil
+Atomic/derived state?              → Jotai
 Local component state?             → useState / useReducer
 Form state?                        → React Hook Form + Zod
 ```
@@ -120,6 +120,10 @@ dispatch(fetchCart('user-123'))
 ```
 
 ### Redux Saga (side effects as generator functions)
+
+> ‼️ Mostly legacy now. You'll meet sagas in older codebases, but new Redux code uses
+> RTK Query for data fetching and RTK's `createListenerMiddleware` for reactive side
+> effects — both built in, no generators. Know sagas well enough to maintain them.
 
 ```ts
 // saga.ts — more powerful than thunk: cancellable, testable, complex flows
@@ -317,20 +321,26 @@ function Counter() {
 }
 
 // Atom families (parameterised atoms)
-import { atomFamily } from 'jotai/utils'
+// ‼️ Jotai v3 (2026) removed atomFamily from 'jotai/utils' — it now lives in
+//    the separate jotai-family package. v2 code imports it from 'jotai/utils'.
+import { atomFamily } from 'jotai-family'
 const todoAtom = atomFamily((id: number) => atom({ id, done: false }))
 // Each id gets its own atom — components subscribe to specific todo only
 ```
 
 ### Jotai vs Recoil
 
-| | Jotai | Recoil |
+‼️ Recoil is dead: Meta archived the repository in January 2025 (last release
+2023). If you meet it in a legacy codebase, Jotai is the usual migration
+target — the atom/selector model maps across closely.
+
+| | Jotai | Recoil (archived) |
 |---|---|---|
 | Bundle size | ~3kb | ~21kb |
 | Provider | Optional | Required (RecoilRoot) |
 | Async | Built-in | Selectors + Suspense |
 | Suspense | First-class | First-class |
-| Maintenance | Active | Slowing (Meta) |
+| Maintenance | Active (v3, 2026) | Archived Jan 2025 |
 | Key | No string keys | String keys (atom/selector) |
 
 ---

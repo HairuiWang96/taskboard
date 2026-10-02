@@ -1645,7 +1645,10 @@ SQL vs NoSQL:
     Best for: high write throughput, simple key-value lookups, rapidly changing schema
     Document: MongoDB (flexible schema, JSON-like)
     Wide-column: Cassandra (time-series, write-heavy, horizontal scale)
-    Key-value: Redis (cache, sessions), DynamoDB (managed, auto-scale)
+    Key-value: Redis / Valkey (cache, sessions), DynamoDB (managed, auto-scale)
+      (Valkey = the Linux Foundation fork created after Redis changed its licence
+       in 2024; AWS ElastiCache and Google Memorystore now lead with it. Same
+       commands and clients — in an interview, "Redis" covers both.)
     Graph: Neo4j (social networks, recommendations)
 
 Normalisation vs Denormalisation:

@@ -116,6 +116,9 @@ INTEGER (or INT)     -- whole numbers: 1, 42, -7
 BIGINT               -- larger whole numbers (for IDs that might exceed 2 billion)‼️
 SERIAL               -- auto-incrementing integer (1, 2, 3, ...) — used for IDs
 BIGSERIAL            -- auto-incrementing big integer
+                     -- (Modern Postgres style is BIGINT GENERATED ALWAYS AS IDENTITY —
+                     --  same idea, SQL standard. SERIAL is still everywhere and fine
+                     --  to use in interviews.)
 NUMERIC(10, 2)       -- exact decimal: 12345678.99 (‼️ 10 digits total, 2 after decimal)
                      -- Use for money! FLOAT/DOUBLE are approximate and can have rounding errors.
 REAL / DOUBLE PRECISION -- floating point numbers (approximate — don't use for money!)‼️

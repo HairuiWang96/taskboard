@@ -2259,7 +2259,8 @@ For event streaming / event sourcing:
   - Consumer groups with offset tracking
   - High throughput (millions of events/sec)
   - Ordering guaranteed within a partition
-  - Tradeoff: operational complexity (ZooKeeper/KRaft, partitions, replication)
+  - Tradeoff: operational complexity (partitions, replication, KRaft controllers —
+    Kafka 4.0 (2025) removed ZooKeeper entirely; managed options: MSK, Confluent)
 
 For task queues / work distribution:
   → RabbitMQ

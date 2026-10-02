@@ -455,9 +455,11 @@ async function UsersPage() {
 
     return <UserList users={users} />;
 }
+```
 
+```jsx
 // Client Component — must add 'use client' at the top
-('use client');
+'use client';
 // app/components/UserList.tsx
 function UserList({ users }) {
     const [filter, setFilter] = useState(''); // ✓ state allowed here
@@ -490,9 +492,11 @@ function ServerComponent() {
     const handleClick = () => console.log('click'); // function
     return <ClientButton onClick={handleClick} />; // ✗ can't serialize
 }
+```
 
+```jsx
 // ✓ Event handlers are defined in Client Components
-('use client');
+'use client';
 function ClientButton() {
     const handleClick = () => console.log('click'); // defined in client
     return <button onClick={handleClick}>Click</button>; // ✓
@@ -642,7 +646,7 @@ const UserCard = React.memo(UserCardFn, (prevProps, nextProps) => {
 ```jsx
 // Lazy load routes — only load JS for the current page
 import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router'; // 'react-router-dom' before v7
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -925,10 +929,11 @@ flushSync(() => setCount(c + 1)); // DOM updated synchronously here
 
 ### "What is the `useImperativeHandle` hook?"
 
-> `useImperativeHandle` customizes what is exposed when a parent uses a `ref` on a child component. Instead of exposing the whole DOM node or component instance, you expose a specific API. Used with `forwardRef`. Useful for: exposing `focus()`, `scroll()`, `reset()` methods to parents while keeping internal implementation private.
+> `useImperativeHandle` customizes what is exposed when a parent uses a `ref` on a child component. Instead of exposing the whole DOM node or component instance, you expose a specific API. Used with `forwardRef` (React 18) or with the plain `ref` prop (React 19, where `ref` is passed to function components like any other prop). Useful for: exposing `focus()`, `scroll()`, `reset()` methods to parents while keeping internal implementation private.
 
 ```jsx
-const Input = forwardRef((props, ref) => {
+// React 19 — ref arrives as a normal prop
+function Input({ ref, ...props }) {
     const inputRef = useRef();
 
     useImperativeHandle(ref, () => ({
@@ -937,7 +942,8 @@ const Input = forwardRef((props, ref) => {
     }));
 
     return <input ref={inputRef} {...props} />;
-});
+}
+// React 18 and earlier: wrap it — const Input = forwardRef((props, ref) => { ... })
 
 // Parent
 const inputRef = useRef();

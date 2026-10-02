@@ -4,6 +4,10 @@ The job market has shifted. Companies are hiring "AI engineers" — developers w
 
 This file covers what you need to know for interviews at companies building with AI.
 
+> Model names, prices, context windows and SDK APIs reviewed October 2026. This field moves
+> monthly — check the provider's docs before quoting a number in an interview or using a
+> model ID in code.
+
 ---
 
 ## Table of Contents
@@ -60,10 +64,12 @@ Token: the unit LLMs process — roughly 3/4 of a word in English.
 Context window: maximum tokens the model can process in one request.
   Input tokens (prompt) + output tokens (completion) = total tokens
   
-  Claude Sonnet 4.6:  200K input, 8K default output (up to 64K with extended thinking)
-  GPT-4o:            128K input
-  Gemini 1.5 Pro:    1M+ input
-  Llama 3.1 405B:    128K input
+  Approximate, October 2026 — check provider docs:
+  Claude Opus 5 / Sonnet 5:  1M context, up to 128K output (stream large outputs)
+  Claude Haiku 4.5:          200K context
+  OpenAI GPT-6 family:       ~1M context
+  Google Gemini Pro models:  1M+ context
+  Llama 4 Scout / Maverick:  up to 10M / 1M context (open weights)
 
 Why it matters:
   - Longer context = more information available to the model
@@ -83,45 +89,67 @@ Temperature: controls randomness of output.
 Top-p (nucleus sampling): only sample from the top p% of probability mass.
   top_p=0.9 means: consider only tokens whose cumulative probability reaches 90%
   
-In practice:
+In practice (models that still accept sampling parameters):
   - Factual/structured output → temperature 0
   - Conversational/general → temperature 0.5-0.7
   - Creative writing → temperature 0.8-1.0
   - Don't set both temperature and top_p to extreme values
+
+‼️ CHANGED IN 2025–26 — REASONING MODELS DROPPED THESE KNOBS:
+  - Current Claude models (Opus 4.7+, Opus 5, Sonnet 5, Fable) REJECT
+    temperature / top_p / top_k with a 400 error. OpenAI's reasoning models
+    also only accept the default temperature.
+  - Instead you control quality vs cost with THINKING and EFFORT:
+      thinking: { type: 'adaptive' }          // model decides how much to think
+      output_config: { effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max' }
+    Low effort for classification and simple chat; high/xhigh for coding and
+    agentic work.
+  - For consistent output, rely on structured outputs (below) and clear
+    instructions rather than temperature 0.
+  - Interview answer: "temperature still matters for older and open-weight
+    models, but on current frontier reasoning models the levers are effort,
+    thinking, and structured outputs."
 ```
 
 ### Structured output
 
 ```typescript
 // Force the model to return valid JSON matching a schema
-// Anthropic Claude — tool use for structured output
-const response = await client.messages.create({
-  model: 'claude-sonnet-4-6',
-  max_tokens: 1024,
-  tools: [{
-    name: 'extract_info',
-    description: 'Extract structured information from text',
-    input_schema: {
-      type: 'object',
-      properties: {
-        sentiment: { type: 'string', enum: ['positive', 'negative', 'neutral'] },
-        topics: { type: 'array', items: { type: 'string' } },
-        confidence: { type: 'number', minimum: 0, maximum: 1 },
-      },
-      required: ['sentiment', 'topics', 'confidence'],
-    },
-  }],
-  tool_choice: { type: 'tool', name: 'extract_info' },
-  messages: [{ role: 'user', content: 'Analyze: "The new dashboard is great but loading is slow"' }],
+// Anthropic Claude — structured outputs (constrained decoding: the response is
+// GUARANTEED to match the schema, so no "please return JSON" prompt hacks)
+import Anthropic from '@anthropic-ai/sdk';
+import { z } from 'zod';
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+
+const Analysis = z.object({
+  sentiment: z.enum(['positive', 'negative', 'neutral']),
+  topics: z.array(z.string()),
+  confidence: z.number(),
 });
 
-// OpenAI — response_format with json_schema
+const response = await client.messages.parse({
+  model: 'claude-opus-5',
+  max_tokens: 16000,
+  messages: [{ role: 'user', content: 'Analyze: "The new dashboard is great but loading is slow"' }],
+  output_config: { format: zodOutputFormat(Analysis) },
+});
+const analysis = response.parsed_output; // typed; null if parsing failed — guard it
+
+// ‼️ The OLD trick — define one tool and force it with
+//    tool_choice: { type: 'tool', name: 'extract_info' } — is now obsolete,
+//    and the newest Claude models (Opus 5.5, Fable 5.1) reject forced
+//    tool_choice with a 400. For tool ARGUMENTS that must match the schema,
+//    set strict: true on the tool definition instead.
+
+// OpenAI — response_format with json_schema (Chat Completions; OpenAI's newer
+// Responses API takes the same schema under text.format)
 const response = await openai.chat.completions.create({
-  model: 'gpt-4o',
+  model: 'gpt-6-luna',
   response_format: {
     type: 'json_schema',
     json_schema: {
       name: 'analysis',
+      strict: true,
       schema: {
         type: 'object',
         properties: {
@@ -129,6 +157,7 @@ const response = await openai.chat.completions.create({
           topics: { type: 'array', items: { type: 'string' } },
         },
         required: ['sentiment', 'topics'],
+        additionalProperties: false, // required by strict mode
       },
     },
   },
@@ -200,8 +229,8 @@ async function chat(userMessage: string) {
 
   // Step 1: send message with tools
   let response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
+    model: 'claude-opus-5',
+    max_tokens: 16000,
     tools,
     messages,
   });
@@ -212,33 +241,47 @@ async function chat(userMessage: string) {
       (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
     );
 
-    // Execute each tool call
-    const toolResults: Anthropic.ToolResultBlockParam[] = [];
-    for (const toolUse of toolUseBlocks) {
-      const result = await executeTool(toolUse.name, toolUse.input);
-      toolResults.push({
-        type: 'tool_result',
-        tool_use_id: toolUse.id,
-        content: JSON.stringify(result),
-      });
-    }
+    // Execute the tool calls — the model may ask for several at once, so run
+    // them in parallel. A failing tool must NOT crash the loop: report the
+    // error back with is_error: true so the model can retry or change plan.
+    const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+      toolUseBlocks.map(async (toolUse) => {
+        try {
+          const result = await executeTool(toolUse.name, toolUse.input as Record<string, unknown>);
+          return { type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(result) };
+        } catch (err) {
+          return { type: 'tool_result', tool_use_id: toolUse.id, content: String(err), is_error: true };
+        }
+      })
+    );
 
     // Step 3: send tool results back
+    // ‼️ Push the WHOLE response.content (not just the text) — it includes the
+    //    tool_use blocks and any thinking blocks, which the API needs to see
+    //    again on the next turn.
+    // ‼️ Return ALL tool results in ONE user message. Splitting them across
+    //    several messages teaches the model to stop making parallel calls.
     messages.push({ role: 'assistant', content: response.content });
     messages.push({ role: 'user', content: toolResults });
 
     response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
+      model: 'claude-opus-5',
+      max_tokens: 16000,
       tools,
       messages,
     });
   }
 
   // Step 4: return final text response
+  // (find the text block — content[0] may be a thinking block, not text)
   const textBlock = response.content.find(b => b.type === 'text');
   return textBlock?.text ?? '';
 }
+
+// In production you rarely hand-write this loop any more: the SDK's Tool
+// Runner (client.beta.messages.toolRunner + betaZodTool) runs it for you, with
+// hooks for approvals, logging and retries. Writing it by hand once is still
+// the best way to understand — and explain in an interview — what an agent is.
 
 // Your actual function implementations
 async function executeTool(name: string, input: Record<string, unknown>) {
@@ -277,8 +320,10 @@ const tools: OpenAI.ChatCompletionTool[] = [
   },
 ];
 
+// (Chat Completions shown; OpenAI now recommends its Responses API for new
+// agent work — same idea, different request/response shape.)
 const response = await openai.chat.completions.create({
-  model: 'gpt-4o',
+  model: 'gpt-6-luna',
   tools,
   messages: [{ role: 'user', content: 'What is the weather in Tokyo?' }],
 });
@@ -291,7 +336,7 @@ if (toolCall) {
 
   // Send result back
   const finalResponse = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-6-luna',
     messages: [
       { role: 'user', content: 'What is the weather in Tokyo?' },
       response.choices[0].message,
@@ -398,72 +443,91 @@ Coding agent (like Claude Code, Cursor, Devin):
 
 ## 5. Agent Frameworks
 
-### Anthropic Claude Agent SDK (TypeScript)
+### Anthropic's options — three different things with similar names
+
+```text
+‼️ Interviewers mix these up. Know which is which:
+
+  Tool Runner        Part of the normal API SDK (@anthropic-ai/sdk).
+                     Runs the tool loop from §3 for tools YOU define.
+                     You host it.
+  Claude Agent SDK   @anthropic-ai/claude-agent-sdk — Claude Code packaged
+                     as a library. Comes with built-in tools (read/edit
+                     files, bash, grep, web search), subagents, MCP,
+                     permissions and sessions. You host it.
+  Managed Agents     Anthropic runs the loop AND hosts a sandbox container
+                     per session. You send messages, it streams events.
+                     For long-running, scheduled or hosted agents.
+```
+
+### Claude Agent SDK (TypeScript)
 
 ```typescript
-// The official SDK for building agents with Claude
-import { Agent, tool } from 'claude-agent-sdk';
+// Claude Code's agent harness as a library: you give it a prompt and options,
+// it runs the whole loop and streams messages back.
+import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
+import { z } from 'zod';
 
-// Define tools with Zod schemas
-const searchTool = tool({
-  name: 'search_docs',
-  description: 'Search the documentation for relevant information',
-  schema: z.object({
-    query: z.string().describe('Search query'),
-    limit: z.number().optional().default(5),
-  }),
-  async execute({ query, limit }) {
-    const results = await vectorDB.search(query, limit);
-    return results.map(r => r.text).join('\n\n');
+// Custom tools are exposed to the agent through an in-process MCP server
+const searchDocs = tool(
+  'search_docs',
+  'Search the documentation for relevant information',
+  { query: z.string().describe('Search query'), limit: z.number().optional() },
+  async ({ query, limit }) => {
+    const results = await vectorDB.search(query, limit ?? 5);
+    return { content: [{ type: 'text', text: results.map(r => r.text).join('\n\n') }] };
+  }
+);
+
+const docsServer = createSdkMcpServer({ name: 'docs', version: '1.0.0', tools: [searchDocs] });
+
+for await (const message of query({
+  prompt: 'How do I set up authentication?',
+  options: {
+    model: 'claude-opus-5',
+    systemPrompt: 'You are a helpful documentation assistant.',
+    mcpServers: { docs: docsServer },
+    // MCP tools are named mcp__<server>__<tool>
+    allowedTools: ['mcp__docs__search_docs'],
   },
-});
-
-const agent = new Agent({
-  model: 'claude-sonnet-4-6',
-  tools: [searchTool],
-  systemPrompt: 'You are a helpful documentation assistant.',
-});
-
-const result = await agent.run('How do I set up authentication?');
+})) {
+  if (message.type === 'result' && message.subtype === 'success') {
+    console.log(message.result);
+  }
+}
 ```
 
 ### LangChain (most popular, JS/Python)
 
 ```typescript
 // LangChain — the most widely used agent framework
-// Provides abstractions for chains, agents, tools, memory, retrieval
-import { ChatOpenAI } from '@langchain/openai';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { AgentExecutor, createToolCallingAgent } from 'langchain/agents';
-import { DynamicStructuredTool } from '@langchain/core/tools';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
+// Provides abstractions for agents, tools, memory, retrieval
+// ‼️ LangChain v1 (late 2025) replaced AgentExecutor / createToolCallingAgent
+//    with createAgent, which runs on LangGraph under the hood. Most tutorials
+//    online still show the old API.
+import { createAgent, tool } from 'langchain';
 import { z } from 'zod';
 
 // Define a tool
-const weatherTool = new DynamicStructuredTool({
-  name: 'get_weather',
-  description: 'Get weather for a location',
-  schema: z.object({
-    city: z.string().describe('City name'),
-  }),
-  func: async ({ city }) => {
-    const data = await fetchWeather(city);
-    return JSON.stringify(data);
-  },
+const weatherTool = tool(
+  async ({ city }) => JSON.stringify(await fetchWeather(city)),
+  {
+    name: 'get_weather',
+    description: 'Get weather for a location',
+    schema: z.object({ city: z.string().describe('City name') }),
+  }
+);
+
+// Create agent — model as a "provider:model" string
+const agent = createAgent({
+  model: 'anthropic:claude-opus-5',
+  tools: [weatherTool],
+  systemPrompt: 'You are a helpful assistant.',
 });
 
-// Create agent
-const model = new ChatAnthropic({ modelName: 'claude-sonnet-4-6' });
-const prompt = ChatPromptTemplate.fromMessages([
-  ['system', 'You are a helpful assistant.'],
-  ['human', '{input}'],
-  ['placeholder', '{agent_scratchpad}'],
-]);
-
-const agent = createToolCallingAgent({ llm: model, tools: [weatherTool], prompt });
-const executor = new AgentExecutor({ agent, tools: [weatherTool] });
-
-const result = await executor.invoke({ input: 'What is the weather in London?' });
+const result = await agent.invoke({
+  messages: [{ role: 'user', content: 'What is the weather in London?' }],
+});
 ```
 
 ### LangGraph (stateful, multi-step workflows)
@@ -493,38 +557,42 @@ const result = await app.invoke({ messages: [{ role: 'user', content: 'Research 
 // Vercel AI SDK — best for React/Next.js apps with streaming AI
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
-import { generateText, streamText, tool } from 'ai';
+import { generateText, streamText, tool, isStepCount } from 'ai';
 import { z } from 'zod';
+
+// ‼️ API changed across v5–v7 (2025–26): tool `parameters` → `inputSchema`,
+//    `maxSteps` → `stopWhen`. Check which major version a codebase is on.
 
 // Simple generation
 const { text } = await generateText({
-  model: anthropic('claude-sonnet-4-6'),
+  model: anthropic('claude-opus-5'),
   prompt: 'Explain React Server Components in one paragraph',
 });
 
 // Streaming (for chat UIs)
 const result = streamText({
-  model: openai('gpt-4o'),
+  model: openai('gpt-6-luna'),
   messages: [{ role: 'user', content: 'Write a poem about TypeScript' }],
 });
 
 // With tools
 const { text } = await generateText({
-  model: anthropic('claude-sonnet-4-6'),
+  model: anthropic('claude-opus-5'),
   tools: {
     weather: tool({
       description: 'Get weather for a city',
-      parameters: z.object({ city: z.string() }),
+      inputSchema: z.object({ city: z.string() }),
       execute: async ({ city }) => fetchWeather(city),
     }),
   },
-  maxSteps: 5, // Allow up to 5 tool calls
+  stopWhen: isStepCount(5), // stop after at most 5 steps (tool call rounds)
   prompt: 'What should I wear in London today?',
 });
 
-// React hook for chat UI
-// In a React component:
-// const { messages, input, handleSubmit } = useChat({ api: '/api/chat' });
+// React hook for chat UI (@ai-sdk/react). Since v5 the hook no longer manages
+// the input box for you — keep your own input state and call sendMessage:
+// const { messages, sendMessage, status } = useChat();
+// sendMessage({ text: input });
 ```
 
 ### When to use what
@@ -539,7 +607,8 @@ LangChain:
   ✓ Huge ecosystem, many integrations (vector stores, tools, models)
   ✓ Good for prototyping and common patterns
   ✗ Heavy abstraction — can be hard to debug or customise
-  ✗ Moves fast, breaking changes between versions
+  ✗ Moves fast — v1 (late 2025) replaced the old agent APIs; older
+    tutorials and code won't match
 
 LangGraph:
   ✓ Best for complex, stateful multi-step workflows
@@ -552,9 +621,17 @@ Vercel AI SDK:
   ✗ Focused on frontend — less suitable for backend-heavy agents
 
 Claude Agent SDK:
-  ✓ Official Anthropic SDK, first-class Claude support
-  ✓ Clean API for tool definitions
-  ✗ Newer, smaller ecosystem
+  ✓ Official Anthropic SDK — the same harness that powers Claude Code
+  ✓ Built-in file, shell and web tools, subagents, MCP, permissions
+  ✓ Best fit for coding agents and agents that work on files
+  ✗ Claude-only; heavier than you need for a simple tool-calling feature
+
+OpenAI Agents SDK, Mastra (TypeScript), CrewAI (Python):
+  Other popular options — same core idea (model + tools + loop + handoffs).
+
+Managed / hosted agents (Anthropic Managed Agents, OpenAI's hosted tools):
+  ✓ The provider runs the loop and the sandbox; you skip the infrastructure
+  ✗ Less control, tied to one provider
 ```
 
 ---
@@ -602,42 +679,37 @@ Parallel pattern:
 ### Implementation example
 
 ```typescript
-// Supervisor pattern — routes to specialist agents
-const researchAgent = new Agent({
-  model: 'claude-sonnet-4-6',
-  systemPrompt: 'You are a research assistant. Search for information and summarise findings.',
-  tools: [webSearchTool, readUrlTool],
-});
+// Supervisor pattern with the Claude Agent SDK — the main agent delegates to
+// subagents. Each subagent gets its own context window, prompt, tool list and
+// (optionally) a cheaper model; the supervisor only sees their final reports.
+import { query } from '@anthropic-ai/claude-agent-sdk';
 
-const writingAgent = new Agent({
-  model: 'claude-sonnet-4-6',
-  systemPrompt: 'You are a technical writer. Write clear, concise content based on research provided.',
-  tools: [formatTool],
-});
+for await (const message of query({
+  prompt: 'Write a blog post about WebSocket vs SSE for real-time features',
+  options: {
+    model: 'claude-opus-5',
+    systemPrompt: `You are a project supervisor. Break tasks into research and writing phases.
+      Delegate research to the researcher and drafting to the writer.`,
+    agents: {
+      researcher: {
+        description: 'Searches the web and summarises findings. Use for any fact-finding.',
+        prompt: 'You are a research assistant. Search for information and summarise findings with sources.',
+        tools: ['WebSearch', 'WebFetch'],
+        model: 'claude-haiku-4-5', // reading-heavy work → cheaper model
+      },
+      writer: {
+        description: 'Writes the final content from a brief plus research notes.',
+        prompt: 'You are a technical writer. Write clear, concise content based on the research provided.',
+        tools: ['Write'],
+      },
+    },
+  },
+})) {
+  if (message.type === 'result' && message.subtype === 'success') console.log(message.result);
+}
 
-const supervisorAgent = new Agent({
-  model: 'claude-sonnet-4-6',
-  systemPrompt: `You are a project supervisor. Break tasks into research and writing phases.
-    Use the research_agent tool for gathering information.
-    Use the writing_agent tool for creating the final output.`,
-  tools: [
-    tool({
-      name: 'research_agent',
-      description: 'Delegate research tasks to the research specialist',
-      schema: z.object({ query: z.string() }),
-      execute: async ({ query }) => researchAgent.run(query),
-    }),
-    tool({
-      name: 'writing_agent',
-      description: 'Delegate writing tasks to the writing specialist',
-      schema: z.object({ brief: z.string(), research: z.string() }),
-      execute: async ({ brief, research }) =>
-        writingAgent.run(`Brief: ${brief}\n\nResearch: ${research}`),
-    }),
-  ],
-});
-
-await supervisorAgent.run('Write a blog post about WebSocket vs SSE for real-time features');
+// Same pattern in any framework: the "specialist agents" are just tools the
+// supervisor can call, each wrapping its own model + prompt + tools.
 ```
 
 ---
@@ -730,8 +802,8 @@ async function ragQuery(question: string): Promise<string> {
 
   // Generate answer
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
+    model: 'claude-opus-5',
+    max_tokens: 16000,
     system: `Answer questions using only the provided context. 
       If the context doesn't contain the answer, say "I don't have enough information."
       Cite which source each piece of information comes from.`,
@@ -741,8 +813,15 @@ async function ragQuery(question: string): Promise<string> {
     }],
   });
 
-  return response.content[0].text;
+  // ‼️ Not response.content[0].text — with thinking on (the default on current
+  //    models) the first block can be a thinking block. Find the text block.
+  const textBlock = response.content.find(b => b.type === 'text');
+  return textBlock?.text ?? '';
 }
+
+// For built-in source attribution, pass the chunks as `document` content
+// blocks with citations: { enabled: true } — Claude then returns which
+// document and passage each claim came from, instead of you prompting for it.
 ```
 
 ### Advanced RAG patterns
@@ -799,8 +878,16 @@ Few-shot examples:
   Most effective way to control format and tone.
 
 Chain of thought:
-  "Think step by step before answering."
-  Or use XML tags: "<thinking>reasoning here</thinking><answer>final answer</answer>"
+  Older/smaller models: "Think step by step before answering," or XML tags
+  like <thinking>…</thinking><answer>…</answer>.
+  ‼️ Current reasoning models think natively — turn on adaptive thinking and
+  set effort instead of prompting for it. Asking them to "think step by step"
+  in the visible answer mostly adds tokens.
+
+‼️ Modern models follow instructions very literally. Prompts written for
+  2023-era models (ALL-CAPS warnings, "you MUST", huge rule lists) often make
+  newer models over-cautious or rigid. Say what you want plainly, explain WHY
+  a rule exists, and test with your eval set after every model upgrade.
 ```
 
 ### Prompt patterns for agents
@@ -863,14 +950,21 @@ A/B testing:
 
 ```typescript
 // Use a strong model to evaluate another model's output
+import { z } from 'zod';
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+
+const Verdict = z.object({ score: z.number(), reasoning: z.string() }); // score 1-5
+
 async function evaluateResponse(
   question: string,
   response: string,
   reference: string
 ): Promise<{ score: number; reasoning: string }> {
-  const evaluation = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 512,
+  // Structured outputs guarantee the JSON shape — no JSON.parse on free text
+  const evaluation = await anthropic.messages.parse({
+    model: 'claude-opus-5',
+    max_tokens: 16000,
+    output_config: { format: zodOutputFormat(Verdict) },
     messages: [{
       role: 'user',
       content: `Evaluate this AI response. Score from 1-5.
@@ -886,13 +980,12 @@ Score criteria:
 4 = Correct with minor omissions
 3 = Partially correct
 2 = Mostly incorrect
-1 = Wrong or harmful
-
-Respond as JSON: { "score": number, "reasoning": "..." }`,
+1 = Wrong or harmful`,
     }],
   });
 
-  return JSON.parse(evaluation.content[0].text);
+  if (!evaluation.parsed_output) throw new Error('Judge returned no valid verdict');
+  return evaluation.parsed_output;
 }
 
 // Run evals across a test set
@@ -900,8 +993,9 @@ async function runEvalSuite(testCases: TestCase[]) {
   const results = await Promise.all(
     testCases.map(async (tc) => {
       const response = await myAgent.run(tc.input);
-      const eval = await evaluateResponse(tc.input, response, tc.expectedOutput);
-      return { ...tc, response, ...eval };
+      // (not `eval` — that's a reserved name in strict-mode code)
+      const verdict = await evaluateResponse(tc.input, response, tc.expectedOutput);
+      return { ...tc, response, ...verdict };
     })
   );
 
@@ -997,9 +1091,9 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
   const client = new Anthropic();
 
-  const stream = await client.messages.stream({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
+  const stream = client.messages.stream({
+    model: 'claude-opus-5',
+    max_tokens: 64000,
     messages,
   });
 
@@ -1068,13 +1162,22 @@ Fallback to human:      Route to a human when AI confidence is low
 
 ## 12. Cost, Latency, and Optimisation
 
-### Token costs (approximate, as of 2025)
+### Token costs (approximate, October 2026 — prices drop often, check before quoting)
 
 ```text
-Claude Sonnet 4.6:    $3 / 1M input tokens,  $15 / 1M output tokens
-Claude Haiku 4.5:     $0.80 / 1M input,      $4 / 1M output
-GPT-4o:               $2.50 / 1M input,      $10 / 1M output
-GPT-4o-mini:          $0.15 / 1M input,      $0.60 / 1M output
+Claude Opus 5:        $5 / 1M input tokens,  $25 / 1M output tokens
+Claude Sonnet 5:      $2 / 1M input,         $10 / 1M output
+Claude Haiku 4.5:     $1 / 1M input,         $5 / 1M output
+OpenAI GPT-6.1 Sol:   $2 / 1M input,         $10 / 1M output
+OpenAI GPT-6 Luna:    $0.10 / 1M input,      $0.50 / 1M output
+
+Discounts that matter more than the list price:
+  Prompt caching — cached input reads cost ~10% of normal input
+  Batch API      — ~50% off for work that can wait (up to 24h)
+
+‼️ Thinking tokens are billed as OUTPUT tokens. A reasoning model at high
+   effort can cost several times the "same" request at low effort.
+   Judge cost per COMPLETED TASK, not per request.
 
 1M tokens ≈ 750K words ≈ 1,500 pages of text
 ```
@@ -1084,11 +1187,19 @@ GPT-4o-mini:          $0.15 / 1M input,      $0.60 / 1M output
 ```text
 Model routing:
   Use a cheap/fast model for simple tasks, expensive model for hard ones.
-  Example: GPT-4o-mini for classification, Claude Sonnet for analysis.
+  Example: Haiku or GPT-6 Luna for classification, Opus for analysis.
+  ‼️ Measure first: the strongest model at LOW effort often matches an
+     older model at high effort, and one model keeps one prompt cache.
+
+Effort tuning:
+  Lower `effort` on routes that don't need deep reasoning (chat,
+  classification). Often the biggest single saving on reasoning models.
 
 Caching:
   Cache responses for identical or similar queries.
   Anthropic prompt caching: reuse cached prompt prefix (saves cost on long system prompts).
+  Keep the stable part (tools, system prompt) FIRST and anything that changes
+  per request (timestamps, user IDs) AFTER it, or the cache never hits.
   Semantic caching: embed queries, return cached response for similar queries.
 
 Prompt optimisation:
@@ -1115,12 +1226,17 @@ Parallel tool calls:
 
 ```text
 Foundation models (the "brain"):
-  Anthropic Claude, OpenAI GPT-4o, Google Gemini, Meta Llama (open)
+  Closed: Anthropic Claude (Opus / Sonnet / Haiku), OpenAI GPT-6 family,
+          Google Gemini
+  Open weights: Meta Llama 4, Qwen, DeepSeek, Mistral, Gemma, OpenAI gpt-oss
+  (see AI-OPEN-SOURCE-MODELS-DEEP.md)
 
 Frameworks:
   LangChain / LangGraph — most popular, huge ecosystem
   Vercel AI SDK — best for React/Next.js
-  Claude Agent SDK — official Anthropic agent framework
+  Claude Agent SDK — Anthropic's agent harness (the engine behind Claude Code)
+  OpenAI Agents SDK — OpenAI's equivalent
+  Mastra — TypeScript-first agent framework
   Haystack — Python, good for RAG
   CrewAI — multi-agent focused
 
@@ -1133,8 +1249,11 @@ Vector databases (for RAG):
 
 Embedding models:
   text-embedding-3-small (OpenAI) — cheap, good quality
-  voyage-3 (Anthropic) — strong for code and technical text
-  sentence-transformers (open source) — self-hosted, no API dependency
+  Voyage AI (voyage-3.5, voyage-code-3) — strong for code and technical text;
+    Anthropic's recommended embedding provider (Anthropic has no embedding
+    model of its own). Voyage is now part of MongoDB.
+  Gemini embeddings, Cohere Embed — other strong hosted options
+  sentence-transformers / BGE / Qwen3 embeddings (open source) — self-hosted
 
 Observability:
   LangSmith — traces for LangChain
@@ -1146,13 +1265,16 @@ Deployment:
   Vercel — Next.js + AI SDK, simplest for frontend-heavy apps
   Modal — serverless GPU compute (for running open models)
   Replicate — hosted open source models
-  AWS Bedrock — managed Claude/Llama on AWS
+  AWS Bedrock / Google Vertex AI / Microsoft Foundry — Claude and other
+    models through your existing cloud account and billing
 ```
 
 ### MCP — Model Context Protocol
 
 ```text
-MCP (by Anthropic) is a standard protocol for connecting AI models to external tools and data.
+MCP is a standard protocol for connecting AI models to external tools and data.
+Created by Anthropic (Nov 2024), now adopted by OpenAI, Google, Microsoft and
+most agent tools, and governed under the Linux Foundation since late 2025.
 Think of it as "USB-C for AI" — one protocol, many integrations.
 
 Instead of building custom tool integrations for each model/framework,
@@ -1171,6 +1293,16 @@ Architecture:
   
   Client sends: "list tools" → gets tool schemas
   Client sends: "call tool X with args Y" → gets result
+
+Transports:
+  stdio            — server runs as a local process (desktop apps, CLIs)
+  Streamable HTTP  — remote servers over HTTP, with OAuth for auth
+                     (replaced the older HTTP+SSE transport)
+
+‼️ Security: an MCP server's tool descriptions and results go straight into
+   the model's context. A malicious or compromised server can inject
+   instructions. Only connect servers you trust, and require approval for
+   tools that write or send data.
 ```
 
 ---
@@ -1179,7 +1311,7 @@ Architecture:
 
 ### "Explain how you would build a customer support chatbot."
 
-> I'd build it in layers. **Layer 1: RAG** — index the company's help docs, FAQs, and past tickets into a vector store. When a user asks a question, retrieve the 5 most relevant chunks and include them as context. **Layer 2: Tool use** — give the agent tools to look up order status, check account details, and create support tickets via internal APIs. **Layer 3: Guardrails** — input validation, output filtering for PII, and a confidence threshold below which it routes to a human agent. **Layer 4: Evaluation** — track resolution rate, user satisfaction (thumbs up/down), and hallucination rate. Start with a strong system prompt that defines tone, constraints, and when to escalate. Use a fast model (Haiku/GPT-4o-mini) for simple FAQs and a stronger model (Sonnet/GPT-4o) for complex issues.
+> I'd build it in layers. **Layer 1: RAG** — index the company's help docs, FAQs, and past tickets into a vector store. When a user asks a question, retrieve the 5 most relevant chunks and include them as context. **Layer 2: Tool use** — give the agent tools to look up order status, check account details, and create support tickets via internal APIs. **Layer 3: Guardrails** — input validation, output filtering for PII, and a confidence threshold below which it routes to a human agent. **Layer 4: Evaluation** — track resolution rate, user satisfaction (thumbs up/down), and hallucination rate. Start with a strong system prompt that defines tone, constraints, and when to escalate. Use a fast model (Haiku/GPT-6 Luna) for simple FAQs and a stronger model (Opus/GPT-6.1 Sol) for complex issues — or one strong model with effort tuned per route.
 
 ### "What is an AI agent and how is it different from a chatbot?"
 
@@ -1191,7 +1323,7 @@ Architecture:
 
 ### "How do you handle hallucination?"
 
-> Hallucination is when the model generates plausible-sounding but incorrect information. Mitigations: **RAG** — ground responses in retrieved source documents. **Prompt engineering** — instruct the model: "Only answer based on the provided context. If you don't know, say so." **Structured output** — force the model to cite sources for each claim. **Post-processing** — verify factual claims against the source documents. **Temperature 0** — for factual tasks, use deterministic sampling. **Human-in-the-loop** — for high-stakes outputs (medical, legal, financial), require human review. No technique eliminates hallucination entirely — the goal is to reduce it to an acceptable rate for the use case and make it detectable when it happens.
+> Hallucination is when the model generates plausible-sounding but incorrect information. Mitigations: **RAG** — ground responses in retrieved source documents. **Prompt engineering** — instruct the model: "Only answer based on the provided context. If you don't know, say so." **Structured output** — force the model to cite sources for each claim. **Post-processing** — verify factual claims against the source documents. **Citations** — use the API's built-in citations so every claim links to a source passage you can check. (Temperature 0 used to be on this list; current reasoning models don't accept it, and it never prevented hallucination anyway.) **Human-in-the-loop** — for high-stakes outputs (medical, legal, financial), require human review. No technique eliminates hallucination entirely — the goal is to reduce it to an acceptable rate for the use case and make it detectable when it happens.
 
 ### "When would you use RAG vs fine-tuning?"
 
@@ -1199,8 +1331,8 @@ Architecture:
 
 ### "How would you reduce the cost of an LLM application?"
 
-> Several strategies, in order of impact: **Model routing** — use a cheap model (GPT-4o-mini, Haiku) for simple queries and route complex ones to a stronger model. A classifier decides which model to use. **Prompt caching** — Anthropic and OpenAI support caching long system prompts, so you only pay for the prompt once. **Semantic caching** — for repeated or similar queries, return a cached response. **Shorter prompts** — remove unnecessary instructions and examples. **Batching** — process multiple items in one API call instead of many separate calls. **Output length limits** — set max_tokens appropriately. Monitor actual costs per feature and per user to identify optimisation opportunities.
+> Several strategies, in order of impact: **Prompt caching** — Anthropic and OpenAI cache long, stable prompt prefixes; cached reads cost about a tenth of normal input. **Effort tuning** — on reasoning models, lower the effort level for routes that don't need deep thinking. **Model routing** — use a cheap model (GPT-6 Luna, Haiku) for simple queries and a stronger one for complex queries, but measure first: one strong model at low effort is often as cheap and keeps a single cache. **Batch API** — about 50% off for work that can wait. **Semantic caching** — for repeated or similar queries, return a cached response. **Shorter prompts** — remove unnecessary instructions and examples. **Batching** — process multiple items in one API call instead of many separate calls. **Output length limits** — set max_tokens appropriately. Monitor actual costs per feature and per user to identify optimisation opportunities.
 
 ### "Describe the architecture of a coding agent."
 
-> A coding agent is an LLM with tools for: reading files, writing/editing files, running shell commands, and searching code. The core loop: user gives a task → agent reads relevant files to understand context → plans an approach → writes code → runs tests → reads errors → fixes issues → repeats until tests pass. Key design decisions: **context management** (large codebases don't fit in context — the agent must search and read selectively), **safety** (sandbox shell execution, don't allow destructive operations without confirmation), **planning** (for complex tasks, plan before coding), and **evaluation** (run tests to verify correctness, don't just generate code). Claude Code, Cursor, and Devin are production examples of this pattern.
+> A coding agent is an LLM with tools for: reading files, writing/editing files, running shell commands, and searching code. The core loop: user gives a task → agent reads relevant files to understand context → plans an approach → writes code → runs tests → reads errors → fixes issues → repeats until tests pass. Key design decisions: **context management** (large codebases don't fit in context — the agent must search and read selectively), **safety** (sandbox shell execution, don't allow destructive operations without confirmation), **planning** (for complex tasks, plan before coding), and **evaluation** (run tests to verify correctness, don't just generate code). Claude Code, OpenAI Codex, Cursor, and Devin are production examples of this pattern — and the Claude Agent SDK exposes Claude Code's harness so you can build your own.

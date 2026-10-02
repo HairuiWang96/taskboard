@@ -170,7 +170,7 @@ docker build -t myapp:v1 .           # build image from Dockerfile in current di
 docker build -t myapp:v1 --no-cache  # rebuild without cache
 docker images                         # list local images
 docker image rm myapp:v1             # remove image
-docker pull node:20-alpine           # pull from registry
+docker pull node:24-alpine           # pull from registry
 
 # Containers
 docker run myapp:v1                  # create and start container
@@ -210,13 +210,13 @@ docker volume prune                  # remove unused volumes
 
 # ✗ BAD — copies all source first, then installs dependencies
 #   Any code change = reinstall all dependencies (slow!)
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /app
 COPY . .                    # changes on every commit
 RUN npm ci                  # runs every time — cache busted
 
 # ✓ GOOD — install dependencies first (only changes when package.json changes)
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /app
 COPY package.json package-lock.json ./   # only changes when deps change
 RUN npm ci                               # cached unless package*.json changed
@@ -237,7 +237,7 @@ COPY package*.json ./
 RUN npm ci
 
 # 3. Config files (change occasionally)
-COPY tsconfig.json .eslintrc.js ./
+COPY tsconfig.json eslint.config.js ./
 
 # 4. Source code (changes most often)
 COPY src/ ./src/
@@ -252,11 +252,11 @@ COPY src/ ./src/
 # Size comparison for Node.js:
 # node:18          ~950MB  — full Debian, all dev tools
 # node:18-slim     ~240MB  — Debian, minimal packages
-# node:18-alpine   ~180MB  — Alpine Linux, musl libc
+# node:24-alpine   ~180MB  — Alpine Linux, musl libc
 # node:18-distroless ~120MB — no shell, no package manager, hardened
 
 # ✓ Production: use alpine or distroless
-FROM node:18-alpine
+FROM node:24-alpine
 
 # Alpine caveat: musl libc != glibc — some native modules may fail
 # Fix: add build tools
@@ -271,13 +271,13 @@ RUN apk add --no-cache python3 make g++
 
 ```dockerfile
 # Stage 1: Install dependencies
-FROM node:18-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --only=production   # production deps only
 
 # Stage 2: Build (TypeScript compile, bundling, etc.)
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci                     # includes devDependencies for build
@@ -285,7 +285,7 @@ COPY . .
 RUN npm run build              # tsc, webpack, etc.
 
 # Stage 3: Production image — smallest possible
-FROM node:18-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 # Security: don't run as root
@@ -342,10 +342,10 @@ ENTRYPOINT ["/app"]
 # Final image: ~10MB vs ~400MB for the builder
 
 # Named stages — reference in docker build --target
-FROM node:18-alpine AS test
+FROM node:24-alpine AS test
 RUN npm run test
 
-FROM node:18-alpine AS production
+FROM node:24-alpine AS production
 # Only builds up to this stage:
 # docker build --target production .
 ```
@@ -354,14 +354,14 @@ FROM node:18-alpine AS production
 
 ```dockerfile
 # Stage 1: build React app
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build           # produces /app/dist/ (Vite) or /app/build/ (CRA)
+RUN npm run build           # produces /app/dist/ (Vite) — or /app/build/ in legacy Create React App projects
 
 # Stage 2: serve with nginx
 FROM nginx:alpine AS production
@@ -421,7 +421,7 @@ docker-compose*.yml
 ### Key Dockerfile instructions
 
 ```dockerfile
-FROM node:18-alpine          # base image — always pin a version tag, never :latest
+FROM node:24-alpine          # base image — always pin a version tag, never :latest
 WORKDIR /app                 # sets working directory (creates if not exists)
 COPY src/ ./src/             # copy files from host into image
 ADD archive.tar.gz /app/     # like COPY but also unpacks archives — prefer COPY
@@ -556,8 +556,10 @@ volumes:
 ### Full local development setup
 
 ```yaml
-# docker-compose.yml
-version: '3.9'
+# compose.yaml (docker-compose.yml also works)
+# ‼️ No top-level `version:` key — Compose v2 ignores it and warns that it's
+#    obsolete. Use `docker compose` (with a space); the old Python
+#    `docker-compose` binary is end-of-life.
 
 services:
   # PostgreSQL database
@@ -661,10 +663,10 @@ RUN addgroup -S app && adduser -S app -G app
 USER app
 
 # 2. Use minimal base images (fewer packages = fewer CVEs)
-FROM node:18-alpine   # or distroless
+FROM node:24-alpine   # or distroless
 
 # 3. Pin exact versions — avoid surprise updates
-FROM node:18.19.1-alpine3.19   # exact version
+FROM node:24.21.0-alpine   # exact version (add @sha256:<digest> to pin fully)
 
 # 4. Don't bake secrets into images
 # ✗ BAD — secret ends up in image layer history
@@ -1522,7 +1524,7 @@ envFrom:
 # Don't store secrets in Git. Use AWS Secrets Manager / Vault / GCP Secret Manager.
 # External Secrets Operator syncs them into K8s Secrets automatically.
 
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1   # v1beta1 is deprecated in current ESO releases
 kind: ExternalSecret
 metadata:
   name: api-secrets
@@ -1798,7 +1800,8 @@ Karpenter (AWS, recommended for EKS):
 
 ```yaml
 # Karpenter NodePool — defines what instances Karpenter can provision
-apiVersion: karpenter.sh/v1beta1
+# (Karpenter v1 API — v1beta1 manifests from older tutorials no longer apply)
+apiVersion: karpenter.sh/v1
 kind: NodePool
 metadata:
   name: default
@@ -1818,14 +1821,16 @@ spec:
         - key: karpenter.k8s.aws/instance-size
           operator: In
           values: ["large", "xlarge", "2xlarge"]
-      nodeClassRef:
+      nodeClassRef:                           # v1 requires group + kind
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
         name: default
+      expireAfter: 720h                       # rotate nodes every 30 days (moved here in v1)
   limits:
     cpu: 100                                  # max 100 vCPUs total
     memory: 400Gi
   disruption:
-    consolidationPolicy: WhenUnderutilized    # ‼️ actively save costs
-    expireAfter: 720h                         # rotate nodes every 30 days
+    consolidationPolicy: WhenEmptyOrUnderutilized  # ‼️ actively save costs (renamed in v1)
 ```
 
 ### Resource Quotas and LimitRanges
@@ -3720,7 +3725,7 @@ Best practices:
 # .gitlab-ci.yml — defines the CI/CD pipeline
 
 # Global settings
-image: node:20-alpine          # default Docker image for all jobs
+image: node:24-alpine          # default Docker image for all jobs
 default:
   timeout: 30m                  # max job duration
   retry:
@@ -6907,7 +6912,7 @@ Example golden path for a new microservice:
 #     file: 'templates/node-ci.yml'
 
 .node_base:
-  image: node:20-alpine
+  image: node:24-alpine
   cache:
     key:
       files:

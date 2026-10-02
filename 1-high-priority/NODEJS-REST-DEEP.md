@@ -654,7 +654,8 @@ app.get(
 // ✓ FIX 3: express-async-errors package (monkey-patches Express)‼️
 import 'express-async-errors'; // just import it — async errors now caught automatically
 
-// Note: Express 5 (in beta) will handle async errors natively‼️
+// Note: Express 5 (stable, the npm default since March 2025) handles async
+// errors natively — FIX 3 is only needed on Express 4‼️
 ```
 
 ### Express vs Fastify comparison‼️

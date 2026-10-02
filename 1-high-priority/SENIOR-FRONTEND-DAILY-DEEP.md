@@ -34,7 +34,7 @@
 24. [TanStack Query (React Query)](#24-tanstack-query-react-query)
 25. [Zustand — Client State](#25-zustand--client-state)
 26. [React Hook Form](#26-react-hook-form)
-27. [React Router v6](#27-react-router-v6)
+27. [React Router](#27-react-router)
 28. [Choosing the Right Tool](#28-choosing-the-right-tool)
 
 ### Part 2 — Day-to-Day Senior Engineering
@@ -1434,6 +1434,17 @@ const inputRef = useRef<HTMLInputElement>(null);
 // inputRef.current.focus() — works!
 ```
 
+```tsx
+// ‼️ REACT 19: ref is now a normal prop on function components.
+// No forwardRef wrapper needed — and forwardRef will be deprecated in a
+// future version. Use this form in new code; you'll still see forwardRef
+// all over existing codebases and component libraries.
+function Input({ className, ref, ...props }: InputProps & { ref?: React.Ref<HTMLInputElement> }) {
+    return <input ref={ref} className={cn('border rounded px-3 py-2', className)} {...props} />;
+}
+// <Input ref={inputRef} /> — works exactly the same
+```
+
 ### ‼️ useImperativeHandle — expose selective API
 
 ```tsx
@@ -1606,14 +1617,17 @@ function SearchResults({ query }) {
 // ‼️ Suspense: show fallback while async content loads‼️
 // Works with: React.lazy, use() hook, TanStack Query, SWR
 
-function UserProfile({ userId }) {
-  // ‼️ use() hook throws a Promise if data not ready — Suspense catches it‼️
-  const user = use(fetchUserPromise(userId));
+function UserProfile({ userPromise }) {
+  // ‼️ use() suspends until the promise resolves — Suspense shows the fallback
+  // ‼️ The promise must be created OUTSIDE render (by a parent, a server
+  //    component, a router loader, or a cache). Writing use(fetchUser(id))
+  //    creates a NEW promise every render → it suspends forever.
+  const user = use(userPromise);
   return <div>{user.name}</div>;
 }
 
 <Suspense fallback={<ProfileSkeleton />}>
-  <UserProfile userId="123" />
+  <UserProfile userPromise={userPromise} />
 </Suspense>
 
 // Nested Suspense — granular loading states
@@ -1742,9 +1756,11 @@ async function UsersPage() {
 
     return <UserList users={users} />;
 }
+```
 
+```jsx
 // Client Component — must add 'use client' at the top
-('use client');
+'use client';
 // app/components/UserList.tsx
 function UserList({ users }) {
     const [filter, setFilter] = useState(''); // ✓ state allowed here
@@ -1777,9 +1793,11 @@ function ServerComponent() {
     const handleClick = () => console.log('click'); // function
     return <ClientButton onClick={handleClick} />; // ✗ can't serialize
 }
+```
 
+```jsx
 // ✓ Event handlers are defined in Client Components‼️
-('use client');
+'use client';
 function ClientButton() {
     const handleClick = () => console.log('click'); // defined in client
     return <button onClick={handleClick}>Click</button>; // ✓
@@ -2452,13 +2470,14 @@ Option B: Component-level with TanStack Query
 ```typescript
 // Next.js App Router — route-level fetching (server component)
 // app/products/[id]/page.tsx
-async function ProductPage({ params }: { params: { id: string } }) {
+async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params; // params is async since Next 15
   // Fetch on the server — no loading state, no useEffect
-  const product = await api.products.getById(params.id);
+  const product = await api.products.getById(id);
   return <ProductDetail product={product} />;
 }
 
-// React Router v6 — loader pattern
+// React Router (v6.4+ data mode, v7, v8) — loader pattern
 // router.tsx
 {
   path: '/products/:id',
@@ -2509,32 +2528,38 @@ function ParentComponent() {
 
 ## 20. Routing Architecture
 
-```typescript
-// Next.js App Router — file-system routing
-app / layout.tsx; // root layout (nav, footer)
-page.tsx(
-    // home page /
-    auth,
-) / // route group — shared layout, no URL segment
-    login /
-    page.tsx; // /login
-signup / page.tsx; // /signup
-dashboard / layout.tsx; // dashboard shell (sidebar)
-page.tsx; // /dashboard
-settings / page.tsx; // /dashboard/settings
-products /
-    page.tsx[id] / // /products (list)
-    page.tsx; // /products/123 (detail)
-loading.tsx; // Suspense boundary for this route
-error.tsx; // Error boundary for this route
-api / products / route.ts; // /api/products (API route)
+```text
+Next.js App Router — file-system routing
 
-// Code splitting is automatic — each page is a separate bundle
-// Users only download the code for the route they're on
+app/
+  layout.tsx                  # root layout (nav, footer)
+  page.tsx                    # home page — /
+  (auth)/                     # route group — shared layout, no URL segment
+    login/
+      page.tsx                # /login
+    signup/
+      page.tsx                # /signup
+  dashboard/
+    layout.tsx                # dashboard shell (sidebar)
+    page.tsx                  # /dashboard
+    settings/
+      page.tsx                # /dashboard/settings
+  products/
+    page.tsx                  # /products (list)
+    [id]/
+      page.tsx                # /products/123 (detail)
+  loading.tsx                 # Suspense boundary for this route
+  error.tsx                   # Error boundary for this route
+  api/
+    products/
+      route.ts                # /api/products (API route)
+
+Code splitting is automatic — each page is a separate bundle.‼️
+Users only download the code for the route they're on.
 ```
 
 ```typescript
-// React Router v6 — explicit route tree
+// React Router (data mode) — explicit route tree
 // router.tsx
 const router = createBrowserRouter([
   {
@@ -2576,7 +2601,8 @@ CSR (Client-Side Rendering):
   - Browser downloads JS bundle, runs it, renders the page
   - Good for: dashboards, admin tools, apps behind login
   - Bad for: SEO, initial page load performance
-  - Example: plain React app (Create React App)
+  - Example: plain React app built with Vite (Create React App was
+    deprecated in 2025 — don't start new projects with it)
 
 SSR (Server-Side Rendering):
   - Server renders HTML, sends to browser, JS hydrates
@@ -2621,13 +2647,15 @@ export const dynamic = 'force-dynamic'; // opt out of caching
 export const revalidate = 60;
 
 // Partial prerendering — static shell + dynamic content
-// (Next.js 14+)
+// (experimental in Next 14–15; in Next 16 it's part of Cache Components —
+//  enable cacheComponents: true in next.config)
 async function ProductPage({ params }) {
+  const { id } = await params;
   return (
     <div>
-      <StaticProductHeader />  {/* rendered at build time */}
+      <StaticProductHeader />  {/* part of the prerendered shell */}
       <Suspense fallback={<PriceSkeleton />}>
-        <DynamicPrice productId={params.id} />  {/* rendered per-request */}
+        <DynamicPrice productId={id} />  {/* streamed in per request */}
       </Suspense>
     </div>
   );
@@ -2715,20 +2743,25 @@ Why this matters:
 ```
 
 ```typescript
-// .eslintrc — enforce boundaries
-{
-  "plugins": ["boundaries"],
-  "rules": {
-    "boundaries/element-types": ["error", {
-      "default": "disallow",
-      "rules": [
-        { "from": "feature", "allow": ["shared", "app"] },
-        { "from": "shared",  "allow": [] },
-        { "from": "app",     "allow": ["feature", "shared"] },
-      ]
-    }]
-  }
-}
+// eslint.config.js — enforce boundaries
+// (flat config; the old .eslintrc format was removed in ESLint 10)
+import boundaries from 'eslint-plugin-boundaries';
+
+export default [
+  {
+    plugins: { boundaries },
+    rules: {
+      'boundaries/element-types': ['error', {
+        default: 'disallow',
+        rules: [
+          { from: 'feature', allow: ['shared', 'app'] },
+          { from: 'shared',  allow: [] },
+          { from: 'app',     allow: ['feature', 'shared'] },
+        ],
+      }],
+    },
+  },
+];
 ```
 
 ---
@@ -3228,13 +3261,30 @@ function TaskForm() {
 
 ---
 
-## 27. React Router v6
+## 27. React Router
+
+```text
+‼️ VERSIONS — interviewers ask about this:
+  v6 (2021)    — hooks API; v6.4 added loaders/actions ("data routers")
+  v7 (2024)    — Remix merged INTO React Router. Package is now just
+                 'react-router' ('react-router-dom' is only a re-export).
+                 Three modes:
+                   Declarative — <BrowserRouter> + <Routes>, like classic v6
+                   Data        — createBrowserRouter with loaders/actions
+                   Framework   — Vite plugin, file routes, SSR, type-safe
+                                 loaders (what Remix used to be)
+  v8 (2026)    — current; upgrading from v7 is mostly non-breaking if you
+                 enabled the future flags
+
+  The code below (data mode) works in v6.4+, v7 and v8 — just import from
+  'react-router' on v7+.
+```
 
 ### Setup
 
 ```tsx
 // main.tsx
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router';
 
 const router = createBrowserRouter([
     {
@@ -3264,7 +3314,7 @@ function App() {
 ### Hooks
 
 ```tsx
-import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router';
 
 function TaskPage() {
     const { id } = useParams<{ id: string }>(); // URL params (:id)
@@ -3359,12 +3409,11 @@ const router = createBrowserRouter([
 ]);
 
 // Form that uses the action:
-import { Form } from 'react-router-dom';
+import { Form } from 'react-router';
 function NewTaskPage() {
     return (
+        // submits to the route's action
         <Form method='post'>
-            {' '}
-            {/* submits to the route's action */}
             <input name='title' />
             <button type='submit'>Create</button>
         </Form>
@@ -3419,8 +3468,8 @@ Shared UI state (auth, theme, cart)   Zustand
 Local component state                 useState
 Form with validation                  React Hook Form + Zod
 Simple form (2-3 fields)              Controlled inputs + useState
-Client-side routing                   React Router v6
-Complex routing with data loading     React Router v6 loaders
+Client-side routing                   React Router (v7+)
+Complex routing with data loading     React Router loaders (data mode)
 Deep state management (complex flows) Zustand slices OR useReducer
 
 What NOT to use:
@@ -3519,10 +3568,12 @@ export default async function UsersPage() {
         </div>
     );
 }
+```
 
+```tsx
 // ‼️ Client Component — needs the directive
 // components/LikeButton.tsx
-('use client');
+'use client';
 
 import { useState } from 'react';
 
@@ -3602,9 +3653,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
     );
 }
+```
 
+```tsx
 // app/dashboard/error.tsx — must be 'use client'
-('use client');
+'use client';
 
 export default function DashboardError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
     return (
@@ -3623,11 +3676,29 @@ export default function DashboardError({ error, reset }: { error: Error & { dige
 ‼️ In App Router, data fetching is done with async/await directly in Server Components.
   No more getServerSideProps or getStaticProps.
 
+‼️ CHANGED IN NEXT 15: fetch() is NO LONGER cached by default.
+  Next 13–14 cached every fetch unless you opted out, which surprised
+  everyone. Since Next 15, requests are dynamic unless you opt IN to caching.
+  Many tutorials still describe the old default.
+
 fetch() in server components has EXTENDED options:‼️
-  - cache: 'force-cache'  → static (like getStaticProps) — DEFAULT
-  - cache: 'no-store'     → dynamic (like getServerSideProps)
+  - (no option)           → dynamic, fetched per request — DEFAULT since Next 15
+  - cache: 'force-cache'  → static (like getStaticProps) — opt in
+  - cache: 'no-store'     → explicitly dynamic (like getServerSideProps)
   - next: { revalidate: 60 }  → ISR (revalidate every 60 seconds)
   - next: { tags: ['posts'] } → on-demand revalidation with revalidateTag('posts')
+
+‼️ NEXT 16 — 'use cache' (Cache Components, enable with cacheComponents: true):
+  Instead of configuring each fetch, mark a function or component as
+  cacheable. Works for ANY async work (DB queries too, not just fetch).
+    async function getProducts() {
+      'use cache';
+      cacheLife('hours');        // how long it stays fresh
+      cacheTag('products');      // for on-demand invalidation
+      return db.product.findMany();
+    }
+  Combined with Partial Prerendering, the cached parts form a static shell
+  and only the uncached parts render per request.
 
 ‼️ Request deduplication:
   If multiple components fetch the same URL with the same options,
@@ -3638,19 +3709,23 @@ fetch() in server components has EXTENDED options:‼️
 ‼️ Caching layers (Next.js has FOUR):
   1. Request Memoization — dedupes same fetch in same render pass
   2. Data Cache — persists fetch results across requests (on server)
+     (only for fetches you opted in to caching, since Next 15)
   3. Full Route Cache — caches rendered HTML + RSC payload at build time
   4. Router Cache — client-side cache of visited routes (in browser)
+     (pages are no longer reused from it by default since Next 15)
 ```
 
 ```tsx
-// Static data — cached forever until redeployed (default)
+// Static data — cached until redeployed (must opt in since Next 15)
 async function getProducts() {
-    const res = await fetch('https://api.example.com/products');
-    // cache: 'force-cache' is the default
+    const res = await fetch('https://api.example.com/products', {
+        cache: 'force-cache',
+    });
     return res.json();
 }
 
-// Dynamic data — never cached, fresh every request
+// Dynamic data — fresh every request (the default since Next 15;
+// 'no-store' makes the intent explicit)
 async function getCart() {
     const res = await fetch('https://api.example.com/cart', {
         cache: 'no-store',
@@ -3675,8 +3750,25 @@ async function getBlogPosts() {
 }
 
 // Then in a Server Action or Route Handler:
-// import { revalidateTag } from 'next/cache'
-// revalidateTag('posts')  // invalidates all fetches tagged with 'posts'
+// import { revalidateTag, updateTag } from 'next/cache'
+// revalidateTag('posts', 'max')  // mark stale; next visitor triggers a refresh
+//                                // (Next 16 takes a cacheLife profile as 2nd arg)
+// updateTag('posts')             // Server Actions only: expire now, so the user
+//                                // sees their own change immediately
+```
+
+```tsx
+// ‼️ NEXT 15+: params, searchParams, cookies() and headers() are ASYNC.
+// Old code that reads params.slug synchronously breaks after upgrading.
+// app/blog/[slug]/page.tsx
+export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const post = await getPost(slug);
+    return <article>{post.title}</article>;
+}
+
+// import { cookies } from 'next/headers';
+// const session = (await cookies()).get('session');
 ```
 
 ### Server Actions
@@ -3709,7 +3801,11 @@ const CreatePostSchema = z.object({
 });
 
 // ‼️ Server Action — runs on server, callable from client
-export async function createPost(formData: FormData) {
+// Signature (prevState, formData) because it's used with useActionState below;
+// a plain <form action={...}> action receives just (formData).
+type PostState = { error?: Record<string, string[] | undefined> } | null;
+
+export async function createPost(prevState: PostState, formData: FormData): Promise<PostState> {
     const parsed = CreatePostSchema.safeParse({
         title: formData.get('title'),
         content: formData.get('content'),
@@ -3724,23 +3820,15 @@ export async function createPost(formData: FormData) {
     revalidatePath('/posts'); // bust the cache for /posts
     redirect('/posts'); // redirect after mutation
 }
+```
 
-// app/posts/new/page.tsx — using the action
-import { createPost } from '@/app/actions';
-
-export default function NewPostPage() {
-    return (
-        <form action={createPost}>
-            <input name='title' placeholder='Title' required />
-            <textarea name='content' placeholder='Content' required />
-            <button type='submit'>Create Post</button>
-        </form>
-    );
-}
-
-// ‼️ Using Server Actions from Client Components with useFormState + useFormStatus
-('use client');
-import { useFormState, useFormStatus } from 'react-dom';
+```tsx
+// ‼️ Using Server Actions from Client Components with useActionState + useFormStatus
+// (React 19 renamed useFormState from 'react-dom' to useActionState from 'react',
+//  and it also returns isPending — older tutorials still show useFormState)
+'use client';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { createPost } from '@/app/actions';
 
 function SubmitButton() {
@@ -3749,7 +3837,7 @@ function SubmitButton() {
 }
 
 export function PostForm() {
-    const [state, formAction] = useFormState(createPost, null);
+    const [state, formAction, isPending] = useActionState(createPost, null);
 
     return (
         <form action={formAction}>
@@ -3762,10 +3850,14 @@ export function PostForm() {
 }
 ```
 
-### Middleware
+### Proxy (formerly Middleware)
 
 ```text
-‼️ middleware.ts lives at the ROOT of the project (same level as app/).
+‼️ NEXT 16 RENAMED middleware.ts → proxy.ts (export function proxy).
+  middleware.ts still works but is deprecated. Same idea, clearer name:
+  it sits in front of your routes like a proxy.
+
+‼️ proxy.ts lives at the ROOT of the project (same level as app/).
   Runs BEFORE every matched request (before rendering, before data fetching).‼️
 
 Common uses:
@@ -3776,17 +3868,21 @@ Common uses:
   - Internationalization (redirect to locale-prefixed path)
 
 Limitations:‼️
-  - Runs on the Edge Runtime (limited Node.js APIs — no fs, no native modules)
+  - Runs on EVERY matched request — keep it fast (old middleware ran on the
+    Edge Runtime with limited Node APIs; proxy.ts runs on Node.js)
   - Must return a NextResponse (or NextResponse.next() to continue)
-  - Cannot access database directly (use lightweight checks like JWT verification)
+  - Don't do heavy DB work here — use lightweight checks like JWT/session
+    cookie verification, and re-check auth in the page/action itself
+    (‼️ a 2025 CVE let attackers skip middleware with a crafted header —
+    proxy must never be your ONLY auth check)
 ```
 
 ```ts
-// middleware.ts
+// proxy.ts (middleware.ts before Next 16)
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const token = request.cookies.get('session')?.value;
 
     // ‼️ Protect dashboard routes
@@ -3800,7 +3896,7 @@ export function middleware(request: NextRequest) {
     return response;
 }
 
-// ‼️ Matcher — only run middleware on these paths (improves performance)
+// ‼️ Matcher — only run proxy on these paths (improves performance)
 export const config = {
     matcher: ['/dashboard/:path*', '/api/:path*'],
 };
@@ -4552,51 +4648,45 @@ function Card({ title, description }: { title: string; description: string }) {
   )
 }
 
-// ‼️ Tailwind custom config — tailwind.config.ts
-import type { Config } from 'tailwindcss'
+// ‼️ TAILWIND v4 (Jan 2025) — configuration moved from JS into CSS.
+// No tailwind.config.ts by default, no `content` array (sources are detected
+// automatically), and design tokens are CSS variables in an @theme block.
+// Many existing projects are still on v3 with tailwind.config.ts — know both.
 
-const config: Config = {
-  content: [
-    './app/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-  ],
-  darkMode: 'class', // 'class' = manual toggle, 'media' = system preference
-  theme: {
-    extend: {
-      // ‼️ Design tokens — extend, don't override
-      colors: {
-        brand: {
-          50: '#eff6ff',
-          500: '#3b82f6',
-          900: '#1e3a5f',
-        },
-      },
-      spacing: {
-        '18': '4.5rem',
-        '88': '22rem',
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      },
-      animation: {
-        'fade-in': 'fadeIn 0.3s ease-in-out',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-      },
-    },
-  },
-  plugins: [
-    require('@tailwindcss/typography'),  // prose classes for rich text
-    require('@tailwindcss/forms'),        // form reset
-    require('@tailwindcss/line-clamp'),   // line-clamp-N (now built in v3.3+)
-  ],
+/* globals.css (v4) */
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/typography';   /* prose classes for rich text */
+@plugin '@tailwindcss/forms';        /* form reset */
+
+/* 'class'-based dark mode (v4 defaults to the system preference) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ‼️ Design tokens — each becomes a utility AND a CSS variable:
+     --color-brand-500 → bg-brand-500, text-brand-500, var(--color-brand-500) */
+  --color-brand-50: #eff6ff;
+  --color-brand-500: #3b82f6;
+  --color-brand-900: #1e3a5f;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  --animate-fade-in: fade-in 0.3s ease-in-out;
+  @keyframes fade-in {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
 }
 
-export default config
+/* (line-clamp is built in since v3.3 — the old plugin is no longer needed.
+   Spacing like w-18 works without config in v4: utilities accept any
+   multiple of the --spacing base unit.) */
+
+// v3 equivalent, for older codebases — tailwind.config.ts:
+//   content: ['./app/**/*.{ts,tsx}'], darkMode: 'class',
+//   theme: { extend: { colors: { brand: { 500: '#3b82f6' } } } },
+//   plugins: [require('@tailwindcss/typography')]
+// Upgrade with: npx @tailwindcss/upgrade
 
 // ‼️ @apply — extract repeated utility patterns (use sparingly)
 // globals.css
@@ -4615,6 +4705,8 @@ export default config
 
 ```text
 ‼️ Runtime CSS-in-JS (styled-components, Emotion):
+  ‼️ styled-components announced maintenance mode in 2025 — bug fixes only.
+     Fine to keep in an existing app; don't choose it for a new one.
   Pros:
     - Dynamic styles based on props
     - Theming system built in
@@ -6188,20 +6280,29 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
 
     if (!isAuthenticated) {
-        // ‼️ Save the attempted URL so we can redirect back after login
-        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
-        return null;
+        // ‼️ Navigating during render is a side effect — React may render more
+        //    than once. Use <Navigate> (React Router) or redirect in an effect.
+        return <RedirectToLogin from={window.location.pathname} />;
     }
 
     return <>{children}</>;
 }
 
-// Next.js App Router — middleware approach (preferred):
-// middleware.ts
+function RedirectToLogin({ from }: { from: string }) {
+    const router = useRouter();
+    useEffect(() => {
+        // ‼️ Save the attempted URL so we can redirect back after login
+        router.replace(`/login?redirect=${encodeURIComponent(from)}`);
+    }, [router, from]);
+    return null;
+}
+
+// Next.js App Router — proxy approach (preferred; called middleware before Next 16):
+// proxy.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const session = request.cookies.get('session')?.value;
 
     if (!session && request.nextUrl.pathname.startsWith('/dashboard')) {
@@ -7006,7 +7107,7 @@ export default defineConfig({
             output: {
                 manualChunks: {
                     vendor: ['react', 'react-dom'],
-                    router: ['react-router-dom'],
+                    router: ['react-router'],
                 },
             },
         },
@@ -7016,9 +7117,9 @@ export default defineConfig({
 });
 
 // ‼️ Must also update tsconfig.json for path aliases:
+// (no "baseUrl" — deprecated in TS 6; paths are relative to tsconfig.json)
 // {
 //   "compilerOptions": {
-//     "baseUrl": ".",
 //     "paths": {
 //       "@/*": ["./src/*"]
 //     }
@@ -7899,7 +8000,8 @@ function MyComponent(props) {
 
 ```text
 ‼️ Hydration mismatch = server HTML doesn't match what React renders on client.
-  React 18 shows a warning but continues. React 19 will be stricter.
+  React 18 logged a vague warning; React 19 reports a single error with a diff of
+  the mismatched content, which makes the cause much easier to find.
 
 Common causes:
   1. Using Date.now() or Math.random() in render (different on server vs client)

@@ -2,6 +2,10 @@
 
 Many companies — especially in finance, healthcare, legal, and enterprise — cannot send data to OpenAI or Anthropic due to privacy, compliance, or cost reasons. They run open source models locally or in their own cloud. Knowing both the API side and the self-hosted side is a clear differentiator in AI engineering interviews.
 
+> Model line-up reviewed October 2026. Open-weight releases arrive every few weeks — treat
+> the model names below as examples of each category and check the current leaderboards
+> (e.g. LMArena, Artificial Analysis) and model cards before choosing one.
+
 ---
 
 ## Why Self-Hosted Models
@@ -17,47 +21,101 @@ Reasons companies go self-hosted:
 
 Tradeoffs:
   - Infrastructure overhead (GPU provisioning, scaling, monitoring)
-  - Generally lower quality than frontier models (Claude, GPT-4o)
+  - Still behind the best closed models (Claude, GPT, Gemini) on the hardest
+    reasoning, coding and agentic tasks — but the gap is now months, not years.
+    The best open models (DeepSeek, Qwen, Kimi, GLM, gpt-oss) are good enough
+    for most product features.
+  - The strongest open models are huge Mixture-of-Experts models that need a
+    multi-GPU server — "open" does not mean "runs on a laptop"
   - Engineering cost to set up and maintain
   - Keeping up with fast-moving open source releases
 ```
 
+```text
+‼️ "OPEN SOURCE" vs "OPEN WEIGHTS" — a distinction interviewers like
+
+  Most "open source" LLMs are really OPEN WEIGHTS: you can download and run
+  the model, but the training data and code are not released, and the
+  licence may restrict use.
+
+  Permissive (use commercially, few strings):  Apache 2.0 (Qwen, Mistral's
+                                               open models, gpt-oss), MIT
+                                               (DeepSeek, Phi)
+  Custom licences with conditions:             Llama (extra terms above 700M
+                                               monthly users, acceptable-use
+                                               policy), Gemma (Google's terms)
+
+  ‼️ Always have legal read the licence before shipping a model in a product.
+```
+
 ---
 
-## Key Open Source Models
+## Key Open-Weight Models
 
 ```text
-Meta Llama 3.x (most popular family):
-  Llama 3.1 8B   — fast, cheap, good for simple tasks
-  Llama 3.1 70B  — strong general model, competes with GPT-3.5/Claude Haiku
-  Llama 3.1 405B — frontier-class, needs serious GPU infrastructure
-  Llama 3.2 11B/90B — multimodal (vision support)
-  License: Meta Community License (mostly permissive for commercial use)
+Snapshot, October 2026 — names change every few months; the FAMILIES and
+the trade-offs between them are what's worth remembering.
 
-Mistral / Mixtral:
-  Mistral 7B     — excellent for its size, very fast
-  Mixtral 8x7B   — Mixture of Experts architecture, 2 of 8 experts active per token
-  Mistral Large  — closed API but strong performance
-  License: Apache 2.0 (fully open, commercial use allowed)
+Qwen (Alibaba) — the most widely used open family:
+  Qwen 3.5 — full size range from 0.8B to 122B, multimodal
+  Qwen 3.6 / 3.8 — 27B–35B models aimed at agentic coding
+  Strong multilingual, especially Chinese + English
+  License: Apache 2.0 for most sizes (check each model card)
 
-Google Gemma:
-  Gemma 2B / 7B / 27B — lightweight models designed for edge/mobile
-  License: Gemma license (permissive)
+DeepSeek (V4, V4.1):
+  Very large Mixture-of-Experts models with long context and selectable
+  reasoning modes — among the strongest open models
+  Earlier R1 (Jan 2025) popularised open "reasoning" models
+  Needs a multi-GPU server — most people use it via a hosting provider
+  License: MIT for recent releases (check the model card)
 
-Microsoft Phi-3 / Phi-4:
-  Small models (3.8B, 14B) with strong reasoning per parameter
-  Good for constrained environments
-  License: MIT
+Z.ai GLM-5.x, Moonshot Kimi K3, MiniMax M3:
+  Frontier-scale open-weight models, strongest on coding and long agentic
+  tasks; huge MoE, so usually consumed through hosted APIs
 
-Qwen (Alibaba):
-  Strong multilingual performance — especially for Chinese + English tasks
-  Qwen 2.5: 0.5B to 72B range
-  Good choice if you need non-English language support
+OpenAI gpt-oss (Aug 2025):
+  gpt-oss-120b — runs on a single 80GB GPU
+  gpt-oss-20b  — runs on a 16GB machine (laptop / consumer GPU)
+  Reasoning models with adjustable effort, good at tool use
+  License: Apache 2.0
+
+Google Gemma 4:
+  e2b / e4b (phones and laptops), 12B, 26B, 31B — multimodal,
+  good at reasoning and agentic work for their size
+  License: Gemma terms of use
+
+Mistral:
+  Mistral Medium 3.5 — 128B flagship merging chat, reasoning and coding
+  Smaller Mistral Small / Devstral models for one GPU
+  License: varies by model — check each one
+
+NVIDIA Nemotron 3 (e.g. Super: 120B total, 12B active),
+IBM Granite 4.x (3B–30B, Apache 2.0, enterprise focus):
+  Popular in enterprises that want a US vendor and clear licensing
+
+Meta Llama 4 (Scout / Maverick, Apr 2025):
+  Still Meta's latest open release; MoE, natively multimodal, long context.
+  Llama 3.x 8B/70B remain common in older production systems.
+  License: Llama Community License (conditions above)
+
+Microsoft Phi-4: small models with strong reasoning per parameter (MIT)
 
 Code models:
-  CodeLlama — Meta, based on Llama, fine-tuned on code
-  DeepSeek Coder — strong coding performance, open weights
-  Starcoder2 — BigCode collaboration, trained on permissive-licensed code
+  Today's general models (Qwen 3.6/3.8, GLM, Kimi, DeepSeek, gpt-oss) are
+  strong at code. (CodeLlama and StarCoder2 are outdated.)
+```
+
+```text
+‼️ MIXTURE OF EXPERTS (MoE) — why parameter counts are confusing now
+
+  Total parameters  — what you must fit in GPU memory
+  Active parameters — what each token actually computes (sets the speed)
+
+  Nemotron 3 Super: needs memory for 120B, computes only ~12B per token.
+  DeepSeek-V3:      needs memory for ~671B, computes ~37B per token.
+  Qwen3-30B-A3B:    needs memory for 30B, runs about as fast as a 3B model.
+
+  So: MoE models are FAST for their quality, but NOT small.
 ```
 
 ---
@@ -67,16 +125,20 @@ Code models:
 Ollama is the easiest way to run models on your laptop or dev machine.
 
 ```bash
-# Install (Mac)
+# Install (Mac) — or download the desktop app from ollama.com
 brew install ollama
 
 # Pull and run a model
-ollama pull llama3.1
-ollama run llama3.1
+ollama pull qwen3.5:9b
+ollama run qwen3.5:9b
 
-# Pull smaller/faster model
-ollama pull llama3.2:3b
-ollama pull mistral
+# Other good local choices
+ollama pull gpt-oss:20b      # reasoning + tool use, needs ~16GB memory
+ollama pull gemma4:e4b       # small, multimodal, laptop-friendly
+ollama pull qwen3.6:35b      # agentic coding, needs a big GPU or Mac
+
+# Very large models (DeepSeek V4, GLM-5, Kimi K3) are offered as ":cloud"
+# tags — Ollama runs them on its servers, so data leaves your machine.
 
 # List downloaded models
 ollama list
@@ -97,7 +159,7 @@ const client = new OpenAI({
 });
 
 const response = await client.chat.completions.create({
-  model: 'llama3.1',
+  model: 'qwen3.5:9b',
   messages: [{ role: 'user', content: 'Explain closures in JavaScript' }],
   temperature: 0.7,
 });
@@ -108,10 +170,10 @@ console.log(response.choices[0].message.content);
 ### Using Ollama with LangChain
 
 ```typescript
-import { Ollama } from '@langchain/ollama';
+import { ChatOllama } from '@langchain/ollama';
 
-const model = new Ollama({
-  model: 'llama3.1',
+const model = new ChatOllama({
+  model: 'qwen3.5:9b',
   baseUrl: 'http://localhost:11434',
   temperature: 0.7,
 });
@@ -129,21 +191,25 @@ vLLM is the standard for serving open source models in production. It provides:
 - **OpenAI-compatible API**: drop-in replacement for the OpenAI API
 - **Tensor parallelism**: split a large model across multiple GPUs
 
+Alternatives worth knowing: **SGLang** (similar, very fast for structured/agent workloads),
+**TensorRT-LLM** / NVIDIA NIM (maximum performance on NVIDIA), **Hugging Face TGI** (now in
+maintenance mode — prefer vLLM or SGLang for new deployments), **llama.cpp** (CPU and
+Apple Silicon, small scale).
+
 ```bash
 # Install
 pip install vllm
 
-# Serve a model (starts HTTP server on port 8000)
-python -m vllm.entrypoints.openai.api_server \
-  --model meta-llama/Llama-3.1-8B-Instruct \
+# Serve a model (starts an OpenAI-compatible HTTP server on port 8000)
+# Examples use Qwen3-8B because its Hugging Face ID is stable — swap in the
+# current release from the model's Hugging Face page.
+vllm serve Qwen/Qwen3-8B \
   --dtype auto \
   --api-key token-abc123
 
-# Multi-GPU (for large models like 70B)
-python -m vllm.entrypoints.openai.api_server \
-  --model meta-llama/Llama-3.1-70B-Instruct \
-  --tensor-parallel-size 4 \  # split across 4 GPUs
-  --dtype auto
+# Multi-GPU (for large models) — split across 4 GPUs
+vllm serve Qwen/Qwen3-235B-A22B-Instruct-2507 \
+  --tensor-parallel-size 4
 ```
 
 ### Calling vLLM from TypeScript
@@ -158,7 +224,7 @@ const client = new OpenAI({
 });
 
 const response = await client.chat.completions.create({
-  model: 'meta-llama/Llama-3.1-8B-Instruct',
+  model: 'Qwen/Qwen3-8B',
   messages: [{ role: 'user', content: 'Hello!' }],
   max_tokens: 512,
   temperature: 0.7,
@@ -168,12 +234,15 @@ const response = await client.chat.completions.create({
 ### vLLM in Docker (production deployment)
 
 ```dockerfile
-FROM vllm/vllm-openai:latest
+FROM vllm/vllm-openai:latest   # pin a specific version tag in production
 
-ENV MODEL_NAME=meta-llama/Llama-3.1-8B-Instruct
-ENV HF_TOKEN=your_huggingface_token
+# ‼️ Don't bake HF_TOKEN into the image — pass it at runtime:
+#    docker run --gpus all -e HF_TOKEN=... -p 8000:8000 my-vllm
 
-CMD ["--model", "${MODEL_NAME}", "--dtype", "auto", "--max-model-len", "8192"]
+# The image's entrypoint is the vLLM server; CMD supplies its arguments.
+# ‼️ Exec-form CMD (JSON array) does NOT expand ${VARIABLES} — write the model
+#    name literally, or use shell form if you need env var substitution.
+CMD ["--model", "Qwen/Qwen3-8B", "--dtype", "auto", "--max-model-len", "32768"]
 ```
 
 ---
@@ -183,25 +252,16 @@ CMD ["--model", "${MODEL_NAME}", "--dtype", "auto", "--max-model-len", "8192"]
 Hugging Face is the GitHub of ML models. Most open source models are published here.
 
 ```typescript
-// Using Hugging Face Inference API (hosted, no GPU needed)
-import { HfInference } from '@huggingface/inference';
+// Hugging Face Inference Providers — hosted inference, no GPU needed.
+// Requests are routed to partner providers (Together, Fireworks, Groq, ...).
+// (The class used to be called HfInference; it is InferenceClient since v3.)
+import { InferenceClient } from '@huggingface/inference';
 
-const hf = new HfInference(process.env.HF_TOKEN);
+const hf = new InferenceClient(process.env.HF_TOKEN);
 
-// Text generation
-const response = await hf.textGeneration({
-  model: 'mistralai/Mistral-7B-Instruct-v0.2',
-  inputs: '<s>[INST] Explain React Server Components [/INST]',
-  parameters: {
-    max_new_tokens: 512,
-    temperature: 0.7,
-    return_full_text: false,
-  },
-});
-
-// Chat completion (newer models)
+// Chat completion — the server applies the model's chat template for you
 const chatResponse = await hf.chatCompletion({
-  model: 'meta-llama/Llama-3.1-8B-Instruct',
+  model: 'Qwen/Qwen3-8B',
   messages: [{ role: 'user', content: 'What is TypeScript?' }],
   max_tokens: 512,
 });
@@ -220,40 +280,53 @@ You are a helpful assistant.<|eot_id|>
 ${userMessage}<|eot_id|>
 <|start_header_id|>assistant<|end_header_id|>`;
 
-// Mistral format
+// Mistral (older instruct models) format
 const mistralPrompt = `<s>[INST] ${systemPrompt}\n\n${userMessage} [/INST]`;
 
-// ChatML format (used by many models)
+// ChatML format (used by Qwen and many others)
 const chatmlPrompt = `<|im_start|>system
 ${systemPrompt}<|im_end|>
 <|im_start|>user
 ${userMessage}<|im_end|>
 <|im_start|>assistant`;
 
+// (gpt-oss uses OpenAI's own "harmony" format.)
+
 // Best practice: use the model's tokenizer apply_chat_template (Python)
 // or find the template in the model card and use it exactly
-// When using OpenAI-compatible APIs (vLLM/Ollama), the server handles this automatically
+// When using OpenAI-compatible APIs (vLLM/Ollama/HF), the server handles this
+// automatically — in practice you rarely hand-write these templates any more.
 ```
 
 ---
 
 ## Quantisation — Running Large Models on Less GPU
 
-Quantisation reduces model precision (float32 → int4/int8), shrinking VRAM requirements dramatically with modest quality loss.
+Quantisation reduces model precision (16-bit → 8-bit or 4-bit), shrinking VRAM requirements dramatically with modest quality loss.
 
 ```text
-Full precision (float32):  Llama 70B needs ~140GB VRAM (4x A100s)
-Half precision (float16):  ~70GB VRAM (2x A100s)
-8-bit quantisation (int8): ~35GB VRAM (1x A100)
-4-bit quantisation (int4): ~18GB VRAM (1x A100 or RTX 4090)
+Rule of thumb: memory for weights ≈ parameters × bytes per parameter
+(then add 10-30% for the KV cache and runtime overhead)
 
-For most tasks: 4-bit quality ≈ 95% of full precision quality
+A 70B model:
+  float32 (4 bytes):    ~280GB   — nobody serves at this precision
+  bf16/fp16 (2 bytes):  ~140GB   — 2x 80GB GPUs (H100/A100)
+  int8/FP8 (1 byte):    ~70GB    — 1x 80GB GPU
+  4-bit (0.5 byte):     ~35-40GB — 1x 48GB GPU, 2x 24GB consumer GPUs,
+                                   or a 64GB Mac
+
+An 8B model at 4-bit: ~5GB — runs on a laptop.
+
+For most tasks: 8-bit is near-lossless; 4-bit keeps most of the quality,
+with bigger losses on maths, code and long reasoning.
 
 Common formats:
   GGUF:  used by llama.cpp and Ollama — runs on CPU+GPU, even on Mac
-  GPTQ:  GPU-only, fast inference, good quality
-  AWQ:   newer, often better quality than GPTQ at same size
-  BitsAndBytes: dynamic quantisation in Python/HuggingFace
+  AWQ / GPTQ: GPU 4-bit formats, widely supported by vLLM
+  FP8:   8-bit floating point, natively fast on H100-class GPUs —
+         the common production choice
+  MXFP4: 4-bit format some new models ship in natively (e.g. gpt-oss)
+  BitsAndBytes: on-the-fly quantisation in Python/Hugging Face
 ```
 
 ```python
@@ -269,11 +342,11 @@ quantisation_config = BitsAndBytesConfig(
 )
 
 model = AutoModelForCausalLM.from_pretrained(
-    "meta-llama/Llama-3.1-8B-Instruct",
+    "Qwen/Qwen3-8B",
     quantization_config=quantisation_config,
     device_map="auto",                  # auto-distributes across available GPUs
 )
-tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B-Instruct")
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-8B")
 ```
 
 ---
@@ -284,29 +357,29 @@ If you need GPU inference but don't have hardware:
 
 ```text
 Together AI:
-  Hosted inference for Llama, Mistral, Qwen, and many others
+  Hosted inference for Llama, Qwen, DeepSeek, gpt-oss and many others
   OpenAI-compatible API
-  Pay per token, cheaper than OpenAI for equivalent quality tiers
+  Pay per token, much cheaper than closed frontier models
 
-Groq:
-  Custom LPU (Language Processing Unit) hardware — extremely fast inference
-  100-300 tokens/second (vs 30-60 for GPU-based services)
-  Free tier available, supports Llama 3.1/3.3 and Mixtral
+Groq / Cerebras:
+  Custom inference hardware — extremely fast (hundreds to 1,000+ tokens/second)
+  Good for latency-sensitive features; smaller model catalogue
 
 Fireworks AI:
-  Fast inference, function calling support, good Llama support
+  Fast inference, function calling support, fine-tuning
   Good option for production traffic
 
 Replicate:
   Run any model with an API — wide model selection
   Pay per second of compute
 
-AWS Bedrock:
-  Managed access to Llama, Mistral, and others on AWS infrastructure
-  Stays within your AWS account — good for existing AWS customers
+AWS Bedrock / Google Vertex AI / Azure AI Foundry:
+  Managed access to open models (Llama, Mistral, DeepSeek, Qwen, gpt-oss —
+  catalogue varies) inside your cloud account — good for existing customers
+  and for compliance
 
-Modal / Runpod:
-  Rent raw GPU time and deploy your own serving stack (vLLM)
+Modal / Runpod / Baseten:
+  Rent GPU time and deploy your own serving stack (vLLM, SGLang)
   Most control, most setup work
 ```
 
@@ -320,7 +393,7 @@ const client = new OpenAI({
 });
 
 const response = await client.chat.completions.create({
-  model: 'meta-llama/Llama-3.1-70B-Instruct-Turbo',
+  model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
   messages: [{ role: 'user', content: 'Hello!' }],
 });
 
@@ -329,9 +402,12 @@ import Groq from 'groq-sdk';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const result = await groq.chat.completions.create({
-  model: 'llama-3.1-70b-versatile',
+  model: 'openai/gpt-oss-120b',
   messages: [{ role: 'user', content: 'Hello!' }],
 });
+
+// ‼️ Hosted model IDs change and old ones get retired (e.g. Groq's
+//    llama-3.1-70b-versatile). Check the provider's model list.
 ```
 
 ---
@@ -340,28 +416,27 @@ const result = await groq.chat.completions.create({
 
 ```text
 Task: simple Q&A, classification, summarisation
-  → Llama 3.2 3B (Ollama) or Mistral 7B
-  → Fast, cheap, good enough
+  → Qwen 3.5 (2B–9B), Gemma 4 e4b/12B, Granite 4.x 8B
+  → Fast, cheap, runs on one small GPU or a laptop
 
-Task: complex reasoning, coding, agent tasks
-  → Llama 3.1 70B or Mixtral 8x22B
-  → Quality close to GPT-3.5/Claude Haiku
+Task: complex reasoning, coding, agent tasks — one GPU
+  → gpt-oss-120b, Qwen 3.6/3.8 27B–35B, Gemma 4 31B
+  → Solid tool use; still below frontier on hard multi-step tasks
 
-Task: frontier quality on self-hosted infrastructure
-  → Llama 3.1 405B
-  → Needs 4-8 high-end GPUs, significant infrastructure
+Task: closest to frontier on your own infrastructure
+  → DeepSeek V4, GLM-5.x, Kimi K3, Mistral Medium 3.5, Nemotron 3
+  → Needs a multi-GPU server (8x H100-class for the largest); often
+    cheaper to use them through a hosting provider
 
 Task: multilingual (non-English)
-  → Qwen 2.5 72B
-  → Strongest multilingual open model
+  → Qwen (especially Chinese/Asian languages), Gemma 4
 
-Task: code generation
-  → DeepSeek Coder V2, CodeLlama, Qwen2.5-Coder
-  → Fine-tuned specifically for code
+Task: code generation / coding agents
+  → GLM-5.x, Kimi, Qwen 3.6/3.8, DeepSeek, gpt-oss
 
 Task: on-device / edge (mobile, browser, laptop)
-  → Phi-3 Mini (3.8B), Llama 3.2 1B/3B, Gemma 2B
-  → Small enough to run in-browser with WASM (WebLLM)
+  → Gemma 4 e2b/e4b, Qwen 3.5 0.8B–4B, Granite 4.x 3B, Phi-4-mini
+  → Small enough to run in-browser with WebGPU (WebLLM, Transformers.js)
 
 Decision: open vs closed model
   Open: data privacy required, high volume (cost), want to fine-tune, offline use
@@ -374,12 +449,16 @@ Decision: open vs closed model
 
 ### "How would you choose between a closed API model and a self-hosted open model?"
 
-> I'd consider four factors: **privacy** (does the data contain PII, PHI, or trade secrets?), **cost** (at what query volume does self-hosted become cheaper than API pricing?), **quality** (does the task require frontier-model reasoning, or is a 70B model sufficient?), and **engineering capacity** (do we have the infrastructure team to run and maintain GPU infrastructure?). For most startups starting out: use closed APIs — the iteration speed is worth the cost. As you scale to millions of queries or hit compliance requirements, evaluate the self-hosted path. The good news: the APIs are increasingly compatible (vLLM is OpenAI-compatible), so switching is more of an infrastructure change than a code change.
+> I'd consider four factors: **privacy** (does the data contain PII, PHI, or trade secrets?), **cost** (at what query volume does self-hosted become cheaper than API pricing?), **quality** (does the task need frontier-model reasoning, or is a strong open model like gpt-oss or Qwen enough?), and **engineering capacity** (do we have the team to run and maintain GPU infrastructure?). For most startups starting out: use closed APIs — the iteration speed is worth the cost. As you scale to millions of queries or hit compliance requirements, evaluate the self-hosted path — and note there's a middle ground: closed models through your own cloud account (Bedrock, Vertex, Foundry) often satisfy compliance without running GPUs. The good news: the APIs are increasingly compatible (vLLM is OpenAI-compatible), so switching is more of an infrastructure change than a code change.
 
 ### "What is quantisation and why does it matter?"
 
-> Quantisation reduces the numerical precision of model weights — for example from 16-bit floats to 4-bit integers. This shrinks the model's memory footprint by 4x with modest quality loss (typically 3-5% on benchmarks). A 70B parameter model at full precision needs ~140GB of GPU VRAM — impractical for most teams. At 4-bit, it fits in ~18GB — a single consumer GPU or one A100. Quantisation makes self-hosted large models practical. Common formats: GGUF (used by Ollama, runs on CPU+GPU), GPTQ, AWQ. The quality loss is acceptable for most production tasks; for the highest-stakes use cases, use full precision or a closed model.
+> Quantisation reduces the numerical precision of model weights — for example from 16-bit floats to 8-bit or 4-bit. Going from 16-bit to 4-bit shrinks memory about 4x with modest quality loss, usually larger on maths and code. A 70B model needs about 140GB in 16-bit — two 80GB GPUs. At 4-bit it needs about 35–40GB, so it fits on one 48GB GPU or a well-specced Mac. That's what makes self-hosting large models practical. Common formats: GGUF (Ollama/llama.cpp), AWQ and GPTQ (vLLM), and FP8, which is the usual production choice on modern NVIDIA GPUs. For the highest-stakes use cases, use 8-bit or full precision, or a closed model.
 
 ### "What is vLLM and why use it over just calling the model directly?"
 
-> vLLM is a high-throughput inference server for open source models. The key innovation is PagedAttention — it manages GPU memory the same way an OS manages RAM (paging), which eliminates the wasted memory of the KV cache in naive implementations. The result: 2-4x more requests served per second on the same hardware compared to vanilla HuggingFace. It also supports continuous batching (new requests slot in as old ones finish, rather than waiting for a full batch), tensor parallelism (spreading one model across multiple GPUs), and an OpenAI-compatible API so existing code works without changes. For production: always use vLLM or a similar serving framework — never call the HuggingFace model directly in a request handler.
+> vLLM is a high-throughput inference server for open source models. The key innovation is PagedAttention — it manages GPU memory the same way an OS manages RAM (paging), which eliminates the wasted memory of the KV cache in naive implementations. The result: 2-4x more requests served per second on the same hardware compared to vanilla HuggingFace. It also supports continuous batching (new requests slot in as old ones finish, rather than waiting for a full batch), tensor parallelism (spreading one model across multiple GPUs), and an OpenAI-compatible API so existing code works without changes. For production: always use vLLM or a similar serving framework (SGLang, TensorRT-LLM) — never call the HuggingFace model directly in a request handler.
+
+### "What's a Mixture-of-Experts model?"
+
+> Instead of one big feed-forward block, each layer has many "expert" blocks and a router that sends each token to only a few of them. So the model can have hundreds of billions of parameters in total but only use a small fraction per token — DeepSeek-V3 has about 671B total and about 37B active. That gives you big-model quality at small-model speed. The catch is memory: every expert must still be loaded, so an MoE model is fast but not small. Most frontier open models in 2025–26 are MoE.

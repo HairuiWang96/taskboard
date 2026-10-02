@@ -7,7 +7,12 @@
 ```sql
 -- ✓ Use the most specific type that fits
 id          UUID DEFAULT gen_random_uuid()  -- globally unique, no coordination needed
+            UUID DEFAULT uuidv7()           -- ‼️ Postgres 18+: time-ordered UUID — new rows
+                                            -- land at the END of the index, avoiding the
+                                            -- random-insert index bloat of v4 UUIDs.
+                                            -- The best default for new tables.
             SERIAL / BIGSERIAL              -- auto-increment, simpler but sequential
+            BIGINT GENERATED ALWAYS AS IDENTITY  -- SQL-standard replacement for SERIAL
 created_at  TIMESTAMPTZ                     -- always store with timezone (UTC)
 price       NUMERIC(10, 2)                  -- exact decimal (never FLOAT for money!)
 status      TEXT with CHECK constraint      -- or an ENUM type

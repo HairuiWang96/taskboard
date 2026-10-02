@@ -108,9 +108,10 @@ app.listen(3000, (): void => console.log('Server running on port 3000'));
 ```json
 {
     "compilerOptions": {
-        "target": "ES2022",
-        "module": "Node16",
-        "moduleResolution": "Node16",
+        "target": "ES2023",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "types": ["node"],
         "esModuleInterop": true,
         "strict": true,
         "outDir": "./dist",
@@ -190,7 +191,7 @@ import { Request } from 'express';
 function showReqProperties(req: Request): void {
     req.params; // { id: '123' } — from route params like /users/:id
     req.query; // { page: '1', sort: 'name' } — from ?page=1&sort=name
-    req.body; // parsed body — ONLY available after body-parser middleware‼️
+    req.body; // parsed body — ONLY available after a body parser — express.json() / express.urlencoded()‼️ (undefined otherwise in Express 5)
     req.ip; // client IP (respects X-Forwarded-For if trust proxy set)‼️
     req.path; // '/users/123' — URL path without query string‼️
     req.method; // 'GET', 'POST', etc.
@@ -1414,13 +1415,19 @@ app.post('/auth/register', authLimiter, registerHandler);
 
 ```ts
 import express from 'express';
-import mongoSanitize from 'express-mongo-sanitize';
+import { z } from 'zod';
 import xss from 'xss';
 
 const app: express.Express = express();
 
 // Prevent NoSQL injection (MongoDB)
-app.use(mongoSanitize()); // strips $ and . from req.body, req.query, req.params‼️
+// ‼️ The popular express-mongo-sanitize middleware CRASHES on Express 5 —
+//    it reassigns req.query, which is read-only in Express 5. Better: validate
+//    every input with a schema so a field that should be a string can never
+//    arrive as an object like { "$gt": "" }.
+const LoginBody = z.object({ email: z.string().email(), password: z.string() });
+// inside a handler: const body = LoginBody.parse(req.body); // rejects { "$gt": "" }
+// (Mongoose also casts query values by schema type; set sanitizeFilter: true)‼️
 
 // Prevent XSS in user input (if you're rendering HTML)
 const userInput: string = '<script>alert("xss")</script>';
@@ -2140,7 +2147,8 @@ app.get(
 ## 17. Express 5 — What Changes
 
 ```text
-Express 5 (released 2024 — first major update in 10+ years):
+Express 5 (5.0 in late 2024; the default `npm install express` since 5.1 in
+March 2025 — the first major release in 10 years):‼️
 
 ✅ Async error handling — async route handlers just work‼️
    No more asyncHandler wrapper, no more express-async-errors.
@@ -2149,24 +2157,34 @@ Express 5 (released 2024 — first major update in 10+ years):
      res.json(users);
    });
 
+‼️ Path syntax (path-to-regexp v8) — the change that breaks most apps:
+   - Wildcards must be NAMED: app.get('/*splat', ...)  not  app.get('*', ...)
+   - Optional segments use braces: /users{/:id}  not  /users/:id?
+   - Regex characters in string paths (?, +, (, )) are no longer allowed
+
+‼️ Request object changes:
+   - req.query is a read-only getter, and the default query parser is now
+     "simple" — ?a[b]=1 is no longer parsed into nested objects (set
+     app.set('query parser', 'extended') if you rely on that)
+   - req.body is undefined (not {}) when no body parser ran
+   - express.urlencoded() defaults to extended: false
+   - req.host now includes the port
+
 ✅ Removed deprecated APIs:
-   - req.host → use req.hostname
-   - res.json(obj, status) → use res.status(n).json(obj)
-   - app.del() → use app.delete()
-   - req.param() → use req.params, req.query, req.body
+   - res.json(obj, status) / res.send(status) → res.status(n).json(obj)
+   - app.del() → app.delete()
+   - req.param() → req.params, req.query, req.body
+   - res.redirect('back') → res.redirect(req.get('Referrer') || '/')
+   - res.sendfile() → res.sendFile()
+   - res.status() only accepts integer codes 100–999
 
-✅ Path route matching changes:
-   - Regex-like patterns in paths are stricter
-   - Optional params: /users/:id? no longer works — use /users{/:id}‼️
-
-✅ res.render() returns a Promise (can await it)
-
-✅ Dropped Node.js < 18 support
+✅ Requires Node.js 18+
 
 Migration:
   npm install express@5
-  Most Express 4 apps work with minimal changes.
-  Main breaking change: path pattern syntax.
+  Run the official codemods: npx @expressjs/codemod upgrade
+  Most Express 4 apps need small changes — mainly route paths and any
+  middleware that writes to req.query (see Input sanitization in the security section).
 ```
 
 ---

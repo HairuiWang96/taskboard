@@ -830,17 +830,21 @@ class User implements Serializable, Loggable {
         "declaration": true, // emit .d.ts files (for libraries)‼️
         "declarationMap": true, // source maps for .d.ts files‼️
 
-        // Paths
-        "baseUrl": ".",
+        // Paths — no "baseUrl" needed (deprecated in TS 6); paths resolve
+        // relative to the tsconfig file
         "paths": {
             "@/*": ["./src/*"] // alias: import from '@/components/Button'‼️
         },
+
+        // Global type packages — ‼️ since TS 6 this defaults to [] (TS no longer
+        // auto-includes every @types/* package), so list the ones you need
+        "types": ["node", "vite/client"],
 
         // JSX (React)
         "jsx": "react-jsx", // automatic JSX transform (no import React needed)
 
         // Important flags
-        "esModuleInterop": true, // allows default import from CommonJS modules‼️
+        "esModuleInterop": true, // allows default import from CommonJS modules‼️ (can't be turned off since TS 6)
         "skipLibCheck": true, // skip type-checking .d.ts files (faster)
         "forceConsistentCasingInFileNames": true,
         "noUnusedLocals": true, // error on unused variables‼️
@@ -848,6 +852,44 @@ class User implements Serializable, Loggable {
         "noImplicitReturns": true // error if not all code paths return a value
     }
 }
+```
+
+### TypeScript 6 and 7 — what changed (2026)
+
+```text
+‼️ TypeScript 7.0 (July 2026) is the compiler rewritten in Go — the "native
+   port". Same language, same `tsc` command, ~10x faster type-checking and a
+   faster, more stable editor experience. Large projects that took minutes now
+   check in seconds.
+   - The `typescript` npm package now ships 7.x. Tools that use the compiler
+     API (typescript-eslint, some framework plugins) need the API coming in
+     7.1 — @typescript/typescript6 (`tsc6`) runs the old compiler alongside.
+
+‼️ TypeScript 6.0 (March 2026) — last JS-based version, a cleanup release that
+   changed DEFAULTS (so an empty tsconfig behaves differently):
+     strict: true                     (was false)
+     module: esnext, target: es2025
+     types: []                        (no longer auto-loads all @types/*)
+     rootDir: "."                     (set it if your sources live in src/)
+     noUncheckedSideEffectImports: true
+
+   Deprecated or removed:
+     target: es5 (ES2015 is the minimum), downlevelIteration
+     moduleResolution: node / node10 / classic → use bundler or nodenext
+     module: amd / umd / system, outFile
+     baseUrl (paths works without it)
+     esModuleInterop / allowSyntheticDefaultImports: false
+     import ... assert { } → use `with { type: 'json' }`
+
+Recent language features worth knowing (TS 5.x):
+  satisfies (4.9)         check a value against a type without widening it
+  const type parameters   <const T> infers literal types
+  using / await using     explicit resource management (auto-dispose)
+  NoInfer<T>              stop a parameter from influencing inference
+  Inferred type predicates  filter(x => x !== null) narrows automatically
+  erasableSyntaxOnly      forbids enums/namespaces/parameter properties —
+                          needed for Node's built-in type stripping, which
+                          runs .ts files by simply deleting the types
 ```
 
 ---

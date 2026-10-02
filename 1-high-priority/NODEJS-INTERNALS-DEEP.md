@@ -364,6 +364,41 @@ console.log(entry.duration)
 
 ---
 
+## Modern Node.js — Versions and Built-ins
+
+```text
+RELEASE LINES (October 2026 — check nodejs.org/en/about/previous-releases):
+  Node 24  Active LTS — the default choice for production
+  Node 22  Maintenance LTS — fine, plan the upgrade
+  Node 26  Current — becomes LTS in late October 2026
+  Node 20  END OF LIFE (April 2026) — no security fixes; upgrade
+  Even-numbered releases become LTS; odd ones are short-lived. Production
+  should run an LTS line.
+
+‼️ THINGS YOU NO LONGER NEED A PACKAGE FOR:
+  fetch, Request, Response, WebSocket client   global, built in
+  Test runner          node --test   (node:test + node:assert)
+  Watch mode           node --watch app.js        (replaces nodemon)
+  .env files           node --env-file=.env app.js  (replaces dotenv)
+  Run TypeScript       node app.ts — type stripping is on by default in
+                       current LTS lines: Node deletes the type annotations
+                       and runs the JS. No type-CHECKING (still run tsc),
+                       and no enums/namespaces unless you use
+                       --experimental-transform-types.
+  require() an ES module   works since Node 22.12 / 20.19 — ends most of the
+                       "ERR_REQUIRE_ESM" pain
+  Permission model     node --permission --allow-fs-read=./data app.js
+                       restricts file system, child processes and workers
+  SQLite               node:sqlite (built-in, still marked experimental)
+  glob, styleText, parseArgs, crypto.randomUUID — all in core
+
+Interview angle: "What would you remove from a Node project's dependencies
+today?" → nodemon, dotenv, node-fetch, ts-node (for simple cases), and
+often Jest for small libraries (node --test).
+```
+
+---
+
 ## Key Interview Answers
 
 ```

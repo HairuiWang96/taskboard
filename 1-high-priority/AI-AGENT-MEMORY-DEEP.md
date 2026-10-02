@@ -116,35 +116,37 @@ import { createClient } from 'redis';
 
 const redis = createClient({ url: process.env.REDIS_URL });
 
+// One Redis HASH per user: memory:{userId} → { field: value, ... }
+// ‼️ Don't use redis.keys('memory:user:*') to list a user's facts — KEYS scans
+//    the WHOLE database and blocks Redis while it runs. A hash gives you every
+//    field for one user in a single O(fields) HGETALL.
 class KeyValueMemory {
   constructor(private userId: string) {}
 
-  private key(field: string) {
-    return `memory:${this.userId}:${field}`;
+  private get key() {
+    return `memory:${this.userId}`;
   }
 
-  async set(field: string, value: string, ttlSeconds?: number) {
-    if (ttlSeconds) {
-      await redis.setEx(this.key(field), ttlSeconds, value);
-    } else {
-      await redis.set(this.key(field), value);
-    }
+  async set(field: string, value: string) {
+    await redis.hSet(this.key, field, value);
   }
 
   async get(field: string): Promise<string | null> {
-    return redis.get(this.key(field));
+    return (await redis.hGet(this.key, field)) ?? null;
   }
 
   async getAll(): Promise<Record<string, string>> {
-    const keys = await redis.keys(`memory:${this.userId}:*`);
-    const values = await Promise.all(keys.map(k => redis.get(k)));
-    return Object.fromEntries(
-      keys.map((k, i) => [k.replace(`memory:${this.userId}:`, ''), values[i] ?? ''])
-    );
+    return redis.hGetAll(this.key);
   }
 
   async delete(field: string) {
-    await redis.del(this.key(field));
+    await redis.hDel(this.key, field);
+  }
+
+  // TTL applies to the whole hash — e.g. expire a user's memory after a year
+  // of inactivity. (Redis 7.4+ also supports per-field expiry with HEXPIRE.)
+  async touch(ttlSeconds: number) {
+    await redis.expire(this.key, ttlSeconds);
   }
 }
 
@@ -192,7 +194,9 @@ class VectorMemory {
   private embeddings: OpenAIEmbeddings;
 
   constructor(private userId: string) {
-    this.embeddings = new OpenAIEmbeddings({ modelName: 'text-embedding-3-small' });
+    this.embeddings = new OpenAIEmbeddings({ model: 'text-embedding-3-small' });
+    // (create this.vectorStore once at startup with PGVectorStore.initialize(...)
+    //  and share it — omitted here for brevity)
   }
 
   // Store a memory (conversation excerpt, fact, event)
@@ -248,36 +252,42 @@ Use this context to provide personalised, contextual responses.`;
 
 ---
 
-## Pattern 3: LangChain Memory
+## Pattern 3: LangChain / LangGraph Memory
 
-LangChain provides built-in memory classes for common patterns.
+LangChain v1 (late 2025) handles conversation memory through LangGraph **checkpointers**: the
+agent's full state is saved after every step, keyed by a `thread_id`.
 
 ```typescript
-import { BufferMemory, ConversationSummaryMemory } from 'langchain/memory';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { ConversationChain } from 'langchain/chains';
+// ‼️ The old classes — BufferMemory, ConversationSummaryMemory,
+//    ConversationChain — were removed from the main package in LangChain v1.
+//    Most tutorials online still use them. This is the current pattern:
+import { createAgent, summarizationMiddleware } from 'langchain';
+import { MemorySaver } from '@langchain/langgraph';
 
-// In-context buffer memory (simple)
-const memory = new BufferMemory({
-  returnMessages: true,
-  memoryKey: 'history',
+const agent = createAgent({
+  model: 'anthropic:claude-opus-5',
+  tools: [],
+  // Short-term memory: saves the conversation state after every step.
+  // MemorySaver is in-process — use a Postgres/Redis checkpointer in production.
+  checkpointer: new MemorySaver(),
+  middleware: [
+    // Summarise older messages once the history gets long, keep recent ones verbatim
+    summarizationMiddleware({
+      model: 'anthropic:claude-haiku-4-5', // cheap model for summarisation
+      trigger: { tokens: 4000 },
+      keep: { messages: 20 },
+    }),
+  ],
 });
 
-// Summary memory (compresses old messages automatically)
-const summaryMemory = new ConversationSummaryMemory({
-  llm: new ChatAnthropic({ modelName: 'claude-haiku-4-5-20251001' }), // cheap model for summarisation
-  returnMessages: true,
-  memoryKey: 'history',
-});
+// Same thread_id = same conversation. A new thread_id starts fresh.
+const config = { configurable: { thread_id: 'user-123-session-1' } };
+await agent.invoke({ messages: [{ role: 'user', content: 'My name is Harry and I prefer TypeScript.' }] }, config);
+const r2 = await agent.invoke({ messages: [{ role: 'user', content: 'What language did I say I prefer?' }] }, config);
+// knows it's TypeScript
 
-const chain = new ConversationChain({
-  llm: new ChatAnthropic({ modelName: 'claude-sonnet-4-6' }),
-  memory: summaryMemory,
-});
-
-// Memory persists across chain calls
-const r1 = await chain.call({ input: 'My name is Harry and I prefer TypeScript.' });
-const r2 = await chain.call({ input: 'What language did I say I prefer?' }); // knows it's TypeScript
+// Long-term memory across threads uses a separate LangGraph "store"
+// (key-value + optional semantic search), namespaced per user.
 ```
 
 ---
@@ -285,14 +295,16 @@ const r2 = await chain.call({ input: 'What language did I say I prefer?' }); // 
 ## Pattern 4: Mem0 — Dedicated Memory Layer
 
 Mem0 is a purpose-built memory layer for AI agents. It automatically extracts and manages memories.
+(Alternatives: Zep, Letta — formerly MemGPT — and LangGraph's long-term store.)
 
 ```typescript
-import { Memory } from 'mem0ai';
+// Open-source (self-hosted) version; the hosted platform has its own client
+import { Memory } from 'mem0ai/oss';
 
 const memory = new Memory({
-  // Can use vector store (Qdrant, Pinecone) + LLM for extraction
-  vector_store: { provider: 'qdrant', config: { url: process.env.QDRANT_URL } },
-  llm: { provider: 'anthropic', config: { model: 'claude-haiku-4-5-20251001' } },
+  // Vector store + embedder for search, plus an LLM that extracts facts
+  vectorStore: { provider: 'qdrant', config: { url: process.env.QDRANT_URL, collectionName: 'memories' } },
+  llm: { provider: 'anthropic', config: { model: 'claude-haiku-4-5' } },
   embedder: { provider: 'openai', config: { model: 'text-embedding-3-small' } },
 });
 
@@ -300,14 +312,43 @@ const memory = new Memory({
 await memory.add([
   { role: 'user', content: 'I am a senior frontend engineer working with React and TypeScript.' },
   { role: 'assistant', content: 'Great! I will keep that in mind.' },
-], { user_id: 'user-123' });
+], { userId: 'user-123' });
 
 // Search relevant memories
-const memories = await memory.search('what do I work with?', { user_id: 'user-123' });
-// Returns: [{ memory: 'Senior frontend engineer working with React and TypeScript', score: 0.92 }]
+// ‼️ Note the inconsistent naming: add() takes userId, search filters take user_id
+const memories = await memory.search('what do I work with?', { filters: { user_id: 'user-123' } });
+// Returns e.g.: [{ memory: 'Senior frontend engineer working with React and TypeScript', score: 0.92 }]
+```
 
-// Get all memories for a user
-const allMemories = await memory.getAll({ user_id: 'user-123' });
+---
+
+## Pattern 5: Provider-Native Memory and Context Management
+
+Model providers now ship some of this themselves. Know they exist before building your own.
+
+```text
+Anthropic (Claude API):
+  Memory tool       — Claude reads/writes files in a /memories directory that
+                      YOUR code stores (database, S3, disk). The model decides
+                      what to save; you control where it lives.
+  Compaction        — server-side: when the conversation nears a token
+                      threshold, the API summarises older turns automatically
+                      (beta). Replaces your own compressContext().
+  Context editing   — automatically clears old tool results / thinking blocks
+                      that are no longer needed (beta).
+  Managed Agents    — hosted agents with persistent memory stores.
+
+OpenAI:
+  Conversations / Responses API state — the server keeps the conversation
+  history so you send only the new message.
+
+ChatGPT / Claude apps: have their own user-facing "memory" features — those
+are product features, not something your API calls get automatically.
+
+When to still build your own:
+  - You need memory shared across models or providers
+  - You need full control over retention, deletion (GDPR) and audit
+  - You need structured facts queryable by your own app, not just the model
 ```
 
 ---
@@ -363,7 +404,7 @@ class AgentMemorySystem {
 
     // Trim short-term if too long
     if (estimateTokens(this.shortTerm) > 50_000) {
-      this.shortTerm = await this.compressShorTerm(this.shortTerm);
+      this.shortTerm = await this.compressShortTerm(this.shortTerm);
     }
 
     // Store in episodic memory (vector)
@@ -438,7 +479,7 @@ const memoryTools = [
 
 ### "What is the 'lost in the middle' problem and how does it affect agent memory?"
 
-> Research (Liu et al., 2023) showed that LLMs perform significantly worse when relevant information is placed in the middle of a long context — they attend better to the beginning and end. This affects agent memory because naively appending all retrieved memories to the context can bury the most relevant information. Mitigations: put the most important context at the beginning or end of the system prompt, not the middle; limit retrieved memories to the 3-5 most relevant rather than dumping everything; use a reranker to put the highest-scored memories first; prefer concise summaries over raw conversation transcripts.
+> Research (Liu et al., 2023) showed that LLMs perform significantly worse when relevant information is placed in the middle of a long context — they attend better to the beginning and end. This affects agent memory because naively appending all retrieved memories to the context can bury the most relevant information. Mitigations: put the most important context at the beginning or end of the system prompt, not the middle; limit retrieved memories to the 3-5 most relevant rather than dumping everything; use a reranker to put the highest-scored memories first; prefer concise summaries over raw conversation transcripts. Newer long-context models handle this much better than 2023-era models, but quality still drops as context fills up (often called "context rot") — so retrieving less, better context still wins.
 
 ### "How would you handle memory for a multi-user application?"
 

@@ -17,7 +17,8 @@
 9. [Error Handling](#9-error-handling)
 10. [Testing](#10-testing)
 11. [Concurrent Features (React 18+)](#11-concurrent-features-react-18)
-12. [Common Interview Questions](#12-common-interview-questions)
+12. [React 19 & the React Compiler](#12-react-19--the-react-compiler)
+13. [Common Interview Questions](#13-common-interview-questions)
 
 ---
 
@@ -552,6 +553,10 @@ const TaskItem = React.memo(TaskItemBase, (prevProps, nextProps) => {
 // When it's NOT worth it:
 // - Simple components — comparison overhead exceeds render cost
 // - Props always change — memo never helps, just adds cost
+
+// ‼️ With the React Compiler (1.0, Oct 2025) enabled, memo/useMemo/useCallback
+//    are applied automatically — see §12. Manual memoization still matters
+//    in codebases that don't use the compiler.
 ```
 
 ### Virtualization (windowing)
@@ -804,6 +809,17 @@ const inputRef = useRef<HTMLInputElement>(null);
 <Input ref={inputRef} />;
 // inputRef.current is the actual <input> DOM node
 // inputRef.current.focus() — works!
+```
+
+```tsx
+// ‼️ REACT 19: ref is now a normal prop on function components.
+// No forwardRef wrapper needed — and forwardRef will be deprecated in a
+// future version. Use this form in new code; you'll still see forwardRef
+// all over existing codebases and component libraries.
+function Input({ className, ref, ...props }: InputProps & { ref?: React.Ref<HTMLInputElement> }) {
+    return <input ref={ref} className={cn('border rounded px-3 py-2', className)} {...props} />;
+}
+// <Input ref={inputRef} /> — works exactly the same
 ```
 
 ### ‼️ useImperativeHandle — expose selective API
@@ -1232,14 +1248,17 @@ function SearchResults({ query }) {
 // ‼️ Suspense: show fallback while async content loads
 // Works with: React.lazy, use() hook, TanStack Query, SWR
 
-function UserProfile({ userId }) {
-  // ‼️ use() hook throws a Promise if data not ready — Suspense catches it
-  const user = use(fetchUserPromise(userId));
+function UserProfile({ userPromise }) {
+  // ‼️ use() suspends until the promise resolves — Suspense shows the fallback
+  // ‼️ The promise must be created OUTSIDE render (by a parent, a server
+  //    component, a router loader, or a cache). Writing use(fetchUser(id))
+  //    creates a NEW promise every render → it suspends forever.
+  const user = use(userPromise);
   return <div>{user.name}</div>;
 }
 
 <Suspense fallback={<ProfileSkeleton />}>
-  <UserProfile userId="123" />
+  <UserProfile userPromise={userPromise} />
 </Suspense>
 
 // Nested Suspense — granular loading states
@@ -1256,7 +1275,132 @@ function UserProfile({ userId }) {
 
 ---
 
-## 12. Common Interview Questions
+## 12. React 19 & the React Compiler
+
+React 19 shipped in December 2024; 19.2 (October 2025) and 19.3 followed. The React Compiler
+reached 1.0 in October 2025. Expect interview questions on both.
+
+### Actions — async functions as transitions
+
+```tsx
+// ‼️ An "Action" is an async function run inside a transition. React tracks
+//    pending state, errors and optimistic updates for you.
+import { useActionState, useOptimistic } from 'react';
+
+function UpdateName({ currentName }: { currentName: string }) {
+    // useActionState(action, initialState) → [state, dispatch, isPending]
+    // (renamed from useFormState, which lived in react-dom)
+    const [error, submitAction, isPending] = useActionState(
+        async (_prev: string | null, formData: FormData) => {
+            const res = await updateName(formData.get('name') as string);
+            return res.ok ? null : 'Could not save'; // becomes the new state
+        },
+        null,
+    );
+
+    return (
+        // ‼️ <form action={fn}> — React 19 accepts a FUNCTION. It receives
+        //    FormData, runs as a transition, and resets the form on success.
+        <form action={submitAction}>
+            <input name='name' defaultValue={currentName} />
+            <button disabled={isPending}>Save</button>
+            {error && <p>{error}</p>}
+        </form>
+    );
+}
+
+// useOptimistic — show the expected result immediately, roll back on failure
+function Likes({ count, like }: { count: number; like: () => Promise<void> }) {
+    const [optimisticCount, addOptimistic] = useOptimistic(count, (c, delta: number) => c + delta);
+
+    return (
+        <form action={async () => {
+            addOptimistic(1);   // UI shows count + 1 right away
+            await like();       // when the real state arrives, it replaces the optimistic one
+        }}>
+            <button>♥ {optimisticCount}</button>
+        </form>
+    );
+}
+```
+
+### Other React 19 changes worth knowing
+
+```text
+use(promise | context)   Read a promise (suspends) or a context. Unlike other
+                         hooks it CAN be called inside if/loops.
+ref as a prop            Function components receive ref like any prop —
+                         forwardRef is no longer needed (see §6).
+<Context> as provider    <ThemeContext value={...}> instead of
+                         <ThemeContext.Provider value={...}>.
+Ref cleanup functions    A ref callback can return a cleanup function.
+Document metadata        <title>, <meta>, <link> rendered anywhere are
+                         hoisted into <head>.
+Better hydration errors  One error with a diff of the mismatch, instead of
+                         many vague warnings.
+Removed                  propTypes and defaultProps on function components
+                         (use TypeScript + default parameters), string refs,
+                         legacy context, ReactDOM.render / hydrate (use
+                         createRoot / hydrateRoot).
+
+React 19.2:
+  <Activity mode="hidden">  Hide a subtree while KEEPING its state (e.g. tabs,
+                            back navigation) and let React pre-render it at
+                            low priority. Better than unmounting or CSS-hiding.
+  useEffectEvent            A function that always sees the latest
+                            props/state but isn't a dependency — fixes the
+                            classic "effect re-runs because a callback
+                            changed" problem.
+```
+
+```tsx
+// useEffectEvent — the effect re-connects only when roomId changes,
+// but onConnected always reads the CURRENT theme.
+function ChatRoom({ roomId, theme }: { roomId: string; theme: string }) {
+    const onConnected = useEffectEvent(() => {
+        showNotification('Connected!', theme);
+    });
+
+    useEffect(() => {
+        const conn = createConnection(roomId);
+        conn.on('connected', onConnected);
+        conn.connect();
+        return () => conn.disconnect();
+    }, [roomId]); // ‼️ theme is NOT a dependency — no reconnect on theme change
+}
+```
+
+### The React Compiler
+
+```text
+‼️ WHAT IT DOES: a build-time compiler (Babel/SWC plugin, built into Next.js
+   16 and Expo) that automatically memoizes components and values — the
+   work you used to do by hand with React.memo, useMemo and useCallback.
+
+   It analyses each component and caches JSX and computed values so they
+   are only recomputed when their inputs change. It's finer-grained than
+   manual memoization (it can memoize part of a component's output).
+
+WHAT IT MEANS IN PRACTICE:
+   - New code: write plain components; skip most useMemo/useCallback.
+   - Existing code: leave manual memoization in place — the compiler
+     works alongside it. Remove it gradually, guided by profiling.
+   - ‼️ It relies on the Rules of React (pure render, no mutating props or
+     state, hooks called unconditionally). Code that breaks them is skipped
+     or can behave differently — eslint-plugin-react-hooks reports these.
+   - Still need useMemo/useCallback sometimes: e.g. a value used as an
+     effect dependency where you need a guaranteed stable identity.
+
+INTERVIEW ANSWER — "Do we still need useMemo?":
+   "With the React Compiler enabled, mostly no — it memoizes automatically
+    and more precisely than we would by hand. I'd still understand them,
+    because plenty of codebases don't run the compiler yet, and the compiler
+    only helps code that follows the Rules of React."
+```
+
+---
+
+## 13. Common Interview Questions
 
 ### "Explain the virtual DOM and why React uses it."
 
@@ -1533,9 +1677,11 @@ export default async function UsersPage() {
     const users = await db.select().from(usersTable); // direct DB access
     return <UserList users={users} />;
 }
+```
 
+```jsx
 // components/UserList.tsx
-('use client'); // needs interactivity
+'use client'; // needs interactivity
 export function UserList({ users }) {
     const [filter, setFilter] = useState('');
     // ...

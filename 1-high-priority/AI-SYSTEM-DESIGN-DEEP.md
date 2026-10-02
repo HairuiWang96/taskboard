@@ -107,8 +107,10 @@ User message
    create_ticket(category, description) → ticketing system
    
 3. Self-hosted model (for enterprise compliance)
-   Llama 3.1 70B on vLLM — no data leaves our infrastructure
-   Fallback: Claude via Anthropic for non-PII queries if needed
+   An open-weight model (e.g. gpt-oss-120b or Qwen3) on vLLM — no data leaves
+   our infrastructure
+   Middle ground: Claude through our own cloud account (Bedrock / Vertex /
+   Foundry) often satisfies compliance without running GPUs ourselves
 
 4. Confidence and escalation
    Score confidence based on: retrieval quality (cosine similarity),
@@ -127,7 +129,8 @@ User message
 RAG indexing: async pipeline, re-index docs on change
 Caching: semantic cache for identical/similar queries (Redis + embeddings)
 Model serving: vLLM with horizontal scaling behind a load balancer
-Cost optimisation: route simple FAQ queries to Haiku/8B, complex to 70B
+Cost optimisation: route simple FAQ queries to Haiku or a small open model,
+  complex ones to the strongest model; lower effort on routine routes; prompt caching
 ```
 
 ---
@@ -191,7 +194,8 @@ Chunking strategy:
 Embedding model:
   text-embedding-3-small: cheap, fast, good quality ($0.02/1M tokens)
   text-embedding-3-large: better quality, 5x more expensive
-  voyage-3 (Anthropic): best for technical/code content
+  Voyage AI (voyage-3.5 / voyage-code-3): strong for technical/code content —
+    Anthropic's recommended embedding provider (now part of MongoDB)
   → Start with text-embedding-3-small, upgrade if retrieval quality is insufficient
 
 Hybrid search:
@@ -261,7 +265,7 @@ Online metrics:
   │     - Related files (imports, types)
   │     ↓
   │   [LLM — FIM model] ← Fill In the Middle
-  │     (CodeLlama/DeepSeek Coder served via vLLM on private infra)
+  │     (e.g. Qwen2.5-Coder / Codestral served via vLLM on private infra)
   │     ↓
   │   [Completion displayed inline]
   │
@@ -287,15 +291,25 @@ Online metrics:
 Inline completion — latency is critical:
   Use FIM (Fill In the Middle) models trained specifically for code completion
   These take prefix + suffix and fill in the middle — better than left-to-right
-  Models: CodeLlama-7B-Instruct (fast), DeepSeek Coder 1.3B (fastest)
+  Models: small FIM-trained code models — Qwen2.5-Coder 1.5B/7B (base, not
+    instruct: FIM needs the base model), Codestral. 1-7B keeps latency <200ms
   Cache completions for the same prefix (common patterns repeat)
   Debounce: only trigger after 150ms of no typing
 
 Chat — accuracy over speed:
-  Larger model (34B+) for the chat feature
+  Strongest model you can use (frontier API, or a large open model if
+  self-hosted) for the chat feature
   Use the entire current file as context
   RAG over the codebase for "how does X work?" questions
   Tree-sitter for syntax-aware chunking (chunk by function/class, not line count)
+
+Agent mode — what modern assistants (Cursor, Copilot, Claude Code) add:
+  The model gets tools — read file, search (grep), edit file, run terminal
+  commands/tests — and loops until the task is done
+  Agentic search (grep + read) often beats embedding-based RAG for code,
+  because code has exact names to search for
+  Needs: a sandbox or approval step for shell commands, diffs the user
+  reviews before applying, and limits on steps/cost
 
 Privacy (self-hosted):
   All models run on company infrastructure (vLLM on GPU servers)
@@ -398,14 +412,16 @@ Extract structured data from unstructured documents (invoices, contracts, forms)
 
 ```text
 Multimodal vs text-only:
-  Vision models (Claude claude-sonnet-4-6/GPT-4o) can process PDF pages as images
+  Vision models (Claude, GPT, Gemini) can process PDF pages as images —
+  Claude also accepts PDFs directly as document blocks (text + page images)
   Better for complex layouts (tables, forms) than text extraction
   More expensive — use for complex documents, text-only for simple ones
 
 Schema-first extraction:
   Define the target schema first
   Prompt: "Extract fields matching this JSON schema: {...}"
-  Use structured output / tool use to enforce the schema
+  Use structured outputs (constrained decoding) to guarantee the schema —
+  more reliable than prompting for JSON
 
 Confidence and validation:
   Ask the model to provide confidence (0-1) for each extracted field

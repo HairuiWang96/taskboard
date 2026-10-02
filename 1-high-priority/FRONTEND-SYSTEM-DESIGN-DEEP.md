@@ -390,14 +390,18 @@ provider.on('status', ({ status }) => {
 
 ### Sync server
 ```typescript
-// Simple y-websocket server — syncs Yjs documents between clients
-// npm install y-websocket
+// Simple Yjs sync server — syncs Yjs documents between clients
+// npm install @y/websocket-server ws
+// (y-websocket v3 moved the server out of the client package — older
+//  tutorials import from 'y-websocket/bin/utils', which no longer exists.
+//  `npx y-websocket` from @y/websocket-server also runs a ready-made server.)
 
 import { createServer } from 'http';
-import { setupWSConnection } from 'y-websocket/bin/utils';
+import { WebSocketServer } from 'ws';
+import { setupWSConnection } from '@y/websocket-server/utils';
 
 const server = createServer();
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws, req) => {
   // roomName from URL: ws://server/document-id
@@ -405,7 +409,7 @@ wss.on('connection', (ws, req) => {
 });
 
 server.listen(1234);
-// That's it — y-websocket handles all the CRDT syncing
+// That's it — the Yjs server handles all the CRDT syncing
 ```
 
 ---

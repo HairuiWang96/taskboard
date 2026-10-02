@@ -425,13 +425,14 @@ Option B: Component-level with TanStack Query
 ```typescript
 // Next.js App Router — route-level fetching (server component)
 // app/products/[id]/page.tsx
-async function ProductPage({ params }: { params: { id: string } }) {
+async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params; // params is async since Next 15
   // Fetch on the server — no loading state, no useEffect
-  const product = await api.products.getById(params.id);
+  const product = await api.products.getById(id);
   return <ProductDetail product={product} />;
 }
 
-// React Router v6 — loader pattern‼️
+// React Router (v6.4+ data mode, v7, v8) — loader pattern‼️
 // router.tsx
 {
   path: '/products/:id',
@@ -513,7 +514,8 @@ Users only download the code for the route they're on.
 ```
 
 ```typescript
-// React Router v6 — explicit route tree
+// React Router (data mode) — explicit route tree
+// (v7+: import from 'react-router'; 'react-router-dom' is only a re-export)
 // router.tsx
 const router = createBrowserRouter([
   {
@@ -555,7 +557,8 @@ CSR (Client-Side Rendering):
   - Browser downloads JS bundle, runs it, renders the page
   - Good for: dashboards, admin tools, apps behind login
   - Bad for: SEO, initial page load performance
-  - Example: plain React app (Create React App)
+  - Example: plain React app built with Vite (Create React App was
+    deprecated in 2025 — don't start new projects with it)
 
 SSR (Server-Side Rendering):
   - Server renders HTML, sends to browser, JS hydrates‼️
@@ -600,13 +603,15 @@ export const dynamic = 'force-dynamic'; // opt out of caching
 export const revalidate = 60;
 
 // Partial prerendering — static shell + dynamic content
-// (Next.js 14+)
+// (experimental in Next 14–15; in Next 16 it's part of Cache Components —
+//  enable cacheComponents: true in next.config)
 async function ProductPage({ params }) {
+  const { id } = await params;
   return (
     <div>
-      <StaticProductHeader />  {/* rendered at build time */}
+      <StaticProductHeader />  {/* part of the prerendered shell */}
       <Suspense fallback={<PriceSkeleton />}>
-        <DynamicPrice productId={params.id} />  {/* rendered per-request */}
+        <DynamicPrice productId={id} />  {/* streamed in per request */}
       </Suspense>
     </div>
   );
@@ -694,20 +699,25 @@ Why this matters:
 ```
 
 ```typescript
-// .eslintrc — enforce boundaries
-{
-  "plugins": ["boundaries"],
-  "rules": {
-    "boundaries/element-types": ["error", {
-      "default": "disallow",
-      "rules": [
-        { "from": "feature", "allow": ["shared", "app"] },
-        { "from": "shared",  "allow": [] },
-        { "from": "app",     "allow": ["feature", "shared"] },
-      ]
-    }]
-  }
-}
+// eslint.config.js — enforce boundaries
+// (flat config; the old .eslintrc format was removed in ESLint 10)
+import boundaries from 'eslint-plugin-boundaries';
+
+export default [
+  {
+    plugins: { boundaries },
+    rules: {
+      'boundaries/element-types': ['error', {
+        default: 'disallow',
+        rules: [
+          { from: 'feature', allow: ['shared', 'app'] },
+          { from: 'shared',  allow: [] },
+          { from: 'app',     allow: ['feature', 'shared'] },
+        ],
+      }],
+    },
+  },
+];
 ```
 
 ---

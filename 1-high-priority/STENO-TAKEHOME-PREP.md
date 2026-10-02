@@ -40,7 +40,9 @@ npm init -y
 npm install express dotenv
 
 # Dev dependencies
-npm install -D typescript ts-node @types/node @types/express nodemon
+npm install -D typescript tsx @types/node @types/express
+# (tsx runs TypeScript directly and has a watch mode — it replaces the older
+#  ts-node + nodemon combo, which is slower and fiddlier with ES modules)
 ```
 
 **Step 3: Create tsconfig.json**
@@ -79,7 +81,7 @@ Then edit `tsconfig.json` to these key settings:
 ```json
 {
   "scripts": {
-    "dev": "nodemon --exec ts-node src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js"
   }
@@ -701,8 +703,8 @@ Brief description of what this does and the approach you took.
 ## Setup & Running Locally
 
 ### Prerequisites
-- Node.js 18+
-- PostgreSQL 14+
+- Node.js 22+ (24 LTS recommended)
+- PostgreSQL 16+
 
 ### Installation
 \```bash
@@ -794,7 +796,7 @@ mkdir project && cd project && npm init -y
 
 # Install everything you need
 npm install express pg dotenv
-npm install -D typescript ts-node @types/node @types/express @types/pg nodemon
+npm install -D typescript tsx @types/node @types/express @types/pg
 
 # Init TypeScript‼️
 npx tsc --init
