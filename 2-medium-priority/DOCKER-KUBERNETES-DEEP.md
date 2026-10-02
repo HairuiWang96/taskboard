@@ -86,8 +86,8 @@ Docker CLI  ──→  Docker daemon (dockerd)  ──→  containerd  ──→
    The container images are the same — OCI standard.
 
 Image layers (OverlayFS):
-  ubuntu:22.04      ← base layer (read-only)
-  + node:18         ← node layer (read-only)
+  debian:bookworm   ← base layer (read-only)
+  + node:24         ← node layer (read-only)
   + npm install     ← dependencies layer (read-only)
   + COPY app/       ← app code layer (read-only)
   + container rw    ← thin writable layer per running container
@@ -109,13 +109,13 @@ This is why Docker pulls say "Already exists" for most layers.
 
 # ✗ BAD — copies all source first, then installs dependencies
 #   Any code change = reinstall all dependencies (slow!)
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /app
 COPY . .                    # changes on every commit
 RUN npm ci                  # runs every time — cache busted
 
 # ✓ GOOD — install dependencies first (only changes when package.json changes)
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /app
 COPY package.json package-lock.json ./   # only changes when deps change
 RUN npm ci                               # cached unless package*.json changed
@@ -127,13 +127,14 @@ CMD ["node", "dist/server.js"]
 
 ```dockerfile
 # Size comparison for Node.js:
-# node:18          ~950MB  — full Debian, all dev tools
-# node:18-slim     ~240MB  — Debian, minimal packages
-# node:18-alpine   ~180MB  — Alpine Linux, musl libc
-# node:18-distroless ~120MB — no shell, no package manager, hardened
+# node:24          ~1GB    — full Debian, all dev tools
+# node:24-slim     ~240MB  — Debian, minimal packages
+# node:24-alpine   ~180MB  — Alpine Linux, musl libc
+# gcr.io/distroless/nodejs24-debian12 ~130MB — no shell, no package manager, hardened
+#   (or Chainguard's node images — minimal, frequently patched)
 
 # ✓ Production: use alpine or distroless
-FROM node:18-alpine
+FROM node:24-alpine
 
 # Alpine caveat: musl libc != glibc — some native modules may fail
 # Fix: add build tools
@@ -148,13 +149,13 @@ RUN apk add --no-cache python3 make g++
 
 ```dockerfile
 # Stage 1: Install dependencies
-FROM node:18-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --only=production   # production deps only
 
 # Stage 2: Build (TypeScript compile, bundling, etc.)
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci                     # includes devDependencies for build
@@ -162,7 +163,7 @@ COPY . .
 RUN npm run build              # tsc, webpack, etc.
 
 # Stage 3: Production image — smallest possible
-FROM node:18-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 # Security: don't run as root
@@ -206,7 +207,7 @@ docker-compose*.yml
 ### Key Dockerfile instructions
 
 ```dockerfile
-FROM node:18-alpine          # base image — always pin a version tag, never :latest
+FROM node:24-alpine          # base image — always pin a version tag, never :latest
 WORKDIR /app                 # sets working directory (creates if not exists)
 COPY src/ ./src/             # copy files from host into image
 ADD archive.tar.gz /app/     # like COPY but also unpacks archives — prefer COPY
@@ -266,10 +267,10 @@ ENTRYPOINT ["/app"]
 # Final image: ~10MB vs ~400MB for the builder
 
 # Named stages — reference in docker build --target
-FROM node:18-alpine AS test
+FROM node:24-alpine AS test
 RUN npm run test
 
-FROM node:18-alpine AS production
+FROM node:24-alpine AS production
 # Only builds up to this stage:
 # docker build --target production .
 ```
@@ -396,10 +397,10 @@ RUN addgroup -S app && adduser -S app -G app
 USER app
 
 # 2. Use minimal base images (fewer packages = fewer CVEs)
-FROM node:18-alpine   # or distroless
+FROM node:24-alpine   # or distroless
 
 # 3. Pin exact versions — avoid surprise updates
-FROM node:18.19.1-alpine3.19   # exact version
+FROM node:24.21.0-alpine   # exact version (add @sha256:<digest> to pin fully)
 
 # 4. Don't bake secrets into images
 # ✗ BAD — secret ends up in image layer history
@@ -707,9 +708,23 @@ Ingress Controller: a Pod running nginx/Traefik/HAProxy/Envoy that
   watches Ingress objects and reconfigures itself when rules change.
 
 You need to install an Ingress Controller (not included in Kubernetes):
-  nginx:   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/...
   Traefik: helm install traefik traefik/traefik
   AWS:     AWS Load Balancer Controller (uses ALB natively)
+  Others:  HAProxy, Envoy-based (Contour, Envoy Gateway), F5 NGINX Ingress
+  ‼️ The community ingress-nginx controller was RETIRED (announced Nov 2025,
+     maintenance ended March 2026) — no more security fixes. It was the most
+     common controller for years, so you'll still meet it; plan a migration.
+
+‼️ Gateway API — the successor to Ingress:
+  Ingress only covers basic host/path HTTP routing; everything else lived in
+  controller-specific annotations. Gateway API (GA since 2023) splits it into
+  roles and standard resources:
+    GatewayClass — which implementation (set up by the platform team)
+    Gateway      — the listener: ports, TLS, hostnames (platform team)
+    HTTPRoute    — routing rules for one app (app team) — also GRPCRoute,
+                   TLSRoute; header matching, traffic splitting, retries built in
+  New clusters should prefer Gateway API; Ingress still works and isn't
+  going away, but gets no new features.
 ```
 
 ```yaml
@@ -842,7 +857,7 @@ envFrom:
 # Don't store secrets in Git. Use AWS Secrets Manager / Vault / GCP Secret Manager.
 # External Secrets Operator syncs them into K8s Secrets automatically.
 
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1   # v1beta1 is deprecated in current ESO releases
 kind: ExternalSecret
 metadata:
   name: api-secrets
@@ -1630,6 +1645,8 @@ With Helm:
 Helm 3 vs Helm 2:
   Helm 2 required "Tiller" (a server-side component) — security risk.
   Helm 3 is client-only — talks directly to apiserver with your kubeconfig credentials.
+  Helm 4 (Nov 2025) keeps that model and adds server-side apply, WebAssembly
+  plugins and better OCI registry support; most Helm 3 charts work unchanged.
 ```
 
 ### "How would you achieve zero-downtime deployments in Kubernetes?"

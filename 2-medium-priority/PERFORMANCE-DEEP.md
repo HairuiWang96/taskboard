@@ -10,9 +10,12 @@ LCP — Largest Contentful Paint    → loading performance
       What: time until the largest visible element is rendered (hero image, h1)
       Fix: preload key resources, optimize images, reduce TTFB
 
-FID → INP (Interaction to Next Paint) → interactivity
+INP — Interaction to Next Paint      → responsiveness
+      (replaced FID as a Core Web Vital in March 2024)
       Good: < 200ms | Needs work: 200–500ms | Poor: > 500ms
-      What: delay between user interaction and browser response
+      What: time from a click/tap/keypress until the next frame is painted,
+            measured across ALL interactions (FID only measured the input
+            delay of the FIRST one — which is why it was easy to pass)
       Fix: break up long tasks, defer non-critical JS, use web workers
 
 CLS — Cumulative Layout Shift       → visual stability

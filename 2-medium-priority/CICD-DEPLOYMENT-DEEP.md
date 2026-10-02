@@ -115,7 +115,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -124,9 +124,9 @@ jobs:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'           # cache node_modules based on package-lock.json
@@ -165,8 +165,8 @@ jobs:
       JWT_SECRET: test-secret-at-least-32-characters-long
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -175,7 +175,7 @@ jobs:
       - run: npm run db:migrate    # run migrations on test DB
       - run: npm run test:coverage  # vitest with coverage
 
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
@@ -191,7 +191,7 @@ jobs:
       packages: write  # to push to GHCR
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v3  # enables cache, multi-platform
 
@@ -298,12 +298,12 @@ jobs:
   test:
     strategy:
       matrix:
-        node-version: [18, 20, 22]
+        node-version: [22, 24, 26]   # supported LTS lines + Current (Node 18/20 are EOL)
         os: [ubuntu-latest, windows-latest]
       fail-fast: false  # don't cancel all if one fails
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
 ```
@@ -316,7 +316,7 @@ jobs:
 
 ```dockerfile
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -331,7 +331,7 @@ RUN npm run build                # compile TypeScript → dist/
 
 
 # Dependencies stage — only production deps
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 
 WORKDIR /app
 COPY package*.json ./
@@ -339,7 +339,7 @@ RUN npm ci --omit=dev            # production deps only
 
 
 # Final stage — minimal image
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 
 # Security: don't run as root
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
@@ -403,7 +403,9 @@ Dockerfile*
 
 ```yaml
 # docker-compose.yml
-version: '3.9'
+# ‼️ No top-level `version:` key — Compose v2 ignores it and warns that it's
+#    obsolete. Run with `docker compose` (space); the old `docker-compose`
+#    binary is end-of-life.
 
 services:
   app:

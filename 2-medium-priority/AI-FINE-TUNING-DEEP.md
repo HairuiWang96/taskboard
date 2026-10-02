@@ -2,6 +2,10 @@
 
 Fine-tuning adapts a pre-trained model to a specific task or style by continuing to train it on your own data. This is different from prompt engineering (no training) and RAG (no training, just retrieval). As an AI engineer, you rarely train from scratch — you fine-tune existing open source models.
 
+> Libraries and APIs reviewed October 2026. Frontier models have become good enough at
+> following instructions that fine-tuning is needed less often than in 2023–24 — but it's
+> still the tool for making a small, cheap model excellent at one narrow task.
+
 ---
 
 ## When to Fine-Tune (and When Not To)
@@ -13,7 +17,8 @@ DO fine-tune when:
   - You need the model to adopt a specific style or persona consistently
   - You want to make a smaller model perform like a larger one on your specific task
   - Prompt engineering has hit its ceiling and you have enough labelled data (500+)
-  - Cost at scale: a fine-tuned 7B model can match a prompted 70B model at 10x lower cost
+  - Cost at scale: a fine-tuned small model (4-14B) can match a prompted frontier
+    model on ONE narrow task at a fraction of the cost and latency
 
 DO NOT fine-tune when:
   - Prompt engineering can achieve the goal (try this first — always)
@@ -36,7 +41,8 @@ The common mistake:
 Full fine-tuning:
   Update all model weights on your dataset.
   Best quality, but requires significant GPU memory (same as training).
-  A 7B model at fp16 needs ~14GB VRAM just to load, ~56GB for full training.
+  A 7B model at bf16 needs ~14GB VRAM just to load, and 100GB+ for full training
+  (gradients + Adam optimizer states add ~12-16 bytes per parameter).
   Not practical for most teams without serious infrastructure.
 
 LoRA (Low-Rank Adaptation) — the standard approach:
@@ -48,14 +54,43 @@ LoRA (Low-Rank Adaptation) — the standard approach:
 
 QLoRA (Quantised LoRA) — the practical approach:
   Load the base model in 4-bit quantisation (saves 75% VRAM) + LoRA adapters.
-  Fine-tune a 7B model on a single consumer GPU (RTX 3090/4090, 24GB VRAM).
-  Fine-tune a 13B model on a single A100 (80GB VRAM).
+  Fine-tune a 7-14B model on a single consumer GPU (24GB VRAM).
+  Fine-tune a ~70B model on a single 80GB GPU (A100/H100).
   Very slight quality reduction vs full LoRA — usually acceptable.
   This is what most teams use in practice.
 
 PEFT (Parameter-Efficient Fine-Tuning):
   Umbrella term for LoRA, QLoRA, and similar methods.
   HuggingFace PEFT library implements them all.
+
+Tooling most teams actually use:
+  Hugging Face TRL + PEFT — the reference stack (example below)
+  Unsloth — faster, lower-memory LoRA/QLoRA training; popular on one GPU
+  Axolotl / LLaMA-Factory — config-file driven training, many models
+  Managed: Together, Fireworks, OpenAI, Google Vertex, AWS Bedrock/SageMaker
+```
+
+### Beyond supervised fine-tuning (SFT)
+
+```text
+SFT (everything above): show the model input → ideal output pairs.
+
+Preference tuning (DPO and variants):
+  Show the model PAIRS of responses — chosen vs rejected — and train it to
+  prefer the better one. Good for tone, helpfulness, "don't do X" behaviour
+  that's hard to express as a single ideal answer.
+
+Reinforcement fine-tuning (GRPO, OpenAI RFT):
+  The model generates answers, a GRADER scores them (unit tests, exact
+  match, a rubric, an LLM judge), and training pushes toward higher scores.
+  This is how 2025-era "reasoning" models were trained. Works when you can
+  check answers automatically but can't easily write ideal ones.
+
+Distillation:
+  Generate outputs from a big model, fine-tune a small model to imitate
+  them. The most common real-world use of fine-tuning today: frontier-model
+  quality on one task at small-model cost. (Check the big model's terms of
+  service — some forbid training competing models on their outputs.)
 ```
 
 ---
@@ -73,7 +108,8 @@ from datasets import load_dataset
 import torch
 
 # Step 1: Load base model in 4-bit (QLoRA)
-model_name = "meta-llama/Llama-3.1-8B-Instruct"
+# (Qwen3-8B used as a stable example ID — pick a current model for real work)
+model_name = "Qwen/Qwen3-8B"
 
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
@@ -89,13 +125,12 @@ model = AutoModelForCausalLM.from_pretrained(
     trust_remote_code=True,
 )
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token
 
 # Step 2: Configure LoRA adapters
 lora_config = LoraConfig(
     r=16,           # rank — higher = more parameters = better quality but more memory
     lora_alpha=32,  # scaling factor — typically 2x rank
-    target_modules=["q_proj", "v_proj", "k_proj", "o_proj"],  # which layers to adapt
+    target_modules="all-linear",  # adapt every linear layer — the usual default now
     lora_dropout=0.05,
     bias="none",
     task_type="CAUSAL_LM",
@@ -107,38 +142,35 @@ model.print_trainable_parameters()
 # Output: trainable params: 41,943,040 || all params: 8,072,212,480 || trainable%: 0.52
 
 # Step 3: Prepare dataset
-# Format: list of {"text": "full conversation string"} or use chat format
+# Use the conversational "messages" format — TRL applies the model's own chat
+# template for you. ‼️ Hand-writing template strings (<|start_header_id|>...)
+# is the classic bug: one wrong token and quality quietly drops.
+#   train.jsonl lines: {"messages": [{"role": "system", ...}, {"role": "user", ...},
+#                                    {"role": "assistant", ...}]}
 dataset = load_dataset("json", data_files="train.jsonl", split="train")
-
-# Your training data format (Llama 3 chat template)
-def format_example(example):
-    return {
-        "text": f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-You are a customer support agent for Acme Corp.<|eot_id|>
-<|start_header_id|>user<|end_header_id|>
-{example['user_message']}<|eot_id|>
-<|start_header_id|>assistant<|end_header_id|>
-{example['assistant_response']}<|eot_id|>"""
-    }
-
-dataset = dataset.map(format_example)
+split = dataset.train_test_split(test_size=0.1, seed=42)  # keep a validation set
 
 # Step 4: Train
 trainer = SFTTrainer(
     model=model,
-    train_dataset=dataset,
+    processing_class=tokenizer,
+    train_dataset=split["train"],
+    eval_dataset=split["test"],
     args=SFTConfig(
         output_dir="./fine-tuned-model",
         num_train_epochs=3,
         per_device_train_batch_size=4,
         gradient_accumulation_steps=4,   # effective batch size = 4 * 4 = 16
         learning_rate=2e-4,
-        fp16=True,
+        bf16=True,                       # match bnb_4bit_compute_dtype
         logging_steps=50,
+        eval_strategy="epoch",           # watch validation loss for overfitting
         save_strategy="epoch",
         warmup_ratio=0.05,
         lr_scheduler_type="cosine",
-        max_seq_length=2048,
+        max_length=2048,                 # was max_seq_length in older TRL versions
+        # assistant_only_loss=True trains only on assistant turns — needs a chat
+        # template that marks them; check your model before enabling it
     ),
 )
 
@@ -169,7 +201,7 @@ Data quality checklist:
   [ ] Verified by domain experts for accuracy (not just grammatically OK)
 
 Generating training data with a stronger model (synthetic data):
-  Use GPT-4o or Claude claude-opus-4-6 to generate training examples for a smaller model.
+  Use a frontier model (Claude Opus, GPT) to generate training examples for a smaller model.
   "Here are 5 examples of ideal customer support responses.
    Generate 50 more examples in the same style for these customer questions: ..."
   
@@ -218,13 +250,17 @@ const file = await openai.files.create({
 });
 
 // Step 2: Create fine-tuning job
+// ‼️ Only some models can be fine-tuned, and the list changes — check OpenAI's
+//    fine-tuning docs for the current ones (older gpt-3.5 / gpt-4o-mini jobs
+//    are what most tutorials show).
 const job = await openai.fineTuning.jobs.create({
   training_file: file.id,
-  model: 'gpt-4o-mini',   // or gpt-3.5-turbo
-  hyperparameters: {
-    n_epochs: 3,
-    batch_size: 'auto',
-    learning_rate_multiplier: 'auto',
+  model: FINE_TUNABLE_MODEL,
+  method: {
+    type: 'supervised',   // also 'dpo' (preference pairs) and 'reinforcement' (graders)
+    supervised: {
+      hyperparameters: { n_epochs: 3, batch_size: 'auto', learning_rate_multiplier: 'auto' },
+    },
   },
 });
 
@@ -235,7 +271,7 @@ const status = await openai.fineTuning.jobs.retrieve(job.id);
 
 // Step 4: Use the fine-tuned model
 const response = await openai.chat.completions.create({
-  model: status.fine_tuned_model!, // e.g. 'ft:gpt-4o-mini:my-org:custom-model:abc123'
+  model: status.fine_tuned_model!, // e.g. 'ft:<base-model>:my-org:custom-model:abc123'
   messages: [{ role: 'user', content: 'Classify this support ticket...' }],
 });
 ```
@@ -249,8 +285,8 @@ Training data format for OpenAI:
 ### Together AI fine-tuning (open source models)
 
 ```typescript
-// Together AI lets you fine-tune Llama, Mistral, and others
-// via API — no GPU infrastructure needed
+// Together AI lets you fine-tune open models (Llama, Qwen, Mistral, and others)
+// via API — no GPU infrastructure needed. Check their list for supported IDs.
 
 import Together from 'together-ai';
 
@@ -265,8 +301,9 @@ const file = await together.files.upload({
 // Create fine-tune job
 const job = await together.fineTuning.create({
   training_file: file.id,
-  model: 'meta-llama/Llama-3.1-8B-Instruct',
+  model: 'Qwen/Qwen3-8B',
   n_epochs: 3,
+  lora: true,
   suffix: 'my-custom-model',
 });
 
@@ -320,7 +357,8 @@ lora_alpha: typically 2x rank (alpha=32 for r=16)
 
 target_modules: which layers to apply LoRA to
   Minimal: ["q_proj", "v_proj"] — attention query and value
-  Comprehensive: all attention layers + MLP (better quality, more parameters)
+  Comprehensive: "all-linear" — all attention + MLP layers (better quality;
+  the common default today)
 
 lora_dropout: 0.05–0.1
   Regularisation. Higher for small datasets.
@@ -342,8 +380,8 @@ Epochs: 1-5
 
 ### "What is LoRA and why is it preferred over full fine-tuning?"
 
-> LoRA (Low-Rank Adaptation) adds small trainable "adapter" matrices alongside the frozen original model weights. Instead of updating all 7 billion parameters of a 7B model, you only train a small fraction (~0.5%) in these adapter layers. The insight: the weight updates needed for task adaptation have low intrinsic rank — they can be well approximated by low-rank matrices. Benefits: 10-30% of the VRAM of full fine-tuning, fast to train, easy to swap (the base model stays fixed, you just swap adapters), and avoids catastrophic forgetting of general capabilities. QLoRA adds 4-bit quantisation to the base model, making it possible to fine-tune a 7B model on a single consumer GPU (24GB VRAM).
+> LoRA (Low-Rank Adaptation) adds small trainable "adapter" matrices alongside the frozen original model weights. Instead of updating all 7 billion parameters of a 7B model, you only train a small fraction (~0.5%) in these adapter layers. The insight: the weight updates needed for task adaptation have low intrinsic rank — they can be well approximated by low-rank matrices. Benefits: 10-30% of the VRAM of full fine-tuning, fast to train, easy to swap (the base model stays fixed, you just swap adapters), and avoids catastrophic forgetting of general capabilities. QLoRA adds 4-bit quantisation to the base model, making it possible to fine-tune a 7–14B model on a single consumer GPU (24GB VRAM), or a 70B model on one 80GB GPU.
 
 ### "How do you prepare training data for fine-tuning?"
 
-> Data quality is the dominant factor — better data beats more data. The process: start by collecting real examples from your production logs (user queries + ideal responses). If you don't have enough, use a strong model (Claude Opus, GPT-4o) to generate synthetic examples, but always review them. Clean the data: remove duplicates, fix inconsistencies, ensure every example is something you'd be happy to ship. Format to the model's expected chat template. Split 80/10/10 into train/validation/test — never evaluate on training data. Aim for 1000+ diverse examples covering the full input distribution. Common mistake: generating lots of similar examples. Diversity across topics, difficulty levels, and edge cases matters more than volume.
+> Data quality is the dominant factor — better data beats more data. The process: start by collecting real examples from your production logs (user queries + ideal responses). If you don't have enough, use a strong model (Claude Opus, GPT) to generate synthetic examples, but always review them. Clean the data: remove duplicates, fix inconsistencies, ensure every example is something you'd be happy to ship. Format to the model's expected chat template. Split 80/10/10 into train/validation/test — never evaluate on training data. Aim for 1000+ diverse examples covering the full input distribution. Common mistake: generating lots of similar examples. Diversity across topics, difficulty levels, and edge cases matters more than volume.

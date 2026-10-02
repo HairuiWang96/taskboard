@@ -2,6 +2,9 @@
 
 Build tools transform your source code (TypeScript, JSX, modern JS) into something browsers can run. Senior engineers are expected to understand what's happening at build time — not just "it works" but why, and what to do when it doesn't.
 
+> Reviewed October 2026 (Vite 8, webpack 5, Next.js 16). The big shift of 2025–26: build
+> tooling moved to Rust — Rolldown, Oxc, Rspack, Turbopack, Lightning CSS.
+
 ---
 
 ## The Modern Build Pipeline
@@ -37,8 +40,11 @@ Development mode:
   - Hot Module Replacement (HMR) only replaces the changed module
 
 Production mode:
-  - Uses Rollup under the hood to bundle everything
-  - Tree shaking, code splitting, minification
+  - Vite 8 (March 2026) bundles with Rolldown — a Rust rewrite of Rollup with
+    a Rollup-compatible plugin API. 10-30x faster builds than Vite 7.
+    (Vite 2–7 used Rollup for builds and esbuild for transforms; Vite 8
+    replaced both with Rolldown + Oxc.)
+  - Tree shaking, code splitting, minification (Oxc minifier, Lightning CSS)
   - Output is optimised for production
 
 Why Vite is faster than Webpack in dev:
@@ -68,16 +74,22 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,      // source maps for debugging
-    minify: 'esbuild',    // fast minification
-    target: 'es2020',     // minimum browser support level
+    // minify: Oxc by default in Vite 8 (was esbuild) — usually leave it alone
+    // target: defaults to "Baseline Widely Available" browsers — set it only
+    //         if you must support older browsers
 
-    rollupOptions: {
+    // ‼️ Vite 8: rollupOptions → rolldownOptions (the old name still works via
+    //    a compatibility layer). The object form of manualChunks was removed;
+    //    use Rolldown's codeSplitting groups instead.
+    rolldownOptions: {
       output: {
         // Manual chunk splitting — control what goes into each bundle
-        manualChunks: {
-          vendor: ['react', 'react-dom'],           // separate vendor chunk (cached longer)
-          router: ['react-router-dom'],
-          query: ['@tanstack/react-query'],
+        codeSplitting: {
+          groups: [
+            { name: 'react-vendor', test: /node_modules[\\/](react|react-dom)[\\/]/, priority: 20 },
+            { name: 'router', test: /node_modules[\\/]react-router/, priority: 15 },
+            { name: 'vendor', test: /node_modules/, priority: 10 }, // everything else (cached longer)
+          ],
         },
       },
     },
@@ -93,7 +105,7 @@ export default defineConfig({
     },
   },
 
-  // Optimise dependencies — pre-bundle node_modules with esbuild
+  // Optimise dependencies — pre-bundle node_modules (Rolldown in Vite 8, esbuild before)
   optimizeDeps: {
     include: ['lodash-es', 'date-fns'],
   },
@@ -104,7 +116,12 @@ export default defineConfig({
 
 ## Webpack — The Veteran
 
-Webpack is still widely used (Create React App, older projects, complex enterprise setups). Understanding it helps when you're maintaining existing projects.
+Webpack is still widely used (older projects, apps created with the now-deprecated Create React App, complex enterprise setups). Understanding it helps when you're maintaining existing projects.
+
+‼️ Migrating off webpack without rewriting your config? **Rspack** is a Rust
+reimplementation of webpack's API (same config format, most loaders and plugins
+work) and is typically 5-10x faster — the low-risk upgrade path for big webpack
+apps. **Turbopack** is Next.js's bundler (default since Next 16).
 
 ### Core concepts
 
@@ -202,7 +219,7 @@ module.exports = (env, argv) => {
 
 ## esbuild — The Speed Benchmark
 
-esbuild is 10-100x faster than Webpack or Rollup. Written in Go. Used internally by Vite for dependency pre-bundling and minification.
+esbuild is 10-100x faster than Webpack or Rollup. Written in Go. Vite used it for transforms, dependency pre-bundling and minification until Vite 8 replaced it with Rolldown/Oxc — but it remains widely used directly (library bundlers, server code, tsx, many CLIs).
 
 ```javascript
 // esbuild — direct API usage
@@ -394,7 +411,7 @@ In Vite:
 
 ## Module Federation
 
-Module Federation (Webpack 5, Vite federation plugin) lets multiple separately-deployed apps share code at runtime — the foundation of micro-frontends.
+Module Federation (Webpack 5, Rspack, and Vite via the Module Federation 2.0 plugins in `@module-federation/*`) lets multiple separately-deployed apps share code at runtime — the foundation of micro-frontends.
 
 ```javascript
 // Host app (shell) — consumes remote modules
@@ -406,7 +423,7 @@ new ModuleFederationPlugin({
     catalog:  'catalog@https://catalog.example.com/remoteEntry.js',
   },
   shared: {
-    react: { singleton: true, requiredVersion: '^18.0.0' },
+    react: { singleton: true, requiredVersion: '^19.0.0' },
     'react-dom': { singleton: true },
   },
 });
@@ -471,11 +488,43 @@ interface ImportMetaEnv {
 
 ---
 
+## The 2026 Tooling Landscape
+
+```text
+Bundlers / dev servers
+  Vite 8 (Rolldown)   default for SPAs and most frameworks (React Router,
+                      SvelteKit, Nuxt, Astro, SolidStart, Vitest)
+  Turbopack           Next.js's bundler — default since Next 16
+  Rspack / Rsbuild    webpack-compatible, Rust — migration path from webpack
+  webpack 5           legacy and complex enterprise configs
+  esbuild / tsdown    libraries, CLIs, server bundles
+
+Compilers / transforms
+  Oxc                 parser, transformer, minifier, linter (oxlint) — Rust
+  SWC                 Rust transformer used by Next.js, Rspack, Jest setups
+  Babel               still around for custom plugins; dropped from Vite's
+                      React plugin in v6
+
+Linting / formatting
+  ESLint 10 (flat config only), Biome (lint + format, one Rust tool),
+  oxlint (very fast, ESLint-compatible rules), Prettier
+
+CSS
+  Lightning CSS       Vite 8's default CSS minifier; Tailwind v4 is built on
+                      its own Rust engine
+
+Interview angle: you don't need to know every tool — know WHY the shift
+happened (JS-based tools hit a speed ceiling on large codebases) and the
+trade-off (Rust tools are faster but plugins are harder to write).
+```
+
+---
+
 ## Common Interview Questions
 
 ### "What is the difference between Vite and Webpack?"
 
-> The key difference is in how they handle development. Webpack bundles all your files before serving — for large projects this can take 30-60 seconds on cold start. Vite skips bundling entirely in development: it uses native ES modules so the browser imports files directly, and Vite only transforms files (TypeScript → JS, JSX → JS) when the browser requests them. The result is a dev server that starts in under 300ms regardless of project size, and HMR that replaces only the changed module. For production builds, Vite uses Rollup (same quality output as Webpack). Choose Vite for new projects. Stick with Webpack if you're on an existing project with a complex config you'd need to migrate.
+> The key difference is in how they handle development. Webpack bundles all your files before serving — for large projects this can take 30-60 seconds on cold start. Vite skips bundling entirely in development: it uses native ES modules so the browser imports files directly, and Vite only transforms files (TypeScript → JS, JSX → JS) when the browser requests them. The result is a dev server that starts in under 300ms regardless of project size, and HMR that replaces only the changed module. For production builds, Vite 8 uses Rolldown, a Rust bundler compatible with Rollup's plugin API, so builds are fast too. Choose Vite for new projects. On an existing webpack project with a complex config, consider Rspack — it keeps the webpack config format but builds much faster.
 
 ### "What is tree shaking and what can break it?"
 
@@ -487,4 +536,4 @@ interface ImportMetaEnv {
 
 ### "What is code splitting and how do you implement it?"
 
-> Code splitting divides your bundle into smaller chunks that load on demand instead of upfront. The most important type is route-based splitting — each route gets its own chunk, loaded only when the user navigates there. In React: wrap each lazy-loaded component with `React.lazy()` and `Suspense`. The build tool (Vite/Webpack) automatically creates a separate chunk for each `import()` call. Beyond routes, you can split heavy components (a PDF viewer, map, or chart library) that aren't needed on initial render. Vite also supports manual chunk configuration via `rollupOptions.output.manualChunks` — useful for separating vendor code (React, React-DOM) which changes less frequently and can be cached longer than your app code.
+> Code splitting divides your bundle into smaller chunks that load on demand instead of upfront. The most important type is route-based splitting — each route gets its own chunk, loaded only when the user navigates there. In React: wrap each lazy-loaded component with `React.lazy()` and `Suspense`. The build tool (Vite/Webpack) automatically creates a separate chunk for each `import()` call. Beyond routes, you can split heavy components (a PDF viewer, map, or chart library) that aren't needed on initial render. Vite also supports manual chunk configuration — `rolldownOptions.output.codeSplitting` groups in Vite 8 (`rollupOptions.output.manualChunks` in older versions) — useful for separating vendor code (React, React-DOM) which changes less frequently and can be cached longer than your app code.

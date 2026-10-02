@@ -4,6 +4,10 @@
 
 > Covers GraphQL fundamentals, SDL, resolvers, the N+1 problem with DataLoader fix,
 > Apollo Server/Client, caching, federation, security, performance, and interview Q&A.
+>
+> Code updated for Apollo Server 5 and Apollo Client 4 (current in October 2026). Apollo
+> Server 4 reached end of life in January 2026; Client 4 moved the React hooks to
+> `@apollo/client/react` — most tutorials online still show the older imports.
 
 ---
 
@@ -503,7 +507,8 @@ Common pub/sub backends:
 // Using Apollo Server with graphql-ws (the modern WS library)
 
 const { PubSub } = require('graphql-subscriptions');
-const pubsub = new PubSub();
+const pubsub = new PubSub(); // ‼️ in-memory: single server only — use a Redis-backed
+                             //    PubSub when you run more than one instance
 
 // ── SDL ──
 const typeDefs = `
@@ -517,8 +522,9 @@ const Subscription = {
   messageAdded: {
     // subscribe returns an AsyncIterator — Apollo Server calls next() on it
     // when new events arrive and sends the value to the client
+    // (graphql-subscriptions v3 renamed asyncIterator → asyncIterableIterator)
     subscribe: (root, { channelId }) =>
-      pubsub.asyncIterator([`MESSAGE_ADDED_${channelId}`]),
+      pubsub.asyncIterableIterator([`MESSAGE_ADDED_${channelId}`]),
 
     // Optional resolve fn to transform the event payload
     resolve: (payload) => payload.messageAdded,
@@ -541,7 +547,8 @@ const Mutation = {
 ### Client-side subscription (Apollo Client)
 
 ```jsx
-import { useSubscription, gql } from '@apollo/client';
+import { useSubscription } from '@apollo/client/react';
+import { gql } from '@apollo/client';
 
 const MESSAGE_ADDED = gql`
   subscription OnMessageAdded($channelId: ID!) {
@@ -705,7 +712,9 @@ DO NOT put per-field state in context — resolvers should be stateless.
 
 ```js
 const { ApolloServer } = require('@apollo/server');
-const { expressMiddleware } = require('@apollo/server/express4');
+// Apollo Server 5: the Express integration is a separate package
+// (Apollo Server 4 imported it from '@apollo/server/express4')
+const { expressMiddleware } = require('@as-integrations/express5');
 const jwt = require('jsonwebtoken');
 const { createLoaders } = require('./loaders');
 const db = require('./db');
@@ -1020,7 +1029,7 @@ const resolvers = {
   },
 };
 
-// Apollo Server 4 error formatting
+// Apollo Server 4/5 error formatting
 const server = new ApolloServer({
   typeDefs,
   resolvers,
@@ -1158,9 +1167,8 @@ const resolvers = {
 const express = require('express');
 const http    = require('http');
 const cors    = require('cors');
-const { json } = require('body-parser');
 const { ApolloServer } = require('@apollo/server');
-const { expressMiddleware } = require('@apollo/server/express4');
+const { expressMiddleware } = require('@as-integrations/express5'); // AS5 + Express 5
 const { ApolloServerPluginDrainHttpServer } = require('@apollo/server/plugin/drainHttpServer');
 const jwt = require('jsonwebtoken');
 const db  = require('./db');
@@ -1194,7 +1202,7 @@ async function startServer() {
   app.use(
     '/graphql',
     cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') }),
-    json(),
+    express.json(),   // built-in body parser — no body-parser package needed
     expressMiddleware(server, {
       context: async ({ req }) => {
         // Authenticate
@@ -1279,7 +1287,7 @@ module.exports = { typeDefs };
 
 ```jsx
 // src/apolloClient.js
-import { ApolloClient, InMemoryCache, ApolloProvider, HttpLink, split } from '@apollo/client';
+import { ApolloClient, ApolloLink, InMemoryCache, HttpLink } from '@apollo/client';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
 import { getMainDefinition } from '@apollo/client/utilities';
@@ -1293,7 +1301,7 @@ const wsLink = new GraphQLWsLink(
 );
 
 // Route operations to the correct link based on operation type
-const splitLink = split(
+const splitLink = ApolloLink.split(
   ({ query }) => {
     const def = getMainDefinition(query);
     return def.kind === 'OperationDefinition' && def.operation === 'subscription';
@@ -1308,7 +1316,7 @@ export const client = new ApolloClient({
 });
 
 // src/index.jsx
-import { ApolloProvider } from '@apollo/client';
+import { ApolloProvider } from '@apollo/client/react'; // Apollo Client 4 — React exports live here
 import { client } from './apolloClient';
 
 root.render(
@@ -1321,7 +1329,8 @@ root.render(
 ### useQuery
 
 ```jsx
-import { useQuery, gql } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
+import { gql } from '@apollo/client';
 
 const GET_USERS = gql`
   query GetUsers($role: Role) {
@@ -1356,7 +1365,8 @@ function UserList({ role }) {
 ### useMutation
 
 ```jsx
-import { useMutation, gql } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
+import { gql } from '@apollo/client';
 
 const CREATE_USER = gql`
   mutation CreateUser($input: CreateUserInput!) {
@@ -1879,7 +1889,7 @@ const client = new ApolloClient({
 
 // Apollo Server APQ setup
 const { ApolloServerPluginLandingPageLocalDefault } = require('@apollo/server/plugin/landingPage/default');
-// APQ is enabled by default in Apollo Server 4 with an in-memory cache.
+// APQ is enabled by default in Apollo Server 4+ with an in-memory cache.
 // For production, use a shared Redis cache:
 const { KeyvAdapter } = require('@apollo/utils.keyvadapter');
 const Keyv = require('keyv');

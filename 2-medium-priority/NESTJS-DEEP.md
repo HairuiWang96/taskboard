@@ -3346,16 +3346,33 @@ export class AddUserRole1730000000000 implements MigrationInterface {
 
 ## 17. Persistence — Prisma
 
+```text
+‼️ PRISMA 7 (Nov 2025) changed setup — most tutorials show Prisma 5/6:
+  - The client is pure TypeScript (no Rust query engine) and connects
+    through a DRIVER ADAPTER: @prisma/adapter-pg for Postgres
+  - The `datasources` / `datasourceUrl` constructor options were removed;
+    the CLI reads the URL from prisma.config.ts, the app passes it to the adapter
+  - Generator is `provider = "prisma-client"` with a REQUIRED `output`, and
+    you import from that path (e.g. '../generated/prisma/client'), not
+    '@prisma/client'
+  - The old $use() middleware API is gone — use Client Extensions
+```
+
 ```typescript
-// ── PrismaService ─────────────────────────────────────────────────────────
+// ── PrismaService (Prisma 7) ──────────────────────────────────────────────
+import { PrismaClient, Prisma } from '../generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+
 @Injectable()
 export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
+  private readonly logger = new Logger(PrismaService.name);
+
   constructor(config: ConfigService) {
     super({
-      datasources: { db: { url: config.getOrThrow('DATABASE_URL') } },
+      adapter: new PrismaPg({ connectionString: config.getOrThrow('DATABASE_URL') }),
       // Emitting as events (rather than 'stdout') lets you route query logs
       // into your real logger with correlation ids attached.
       log: [
@@ -3459,9 +3476,9 @@ export class UsersService {
 // ── Typed results without hand-written interfaces ─────────────────────────
 // Prisma generates the exact return type of a query shape, so your DTOs stay
 // in sync with the schema automatically.
-const userWithPosts = Prisma.validator<Prisma.UserDefaultArgs>()({
+const userWithPosts = {
   include: { posts: true },
-});
+} satisfies Prisma.UserDefaultArgs; // (older code uses Prisma.validator<...>() for this)
 export type UserWithPosts = Prisma.UserGetPayload<typeof userWithPosts>;
 ```
 

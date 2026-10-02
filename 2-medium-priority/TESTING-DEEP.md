@@ -486,7 +486,7 @@ describe('TaskForm', () => {
 // src/test/renderWithProviders.tsx — a custom render wrapper
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router'; // 'react-router-dom' before v7
 import { AuthProvider } from '../contexts/AuthContext';
 
 function createTestQueryClient() {

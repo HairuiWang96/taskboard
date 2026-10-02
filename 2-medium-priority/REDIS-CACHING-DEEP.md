@@ -4,6 +4,24 @@
 
 > Covers Redis internals, all data structures, caching patterns, eviction policies, rate limiting, pub/sub, distributed locking, cluster/sentinel, persistence, transactions, and Node.js patterns with ioredis.
 
+```text
+‼️ THE 2024–26 LANDSCAPE — worth knowing before an infrastructure discussion
+
+  Licensing: in 2024 Redis moved from the BSD licence to source-available
+  licences (RSAL/SSPL). Redis 8 (2025) added AGPLv3 as an option and bundled
+  the former "Redis Stack" modules (JSON, Search, time series, vector sets).
+
+  Valkey: the Linux Foundation fork of Redis 7.2, created in response.
+  Same commands and protocol — existing clients work. AWS ElastiCache and
+  Google Memorystore now lead with Valkey (and price it lower).
+  In interviews, "Redis" covers both.
+
+  Node.js clients: ioredis (used in this file) is stable but in best-effort
+  maintenance; Redis recommends node-redis (`redis` package) for new
+  projects. The commands are the same — mostly the method style differs
+  (redis.hGet vs redis.hget, an options object vs positional 'EX', 60).
+```
+
 ---
 
 ## Table of Contents
@@ -1012,17 +1030,15 @@ async function getStaleWhileRevalidate(key, fetchFn, ttl = 3600, staleTTL = 60) 
 //   - Multiple server instances can't share session state (sticky sessions needed)
 //   - Redis solves both: persistent, shareable across instances
 
-// Install: npm install express-session connect-redis ioredis
+// Install: npm install express-session connect-redis redis
 
-const express      = require('express');
-const session      = require('express-session');
-const { createClient } = require('redis');
-// connect-redis v7+ uses the official 'redis' client; for ioredis use wrapper
+const express          = require('express');
+const session          = require('express-session');
+const { RedisStore }   = require('connect-redis'); // named export (v8+; older: require('connect-redis').default)
+const { createClient } = require('redis');         // official node-redis client (ioredis also works)
 
-// Using ioredis with connect-redis
-const RedisStore   = require('connect-redis').default;
-const Redis        = require('ioredis');
-const redisClient  = new Redis({ host: 'localhost', port: 6379 });
+const redisClient = createClient({ url: 'redis://localhost:6379' });
+await redisClient.connect(); // node-redis needs an explicit connect
 
 const app = express();
 

@@ -199,6 +199,11 @@ localStorage     ~5-10MB     Sync    JS only      Never          Until cleared
 sessionStorage   ~5-10MB     Sync    JS only      Never          Until tab closes
 IndexedDB        Hundreds MB Async   JS only      Never          Until cleared
 Cache API        Large       Async   JS/SW        Never          Until cleared
+
+‼️ "Until cleared" is not a guarantee: browsers evict storage under disk pressure,
+   and Safari deletes script-writable storage (localStorage, IndexedDB) after 7 days
+   without a user visit. Treat client storage as a cache — see
+   BROWSER-COMPATIBILITY-DEEP.md §15.
 ```
 
 ### When to Use Each

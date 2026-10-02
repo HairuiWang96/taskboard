@@ -2,6 +2,9 @@
 
 LLM applications fail in ways traditional software doesn't — hallucinations, prompt regressions, latency spikes from token growth, and silent quality degradation. Observability tells you when things go wrong before your users do.
 
+> Tool APIs reviewed October 2026. The tooling market moves fast — the concepts (traces,
+> spans, evals, cost per feature) are what interviewers care about.
+
 ---
 
 ## Why LLM Observability Is Different
@@ -23,7 +26,8 @@ LLM observability challenges:
 What you need to track:
   Inputs and outputs:    every prompt, every response, every tool call
   Performance:          latency, TTFT (time to first token), tokens per second
-  Cost:                 tokens used, model, cost per call, cost per user
+  Cost:                 tokens used (incl. thinking and cached tokens), model,
+                        cost per call, cost per user
   Quality:              accuracy, relevance, format compliance, user feedback
   Errors:               failures, retries, timeouts, guardrail triggers
   Traces:               full execution path for multi-step agents
@@ -62,7 +66,10 @@ Latency:
 
 Cost:
   Input tokens / output tokens per call
-  Cost per call, per user, per feature
+  ‼️ Thinking tokens (billed as output on reasoning models) and cache hit rate
+     (usage.cache_read_input_tokens) — a cache hit rate that drops to zero
+     can multiply your bill overnight
+  Cost per call, per user, per feature — and per COMPLETED task for agents
   Daily/monthly spend trend
 
 Quality:
@@ -91,20 +98,19 @@ Volume:
 // LangSmith automatically traces all LangChain calls
 // Set environment variables — no code changes needed
 
-// .env
-// LANGCHAIN_TRACING_V2=true
-// LANGCHAIN_API_KEY=ls__your_key
-// LANGCHAIN_PROJECT=my-project
+// .env (older LANGCHAIN_TRACING_V2 / LANGCHAIN_API_KEY names still work)
+// LANGSMITH_TRACING=true
+// LANGSMITH_API_KEY=lsv2_your_key
+// LANGSMITH_PROJECT=my-project
 
 import { ChatAnthropic } from '@langchain/anthropic';
-import { AgentExecutor } from 'langchain/agents';
 
 // All calls are automatically traced in LangSmith
-const model = new ChatAnthropic({ modelName: 'claude-sonnet-4-6' });
+const model = new ChatAnthropic({ model: 'claude-opus-5' });
 const result = await model.invoke('Hello');
 // → appears in LangSmith dashboard with full input/output, latency, token count
 
-// Add metadata to traces
+// Trace your own (non-LangChain) code too — LangSmith works without LangChain
 import { traceable } from 'langsmith/traceable';
 
 const myFunction = traceable(
@@ -149,7 +155,7 @@ const anthropic = new Anthropic({
     // Optional metadata
     'Helicone-User-Id': userId,
     'Helicone-Property-Feature': 'customer-support',
-    'Helicone-Cache-Enabled': 'true',  // enable semantic caching
+    'Helicone-Cache-Enabled': 'true',  // cache identical requests at the proxy
   },
 });
 
@@ -169,7 +175,7 @@ const response = await anthropic.messages.create({ ... });
 
 ```text
 Proxy-based logging:   zero code changes, works with any SDK
-Caching:              semantic cache (returns cached response for similar queries)
+Caching:              response cache at the proxy (identical requests)
 Rate limiting:        per-user rate limits enforced at the proxy
 Cost tracking:        per-user, per-feature, per-model cost dashboards
 Request filtering:    search/filter by user, model, property, date
@@ -183,6 +189,7 @@ Alerts:               spike in errors or cost
 ```typescript
 // Braintrust combines logging, evals, and prompt management
 import * as braintrust from 'braintrust';
+import { Factuality, EmbeddingSimilarity } from 'autoevals'; // Braintrust's scorer library
 
 // Log a production call with score
 const logger = braintrust.initLogger({ projectName: 'my-ai-app' });
@@ -190,19 +197,21 @@ const logger = braintrust.initLogger({ projectName: 'my-ai-app' });
 const span = logger.startSpan({ name: 'chat_response' });
 
 const response = await anthropic.messages.create({ ... });
+// (find the text block — content[0] can be a thinking block)
+const outputText = response.content.find(b => b.type === 'text')?.text ?? '';
 
 span.log({
   input: userMessage,
-  output: response.content[0].text,
+  output: outputText,
   metadata: {
-    model: 'claude-sonnet-4-6',
+    model: 'claude-opus-5',
     userId,
     feature: 'chat',
     tokens: response.usage,
   },
   scores: {
     // Add automatic scores
-    format_valid: isValidFormat(response.content[0].text) ? 1 : 0,
+    format_valid: isValidFormat(outputText) ? 1 : 0,
   },
 });
 span.end();
@@ -212,9 +221,9 @@ const experiment = await braintrust.Eval('customer-support-bot', {
   data: () => testCases.map(tc => ({ input: tc.question, expected: tc.answer })),
   task: async (input) => myAgent.run(input),
   scores: [
-    // Built-in scorers
-    braintrust.Factuality,     // uses LLM to check factual accuracy
-    braintrust.Closeness,      // semantic similarity to expected
+    // Ready-made scorers from autoevals
+    Factuality,                // LLM-as-judge: is the output factually consistent with expected?
+    EmbeddingSimilarity,       // semantic similarity to expected
     // Custom scorer
     async ({ output, expected }) => ({
       name: 'format',
@@ -224,15 +233,31 @@ const experiment = await braintrust.Eval('customer-support-bot', {
 });
 ```
 
+### Other tools worth knowing
+
+```text
+Langfuse        — open source (self-host or cloud): tracing, prompt management,
+                  evals. Popular when data must stay in your infrastructure.
+Arize Phoenix   — open source tracing + evals, built on OpenTelemetry
+Datadog / Grafana / Honeycomb — now ingest LLM traces via OpenTelemetry, so you
+                  can keep AI traces next to the rest of your system's traces
+Provider consoles — Anthropic and OpenAI show usage and cost per API key /
+                  workspace; good for billing, not for debugging requests
+```
+
 ---
 
 ## Custom Observability with OpenTelemetry
 
 ```typescript
 // If you prefer to own your own stack: OpenTelemetry + Grafana + Prometheus
+// ‼️ OpenTelemetry now has GenAI semantic conventions — standard attribute
+//    names like gen_ai.request.model and gen_ai.usage.input_tokens. Use them
+//    and any OTel-compatible backend understands your LLM spans.
+// Setup (once, at startup): the NodeSDK from @opentelemetry/sdk-node with an
+// OTLP exporter. (The old @opentelemetry/node package is long deprecated.)
 
-import { trace, metrics, context } from '@opentelemetry/api';
-import { NodeTracerProvider } from '@opentelemetry/node';
+import { trace, metrics } from '@opentelemetry/api';
 
 const tracer = trace.getTracer('ai-service');
 const meter = metrics.getMeter('ai-service');
@@ -243,8 +268,8 @@ const llmTokensUsed = meter.createCounter('llm_tokens_total');
 const llmErrors = meter.createCounter('llm_errors_total');
 
 async function tracedLLMCall(prompt: string, model: string) {
-  const span = tracer.startSpan('llm_call', {
-    attributes: { model, 'prompt.length': prompt.length },
+  const span = tracer.startSpan(`chat ${model}`, {
+    attributes: { 'gen_ai.operation.name': 'chat', 'gen_ai.request.model': model },
   });
 
   const start = Date.now();
@@ -252,7 +277,7 @@ async function tracedLLMCall(prompt: string, model: string) {
     const response = await anthropic.messages.create({
       model,
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1024,
+      max_tokens: 16000,
     });
 
     const duration = Date.now() - start;
@@ -260,18 +285,20 @@ async function tracedLLMCall(prompt: string, model: string) {
     const outputTokens = response.usage.output_tokens;
 
     span.setAttributes({
-      'response.input_tokens': inputTokens,
-      'response.output_tokens': outputTokens,
-      'response.duration_ms': duration,
+      'gen_ai.usage.input_tokens': inputTokens,
+      'gen_ai.usage.output_tokens': outputTokens,
+      'gen_ai.response.finish_reasons': [response.stop_reason ?? 'unknown'],
     });
 
     llmRequestDuration.record(duration, { model, status: 'success' });
     llmTokensUsed.add(inputTokens, { model, type: 'input' });
     llmTokensUsed.add(outputTokens, { model, type: 'output' });
 
-    return response.content[0].text;
+    return response.content.find(b => b.type === 'text')?.text ?? '';
   } catch (error) {
-    llmErrors.add(1, { model, error: (error as Error).message });
+    // ‼️ Label with the error TYPE, never the message — messages contain IDs and
+    //    free text, so every one becomes a new time series (cardinality explosion)
+    llmErrors.add(1, { model, error_type: (error as Error).name });
     span.recordException(error as Error);
     throw error;
   } finally {
@@ -406,7 +433,7 @@ interface LLMLog {
 
 ### "How would you monitor an LLM application in production?"
 
-> Three layers. **Infrastructure**: standard metrics — latency (TTFT and total), error rate, token throughput, GPU utilisation if self-hosted. Use Grafana + Prometheus or Datadog. **LLM-specific**: log every request and response with metadata (model, prompt version, token count, cost, user ID). Use a tool like LangSmith, Helicone, or Braintrust — they give tracing, cost tracking, and user feedback collection out of the box. **Quality**: this is the hard part. Instrument user feedback (thumbs up/down), track proxy metrics like regeneration rate and conversation abandonment, and run automated evals on a sample of production traffic daily. Alert when quality metrics drop more than 5% from baseline. The most common failure mode is silent quality degradation — the API keeps returning 200s but the outputs get worse.
+> Three layers. **Infrastructure**: standard metrics — latency (TTFT and total), error rate, token throughput, GPU utilisation if self-hosted. Use Grafana + Prometheus or Datadog. **LLM-specific**: log every request and response with metadata (model, prompt version, token count, cost, user ID). Use a tool like LangSmith, Langfuse, Helicone, or Braintrust — or OpenTelemetry with the GenAI conventions if you want it in your existing observability stack — for tracing, cost tracking, and user feedback collection. **Quality**: this is the hard part. Instrument user feedback (thumbs up/down), track proxy metrics like regeneration rate and conversation abandonment, and run automated evals on a sample of production traffic daily. Alert when quality metrics drop more than 5% from baseline. The most common failure mode is silent quality degradation — the API keeps returning 200s but the outputs get worse.
 
 ### "What is a prompt registry and why would you need one?"
 

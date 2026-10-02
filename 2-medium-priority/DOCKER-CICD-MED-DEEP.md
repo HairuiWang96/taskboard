@@ -51,7 +51,7 @@ docker build -t myapp:v1 .           # build image from Dockerfile in current di
 docker build -t myapp:v1 --no-cache  # rebuild without cache
 docker images                         # list local images
 docker image rm myapp:v1             # remove image
-docker pull node:20-alpine           # pull from registry
+docker pull node:24-alpine           # pull from registry
 
 # Containers
 docker run myapp:v1                  # create and start container
@@ -82,7 +82,7 @@ docker system prune -a               # remove everything not in use
 
 ```dockerfile
 # syntax=docker/dockerfile:1
-FROM node:20-alpine
+FROM node:24-alpine
 
 # Set working directory
 WORKDIR /app
@@ -121,7 +121,7 @@ RUN npm run build    # only re-runs when source changes
 
 ```dockerfile
 # ✓ Run as non-root user (containers run as root by default)
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
@@ -138,13 +138,13 @@ EXPOSE 3000
 CMD ["node", "src/index.js"]
 
 # ✓ Pin exact base image version (not just :latest)
-FROM node:20.11.0-alpine3.19   # exact version — reproducible builds
+FROM node:24.21.0-alpine   # exact version — reproducible builds (add @sha256:<digest> to pin fully)
 # NOT: FROM node:latest — changes without warning
 
 # ✓ Use alpine variants for smaller images
-# node:20        ~1GB
-# node:20-alpine ~180MB (Alpine Linux — minimal OS)
-# node:20-slim   ~230MB (Debian minimal)
+# node:24        ~1GB
+# node:24-alpine ~180MB (Alpine Linux — minimal OS)
+# node:24-slim   ~230MB (Debian minimal)
 ```
 
 ### .dockerignore
@@ -180,7 +180,7 @@ Final image only contains what's needed to RUN the app.
 
 ```dockerfile
 # Stage 1: build (has all dev dependencies)
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
@@ -191,7 +191,7 @@ RUN npm run build           # compiles TypeScript → dist/
 RUN npm prune --production  # remove dev dependencies
 
 # Stage 2: production (lean runtime image)
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
 
 WORKDIR /app
 
@@ -207,7 +207,7 @@ EXPOSE 3000
 CMD ["node", "dist/index.js"]
 
 # Result:
-# builder image: ~400MB (includes TypeScript, ts-node, tests, etc.)
+# builder image: ~400MB (includes TypeScript, dev tooling, tests, etc.)
 # production image: ~180MB (only runtime JS + production node_modules)
 ```
 
@@ -215,14 +215,14 @@ CMD ["node", "dist/index.js"]
 
 ```dockerfile
 # Stage 1: build React app
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build           # produces /app/dist/ (Vite) or /app/build/ (CRA)
+RUN npm run build           # produces /app/dist/ (Vite) — or /app/build/ in legacy Create React App projects
 
 # Stage 2: serve with nginx
 FROM nginx:alpine AS production
@@ -265,7 +265,9 @@ server {
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
+# ‼️ No top-level `version:` key — Compose v2 ignores it and warns that it's
+#    obsolete. Run with `docker compose` (space); the old `docker-compose`
+#    binary is end-of-life.
 
 services:
   # PostgreSQL database
@@ -387,12 +389,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'          # cache node_modules
 
       - name: Install dependencies
@@ -429,10 +431,10 @@ jobs:
     environment: production    # requires manual approval (configured in GitHub settings)
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -492,7 +494,7 @@ run: echo ${{ secrets.API_KEY }}     # ✗ masked in logs but bad practice
 
 ```yaml
 # Cache dependencies (speeds up CI significantly)
-- uses: actions/cache@v4
+- uses: actions/cache@v6
   with:
     path: ~/.npm
     key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
@@ -501,11 +503,11 @@ run: echo ${{ secrets.API_KEY }}     # ✗ masked in logs but bad practice
 # Run steps in parallel (matrix strategy)
 strategy:
   matrix:
-    node-version: [18, 20, 22]
+    node-version: [22, 24, 26]   # supported LTS lines + Current (Node 18/20 are EOL)
     os: [ubuntu-latest, macos-latest]
 runs-on: ${{ matrix.os }}
 steps:
-  - uses: actions/setup-node@v4
+  - uses: actions/setup-node@v7
     with:
       node-version: ${{ matrix.node-version }}
 
@@ -724,14 +726,14 @@ spec:
 
 ```dockerfile
 # Dockerfile — multi-stage build (smaller final image)
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY package*.json ./
@@ -780,9 +782,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: '24', cache: 'npm' }
       - run: npm ci
       - run: npm run lint && npm run type-check && npm test
   

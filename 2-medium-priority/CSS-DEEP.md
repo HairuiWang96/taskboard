@@ -658,32 +658,46 @@ Cons:
 
 ### The config
 
+```css
+/* ‼️ TAILWIND v4 (Jan 2025) — configuration lives in CSS, not JS.
+   No tailwind.config.ts by default, no `content` array (source files are
+   detected automatically), and design tokens are CSS variables in @theme.
+   Many existing codebases are still on v3 — the v3 config is shown below. */
+
+/* app.css */
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/typography';   /* .prose for markdown content */
+@plugin '@tailwindcss/forms';        /* better form defaults */
+
+@theme {
+  /* Each token becomes utilities AND a CSS variable:
+     --color-brand-500 → bg-brand-500, text-brand-500, var(--color-brand-500) */
+  --color-brand-50: #eff6ff;
+  --color-brand-500: #3b82f6;
+  --color-brand-900: #1e3a8a;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Spacing: utilities accept any multiple of the --spacing base unit, so
+   gap-18 / p-18 work without adding them to the config. */
+```
+
 ```ts
-// tailwind.config.ts
+// v3 equivalent — tailwind.config.ts (still common in existing projects)
 export default {
-  content: ['./src/**/*.{ts,tsx,html}'],  // purge unused classes
+  content: ['./src/**/*.{ts,tsx,html}'],  // files to scan for class names
   theme: {
     extend: {
-      colors: {
-        brand: {
-          50: '#eff6ff',
-          500: '#3b82f6',
-          900: '#1e3a8a',
-        },
-      },
-      spacing: {
-        '18': '4.5rem',  // adds gap-18, p-18, etc.
-      },
-      fontFamily: {
-        sans: ['Inter', ...defaultTheme.fontFamily.sans],
-      },
+      colors: { brand: { 50: '#eff6ff', 500: '#3b82f6', 900: '#1e3a8a' } },
+      spacing: { '18': '4.5rem' },
+      fontFamily: { sans: ['Inter', ...defaultTheme.fontFamily.sans] },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),  // .prose for markdown content
-    require('@tailwindcss/forms'),       // better form defaults
-  ],
+  plugins: [require('@tailwindcss/typography'), require('@tailwindcss/forms')],
 };
+// Upgrade a v3 project with: npx @tailwindcss/upgrade
 ```
 
 ### Variants and modifiers
@@ -714,13 +728,20 @@ export default {
 <div class="[mask-image:linear-gradient(to_bottom,black,transparent)]">
 ```
 
-### JIT (Just-in-Time) engine
+### How Tailwind generates CSS
 
 ```text
-Tailwind v3+ uses JIT by default.
-Scans your content files on-demand and generates ONLY the classes you use.
-Build output: < 10KB gzipped for most apps (vs 3MB for full CSS).
+Tailwind scans your source files and generates ONLY the classes you use
+(the "JIT" engine — default since v3).
+Build output: < 10KB gzipped for most apps (vs 3MB+ for every possible class).
 Enables arbitrary values: top-[117px] works without config.
+
+v4 rebuilt the engine in Rust-backed tooling (Lightning CSS) — full builds
+several times faster and incremental builds near-instant. It also leans on
+modern CSS: cascade layers, @property, color-mix(), oklch colours by default,
+and container queries built in (@container, @sm:, @lg: variants).
+‼️ v4 targets modern browsers (Safari 16.4+, Chrome 111+, Firefox 128+) —
+   stay on v3 if you must support older ones.
 ```
 
 ---

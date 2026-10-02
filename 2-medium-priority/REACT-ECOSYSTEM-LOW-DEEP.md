@@ -1,7 +1,7 @@
 # React Ecosystem — Senior Developer Deep Reference
 **Priority: LOW**
 
-> Covers: TanStack Query (React Query), Zustand, React Hook Form, React Router v6, and common interview questions.
+> Covers: TanStack Query (React Query) v5, Zustand v5, React Hook Form, React Router (v6.4+ / v7 / v8), and common interview questions.
 
 ---
 
@@ -10,7 +10,7 @@
 1. [TanStack Query (React Query)](#1-tanstack-query-react-query)
 2. [Zustand — Client State](#2-zustand--client-state)
 3. [React Hook Form](#3-react-hook-form)
-4. [React Router v6](#4-react-router-v6)
+4. [React Router](#4-react-router)
 5. [Choosing the Right Tool](#5-choosing-the-right-tool)
 6. [Common Interview Questions](#6-common-interview-questions)
 
@@ -71,7 +71,7 @@ import { useQuery } from '@tanstack/react-query';
 function TaskList() {
   const {
     data: tasks,       // the data (undefined while loading)
-    isLoading,         // true on first load (no cached data)
+    isPending,         // true while there is no data yet — gate the spinner on this (v5)
     isFetching,        // true whenever a request is in-flight (including background refetch)
     isError,
     error,
@@ -81,7 +81,7 @@ function TaskList() {
     queryFn: () => fetch('/tasks').then(r => r.json()),
   });
 
-  if (isLoading) return <Spinner />;
+  if (isPending) return <Spinner />;   // (isLoading = isPending && isFetching in v5)
   if (isError) return <Error message={error.message} />;
 
   return (
@@ -492,13 +492,19 @@ function TaskForm() {
 
 ---
 
-## 4. React Router v6
+## 4. React Router
+
+> ‼️ Since v7 (2024) Remix is merged into React Router and the package is `react-router`
+> (`react-router-dom` is just a re-export). It has three modes — declarative
+> (`<BrowserRouter>`), data (`createBrowserRouter` + loaders, shown below) and framework
+> (Vite plugin, file routes, SSR). v8 (2026) is the current major; the data-mode code
+> below works in v6.4+, v7 and v8.
 
 ### Setup
 
 ```tsx
 // main.tsx
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router';
 
 const router = createBrowserRouter([
   {
@@ -528,7 +534,7 @@ function App() {
 ### Hooks
 
 ```tsx
-import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router';
 
 function TaskPage() {
   const { id } = useParams<{ id: string }>();         // URL params (:id)
@@ -615,7 +621,7 @@ const router = createBrowserRouter([
 ]);
 
 // Form that uses the action:
-import { Form } from 'react-router-dom';
+import { Form } from 'react-router';
 function NewTaskPage() {
   return (
     <Form method="post">   {/* submits to the route's action */}
@@ -673,8 +679,8 @@ Shared UI state (auth, theme, cart)   Zustand
 Local component state                 useState
 Form with validation                  React Hook Form + Zod
 Simple form (2-3 fields)              Controlled inputs + useState
-Client-side routing                   React Router v6
-Complex routing with data loading     React Router v6 loaders
+Client-side routing                   React Router (v7+)
+Complex routing with data loading     React Router loaders (data mode)
 Deep state management (complex flows) Zustand slices OR useReducer
 
 What NOT to use:
@@ -747,7 +753,7 @@ useEffect(() => {
 }, []);
 
 // React Query — caching, background refresh, shared state
-const { data: tasks, isLoading, error } = useQuery({
+const { data: tasks, isPending, error } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => fetch('/api/tasks').then(r => r.json()),
     staleTime: 30_000, // consider data fresh for 30s
@@ -780,15 +786,15 @@ const add = useTaskStore(state => state.add);
 
 ### "What is Next.js and what rendering strategies does it support?"
 
-> Next.js is a React framework with file-based routing, server-side rendering, and full-stack capabilities. Rendering strategies: **SSG (Static Site Generation)** — HTML built at build time, fastest, cached at CDN. **SSR (Server-Side Rendering)** — HTML generated on each request, always fresh, slower. **ISR (Incremental Static Regeneration)** — SSG but revalidates after N seconds. **CSR (Client-Side Rendering)** — traditional React SPA. **RSC (React Server Components)** — App Router default, runs on server, zero JS bundle. Choose per route based on data freshness needs.
+> Next.js is a React framework with file-based routing, server-side rendering, and full-stack capabilities. Rendering strategies: **SSG (Static Site Generation)** — HTML built at build time, fastest, cached at CDN. **SSR (Server-Side Rendering)** — HTML generated on each request, always fresh, slower. **ISR (Incremental Static Regeneration)** — SSG but revalidates after N seconds. **CSR (Client-Side Rendering)** — traditional React SPA. **RSC (React Server Components)** — App Router default, runs on server, zero JS bundle. **PPR (Partial Prerendering)** — a static shell with dynamic parts streamed in, built into Next 16's Cache Components. Choose per route based on data freshness needs. ‼️ Since Next 15, fetches aren't cached unless you opt in (e.g. with `'use cache'`).
 
 ### "What is Vite and why did it replace Create React App?"
 
-> Vite is a build tool that uses native ES modules in development — the browser imports files directly without bundling, so dev server starts in milliseconds regardless of project size. HMR (Hot Module Replacement) updates only the changed module. For production, it uses Rollup for optimized bundles. CRA (Create React App) was slow because it bundled everything with webpack on every change. Vite is 10-100x faster in dev. CRA is now deprecated.
+> Vite is a build tool that uses native ES modules in development — the browser imports files directly without bundling, so dev server starts in milliseconds regardless of project size. HMR (Hot Module Replacement) updates only the changed module. For production it bundles with Rolldown (Rust; Vite 8+ — earlier versions used Rollup). CRA (Create React App) was slow because it bundled everything with webpack, and it was officially deprecated in February 2025 — the React team now recommends a framework (Next.js, React Router) or Vite.
 
 ### "What is Tailwind CSS and how does it differ from CSS Modules?"
 
-> Tailwind CSS is a utility-first CSS framework — you compose small utility classes directly in HTML/JSX (`flex`, `text-lg`, `bg-blue-500`, `hover:bg-blue-600`). Zero custom CSS, no naming things, no context switching. PurgeCSS removes unused classes so production bundle is tiny. CSS Modules are component-scoped CSS files — you write real CSS, class names are hashed to avoid collisions. Tailwind is better for rapid development and design systems; CSS Modules are better for complex component-specific styles.
+> Tailwind CSS is a utility-first CSS framework — you compose small utility classes directly in HTML/JSX (`flex`, `text-lg`, `bg-blue-500`, `hover:bg-blue-600`). Zero custom CSS, no naming things, no context switching. Only the classes you actually use are generated, so production CSS is tiny. (Tailwind v4, Jan 2025, moved configuration into CSS with `@theme` and a Rust engine — `tailwind.config.js` is optional now.) CSS Modules are component-scoped CSS files — you write real CSS, class names are hashed to avoid collisions. Tailwind is better for rapid development and design systems; CSS Modules are better for complex component-specific styles.
 
 ### "What is Storybook and why use it?"
 

@@ -260,7 +260,8 @@ Cons:
 
 ```js
 // Node.js — calling another service via REST
-// Using node-fetch or axios
+// Using axios (built-in fetch works too — global in Node 18+, no node-fetch needed;
+// with fetch, set timeouts via AbortSignal.timeout(3000))
 
 const axios = require('axios');
 
