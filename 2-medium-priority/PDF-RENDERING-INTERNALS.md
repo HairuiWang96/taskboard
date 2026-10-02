@@ -22,6 +22,8 @@
   - [5. The Two Problems: Rendering vs Generating](#5-the-two-problems-rendering-vs-generating)
   - [6. Frontend — How PDF.js Renders a PDF](#6-frontend--how-pdfjs-renders-a-pdf)
   - [7. Frontend — Displaying PDFs in Practice](#7-frontend--displaying-pdfs-in-practice)
+    - [First: your users are not using Acrobat](#first-your-users-are-not-using-acrobat)
+    - [Choosing how to display them](#choosing-how-to-display-them)
   - [8. Backend — The Three Generation Strategies](#8-backend--the-three-generation-strategies)
   - [9. Backend — HTML to PDF with Headless Chrome](#9-backend--html-to-pdf-with-headless-chrome)
   - [10. Backend — Programmatic Drawing](#10-backend--programmatic-drawing)
@@ -121,7 +123,7 @@ WHERE PDF CAME FROM — useful context, not trivia
   │               directly rather than parsing from the start.  │
   ├─────────────────────────────────────────────────────────────┤
   │ TRAILER       Points at the document catalogue and the xref │
-  │               offset. ‼️ Read LAST, not first — which is why │
+  │               offset.‼️Read from LAST, not first — which is why │
   │               a PDF viewer needs the END of the file before │
   │               it can show the beginning. ‼️                 │
   └─────────────────────────────────────────────────────────────┘
@@ -190,10 +192,10 @@ A MINIMAL PDF, annotated — this is genuinely the whole file:
    getting it straight explains why the whole format is shaped this way.
 
    ‼️ THE XREF TABLE KNOWS NOTHING ABOUT PAGES. It only maps
-      OBJECT NUMBER → BYTE OFFSET. It is an ADDRESS BOOK, not an index.
+      ‼️OBJECT NUMBER → BYTE OFFSET. It is an ADDRESS BOOK, not an index.
 
    What maps a PAGE NUMBER to an object number is a separate structure: the
-   PAGE TREE.
+   PAGE TREE.‼️
 
      Catalog (obj 1)
        └─ /Pages → obj 2
@@ -214,7 +216,7 @@ A MINIMAL PDF, annotated — this is genuinely the whole file:
      2. LOOK UP OBJECT 417 IN THE XREF TABLE.
         → byte 2,847,392. Seek there. Read it.
 
-   AND THE IMAGE ON THAT PAGE IS THE SAME PATTERN, ONE LEVEL DEEPER.
+   ‼️AND THE IMAGE ON THAT PAGE IS THE SAME PATTERN, ONE LEVEL DEEPER.
    The page object says:
 
        /Resources << /XObject << /Im1 892 0 R >> >>
@@ -224,7 +226,7 @@ A MINIMAL PDF, annotated — this is genuinely the whole file:
 
    ‼️ THE GENERAL PRINCIPLE, WHICH IS THE WHOLE FORMAT IN ONE LINE:
       EVERYTHING IS AN OBJECT NUMBER, AND XREF TURNS ANY OBJECT NUMBER INTO A
-      FILE POSITION.
+      FILE POSITION.‼️
       The page tree, resources, fonts, annotations and content streams are all
       just objects pointing at other objects by number. That indirection, plus
       the offset table, is what makes a PDF RANDOMLY ACCESSIBLE instead of
@@ -413,7 +415,7 @@ THE VERSION HISTORY — what each one actually added
      table-extraction products exist.
 
   4. FONTS MAY OR MAY NOT BE EMBEDDED.‼️
-     A non-embedded font is substituted by the viewer, so the document looks
+     ‼️A non-embedded font is substituted by the viewer, so the document looks
      different on different machines — defeating the point of PDF. And
      subsetted fonts (only the glyphs actually used) break text extraction if
      the mapping table is missing or wrong.
@@ -486,7 +488,7 @@ THE PIPELINE
 
   1. FETCH
      The file is downloaded — or, better, RANGE-REQUESTED. PDF.js can fetch
-     just the trailer and xref, then pull individual pages on demand, so a
+     just the trailer and xref,‼️ then pull individual pages on demand, so a
      200MB file can open in under a second.
      ‼️ This requires the server to support HTTP Range requests
      (Accept-Ranges: bytes). Without it, the whole file downloads before
@@ -498,7 +500,7 @@ THE PIPELINE
 
   3. BUILD AN OPERATOR LIST
      The page's content stream is decompressed and parsed into an intermediate
-     representation — an array of drawing operations with their arguments.
+     representation — ‼️ an array of drawing operations with their arguments.
      ‼️ This is the key design decision: parsing happens ONCE per page and the
      result is cached, so re-rendering at a new zoom level replays the
      operator list rather than re-parsing the stream.
@@ -514,23 +516,23 @@ THE PIPELINE
      Fonts are converted to browser-usable formats and loaded via FontFace.
 
   5. OVERLAY THE TEXT LAYER
-     ‼️ THE PART THAT SURPRISES PEOPLE: the canvas is just pixels, so you cannot
+     ‼️ THE PART THAT SURPRISES PEOPLE: the canvas is just pixels,‼️ so you cannot
      select or search it. PDF.js separately renders an INVISIBLE HTML layer of
      absolutely-positioned, transparent <span> elements aligned over the
-     canvas glyphs.
+     canvas glyphs.‼️‼️
      Selecting text selects those spans. Ctrl+F searches them. Screen readers
      read them.
      This is also why PDF text selection in browsers feels slightly wrong —
-     you are selecting a best-effort HTML approximation overlaid on a picture.
+     you are selecting a best-effort HTML approximation overlaid on a picture.‼️
 
   6. OVERLAY THE ANNOTATION LAYER
      Links, form fields, and comments become real HTML elements on top, so
-     they are clickable and focusable.
+     they are clickable and focusable.‼️
 
-  ‼️ WORKER ARCHITECTURE: steps 2-3 run in a WEB WORKER (pdf.worker.js), off
+  ‼️ WORKER ARCHITECTURE: steps 2-3 run in a WEB WORKER (pdf.worker.js), ‼️ off
      the main thread. Parsing a complex page is CPU-heavy and would otherwise
      freeze the UI. This is why every PDF.js setup requires you to configure a
-     worker path — and why forgetting to is the most common setup error.
+     worker path — and why forgetting to is the most common setup error.‼️
 ```
 
 ```javascript
@@ -547,7 +549,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 async function renderPage(url: string, pageNumber: number, canvas: HTMLCanvasElement) {
-  // getDocument returns a task with a promise. It also exposes onProgress,
+  // getDocument returns a task with a promise.‼️ It also exposes onProgress,
   // which is what you hook a loading bar to.
   const loadingTask = pdfjsLib.getDocument({
     url,
@@ -563,7 +565,7 @@ async function renderPage(url: string, pageNumber: number, canvas: HTMLCanvasEle
 
   // ‼️ DEVICE PIXEL RATIO. A canvas rendered at CSS size looks blurry on a
   // retina screen. Render at devicePixelRatio scale and then shrink it with
-  // CSS. Skipping this is why so many in-app PDF viewers look fuzzy.
+  // CSS. Skipping this is why so many in-app PDF viewers look fuzzy.‼️
   const dpr = window.devicePixelRatio || 1;
   const viewport = page.getViewport({ scale: 1.5 * dpr });
 
@@ -579,7 +581,7 @@ async function renderPage(url: string, pageNumber: number, canvas: HTMLCanvasEle
 
   // ‼️ Keep the task handle. If the user scrolls or zooms before this finishes,
   // cancel it — otherwise you queue dozens of renders and the UI locks up.
-  // This is the main performance mistake in hand-rolled viewers.
+  // This is the main performance mistake in hand-rolled viewers.‼️
   await renderTask.promise;
 
   // ── The text layer, for selection and search ──────────────────────────
@@ -596,6 +598,70 @@ async function renderPage(url: string, pageNumber: number, canvas: HTMLCanvasEle
 ---
 
 ## 7. Frontend — Displaying PDFs in Practice
+
+### First: your users are not using Acrobat
+
+```text
+‼️ BEFORE CHOOSING A VIEWER, UNDERSTAND THAT THE SAME PDF IS RENDERED BY
+   COMPLETELY DIFFERENT SOFTWARE DEPENDING ON WHERE IT IS OPENED.
+
+── 1. FOUR DIFFERENT ENGINES, NOT ONE ──────────────────────────────────────
+
+  Acrobat / Reader   Adobe's own — the REFERENCE IMPLEMENTATION of a
+                     specification Adobe wrote.
+  Firefox            PDF.js — an independent JAVASCRIPT REIMPLEMENTATION.
+  Chrome / Edge      PDFium — C++, Google's, originally derived from Foxit.
+  Safari / iOS       Apple's own renderer.
+
+  ‼️ Four separate codebases, four sets of bugs, all reading the same file.
+     There is no single "PDF renderer" to test against.‼️‼️
+
+── 2. FEATURE SUPPORT IS WILDLY ASYMMETRIC ─────────────────────────────────
+
+  Acrobat implements essentially the whole specification. Browsers implement
+  the subset needed to put a page on screen.
+
+                                    ACROBAT      BROWSERS
+    Embedded audio / video            ✅            ❌
+    XFA forms (Adobe's XML forms)     ✅            ❌
+    PDF JavaScript                    ✅ full       ⚠️ limited to none
+    Digital signature validation      ✅ shows      ❌ mostly ignored
+                                         trust chain
+    Attachments panel                 ✅            ⚠️ patchy
+    Layers, 3D content, redaction     ✅            ❌
+
+── 3. COLOUR AND FIDELITY ──────────────────────────────────────────────────
+
+  Acrobat does real COLOUR MANAGEMENT — ICC profiles, CMYK, overprint
+  simulation. Browsers generally convert everything to sRGB and move on.‼️
+  ‼️ For a print-destined PDF that difference is the whole ballgame. For a web
+     invoice it does not matter at all. Know which you are producing.
+
+  Font substitution also differs when fonts are not embedded, so the same file
+  can paginate DIFFERENTLY in different viewers — which is precisely the
+  failure PDF exists to prevent. See §15.
+
+── 4. SECURITY POSTURE ─────────────────────────────────────────────────────
+
+  Browsers sandbox aggressively: no JavaScript execution, no external resource
+  loading, no launch actions.
+  ‼️ Acrobat historically allowed all of that, which is exactly why PDFs became
+     a malware delivery vector. See §16.
+
+‼️ THE PRACTICAL CONSEQUENCE, AND THE POINT OF THIS WHOLE BLOCK:
+
+   "IT LOOKS RIGHT IN ACROBAT" IS NOT A TEST.
+
+   Most people now open PDFs in whatever their browser or phone does by
+   default, and that is a strictly LESS CAPABLE renderer than Acrobat. Acrobat
+   will flatter your file by supporting things your users' viewers will not.
+
+   ‼️ SO: TEST YOUR GENERATED PDFs IN CHROME AND ON A PHONE, not only in
+      Acrobat. If a feature only works in Acrobat, treat it as unavailable
+      unless you know your audience uses it.
+```
+
+### Choosing how to display them
 
 ```text
 ‼️ THE DECISION, in the order you should consider it:
@@ -646,7 +712,7 @@ function PdfViewer({ url }: { url: string }) {
   // this prop changes by reference. An inline object literal
   // ({ url, httpHeaders: {...} }) is a NEW object every render, so the PDF
   // reloads on every render — an infinite fetch loop. This is the single most
-  // common react-pdf bug.
+  // common react-pdf bug.‼️
   const file = useMemo(() => ({ url }), [url]);
 
   return (
@@ -654,7 +720,7 @@ function PdfViewer({ url }: { url: string }) {
       <Page
         pageNumber={pageNumber}
         // ‼️ Render at the container's width rather than a fixed scale, or the
-        // document overflows on mobile.
+        // document overflows on mobile.‼️‼️
         width={containerWidth}
         renderTextLayer={true} // selection + search; disable for pure
         // display to save significant CPU
@@ -670,21 +736,21 @@ function PdfViewer({ url }: { url: string }) {
 
   1. ENABLE HTTP RANGE REQUESTS on whatever serves the file. S3 and CloudFront
      do by default; a naive Express res.sendFile with the wrong headers does
-     not. This alone is often the difference between 0.5s and 30s to first page.
+     not. This alone is often the difference between 0.5s and 30s to first page.‼️
 
   2. NEVER RENDER ALL PAGES AT ONCE. A 500-page document rendered eagerly will
      exhaust memory and crash the tab. Virtualise: render the visible pages
      plus one or two either side.
 
-  3. CANCEL IN-FLIGHT RENDERS on scroll and zoom.
+  3. CANCEL IN-FLIGHT RENDERS on scroll and zoom.‼️
 
   4. DISABLE THE TEXT LAYER if you do not need selection or search. It is a
-     meaningful share of the rendering cost.
+     meaningful share of the rendering cost.‼️
 
-  5. CALL page.cleanup() on pages that scroll out of view.
+  5. CALL page.cleanup() on pages that scroll out of view.‼️
 
   6. USE THUMBNAILS for page navigation, rendered at a tiny scale (0.2) and
-     cached — do not render full pages for a sidebar.
+     cached — do not render full pages for a sidebar.‼️
 ```
 
 ---
