@@ -1,6 +1,12 @@
 # Kotlin — Senior Developer Deep Reference
 
 > Covers null safety, coroutines, extension functions, sealed classes, generics, and Ktor/Spring Boot for web backends.
+>
+> Reviewed October 2026 — Kotlin 2.4. Since Kotlin 2.0 (May 2024) the **K2 compiler** is the
+> default (much faster compilation), **Kotlin Multiplatform** is stable (share business logic
+> across Android, iOS, server, web), and **Compose Multiplatform** for iOS is stable (2025) —
+> the main alternative to Flutter/React Native for sharing UI. KSP has replaced kapt for
+> annotation processing.
 
 ---
 
@@ -450,11 +456,12 @@ println(email) // "alice@example.com"
 
 ```kotlin
 // build.gradle.kts
+val ktorVersion = "3.2.0" // Ktor 3 (Oct 2024+) — check for the latest 3.x
 dependencies {
-    implementation("io.ktor:ktor-server-netty:2.3.0")
-    implementation("io.ktor:ktor-server-content-negotiation:2.3.0")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.0")
-    implementation("io.ktor:ktor-server-auth-jwt:2.3.0")
+    implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
 }
 
 // Application.kt

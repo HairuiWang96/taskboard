@@ -114,7 +114,8 @@ Auto Scaling Group (ASG):
 
 User Data: script run on first boot (install packages, configure app)‼️
   #!/bin/bash
-  yum install -y nodejs
+  # Amazon Linux 2023 uses dnf (Amazon Linux 2, with yum, reached end of support in June 2026)
+  dnf install -y nodejs
   aws s3 cp s3://my-bucket/app.tar.gz /app/
   systemctl start myapp
 ```

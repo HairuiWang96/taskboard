@@ -2,6 +2,23 @@
 
 > Covers ownership, borrowing, lifetimes, traits, async/await, concurrency, and Axum/Actix-web for web backends.
 
+```text
+Where Rust is (October 2026): Rust 1.98 — a new stable release every 6 weeks.
+
+Recent changes worth knowing:
+  1.75  async fn and return-position impl Trait in traits (most uses of the
+        async-trait crate are no longer needed)
+  1.85  Rust 2024 EDITION — async closures (async || {}), RPIT lifetime
+        capture rules, `gen` reserved for future generators, unsafe extern
+        blocks; migrate with `cargo fix --edition`
+  1.86  trait upcasting (&dyn Sub → &dyn Super)
+  1.88  let chains in the 2024 edition: if let Some(x) = a && x > 0 { }
+
+Web: Axum (tokio team) is the most common choice; Actix-web still popular.
+Rust is now used inside Linux, Windows, Android and most JS tooling
+(Rolldown, Oxc, Turbopack, SWC, Biome).
+```
+
 ---
 
 ## Table of Contents

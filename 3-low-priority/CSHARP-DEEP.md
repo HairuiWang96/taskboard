@@ -2,6 +2,25 @@
 
 > Covers CLR internals, async/await, LINQ, generics, pattern matching, and ASP.NET Core for web backends.
 
+```text
+Where C# is (October 2026): .NET 10 (LTS, Nov 2025) with C# 14; .NET 11 is
+due in November. Even-numbered .NET releases are LTS (3 years), odd are STS.
+
+Since C# 11:
+  12 (.NET 8)   primary constructors for classes:  class Svc(ILogger log) { }
+                collection expressions:  int[] xs = [1, 2, ..others];
+  13 (.NET 9)   params collections (params Span<T>), new System.Threading.Lock,
+                \e escape, partial properties
+  14 (.NET 10)  extension members (extension properties, static extensions),
+                the `field` keyword in property accessors,
+                null-conditional assignment:  user?.Name = "x";
+
+Platform: Native AOT for small, fast-starting services; .NET Aspire for
+local orchestration/observability of distributed apps; minimal APIs are the
+default style for new ASP.NET Core services; built-in OpenAPI generation
+(Swashbuckle is no longer in the templates).
+```
+
 ---
 
 ## Table of Contents

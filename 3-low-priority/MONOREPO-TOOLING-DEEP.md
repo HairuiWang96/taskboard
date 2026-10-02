@@ -114,7 +114,7 @@ pnpm add -w -D typescript
    - Environment variables
    - Task dependencies' hashes
 
-2. Checks local cache (node_modules/.cache/turbo)
+2. Checks local cache (.turbo/cache — node_modules/.cache/turbo in Turbo 1.x)
    then remote cache (Vercel / self-hosted)
 
 3. If cache hit: restore outputs, skip execution

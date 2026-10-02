@@ -596,9 +596,11 @@ RLHF (Reinforcement Learning from Human Feedback):
 
 Context window:
   Maximum tokens an LLM can process at once.
-  GPT-4: 128K tokens (~96K words)
-  Claude 3.5: 200K tokens (~150K words)
-  Llama 3: 128K tokens
+  (Approximate, October 2026 — check provider docs)
+  Claude Opus 5 / Sonnet 5: 1M tokens (~750K words); Haiku 4.5: 200K
+  OpenAI GPT-6 family: ~1M tokens
+  Gemini Pro models: 1M+ tokens
+  Open-weight models (Qwen, DeepSeek, Llama 4): 128K–10M depending on model
 ```
 
 ### Using LLMs in applications (Anthropic SDK)
@@ -606,22 +608,28 @@ Context window:
 ```python
 import anthropic
 
-client = anthropic.Anthropic(api_key="your-api-key")
+# Reads ANTHROPIC_API_KEY from the environment — never hard-code keys
+client = anthropic.Anthropic()
+
+def text_of(message) -> str:
+    # Current models think by default, so content[0] can be a thinking block —
+    # pick out the text block instead of assuming content[0].text
+    return next((b.text for b in message.content if b.type == "text"), "")
 
 # Basic completion
 message = client.messages.create(
-    model="claude-opus-4-6",
-    max_tokens=1024,
+    model="claude-opus-5",
+    max_tokens=16000,
     messages=[
         {"role": "user", "content": "Explain HIPAA in one paragraph."}
     ]
 )
-print(message.content[0].text)
+print(text_of(message))
 
 # System prompt
 message = client.messages.create(
-    model="claude-opus-4-6",
-    max_tokens=1024,
+    model="claude-opus-5",
+    max_tokens=16000,
     system="You are a healthcare compliance expert. Be concise and accurate.",
     messages=[
         {"role": "user", "content": "What data must be encrypted under HIPAA?"}
@@ -635,13 +643,13 @@ while True:
     messages.append({"role": "user", "content": user_input})
 
     response = client.messages.create(
-        model="claude-opus-4-6",
-        max_tokens=1024,
+        model="claude-opus-5",
+        max_tokens=16000,
         messages=messages
     )
-    assistant_message = response.content[0].text
-    messages.append({"role": "assistant", "content": assistant_message})
-    print(f"Claude: {assistant_message}")
+    # Append the full content (including any thinking blocks), not just the text
+    messages.append({"role": "assistant", "content": response.content})
+    print(f"Claude: {text_of(response)}")
 ```
 
 ### Prompt engineering
@@ -659,13 +667,19 @@ Few-shot:    provide examples before the question
 Chain-of-thought (CoT): ask the model to reason step by step
   "Think through this step by step before giving your answer."
 
-Structured output: ask for JSON
-  "Return your answer as JSON: { 'category': ..., 'confidence': ..., 'reasoning': ... }"
+  (Current reasoning models think natively — turn on thinking / set effort
+   rather than prompting "step by step".)
 
-Temperature:
-  0.0 = deterministic (same answer every time) — use for factual tasks
+Structured output: use the API's structured-outputs feature (a JSON schema or
+  Pydantic model) — the response is GUARANTEED to match the schema. Asking
+  for JSON in the prompt is the older, less reliable approach.
+
+Temperature (older and open-weight models):
+  0.0 = near-deterministic — use for factual tasks
   0.7 = balanced — general use
   1.0 = creative/varied — use for brainstorming, creative writing
+  ‼️ Current Claude models (Opus 4.7+, Sonnet 5) and OpenAI reasoning models
+     don't accept temperature — quality/cost is controlled with `effort`.
 ```
 
 ### RAG — Retrieval-Augmented Generation
@@ -691,18 +705,19 @@ def rag_query(user_question: str, vector_store, client: Anthropic) -> str:
 
     # Step 3: send to LLM with context
     response = client.messages.create(
-        model="claude-opus-4-6",
-        max_tokens=1024,
+        model="claude-opus-5",
+        max_tokens=16000,
         system="Answer questions using only the provided context. If unsure, say so.",
         messages=[{
             "role": "user",
             "content": f"Context:\n{context}\n\nQuestion: {user_question}"
         }]
     )
-    return response.content[0].text
+    return text_of(response)
 
-# Popular vector stores: Pinecone, Weaviate, ChromaDB (local), pgvector (Postgres extension)
-# Embedding models: text-embedding-3-small (OpenAI), voyage-3 (Anthropic)
+# Popular vector stores: Pinecone, Weaviate, Qdrant, ChromaDB (local), pgvector (Postgres extension)
+# Embedding models: text-embedding-3-small (OpenAI), Voyage AI (Anthropic's recommended
+#   provider — Anthropic has no embedding model of its own), Cohere, open models (BGE, Qwen3)
 ```
 
 ### Fine-tuning vs RAG vs prompting
@@ -758,7 +773,8 @@ Data versioning:
 
 Model serving:
   FastAPI:      build your own prediction API (lightweight)
-  TorchServe:   PyTorch model server
+  vLLM / SGLang: high-throughput LLM serving (the standard for open models)
+  TorchServe:   PyTorch model server (archived in 2025 — avoid for new work)
   Triton:       NVIDIA's inference server (GPU optimized)
   AWS SageMaker: managed ML deployment on AWS
 

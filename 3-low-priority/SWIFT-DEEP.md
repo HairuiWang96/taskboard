@@ -1,5 +1,7 @@
 # Swift — Senior Developer Deep Reference
 
+> Reviewed October 2026 — Swift 6.4, iOS 27 / Xcode 27.
+
 > Covers value types, ARC, protocols, concurrency, generics, and Vapor for web backends.
 
 ---
@@ -424,14 +426,22 @@ let bal = await account.currentBalance
 // MainActor — special actor representing the main thread
 // ‼️ UI updates must happen on the MainActor
 @MainActor
-class ViewModel: ObservableObject {
-    @Published var users: [User] = []
+@Observable                 // iOS 17+ Observation (older code: ObservableObject + @Published)
+final class ViewModel {
+    var users: [User] = []
 
     func loadUsers() async {
         let fetched = try? await fetchAllUsers()
-        users = fetched ?? [] // ‼️ runs on MainActor — safe to update @Published
+        users = fetched ?? [] // ‼️ runs on MainActor — safe to update UI state
     }
 }
+
+// ‼️ SWIFT 6 (2024): data-race safety is enforced by the COMPILER in the
+//    Swift 6 language mode — non-Sendable values crossing actor boundaries
+//    are errors, not warnings. Migrating big apps took effort, so Swift 6.2
+//    added "approachable concurrency": modules can default to @MainActor
+//    isolation, and async functions run on the caller's actor unless marked
+//    @concurrent. Expect interview questions on Sendable and actor isolation.
 
 // Sendable — types that are safe to transfer across actor boundaries
 // Structs with Sendable properties are implicitly Sendable

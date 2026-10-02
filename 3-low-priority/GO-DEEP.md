@@ -3,6 +3,24 @@
 
 > Covers: Go syntax, types, goroutines, channels, interfaces, error handling, HTTP servers, and interview questions. Mental model built for developers coming from JavaScript/TypeScript.
 
+```text
+Where Go is (October 2026): Go 1.27 (Aug 2026). Go releases every 6 months
+and supports the two latest versions; go.mod's `go` line plus the automatic
+`toolchain` download keep teams on the same version.
+
+Recent changes worth knowing:
+  1.21  log/slog structured logging; min, max, clear builtins
+  1.22  ‼️ loop variables are per-iteration (the classic "goroutine in a loop
+        captures the last value" bug is gone); range over integers
+        (for i := range 10); method + path patterns in net/http ServeMux
+        ("GET /tasks/{id}") — often no router library needed now
+  1.23  range-over-func iterators (iter.Seq) — custom types work with for/range
+  1.24  generic type aliases; faster Swiss-table maps; `tool` directives in
+        go.mod; testing.B.Loop; os.Root for safe sandboxed file access
+  1.25  testing/synctest for deterministic concurrent tests; GOMAXPROCS
+        respects container CPU limits automatically
+```
+
 ---
 
 ## Table of Contents

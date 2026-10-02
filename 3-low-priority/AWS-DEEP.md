@@ -107,11 +107,13 @@ Policies:
 ```text
 Instance families:
   t3/t4g  — burstable (CPU credits), low baseline, cheap — dev/test, low-traffic web
-  m6i/m7g — general purpose, balanced CPU/RAM — web servers, app servers
-  c6i/c7g — compute optimized — batch processing, HPC, gaming servers
-  r6i/r7g — memory optimized — in-memory databases, large caches
+  m7i/m8g — general purpose, balanced CPU/RAM — web servers, app servers
+  c7i/c8g — compute optimized — batch processing, HPC, gaming servers
+  r7i/r8g — memory optimized — in-memory databases, large caches
   i3/i4i  — storage optimized — NoSQL, data warehousing, local NVMe SSD
-  p3/p4   — GPU — ML training, rendering
+  p5/p6   — GPU (H100 / Blackwell) — ML training and inference; g6 for cheaper inference
+  (the 'g' suffix = AWS Graviton ARM chips: typically ~20-40% better price-performance)
+  p3/p4 — older GPU generations — ML training, rendering
   inf2    — AWS Inferentia — ML inference
 
 Pricing models:
@@ -491,7 +493,8 @@ Serverless Web API:
 
 Container Microservices:
   Route 53 → ALB → ECS Fargate (multiple services) → RDS Aurora / ElastiCache
-  Service-to-service: AWS App Mesh (Envoy), or ALB path-based routing
+  Service-to-service: ECS Service Connect or VPC Lattice, or ALB path-based routing
+  (AWS App Mesh reached end of support in September 2026 — don't start new work on it)
 
 Event-Driven Pipeline:
   S3 upload → EventBridge/S3 Event → Lambda/ECS → SQS (DLQ) → processors → DynamoDB/S3

@@ -3,6 +3,25 @@
 
 > Python as a general-purpose language: syntax, data structures, OOP, functional patterns, async, stdlib, packaging, and interview questions. See AI-ML-DEEP.md for data science / machine learning.
 
+```text
+Where Python is (October 2026): 3.14 is current (3.15 due this month); 3.10+
+is the practical minimum for new work.
+
+Recent features worth knowing:
+  3.10  match statement (structural pattern matching), X | Y union types
+  3.11  10-60% faster CPython, exception groups / except*, tomllib
+  3.12  type statement and generic syntax: def first[T](xs: list[T]) -> T
+        f-string grammar relaxed (nested quotes)
+  3.13  new interactive REPL, experimental JIT, experimental free-threaded
+        (no-GIL) build
+  3.14  free-threaded build officially supported, template strings
+        (t"..." — like f-strings but safe for SQL/HTML), lazily evaluated
+        annotations, multiple interpreters in the stdlib, zstd compression
+
+Tooling: uv (packages, venvs, Python versions) + Ruff (lint/format) are the
+modern default — see §9.
+```
+
 ---
 
 ## Table of Contents
@@ -817,6 +836,12 @@ import multiprocessing
 # Only ONE Python thread runs at a time — threads don't help for CPU-bound work
 # Use: threading for I/O-bound (network, disk)
 # Use: multiprocessing for CPU-bound (computation, image processing)
+#
+# ‼️ CHANGING: Python 3.13 shipped an experimental FREE-THREADED build (no GIL),
+#    and 3.14 made it officially supported (still a separate build: python3.14t).
+#    The default build still has the GIL, and many C extensions are still
+#    catching up — but "Python can never run threads in parallel" is no longer
+#    strictly true.
 
 thread = threading.Thread(target=my_func, args=(arg1,))
 thread.start()
@@ -849,12 +874,19 @@ pip install requests==2.31.0  # specific version
 pip freeze > requirements.txt  # save dependencies
 pip install -r requirements.txt  # install from file
 
-# Modern tooling (recommended)
-# uv — extremely fast package manager (replaces pip + venv)
-pip install uv
-uv venv                     # create venv
-uv pip install requests     # install (100x faster than pip)
-uv pip sync requirements.txt
+# Modern tooling (recommended) — uv has become the default for new projects
+# uv (Astral, Rust) replaces pip, venv, pip-tools, pipx, pyenv AND Poetry
+curl -LsSf https://astral.sh/uv/install.sh | sh   # or: brew install uv
+uv init myapp               # new project with pyproject.toml
+uv add fastapi              # add a dependency (writes pyproject + uv.lock)
+uv add --dev pytest ruff    # dev dependencies
+uv run main.py              # run inside the project's venv (created automatically)
+uv python install 3.14      # manage Python versions too
+# Drop-in mode for existing projects: uv pip install -r requirements.txt
+
+# Ruff (also Astral) — one fast tool replacing flake8, isort, pyupgrade and Black
+ruff check . --fix && ruff format .
+# Type checkers: mypy, pyright — and Astral's ty / Meta's Pyrefly (newer, Rust-based)
 
 # pyproject.toml — modern project configuration (replaces setup.py)
 # [project]
@@ -895,7 +927,7 @@ async def create_task(task: Task):
 
 ### "What is the GIL?"
 
-> The Global Interpreter Lock is a mutex in CPython that ensures only one thread executes Python bytecode at a time. This means multi-threading in Python doesn't achieve true parallelism for CPU-bound tasks. For I/O-bound tasks (network, disk), threads work well because the GIL is released while waiting for I/O. For CPU-bound parallelism, use `multiprocessing` (separate processes, each with their own GIL) or libraries like NumPy that release the GIL in C extensions.
+> The Global Interpreter Lock is a mutex in CPython that ensures only one thread executes Python bytecode at a time. This means multi-threading in Python doesn't achieve true parallelism for CPU-bound tasks. For I/O-bound tasks (network, disk), threads work well because the GIL is released while waiting for I/O. For CPU-bound parallelism, use `multiprocessing` (separate processes, each with their own GIL) or libraries like NumPy that release the GIL in C extensions. This is changing: Python 3.13 added an experimental free-threaded (no-GIL) build and 3.14 made it officially supported, though it's still optional and the default build keeps the GIL.
 
 ### "What is the difference between a list and a tuple?"
 

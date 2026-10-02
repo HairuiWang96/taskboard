@@ -69,7 +69,7 @@ Cons:
 When to use: legacy integration where isolation is critical, third-party embeds
 ```
 
-### 3. Module Federation (Webpack 5) — most common
+### 3. Module Federation — most common
 
 ```text
 Each team deploys their app independently.
@@ -81,7 +81,9 @@ Pros:
   - Feels like a normal app from the user's perspective
 
 Cons:
-  - Webpack 5 required (Vite plugin exists but less mature)
+  - Needs a supporting bundler: webpack 5, Rspack, or Vite via the Module
+    Federation 2.0 plugins (@module-federation/*), which also add a runtime
+    API, type sharing and a manifest format
   - Version mismatch risk (shell expects v1, remote ships v2)
   - Network waterfall on first load of a remote
 

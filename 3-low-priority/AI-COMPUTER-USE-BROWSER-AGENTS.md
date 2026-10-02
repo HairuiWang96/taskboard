@@ -32,92 +32,112 @@ Real-world use cases:
 
 ---
 
+## The Landscape (October 2026)
+
+```text
+Model-provider computer use:
+  Anthropic — computer toolset + browser toolset (Claude API), and Claude in
+              Chrome as an end-user product
+  OpenAI    — computer-use model behind ChatGPT's agent mode; API access
+  Google    — Gemini computer-use models
+
+Open-source frameworks:
+  browser-use (Python), Stagehand (TypeScript, Browserbase), Skyvern
+
+MCP route: the Playwright MCP server (Microsoft) and Chrome DevTools MCP
+  let any MCP-capable agent drive a real browser through structured tools —
+  often the quickest way to give a coding agent browser access.
+
+AI browsers: Perplexity Comet, ChatGPT Atlas and others build the agent
+  into the browser itself.
+
+Hosted browser infrastructure: Browserbase, Steel, Hyperbrowser — remote
+  headless browsers with sessions, proxies and CAPTCHA handling.
+
+‼️ Prompt injection is the defining risk: any page the agent reads can
+   contain instructions aimed at it. See Safety Considerations below.
+```
+
+---
+
 ## Claude Computer Use (Anthropic)
 
 Anthropic's computer use feature lets Claude control a computer via screenshot → action → screenshot feedback loop.
 
 ```python
-import anthropic
-import base64
-from PIL import ImageGrab  # or use subprocess for screenshots
+# Computer toolset (current shape, GA on the Claude API — no beta header).
+# ‼️ The tool-version strings change: older code uses computer_20241022 /
+#    computer_20251124 with a `computer-use-*` beta header. Check the
+#    computer-use docs for the version your model supports.
+import anthropic, base64, io
+import pyautogui                     # executes clicks/keys on THIS machine —
+from PIL import ImageGrab            # ‼️ run agents in a VM/container, never your laptop
 
 client = anthropic.Anthropic()
 
-# Tools available to the computer use agent
 tools = [
-    {
-        "type": "computer_20241022",    # built-in computer use tool
-        "name": "computer",
-        "display_width_px": 1920,
-        "display_height_px": 1080,
-        "display_number": 1,
-    },
-    {
-        "type": "text_editor_20241022", # built-in text editor tool
-        "name": "str_replace_editor",
-    },
-    {
-        "type": "bash_20241022",        # built-in bash tool
-        "name": "bash",
-    },
+    {"type": "computer_toolset_20260801"},  # screenshot, clicks, typing, scroll, zoom... (17 members)
+    {"type": "bash_20250124", "name": "bash"},                                     # optional
+    {"type": "text_editor_20250728", "name": "str_replace_based_edit_tool"},       # optional
 ]
 
-def get_screenshot_base64() -> str:
-    screenshot = ImageGrab.grab()
-    # Convert to base64
-    import io
+def screenshot_block() -> dict:
+    # Screenshots must already fit the model's image limits — resize large
+    # screens (1080p is a good balance of accuracy and token cost)
     buf = io.BytesIO()
-    screenshot.save(buf, format='PNG')
-    return base64.b64encode(buf.getvalue()).decode()
+    ImageGrab.grab().save(buf, format="PNG")
+    return {"type": "image", "source": {"type": "base64", "media_type": "image/png",
+                                        "data": base64.b64encode(buf.getvalue()).decode()}}
 
-def run_computer_agent(task: str):
+def execute(action: str, args: dict) -> list | str:
+    # With the toolset, the ACTION is the tool_use block's name (not input["action"])
+    if action in ("screenshot", "zoom"):
+        return [screenshot_block()]
+    if action == "left_click":
+        pyautogui.click(*args["coordinate"])
+    elif action == "type":
+        pyautogui.typewrite(args["text"], interval=0.05)
+    elif action == "key":
+        pyautogui.hotkey(*args["text"].split("+"))
+    return "OK"   # non-image actions just need a short acknowledgement
+
+def run_computer_agent(task: str, max_steps: int = 50):
     messages = [{"role": "user", "content": task}]
 
-    while True:
-        response = client.beta.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
+    for _ in range(max_steps):
+        response = client.messages.create(
+            model="claude-opus-5",
+            max_tokens=16000,
             tools=tools,
             messages=messages,
-            betas=["computer-use-2024-10-22"],
         )
+        if response.stop_reason != "tool_use":
+            return next((b.text for b in response.content if b.type == "text"), "")
 
-        # Check if done
-        if response.stop_reason == "end_turn":
-            return response.content[-1].text
-
-        # Process tool calls
+        # Claude may request SEVERAL actions in one turn (a batch) — answer each
         tool_results = []
         for block in response.content:
-            if block.type == "tool_use" and block.name == "computer":
-                result = execute_computer_action(block.input)
+            if block.type == "tool_use" and getattr(block, "toolset_name", None) == "computer":
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": block.id,
-                    "content": [{"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": get_screenshot_base64()}}],
+                    "toolset_name": "computer",   # ‼️ every result must echo this
+                    "content": execute(block.name, block.input),
                 })
+            # (bash / text-editor tool calls would be handled here too)
 
-        # Send results back
         messages.append({"role": "assistant", "content": response.content})
-        messages.append({"role": "user", "content": tool_results})
+        messages.append({"role": "user", "content": tool_results})   # all results in ONE message
 
-def execute_computer_action(action: dict):
-    action_type = action["action"]
-    if action_type == "screenshot":
-        return get_screenshot_base64()
-    elif action_type == "left_click":
-        import pyautogui
-        pyautogui.click(action["coordinate"][0], action["coordinate"][1])
-    elif action_type == "type":
-        import pyautogui
-        pyautogui.typewrite(action["text"], interval=0.05)
-    elif action_type == "key":
-        import pyautogui
-        pyautogui.hotkey(*action["key"].split("+"))
+    return "Stopped: step limit reached"
 
 # Usage
 result = run_computer_agent("Go to github.com and find the trending TypeScript repositories")
 ```
+
+‼️ For web-only tasks, Anthropic also offers a **browser toolset** (`browser_toolset_20260801`)
+that drives a browser directly — usually more reliable and cheaper than pixel-level desktop
+control. Use full computer use for desktop apps and legacy systems with no web UI.
 
 ---
 
@@ -253,8 +273,8 @@ class BrowserAgent {
 
     for (let step = 0; step < 20; step++) {
       const response = await client.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2048,
+        model: 'claude-opus-5',
+        max_tokens: 16000,
         system: `You are a browser automation agent. Use your tools to complete tasks.
         Always check the page content before clicking or typing.
         Extract the exact information requested — don't summarise unless asked.`,
@@ -319,40 +339,42 @@ await agent.close();
 // Stagehand (by Browserbase) — purpose-built for LLM browser automation
 // Abstracts away low-level Playwright details
 
-import { Stagehand } from '@browserbasehq/stagehand';
+import { browserbase, Stagehand } from '@browserbasehq/stagehand';
+import { z } from 'zod';
+// (Stagehand v4 API — v1–v3 used new Stagehand({...}) + init() and
+//  act({ action }) objects; most tutorials still show that)
 
-const stagehand = new Stagehand({
-  env: 'LOCAL',         // 'LOCAL' | 'BROWSERBASE' (remote headless browser)
-  headless: false,
-  modelName: 'claude-sonnet-4-6',
-  modelClientOptions: { apiKey: process.env.ANTHROPIC_API_KEY },
+// Remote headless browser on Browserbase (Stagehand can also drive a local browser)
+const browser = await browserbase.launch({ apiKey: process.env.BROWSERBASE_API_KEY });
+
+const stagehand = await Stagehand.create({
+  browser,
+  model: { modelName: 'anthropic/claude-opus-5', apiKey: process.env.ANTHROPIC_API_KEY },
 });
 
-await stagehand.init();
-const page = stagehand.page;
+const [page] = await browser.context.pages();
+await page.goto('https://github.com/trending');
 
 // act() — tell the agent what to do in natural language
-await page.goto('https://github.com');
-await stagehand.act({ action: 'click on the sign in button' });
-await stagehand.act({ action: 'type "myusername" in the username field' });
-await stagehand.act({ action: 'type the password and submit the form' });
+await stagehand.act('click on the "TypeScript" language filter');
+// ‼️ Never put real credentials in prompts — log in with a deterministic
+//    Playwright step or a pre-authenticated browser profile instead.
 
 // extract() — pull structured data from the page
-const repositories = await stagehand.extract({
-  instruction: 'extract the trending repositories with their names, star counts, and descriptions',
-  schema: z.object({
+const { data } = await stagehand.extract(
+  'extract the trending repositories with their names, star counts, and descriptions',
+  z.object({
     repos: z.array(z.object({
       name: z.string(),
       stars: z.number(),
       description: z.string(),
     })),
   }),
-});
+);
 
-// observe() — identify interactive elements on the page
-const actions = await stagehand.observe({
-  instruction: 'what actions can I take on this page?',
-});
+// observe() — identify interactive elements, then act deterministically
+const { data: actions } = await stagehand.observe('find the first repository link');
+await page.locator(actions[0].selector).click(); // cached selector — no LLM call
 
 await stagehand.close();
 ```

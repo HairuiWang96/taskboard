@@ -1,11 +1,14 @@
 # Vue — Senior Developer Deep Reference
 
 > Covers reactivity internals, Composition API, component patterns, state management, Vue Router, and performance.
+>
+> Reviewed October 2026 — Vue 3.5 is the stable line, 3.6 is in release candidate.
 
 ---
 
 ## Table of Contents
 
+0. [Where Vue Is in 2026](#0-where-vue-is-in-2026)
 1. [Reactivity System Internals](#1-reactivity-system-internals)
 2. [Composition API — Deep Dive](#2-composition-api--deep-dive)
 3. [Component System](#3-component-system)
@@ -14,6 +17,42 @@
 6. [Vue Router — Deep Dive](#6-vue-router--deep-dive)
 7. [Performance Optimization](#7-performance-optimization)
 8. [Common Interview Questions](#8-common-interview-questions)
+
+---
+
+## 0. Where Vue Is in 2026
+
+```text
+Vue 2       END OF LIFE since 31 Dec 2023 — no security fixes. Legacy apps
+            still exist; migration to Vue 3 is the usual project.
+
+Vue 3.4 (Dec 2023)
+  defineModel()          two-way binding in one line:
+                           const model = defineModel()  // replaces the
+                           props.modelValue + emit('update:modelValue') pair
+  Faster template parser, more efficient computed
+
+Vue 3.5 (Sep 2024) — the current stable line
+  Reactive props destructure   const { count = 0 } = defineProps<...>()
+                               stays reactive (defaults without withDefaults)
+  useTemplateRef('name')       typed template refs
+  useId()                      SSR-safe unique ids (label/input pairs)
+  Lazy hydration               defineAsyncComponent({ hydrate: hydrateOnVisible() })
+  onWatcherCleanup()           cleanup inside watch callbacks
+  Big memory reduction in the reactivity system
+
+Vue 3.6 (release candidate, autumn 2026)
+  Vapor Mode     opt-in compile mode with NO virtual DOM — components compile
+                 to direct DOM updates driven by signals (Solid/Svelte-style).
+                 Smaller and faster; can be mixed with normal components.
+  Reactivity rewritten on alien-signals — faster, less memory
+
+Ecosystem
+  Nuxt 4 (Jul 2025)   new app/ directory layout, better data fetching
+                      defaults; Nuxt 3 still maintained for now
+  Pinia               the official store (Vuex is in maintenance)
+  Vite + Vitest       the standard build/test tools (Vue CLI is retired)
+```
 
 ---
 

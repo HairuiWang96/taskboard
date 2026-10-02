@@ -30,6 +30,16 @@ Legal:
   Healthcare platforms have heightened obligations — patients with disabilities
   have the same right to access their health information.
 
+  ‼️ 2024–26 changes that made this concrete:
+  - US DOJ ADA Title II rule (2024): state and local government websites and
+    apps must meet WCAG 2.1 AA (deadlines from April 2026 by entity size)
+  - US HHS Section 504 rule (2024): healthcare providers receiving federal
+    funds (incl. Medicare/Medicaid) must meet WCAG 2.1 AA — first deadline
+    May 2026 for larger organisations. Directly relevant to health tech.
+  - European Accessibility Act: in force since 28 June 2025 for e-commerce,
+    banking, transport and other consumer services sold in the EU
+    (EN 301 549, which maps to WCAG 2.1 AA)
+
 User reach:
   ~15% of the world's population has some form of disability.
   Visual impairments, motor impairments, cognitive disabilities, temporary disabilities
@@ -52,7 +62,11 @@ For Solace Health specifically:
 
 ```text
 WCAG = Web Content Accessibility Guidelines (W3C standard)
-Current version: WCAG 2.2 (2023). WCAG 3.0 in development.
+Current version: WCAG 2.2 (2023). WCAG 3.0 in development (still a draft —
+years from replacing 2.x). Laws mostly cite WCAG 2.1 AA; aim for 2.2 AA, which
+adds focus not obscured, 24x24px minimum target size, dragging alternatives,
+accessible authentication (no cognitive tests like puzzles), redundant entry
+and consistent help.
 
 Three conformance levels:
   A    — minimum. Failures here = some users cannot use the content at all.
@@ -410,6 +424,10 @@ function Modal({ isOpen, onClose, children }) {
 }
 
 // In practice: use @radix-ui/react-dialog or similar — handles all this correctly
+// ‼️ Or the native <dialog> element: dialog.showModal() traps focus, makes the
+//    rest of the page inert, closes on Esc and renders in the top layer —
+//    supported in all current browsers. (The `inert` attribute also exists
+//    on its own for hiding background content from keyboard and AT.)
 ```
 
 ### Skip links

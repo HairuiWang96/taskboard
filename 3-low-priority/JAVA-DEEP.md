@@ -2,6 +2,28 @@
 
 > Covers JVM internals, concurrency, generics, collections, design patterns, and Spring Boot for web backends.
 
+```text
+Where Java is (October 2026): JDK 25 is the current LTS (Sept 2025); JDK 27
+(Sept 2026) is the latest feature release. LTS lines: 8, 11, 17, 21, 25.
+Most production moved to 17 or 21; new projects should start on 25.
+
+Since Java 21 (records, sealed types, pattern-matching switch, virtual threads):
+  22  Unnamed variables and patterns:  catch (Exception _), case Point(int x, _)
+  24  Stream gatherers (custom intermediate stream operations);
+      virtual threads no longer pinned by synchronized
+  25  Compact source files + instance main methods — `void main() { ... }`
+      with no class boilerplate; module import declarations;
+      flexible constructor bodies (code before super());
+      scoped values (a safer ThreadLocal for virtual threads);
+      compact object headers (smaller memory footprint)
+  Structured concurrency (treat a group of subtasks as one unit) — preview
+
+Ecosystem: Spring Boot 4 / Spring Framework 7 (Nov 2025) — Java 17 baseline,
+Jakarta EE 11 (jakarta.* packages; javax.* is Spring Boot 2 era), built-in
+API versioning, first-class virtual threads. GraalVM native images for fast
+startup.
+```
+
 ---
 
 ## Table of Contents
@@ -277,8 +299,10 @@ try (ExecutorService ex = Executors.newVirtualThreadPerTaskExecutor()) {
 // This makes thread-per-request as scalable as reactive/async code.
 
 // ‼️ Don't pool virtual threads — creating them is cheap, pooling defeats the purpose
-// ‼️ Avoid synchronized blocks that hold virtual threads — use ReentrantLock instead
-//    (synchronized pins virtual thread to carrier thread, blocking it)
+// ‼️ On Java 21–23, avoid blocking inside synchronized — it PINS the virtual
+//    thread to its carrier (OS) thread; use ReentrantLock instead.
+//    Java 24 (JEP 491) fixed this: synchronized no longer pins, so on JDK 25 LTS
+//    the advice mostly applies only to native code / older JDKs.
 ```
 
 ---

@@ -405,11 +405,26 @@ Apply via policy to exchanges or queues.
 | Routing | By partition key | Exchange + binding rules |
 | Consumer control | Consumer tracks offset | Broker tracks |
 | At-least-once | Default | Default (manual ack) |
-| Exactly-once | Yes (EOS + transactions) | Yes (publisher confirms + idempotent consumers) |
+| Exactly-once | Yes, within Kafka (EOS + transactions) | No — at-least-once + idempotent consumers = effectively once |
 | Persistence | Disk-first | Optionally persistent |
 | Protocol | Kafka protocol (binary) | AMQP 0-9-1, MQTT, STOMP |
-| Clustering | Built-in, partition-based | Mirror/quorum queues |
+| Clustering | Built-in, partition-based (KRaft) | Quorum queues (Raft) |
 | Use case | Event streaming, CDC, analytics | Task queues, RPC, routing |
+
+```text
+‼️ WHAT CHANGED 2024–26:
+  Kafka 4.0 (Mar 2025) removed ZooKeeper entirely — clusters use KRaft
+    (Kafka's built-in Raft controllers). Any ZooKeeper-based setup must
+    migrate before upgrading.
+  Kafka 4.x share groups ("queues for Kafka") — several consumers can
+    work through the SAME partition with per-message acks, so Kafka can
+    act like a work queue. Narrows the gap with RabbitMQ for task queues.
+  RabbitMQ 4.0 (2024) removed classic MIRRORED queues — use quorum queues
+    for replicated queues, and RabbitMQ Streams for log-style replay.
+    Native AMQP 1.0 support was added alongside AMQP 0-9-1.
+  Kafka-compatible alternatives: Redpanda, WarpStream (Kafka API on S3),
+    and managed MSK / Confluent Cloud.
+```
 
 ---
 

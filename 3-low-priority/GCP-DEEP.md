@@ -132,6 +132,9 @@ Cold start:
 Cloud Run vs Cloud Functions:
   Cloud Run  — full container, any language, longer timeout, custom binaries
   Cloud Functions — managed runtime (Node, Python, Go, Java, etc.), simpler, event-triggered
+  ‼️ Since Aug 2024 Cloud Functions is officially "Cloud Run functions" — the same
+     product folded into Cloud Run. Older docs and interviews still say Cloud Functions.
+  Cloud Run also supports GPUs (for model inference) and worker pools.
 
 Cloud Run Jobs:
   Run-to-completion workloads (batch processing), no HTTP server required
@@ -139,8 +142,10 @@ Cloud Run Jobs:
   Indexed tasks: CLOUD_RUN_TASK_INDEX env var for data partitioning
 
 Deployment:
+  # ‼️ Images live in Artifact Registry (*.pkg.dev). Container Registry (gcr.io)
+  #    was shut down in 2025 — old tutorials still show gcr.io image paths.
   gcloud run deploy my-service \
-      --image gcr.io/PROJECT/my-image:latest \
+      --image us-central1-docker.pkg.dev/PROJECT/my-repo/my-image:v1 \
       --region us-central1 \
       --platform managed \
       --allow-unauthenticated \
@@ -185,10 +190,11 @@ Workload Identity setup:
       iam.gke.io/gcp-service-account=gcp-sa@PROJECT.iam.gserviceaccount.com
 ```
 
-### Cloud Functions (2nd Gen)
+### Cloud Functions (2nd Gen) — now "Cloud Run functions"
 
 ```text
 ‼️ Cloud Functions Gen 2 runs on Cloud Run under the hood (all Cloud Run features available)
+   — since 2024 it's branded Cloud Run functions; 1st gen is legacy
 
 Triggers:
   HTTP trigger        — direct HTTP/HTTPS invocation
@@ -543,7 +549,8 @@ Key services:
   Model Monitoring: detect training-serving skew, prediction drift
 
 Model Garden:
-  Foundation models: Gemini Pro/Flash/Nano, PaLM 2, Codey, Imagen
+  Foundation models: Gemini (Pro / Flash / Flash-Lite), Imagen, Veo, plus
+  partner models (Claude, Llama, Mistral) — PaLM 2 and Codey are retired
   Deploy to endpoints or call via API (Generative AI on Vertex)
   Fine-tuning: supervised fine-tuning, RLHF
 

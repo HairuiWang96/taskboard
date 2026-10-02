@@ -2,6 +2,26 @@
 
 > Covers PHP internals, OOP, type system, generators, fibers, and Laravel for web backends.
 
+```text
+Where PHP is (October 2026): PHP 8.5 (Nov 2025); 8.6 due this November.
+Each version gets 2 years of active support + 2 of security fixes.
+
+Since PHP 8.1 (enums, readonly properties, fibers):
+  8.2  readonly classes, DNF types, null/false/true as standalone types
+  8.3  typed class constants, #[\Override], json_validate()
+  8.4  property hooks (get/set logic on properties — fewer getters/setters),
+       asymmetric visibility (public private(set) string $name),
+       new Foo()->bar() without extra parentheses, array_find/array_any,
+       lazy objects
+  8.5  pipe operator:  $result = $input |> trim(...) |> strtoupper(...);
+       clone with (modify properties while cloning), #[\NoDiscard],
+       built-in URI extension
+
+Ecosystem: Laravel 13 (2026); FrankenPHP (now backed by the PHP
+Foundation) and Laravel Octane run PHP as long-lived workers; Pest is the
+popular test runner on top of PHPUnit.
+```
+
 ---
 
 ## Table of Contents

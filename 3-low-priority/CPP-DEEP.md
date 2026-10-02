@@ -2,6 +2,23 @@
 
 > Covers memory model, RAII, move semantics, templates, concurrency, and Crow/Drogon for web backends.
 
+```text
+Where C++ is (October 2026): C++23 is the current published standard;
+C++26 is technically complete and going through final ISO approval.
+
+  C++20  concepts, ranges, coroutines, modules, std::format, <=> operator
+  C++23  std::expected (errors without exceptions), std::print/println,
+         deducing this, std::mdspan, std::generator, import std;
+  C++26  static REFLECTION (inspect types at compile time), contracts
+         (pre/post conditions), std::execution (senders/receivers async
+         model), hardened standard library, #embed
+
+Context: memory-safety pressure (government guidance favouring
+memory-safe languages) drove "profiles" and library hardening work, and
+some teams moving new components to Rust. Compiler support for C++26
+features is still arriving — check cppreference before relying on one.
+```
+
 ---
 
 ## Table of Contents

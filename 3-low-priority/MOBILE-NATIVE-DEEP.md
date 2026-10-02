@@ -257,16 +257,25 @@ struct TaskListView: View {
 ### State management patterns
 
 ```swift
-// @State       — local component state (like useState)
+// ‼️ MODERN SWIFTUI (iOS 17+): the @Observable macro (Observation framework)
+//    replaced ObservableObject + @Published. Views track exactly which
+//    properties they read, so they re-render less. Most new code uses this.
+//
+// @State       — local state; ALSO how a view owns an @Observable model
 // @Binding     — two-way binding passed from parent (like value + onChange prop)
-// @StateObject — local ObservableObject (view model owns it)
-// @ObservedObject — ObservableObject passed from outside
-// @EnvironmentObject — shared state passed via environment (like React Context)
+// @Bindable    — get bindings ($model.title) into an @Observable passed in
+// @Environment — shared state via the environment (like React Context)
+//
+// Older (iOS 13–16) code you'll still see:
+//   ObservableObject + @Published, owned with @StateObject, passed with
+//   @ObservedObject, shared with @EnvironmentObject
 
-// ObservableObject (like a Zustand store)
-class TaskViewModel: ObservableObject {
-    @Published var tasks: [Task] = []    // @Published = triggers view update
-    @Published var isLoading = false
+// @Observable model (like a Zustand store)
+@Observable
+@MainActor
+final class TaskViewModel {
+    var tasks: [Task] = []    // every stored property is observable — no @Published
+    var isLoading = false
 
     func fetchTasks() async {
         isLoading = true
@@ -280,7 +289,7 @@ class TaskViewModel: ObservableObject {
 }
 
 struct TaskListView: View {
-    @StateObject private var viewModel = TaskViewModel()
+    @State private var viewModel = TaskViewModel()   // was @StateObject with ObservableObject
 
     var body: some View {
         Group {
@@ -373,8 +382,11 @@ suspend fun fetchUser(id: String): User {           // suspend = async function
     }
 }
 
-// Call suspend functions
-CoroutineScope(Dispatchers.Main).launch {
+// Call suspend functions — from a lifecycle-aware scope
+// (viewModelScope in a ViewModel, lifecycleScope in an Activity/Fragment).
+// ‼️ Avoid CoroutineScope(Dispatchers.Main).launch { } — nothing cancels it,
+//    so it leaks work after the screen is gone.
+viewModelScope.launch {
     val user = fetchUser("123")                     // await (no explicit keyword)
     updateUI(user)
 }
@@ -441,7 +453,9 @@ class TaskViewModel : ViewModel() {
 
 @Composable
 fun TaskListScreen(viewModel: TaskViewModel = viewModel()) {
-    val tasks by viewModel.tasks.collectAsState()  // observe StateFlow
+    val tasks by viewModel.tasks.collectAsStateWithLifecycle()  // observe StateFlow
+    // (lifecycle-aware: stops collecting when the app is in the background —
+    //  preferred over collectAsState() on Android)
 
     LazyColumn {                                    // like RecyclerView / FlatList
         items(tasks, key = { it.id }) { task ->

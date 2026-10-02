@@ -2,6 +2,25 @@
 
 > Covers the object model, metaprogramming, blocks/procs/lambdas, modules, concurrency, and Rails for web backends.
 
+```text
+Where Ruby is (October 2026): Ruby 4.0 (Christmas 2025 — the version after
+3.4; the jump marks Ruby's 30th anniversary, not big breaking changes).
+Rails 8.1 is current.
+
+Recent changes worth knowing:
+  3.3/3.4  YJIT mature and fast; Prism is the default parser (3.4);
+           `it` as the implicit block parameter: list.map { it * 2 }
+  4.0      ZJIT, a new method-based JIT; reworked Ractor API (Ractor::Port);
+           namespace isolation (experimental)
+
+Rails 8 (Nov 2024) — "no PaaS required":
+  Solid Queue / Solid Cache / Solid Cable — jobs, cache and websockets on
+    your database, no Redis needed
+  Kamal 2 — deploy containers to plain servers; Thruster proxy
+  Built-in authentication generator; Propshaft replaces Sprockets
+  Hotwire (Turbo + Stimulus) is the default front end
+```
+
 ---
 
 ## Table of Contents
@@ -351,6 +370,9 @@ end.each(&:join)
 
 # Ractors (Ruby 3.0+) — true parallelism, each has own GVL
 # ‼️ Ractors cannot share mutable objects — enforce isolation
+# ‼️ Ruby 4.0 reworked this API: Ractor.yield / #take were replaced by
+#    Ractor::Port for messaging and Ractor#value for the result. The
+#    example below is the Ruby 3.x API. Ractors are still experimental.
 r = Ractor.new do
     Ractor.yield("Hello from Ractor")
 end

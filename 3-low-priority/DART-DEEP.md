@@ -1,6 +1,9 @@
 # Dart — Senior Developer Deep Reference
 
 > Covers null safety, async/await, streams, isolates, generics, and Flutter for cross-platform UI.
+>
+> Reviewed October 2026 — Dart 3.13 / Flutter 3.47. (The macros feature announced for Dart
+> was cancelled in January 2025 — code generation with build_runner remains the norm.)
 
 ---
 
@@ -514,12 +517,13 @@ final userProvider = FutureProvider.family<User, int>((ref, id) async {
     return ref.watch(userRepositoryProvider).getUser(id);
 });
 
-final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {
-    return CartNotifier();
-});
+// ‼️ Riverpod 3 (2025): StateNotifier/StateNotifierProvider moved to a legacy
+//    import (package:flutter_riverpod/legacy.dart). Use Notifier instead.
+final cartProvider = NotifierProvider<CartNotifier, CartState>(CartNotifier.new);
 
-class CartNotifier extends StateNotifier<CartState> {
-    CartNotifier() : super(CartState.empty());
+class CartNotifier extends Notifier<CartState> {
+    @override
+    CartState build() => CartState.empty(); // initial state
 
     void addItem(Item item) {
         state = state.copyWith(items: [...state.items, item]);

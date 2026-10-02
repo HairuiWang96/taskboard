@@ -2,6 +2,8 @@
 **Priority: LOW**
 
 > Covers: Dart language, Flutter widget system, state management, navigation, async, native channels, and interview questions.
+>
+> Reviewed October 2026 — Flutter 3.47 / Dart 3.13.
 
 ---
 
@@ -26,12 +28,14 @@
 
 ```text
 Unlike React Native (which maps to native components),
-Flutter renders its OWN widgets using the Skia/Impeller graphics engine.
+Flutter renders its OWN widgets using its own graphics engine — Impeller
+(the default on iOS and Android; it replaced Skia there to remove shader-
+compilation jank). Web can compile to WebAssembly.
 It doesn't use native UI components — it draws everything pixel by pixel.
 
 Architecture layers:
   Flutter Framework (Dart):  widgets, rendering, animation, gestures
-  Flutter Engine (C++):      Skia/Impeller rendering, Dart runtime, platform channels
+  Flutter Engine (C++):      Impeller rendering, Dart runtime, platform channels
   Embedder:                  platform-specific code (iOS/Android/Web/Desktop)
 
 Key consequence:
@@ -399,7 +403,7 @@ class TaskListScreen extends StatelessWidget {
 ### Riverpod (modern, recommended for complex apps)
 
 ```dart
-// pubspec.yaml: flutter_riverpod: ^2.5.1
+// pubspec.yaml: flutter_riverpod: ^3.0.0  (Riverpod 3, 2025)
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -788,10 +792,13 @@ Future<void> save() async {
 > Riverpod is a state management library by the same author as Provider but redesigned to fix Provider's issues: no BuildContext required to read state, compile-time safety (no runtime ProviderNotFound errors), works outside of the widget tree, better testability, supports async providers natively. Provider is simpler but Riverpod is recommended for new projects. Both use a `ChangeNotifier`/reactive model.
 
 ```dart
-// Riverpod provider
-final tasksProvider = StateNotifierProvider<TasksNotifier, List<Task>>(
-    (ref) => TasksNotifier(),
-);
+// Riverpod provider (Riverpod 3 style — Notifier replaces the legacy StateNotifier)
+final tasksProvider = NotifierProvider<TasksNotifier, List<Task>>(TasksNotifier.new);
+
+class TasksNotifier extends Notifier<List<Task>> {
+    @override
+    List<Task> build() => [];
+}
 
 // In widget (ConsumerWidget)
 class TaskList extends ConsumerWidget {

@@ -2,6 +2,8 @@
 **Priority: MEDIUM** — If you know React, this is your fastest path to mobile
 
 > Covers: how React Native works, core components, styling, navigation, native modules, platform differences, and interview questions.
+>
+> Reviewed October 2026 — React Native 0.87, Expo SDK 57, React 19.
 
 ---
 
@@ -30,11 +32,17 @@ OLD architecture (bridge):
   Asynchronous, batched. Crossing the bridge is expensive.
   Major bottleneck for complex animations and frequent updates.
 
-NEW architecture (JSI — JavaScript Interface, React Native 0.74+):
+NEW architecture (JSI — JavaScript Interface):
   JS → JSI (C++ interface) → native directly — synchronous calls possible
   No serialization overhead.
-  Fabric:    new rendering system (synchronous, concurrent-mode ready)
+  Fabric:    new rendering system (synchronous, supports React 18/19
+             concurrent features like transitions and Suspense)
   Turbo Modules: lazy-loaded native modules (faster startup)
+
+  ‼️ Timeline: opt-in for years → DEFAULT in 0.76 (Oct 2024) → the old
+     architecture was frozen and then REMOVED (0.82, late 2025). Every
+     current app runs the New Architecture; "the bridge" is now history
+     you explain in interviews, not something you optimise around.
 
 Mental model:
   React code runs in JS thread.
@@ -55,12 +63,18 @@ React Native (bare):
   Full control, can use ANY native library, must manage Xcode/Android Studio.
   More complex setup, better for large apps.
 
-Expo (recommended for most projects):
+Expo (recommended for most projects — and the React Native team's own
+official recommendation since 2024: "use a framework"):
   SDK wraps common native APIs (camera, location, notifications, etc.)
-  Managed workflow: no Xcode/Android Studio for most development.
-  Expo Go: test on device without building.
-  EAS Build: cloud build service.
-  When you need something outside Expo SDK: "eject" to bare workflow.
+  Expo Router: file-based routing (like Next.js) on top of React Navigation
+  Expo Go: quick prototyping on a device (only Expo SDK modules)
+  Development builds: your own build of the app with ANY native library —
+    the normal way to develop once you add custom native code
+  Continuous Native Generation (`npx expo prebuild`): the ios/ and android/
+    folders are GENERATED from app.json + config plugins, so you can use any
+    native library without "ejecting". (The old "eject" is gone.)
+  EAS Build / Submit / Update: cloud builds, store submission, OTA updates
+    (Microsoft's CodePush was retired in 2025 — EAS Update replaces it)
 
 Start with Expo unless you have a specific reason not to.
 npx create-expo-app@latest MyApp
@@ -427,7 +441,7 @@ import * as Camera from 'expo-camera';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
-import { Audio } from 'expo-av';
+import { useAudioPlayer } from 'expo-audio'; // expo-av was split into expo-audio + expo-video
 
 // Camera
 const [permission, requestPermission] = Camera.useCameraPermissions();
@@ -480,9 +494,12 @@ React Native performance rules:
    Enabled by default in new React Native projects.
    Faster startup, lower memory footprint than V8/JSC.
 
-6. Reduce bridge crossings (old architecture)
-   Batch native calls, avoid rapid back-and-forth.
-   New architecture (JSI/Fabric) eliminates bridge — less concern.
+6. Lists: FlashList (Shopify) recycles views and is much faster than
+   FlatList for long lists. (Old advice to "reduce bridge crossings" no
+   longer applies — the bridge was removed with the old architecture.)
+
+7. React Compiler works in React Native too (on by default in new Expo
+   projects) — removes most manual memo/useCallback work.
 ```
 
 ```tsx
@@ -589,7 +606,7 @@ const { itemId } = route.params;
 
 ### "What is Expo and when do you choose it over bare React Native?"
 
-> Expo is a framework and platform on top of React Native. **Managed Expo**: no native code, build in the cloud with EAS Build, OTA updates with EAS Update, huge library of pre-built native modules. Great for most apps. **Expo bare workflow** or **pure React Native**: when you need a native module not in Expo's ecosystem, or specific native customizations. Rule: start with Expo managed; eject only if necessary. Expo has closed most of the gap with pure RN in recent years.
+> Expo is a framework and platform on top of React Native. **Managed Expo**: no native code, build in the cloud with EAS Build, OTA updates with EAS Update, huge library of pre-built native modules. Great for most apps. Custom native code no longer means leaving Expo: with **development builds** and **config plugins / prebuild**, you can use any native library and still keep Expo's tooling. Rule: start with Expo — the React Native team itself recommends using a framework, and Expo is the main one. Plain React Native without a framework is mainly for brownfield apps (adding RN screens to an existing native app) or unusual native setups.
 
 ### "How do you optimize React Native performance?"
 
@@ -603,7 +620,8 @@ Animated.timing(value, {
     useNativeDriver: true,  // runs on UI thread, no JS bridge
 }).start();
 
-// Or use Reanimated 2 — worklets run on UI thread
+// Or use Reanimated (v4 — New Architecture only; also supports CSS-style
+// transitions/animations) — worklets run on UI thread
 const style = useAnimatedStyle(() => ({
     transform: [{ translateX: withSpring(offset.value) }],
 }));

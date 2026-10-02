@@ -1,17 +1,53 @@
 # Angular — Senior Developer Deep Reference
 
 > Covers change detection, DI, components, directives, RxJS, Signals, routing, and performance.
+>
+> Updated for Angular 22 (October 2026). Angular changed more between v17 and v22 than in
+> the five years before: signals, zoneless change detection and standalone components are
+> now the defaults. See [§0](#0-what-changed-in-angular-1922) for the summary.
+
+---
+
+## 0. What Changed in Angular 19–22
+
+```text
+‼️ THE MODERN DEFAULTS (what a new `ng new` project gives you in 2026):
+  Standalone components   default since v19 — `standalone: true` is implied,
+                          NgModules are legacy
+  Zoneless change detection  stable in v20.2, the default for new apps —
+                          no zone.js; signals (and events/async pipe) tell
+                          Angular when to re-render
+  Signals everywhere      signal inputs (input(), model(), output()),
+                          linkedSignal, resource/httpResource — all stable
+  Built-in control flow   @if / @for / @switch / @defer replace *ngIf/*ngFor
+  Vitest                  the default test runner since v21 (Karma is
+                          deprecated; a migration schematic exists)
+  esbuild/Vite builder    the "application" builder (since v17) — fast builds
+                          and dev server
+  Incremental hydration   stable in v20 — SSR pages hydrate @defer blocks
+                          on demand
+  Signal Forms            stable in 2026 — form state as signals, the
+                          eventual successor to Reactive Forms
+  Angular Aria            stable in v22 — headless, accessible component
+                          primitives (like Radix for React)
+
+INTERVIEW ANGLE: "Angular used to mean NgModules, zone.js and RxJS for
+everything. Modern Angular is standalone components and signals; RxJS is
+still used for streams of events (HTTP retries, websockets, debounced
+search), bridged with toSignal()."
+```
 
 ---
 
 ## Table of Contents
 
+0. [What Changed in Angular 19–22](#0-what-changed-in-angular-1922)
 1. [Change Detection](#1-change-detection)
 2. [Dependency Injection — Deep Dive](#2-dependency-injection--deep-dive)
 3. [Components & Templates](#3-components--templates)
 4. [Directives & Pipes](#4-directives--pipes)
 5. [RxJS & Observables](#5-rxjs--observables)
-6. [Signals (Angular 17+)](#6-signals-angular-17)
+6. [Signals (Angular 17+, stable since 20)](#6-signals-angular-17)
 7. [Routing — Deep Dive](#7-routing--deep-dive)
 8. [HTTP & State Management](#8-http--state-management)
 9. [Performance Optimization](#9-performance-optimization)
@@ -83,12 +119,14 @@ updateFromOutside() {
 }
 ```
 
-### Zoneless Angular (Angular 18+)
+### Zoneless Angular (experimental 18, stable 20.2, default for new apps in 21+)
 
 ```typescript
-// ‼️ Angular 18+ supports running without Zone.js — purely Signal-driven CD
+// ‼️ Zoneless — no Zone.js; signals, template events and the async pipe
+//    schedule change detection
 // bootstrapApplication(AppComponent, {
-//     providers: [provideExperimentalZonelessChangeDetection()]
+//     providers: [provideZonelessChangeDetection()]
+//     // (named provideExperimentalZonelessChangeDetection() in v18–19)
 // });
 
 // Without Zone.js:
@@ -183,13 +221,15 @@ const url = inject(API_URL); // type-safe string
 ### Standalone Components (Angular 14+)
 
 ```typescript
-// ‼️ Standalone components — no NgModule needed (preferred in Angular 17+)
+// ‼️ Standalone components — no NgModule needed. Default since v19, so
+//    `standalone: true` is no longer written (you'll see it in v14–18 code).
 @Component({
     selector: 'app-user-list',
-    standalone: true,
-    imports: [CommonModule, RouterLink, AsyncPipe, UserCardComponent],
+    imports: [RouterLink, UserCardComponent],
     template: `
-        <app-user-card *ngFor="let user of users" [user]="user" />
+        @for (user of users(); track user.id) {
+            <app-user-card [user]="user" />
+        }
     `,
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -211,7 +251,7 @@ bootstrapApplication(AppComponent, {
 
 ```typescript
 // Modern Signal-based inputs/outputs (Angular 17.1+)
-@Component({ selector: 'app-counter', standalone: true, template: `
+@Component({ selector: 'app-counter', template: `
     <button (click)="decrement()">-</button>
     {{ count() }}
     <button (click)="increment()">+</button>
@@ -306,7 +346,7 @@ export class ClassicComponent {
 
 ```typescript
 // Custom structural directive — *appRepeat="3"
-@Directive({ selector: '[appRepeat]', standalone: true })
+@Directive({ selector: '[appRepeat]' })
 export class RepeatDirective {
     constructor(
         private templateRef: TemplateRef<any>,
@@ -330,7 +370,7 @@ export class RepeatDirective {
 ```typescript
 // Pure pipe (default) — only re-runs when input reference changes
 // ‼️ Pure pipes are cached — same input = same output, computed once
-@Pipe({ name: 'truncate', standalone: true })
+@Pipe({ name: 'truncate' })
 export class TruncatePipe implements PipeTransform {
     transform(value: string, limit = 50, suffix = '...'): string {
         return value.length <= limit ? value : value.slice(0, limit) + suffix;
@@ -340,7 +380,7 @@ export class TruncatePipe implements PipeTransform {
 // Impure pipe — runs on every change detection cycle (expensive!)
 // ‼️ Use only when: output depends on mutable state not captured in args
 // Example: async pipe is impure (subscribes to Observable)
-@Pipe({ name: 'myFilter', pure: false, standalone: true })
+@Pipe({ name: 'myFilter', pure: false })
 export class FilterPipe implements PipeTransform {
     transform(items: any[], filter: string): any[] {
         return items.filter(i => i.name.includes(filter));
@@ -477,15 +517,16 @@ readonly user$ = this.http.get<User>('/api/me').pipe(
 ### Signal Primitives
 
 ```typescript
-import { signal, computed, effect, toSignal, toObservable } from '@angular/core';
+import { signal, computed, effect, linkedSignal } from '@angular/core';
+import { toSignal, toObservable } from '@angular/core/rxjs-interop'; // ‼️ separate entry point
 
 // signal() — writable reactive primitive
 const count = signal(0);
 count();          // read — 0
 count.set(5);     // set new value
 count.update(v => v + 1); // update based on previous value
-count.mutate(arr => arr.push(1)); // ‼️ mutate in place (for arrays/objects) — deprecated in v18
-                                   // use update() with spread instead
+// (mutate() existed in early previews and was removed in v17 — signals compare
+//  by reference, so create a new array/object: items.update(a => [...a, x]))
 
 // computed() — derived signal, lazy, cached
 const doubled = computed(() => count() * 2);
@@ -499,6 +540,16 @@ const cleanup = effect(() => {
     // ‼️ Runs once immediately on creation, then when deps change
 });
 cleanup.destroy(); // stop the effect
+// ‼️ Prefer computed()/linkedSignal for derived state — effect() is for side
+//    effects (logging, localStorage, imperative DOM/APIs), not for copying
+//    one signal into another.
+
+// linkedSignal() — writable, but resets when its source changes
+const selected = linkedSignal(() => options()[0]); // user can override; resets when options change
+
+// resource / httpResource — async data as signals (re-fetches when inputs change)
+// const user = httpResource<User>(() => `/api/users/${userId()}`);
+// user.value(), user.isLoading(), user.error()
 
 // Interop with RxJS
 const count$ = toObservable(count); // Signal → Observable
@@ -512,7 +563,6 @@ const searchSignal = toSignal(search$, { initialValue: '' }); // Observable → 
 // ‼️ Signal inputs make components fully Signal-compatible (no Zone.js needed)
 @Component({
     selector: 'app-product',
-    standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <h2>{{ product().name }}</h2>
@@ -738,7 +788,6 @@ trackById(index: number, item: Item): string {
 // ‼️ Optimal Angular component pattern
 @Component({
     selector: 'app-user-list',
-    standalone: true,
     imports: [AsyncPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
