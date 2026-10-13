@@ -780,6 +780,7 @@ ONCE THE BASICS ARE COMFORTABLE:
 ## Related Files
 
 - [STATE-MANAGEMENT-DEEP.md](STATE-MANAGEMENT-DEEP.md) — where TanStack Query fits alongside Redux and Zustand
+- [ZUSTAND-BASICS.md](ZUSTAND-BASICS.md) — the beginner guide for client state, the other half of this picture
 - [FRONTEND-ARCHITECTURE-DEEP.md](FRONTEND-ARCHITECTURE-DEEP.md) — §3 state architecture, the query key factory pattern
 - [REACT-ECOSYSTEM-LOW-DEEP.md](../2-medium-priority/REACT-ECOSYSTEM-LOW-DEEP.md) — §1 TanStack Query at interview depth, plus Q&A
 - [REACT-DEEP.md](REACT-DEEP.md) — hooks, re-render behaviour

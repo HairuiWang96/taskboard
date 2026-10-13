@@ -36,6 +36,7 @@ Root files (start here):
 | [REACT-INTERVIEW-LIVE-CODING.md](1-high-priority/REACT-INTERVIEW-LIVE-CODING.md) | React live coding in JS |
 | [STATE-MANAGEMENT-DEEP.md](1-high-priority/STATE-MANAGEMENT-DEEP.md) | Redux, Zustand, Jotai, TanStack Query |
 | [TANSTACK-QUERY-BASICS.md](1-high-priority/TANSTACK-QUERY-BASICS.md) | Beginner guide — server state, useQuery/useMutation, keys, caching, invalidation |
+| [ZUSTAND-BASICS.md](1-high-priority/ZUSTAND-BASICS.md) | Beginner guide — stores, selectors, set, persist, when to use it |
 | [ALGORITHMS-DEEP.md](1-high-priority/ALGORITHMS-DEEP.md) | Patterns + implementations (sliding window, two-pointer, BFS/DFS) |
 | [DATA-STRUCTURES-DEEP.md](1-high-priority/DATA-STRUCTURES-DEEP.md) | Linked list, tree, heap, trie, graph from scratch |
 | [INTERVIEW-CODING-PATTERNS-DEEP.md](1-high-priority/INTERVIEW-CODING-PATTERNS-DEEP.md) | Pattern recognition + templates |
