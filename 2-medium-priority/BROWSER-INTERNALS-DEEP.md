@@ -11,6 +11,82 @@ JavaScript Engine  — executes JS (V8 in Chrome/Node, SpiderMonkey in Firefox)
 Networking         — HTTP requests, caching, DNS
 UI Backend         — draws native widgets (scrollbars, dropdowns)
 Data Storage       — cookies, localStorage, IndexedDB, Cache API
+
+Where each one is covered:
+  Browser Engine     → Basics below
+  Rendering Engine   → Browser Rendering Pipeline (Detailed)
+  JavaScript Engine  → V8 JavaScript Engine, Memory Model, Garbage Collection
+  Networking         → Basics below
+  UI Backend         → Basics below
+  Data Storage       → Browser Storage
+```
+
+### Browser Engine — Basics
+
+```
+The coordinator. It sits between the browser's own UI (address bar, back
+button, tabs) and everything else, and decides who does what.
+
+You type a URL and press Enter:
+  1. Browser engine asks Networking to fetch the page
+  2. Hands the response to the Rendering Engine to parse and draw
+  3. Updates the UI — address bar, loading spinner, back/forward history
+
+Also handles: navigation, history, tabs, permissions prompts, downloads.
+
+‼️ In Chrome this is split across PROCESSES for safety and stability:
+  Browser process    UI, navigation, network, storage — one for the whole browser‼️
+  Renderer process   Blink + V8 for a site — sandboxed, roughly one per site‼️
+  GPU process        compositing and drawing to the screen
+
+  One tab crashing doesn't take down the browser, and a malicious page can't
+  read another site's memory (site isolation).‼️
+
+Note: "Blink" is often used loosely for both the browser engine and the
+rendering engine in Chrome — strictly, Blink is the rendering engine.
+```
+
+### Networking — Basics
+
+```
+Everything that gets bytes from a server to the browser.
+
+What happens when the browser fetches a URL:
+  1. DNS lookup        example.com → 93.184.215.14 (cached after the first time)‼️
+  2. Connect           TCP handshake (HTTP/1.1, HTTP/2) or QUIC (HTTP/3)
+  3. TLS handshake     set up HTTPS encryption
+  4. HTTP request      GET /index.html, with headers and cookies
+  5. Response          status code, headers, body — streamed to the rendering engine
+
+What else it is responsible for:
+  HTTP cache       Reuses responses based on Cache-Control / ETag headers.
+                   A valid cached copy means no request at all; a stale one may
+                   get a quick 304 Not Modified instead of the full file.
+  Connection reuse Keeps connections open; HTTP/2 and HTTP/3 send many requests
+                   over ONE connection at the same time (multiplexing).
+  Priorities       CSS and scripts in <head> load before images below the fold.
+  Security rules   Same-origin policy and CORS are enforced here — this is why
+                   a blocked request shows a CORS error in the console.‼️
+
+In Chrome, networking runs in its own Network Service process.
+See DevTools → Network tab to watch every step for every request.
+```
+
+### UI Backend — Basics
+
+```
+Draws the basic built-in widgets: <select> dropdowns, checkboxes, radio
+buttons, scrollbars, date pickers, file pickers, alert() dialogs.
+
+It uses the OPERATING SYSTEM's drawing, which is why:‼️
+  - a <select> looks different on Mac, Windows, Android and iOS
+  - native form controls have historically been hard to style with CSS‼️
+
+Ways to style them today:
+  appearance: none          remove native styling, then style from scratch
+  accent-color: #4f46e5     recolour checkboxes, radios, range sliders in one line
+  appearance: base-select   fully customisable <select> (newer, Chromium-first —
+                            check support before relying on it)
 ```
 
 ---
@@ -31,8 +107,8 @@ TurboFan (JIT compiler) → Optimized Machine Code  ← much faster execution
 Key insight:
 - V8 doesn't compile to machine code upfront (too slow to start)
 - Ignition interprets bytecode quickly to start running
-- TurboFan watches for "hot" code (called many times) and compiles it
-- If assumptions are wrong (type changes), it "deoptimizes" back to bytecode
+- TurboFan watches for "hot" code (called many times) and compiles it‼️
+- If assumptions are wrong (type changes), it "deoptimizes" back to bytecode‼️
 ```
 
 ### What Causes Deoptimization (Slow JS)
@@ -41,26 +117,30 @@ Key insight:
 // V8 optimizes functions based on observed types
 // If types change, it deoptimizes — performance cliff
 
-function add(a, b) { return a + b; }
-add(1, 2);     // V8 assumes: number + number → optimizes for numbers
-add(1, 2);     // fast — uses optimized code
+function add(a, b) {
+  return a + b;
+}
+add(1, 2); // V8 assumes: number + number → optimizes for numbers
+add(1, 2); // fast — uses optimized code
 add('a', 'b'); // type changed! V8 deoptimizes — back to slow path
 
-// ✓ Keep types consistent — V8 loves monomorphic functions
-function addNumbers(a: number, b: number) { return a + b; }
+// ✓ Keep types consistent — V8 loves monomorphic functions‼️
+function addNumbers(a: number, b: number) {
+  return a + b;
+}
 
 // Hidden classes — V8 creates an internal "shape" for objects
-// ✓ Always initialize properties in the same order
+// ✓ Always initialize properties in the same order‼️
 const p1 = { x: 0, y: 0 };
-const p2 = { x: 1, y: 1 };  // same hidden class — fast
+const p2 = { x: 1, y: 1 }; // same hidden class — fast
 
 // ✗ Different property order → different hidden class → slower
-const p3 = { y: 0, x: 0 };  // different hidden class!
+const p3 = { y: 0, x: 0 }; // different hidden class!
 
 // ✗ Adding properties after construction → new hidden class per property
 const obj = {};
-obj.x = 1;  // new hidden class
-obj.y = 2;  // another new hidden class
+obj.x = 1; // new hidden class
+obj.y = 2; // another new hidden class
 
 // ✓ Declare all properties upfront
 const obj = { x: 1, y: 2 };
@@ -73,11 +153,11 @@ const obj = { x: 1, y: 2 };
 ### Stack vs Heap
 
 ```
-Stack                          Heap
+Stack                          Heap‼️
 ─────────────────              ─────────────────────────────
 Primitives (by value)          Objects, Arrays, Functions
 number, boolean, string*       (by reference)
-null, undefined, symbol        Allocated dynamically
+null, undefined, symbol        Allocated dynamically‼️
 BigInt                         Garbage collected
 
 * Strings are immutable — V8 may store them differently
@@ -101,7 +181,7 @@ console.log(obj1.x);   // 99 — same object!
 ### Mark and Sweep
 
 ```
-V8 uses generational garbage collection:
+V8 uses generational garbage collection:‼️
 
 Young Generation (Nursery):
 - New objects allocated here
@@ -163,13 +243,13 @@ const id = setInterval(() => expensiveOperation(), 1000);
 clearInterval(id); // always clean up
 
 // 6. WeakMap/WeakRef for cache that should be GC-able
-const cache = new WeakMap(); // when key object is GC'd, entry is removed automatically
+const cache = new WeakMap(); // when key object is GC'd, entry is removed automatically‼️
 ```
 
 ### Detecting Memory Leaks
 
 ```
-Chrome DevTools → Memory tab:
+Chrome DevTools → Memory tab:‼️
 1. Take a heap snapshot
 2. Do the action that might leak (navigate, open/close modal)
 3. Take another snapshot
@@ -177,7 +257,7 @@ Chrome DevTools → Memory tab:
 
 Performance tab:
 - Record while performing actions
-- Look for "sawtooth" memory pattern that doesn't come back down
+- Look for "sawtooth" memory pattern that doesn't come back down‼️
 
 Node.js:
 node --inspect app.js
@@ -194,7 +274,7 @@ node --inspect app.js
 ```
 Storage          Capacity    Sync?   Accessible   Sent with    Lifetime
 ────────────────────────────────────────────────────────────────────────────────
-Cookie           ~4KB        Sync    JS + Server  Every request  Set by server
+Cookie           ~4KB        Sync    JS + Server‼️Every request  Set by server‼️
 localStorage     ~5-10MB     Sync    JS only      Never          Until cleared
 sessionStorage   ~5-10MB     Sync    JS only      Never          Until tab closes
 IndexedDB        Hundreds MB Async   JS only      Never          Until cleared
@@ -215,14 +295,14 @@ Cookie:          Session tokens (HttpOnly), CSRF tokens, user preferences
 localStorage:    Non-sensitive user preferences (theme, language), draft content.
                  Simple key-value, synchronous, don't store sensitive data.
 
-sessionStorage:  Form data for a multi-step process within one tab session.
+sessionStorage:  Form data for a multi-step process within one tab session.‼️
                  Cleared when tab closes — intentional.
 
-IndexedDB:       Large structured data, offline apps, complex querying.
+IndexedDB:       Large structured data, offline apps, complex querying.‼️
                  Async API — use a wrapper library (Dexie.js, idb).
 
 Cache API:       Network response caching for service workers,
-                 offline-first apps, static asset caching.
+                 offline-first apps, static asset caching.‼️
 ```
 
 ```ts
@@ -230,10 +310,10 @@ Cache API:       Network response caching for service workers,
 import { openDB } from 'idb';
 
 const db = await openDB('taskboard', 1, {
-    upgrade(db) {
-        const store = db.createObjectStore('tasks', { keyPath: 'id' });
-        store.createIndex('userId', 'userId');
-    },
+  upgrade(db) {
+    const store = db.createObjectStore('tasks', { keyPath: 'id' });
+    store.createIndex('userId', 'userId');
+  },
 });
 
 await db.put('tasks', { id: '1', title: 'Buy milk', userId: 'u1' });
@@ -247,10 +327,10 @@ const tasks = await db.getAllFromIndex('tasks', 'userId', 'u1');
 ### What They Are
 
 ```
-Service Worker = a script that runs in the background, separate from the page
-- No DOM access
-- Intercepts network requests (acts as a proxy)
-- Enables: offline support, background sync, push notifications, caching
+Service Worker = a script that runs in the background, separate from the page‼️
+- No DOM access‼️
+- Intercepts network requests (acts as a proxy)‼️
+- Enables: offline support, background sync, push notifications, caching‼️
 - Lifecycle: Install → Activate → Idle → Fetch/Message events
 
                     ┌─────────┐
@@ -263,10 +343,10 @@ Service Worker = a script that runs in the background, separate from the page
 ```ts
 // Register service worker
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
-        const reg = await navigator.serviceWorker.register('/sw.js');
-        console.log('SW registered:', reg.scope);
-    });
+  window.addEventListener('load', async () => {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    console.log('SW registered:', reg.scope);
+  });
 }
 
 // sw.js — service worker file
@@ -274,38 +354,32 @@ const CACHE_NAME = 'v1';
 const STATIC_ASSETS = ['/', '/index.html', '/app.js', '/styles.css'];
 
 // Install: cache static assets
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
-    );
-    self.skipWaiting(); // activate immediately
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)));
+  self.skipWaiting(); // activate immediately
 });
 
 // Activate: clean up old caches
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then(keys =>
-            Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-        )
-    );
-    self.clients.claim();
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))));
+  self.clients.claim();
 });
 
 // Fetch: serve from cache, fall back to network (cache-first strategy)
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request).then(cached => {
-            if (cached) return cached;
-            return fetch(event.request).then(response => {
-                // Cache successful GET responses
-                if (event.request.method === 'GET' && response.status === 200) {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                }
-                return response;
-            });
-        })
-    );
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request).then(response => {
+        // Cache successful GET responses
+        if (event.request.method === 'GET' && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      });
+    }),
+  );
 });
 ```
 
@@ -315,25 +389,25 @@ self.addEventListener('fetch', (event) => {
 
 ```ts
 // Problem: heavy computation blocks the main thread → UI freezes
-// Solution: Web Worker — runs JS in a background thread (no DOM access)
+// Solution: Web Worker — runs JS in a background thread (no DOM access)‼️
 
 // main.js
 const worker = new Worker('/heavy-worker.js');
 
 worker.postMessage({ type: 'process', data: largeDataset });
 
-worker.onmessage = (event) => {
-    console.log('Result:', event.data.result);
+worker.onmessage = event => {
+  console.log('Result:', event.data.result);
 };
 
-worker.onerror = (err) => console.error('Worker error:', err);
+worker.onerror = err => console.error('Worker error:', err);
 
 // heavy-worker.js (no window/document access)
-self.onmessage = (event) => {
-    if (event.data.type === 'process') {
-        const result = heavyComputation(event.data.data); // doesn't block UI
-        self.postMessage({ result });
-    }
+self.onmessage = event => {
+  if (event.data.type === 'process') {
+    const result = heavyComputation(event.data.data); // doesn't block UI
+    self.postMessage({ result });
+  }
 };
 
 // SharedArrayBuffer — share memory between main thread and workers
@@ -355,7 +429,7 @@ worker.postMessage({ buffer }, [buffer]); // transfer ownership
 5. Paint → fill in pixels (color, text, images, shadows)
 6. Composite → layers combined on GPU, displayed
 
-Triggering each stage:
+Triggering each stage:‼️
 - JS changes DOM/CSSOM → may trigger Layout + Paint + Composite (slowest)
 - Changing background-color → triggers Paint + Composite (skips Layout)
 - Changing transform/opacity → triggers Composite only (fastest — GPU only)
@@ -379,19 +453,19 @@ will-change: transform  → hint browser to create a separate layer
 
 > A memory leak is memory that's allocated but never freed because the GC can't collect it (still reachable via reference). Common causes: forgotten event listeners, closures holding large scopes, detached DOM nodes, uncancelled timers/intervals, global variables. Find with Chrome DevTools Memory tab: take heap snapshots before and after an action, compare to find unexpected growth. In Node.js: `--inspect` flag + Chrome DevTools, or `process.memoryUsage()` to track heap growth over time.
 
-### "How does the event loop interact with the browser rendering?"
+### "How does the event loop interact with the browser rendering?"‼️
 
 > The browser targets 60fps = 1 frame every 16.7ms. The rendering happens between macrotask executions. If a macrotask (or many microtasks) takes more than 16.7ms, a frame is dropped — visible as jank. Long-running JS blocks rendering. Solutions: break work into smaller chunks with `setTimeout(fn, 0)` to yield to the renderer, use `requestAnimationFrame` for visual updates (runs before the next paint), use Web Workers for CPU-heavy work.
 
-### "What is `requestAnimationFrame` and when do you use it?"
+### "What is `requestAnimationFrame` and when do you use it?"‼️
 
 > `requestAnimationFrame(callback)` schedules a callback to run before the next browser paint — synchronized with the display refresh rate. Use for: animations (not `setInterval` — that's not synced to display), reading DOM measurements before a paint. The callback receives a timestamp. Cancel with `cancelAnimationFrame(id)`.
 
 ```ts
 function animate(timestamp: number) {
-    const elapsed = timestamp - startTime;
-    element.style.transform = `translateX(${elapsed * 0.1}px)`;
-    if (elapsed < 2000) requestAnimationFrame(animate); // continue until done
+  const elapsed = timestamp - startTime;
+  element.style.transform = `translateX(${elapsed * 0.1}px)`;
+  if (elapsed < 2000) requestAnimationFrame(animate); // continue until done
 }
 requestAnimationFrame(animate);
 ```
