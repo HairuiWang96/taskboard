@@ -5559,6 +5559,7 @@ A: Boilerplate and indirection. A CRUD endpoint touches a module, controller,
 
 ## Related Files
 
+- [NESTJS-BASICS.md](NESTJS-BASICS.md) — short beginner guide for Express developers; read it before Part 0
 - [NODE-FRAMEWORKS-DEEP.md](NODE-FRAMEWORKS-DEEP.md) — Express and Fastify internals, framework comparison
 - [NODEJS-REST-DEEP.md](../1-high-priority/NODEJS-REST-DEEP.md) — REST API design with Node
 - [EXPRESS-TS-DEEP.md](../1-high-priority/EXPRESS-TS-DEEP.md) — Express with TypeScript

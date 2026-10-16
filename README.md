@@ -75,6 +75,7 @@ Root files (start here):
 | [TESTING-STRATEGY-DEEP.md](2-medium-priority/TESTING-STRATEGY-DEEP.md) | RTL, MSW, Playwright, TDD, CI strategy |
 | [NEXTJS-DEEP.md](2-medium-priority/NEXTJS-DEEP.md) | App router, SSR/SSG/ISR, server components |
 | [NESTJS-DEEP.md](2-medium-priority/NESTJS-DEEP.md) | DI container, lifecycle, guards/interceptors/pipes, TypeORM/Prisma, CQRS, microservices, queues, testing |
+| [NESTJS-BASICS.md](2-medium-priority/NESTJS-BASICS.md) | Beginner guide for Express devs — modules/controllers/services, DI, DTOs, exceptions |
 | [TYPEORM-BASICS.md](2-medium-priority/TYPEORM-BASICS.md) | Beginner guide — entities, repositories, relations, QueryBuilder, migrations |
 | [API-DESIGN-DEEP.md](2-medium-priority/API-DESIGN-DEEP.md) | REST, versioning, pagination, error handling |
 | [GRAPHQL-DEEP.md](2-medium-priority/GRAPHQL-DEEP.md) | Schema, resolvers, N+1, DataLoader, subscriptions |
