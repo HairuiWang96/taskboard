@@ -91,6 +91,7 @@ Root files (start here):
 | [PRINCIPLES-DEEP.md](2-medium-priority/PRINCIPLES-DEEP.md) | SOLID, DRY, clean code |
 | [DESIGN-PATTERNS-LOW-DEEP.md](2-medium-priority/DESIGN-PATTERNS-LOW-DEEP.md) | GoF patterns in JS/TS |
 | [WEBSOCKETS-REALTIME-DEEP.md](2-medium-priority/WEBSOCKETS-REALTIME-DEEP.md) | WebSocket, SSE, real-time patterns |
+| [DOCKER-BASICS.md](2-medium-priority/DOCKER-BASICS.md) | Beginner guide — images vs containers, first Dockerfile, ports, volumes, compose |
 | [DOCKER-KUBERNETES-DEEP.md](2-medium-priority/DOCKER-KUBERNETES-DEEP.md) | Containers, pods, deployments, services |
 | [CSS-HTML-LIVE-CODING.md](2-medium-priority/CSS-HTML-LIVE-CODING.md) | CSS live coding: flexbox, grid, components from scratch, responsive design |
 | [ANXIETY-MINDSET-MANAGEMENT.md](2-medium-priority/ANXIETY-MINDSET-MANAGEMENT.md) | Managing nerves, second-language tactics, reframing rejection |
