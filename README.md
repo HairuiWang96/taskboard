@@ -60,6 +60,7 @@ Root files (start here):
 | [AI-OPEN-SOURCE-MODELS-DEEP.md](1-high-priority/AI-OPEN-SOURCE-MODELS-DEEP.md) | Ollama, vLLM, Llama/Mistral, quantisation, self-hosted model serving |
 | [AI-AGENT-MEMORY-DEEP.md](1-high-priority/AI-AGENT-MEMORY-DEEP.md) | Short/long-term memory, vector memory, Mem0, cross-session persistence |
 | [AI-SYSTEM-DESIGN-DEEP.md](1-high-priority/AI-SYSTEM-DESIGN-DEEP.md) | Design: RAG system, chatbot, coding assistant, data analyst, doc processing |
+| [AI-TOOLS-BASICS.md](1-high-priority/AI-TOOLS-BASICS.md) | Beginner guide — coding agents, chat, UI generators, review bots, MCP, using AI well, interview answers |
 | [FRONTEND-ARCHITECTURE-DEEP.md](1-high-priority/FRONTEND-ARCHITECTURE-DEEP.md) | Feature structure, state architecture, rendering strategies, monorepo, module boundaries |
 | [FRONTEND-SYSTEM-DESIGN-DEEP.md](1-high-priority/FRONTEND-SYSTEM-DESIGN-DEEP.md) | Design autocomplete, infinite scroll, collaborative editor, file uploader, drag-and-drop |
 
