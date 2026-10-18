@@ -18,15 +18,16 @@
   - [1. The Problem It Solves](#1-the-problem-it-solves)
   - [2. What OpenTelemetry Is (and Isn't)](#2-what-opentelemetry-is-and-isnt)
   - [3. The Three Signals](#3-the-three-signals)
-  - [4. Traces & Spans](#4-traces--spans)
+  - [4. Traces \& Spans](#4-traces--spans)
   - [5. Setup — Auto-Instrumentation](#5-setup--auto-instrumentation)
   - [6. Seeing Your Traces Locally](#6-seeing-your-traces-locally)
   - [7. Custom Spans](#7-custom-spans)
   - [8. Following a Request Across Services](#8-following-a-request-across-services)
   - [9. The Collector](#9-the-collector)
   - [10. Sampling](#10-sampling)
-  - [11. Common Beginner Mistakes](#11-common-beginner-mistakes)
-  - [12. Cheat Sheet](#12-cheat-sheet)
+  - [11. Frontend (Browser)](#11-frontend-browser)
+  - [12. Common Beginner Mistakes](#12-common-beginner-mistakes)
+  - [13. Cheat Sheet](#13-cheat-sheet)
   - [Related Files](#related-files)
 
 ---
@@ -69,7 +70,7 @@ Which one was slow? With only console.log in each service:
    With OTel you instrument ONCE and change backends with a config setting.‼️
 
 It is open source, run by the CNCF (the same foundation as Kubernetes), and
-supported by basically every monitoring vendor.
+supported by basically every monitoring vendor.‼️
 ```
 
 ---
@@ -231,7 +232,7 @@ async function calculatePrice(orderId: string) {
     try {
       span.setAttribute('order.id', orderId); // searchable later‼️
 
-      const items = await loadItems(orderId);  // auto DB span appears as a child
+      const items = await loadItems(orderId); // auto DB span appears as a child
       const total = applyDiscounts(items);
 
       span.setAttribute('order.total', total);
@@ -352,7 +353,90 @@ OTEL_TRACES_SAMPLER_ARG=0.1
 
 ---
 
-## 11. Common Beginner Mistakes
+## 11. Frontend (Browser)
+
+```text
+Everything above is for the BACKEND (Node). OTel also runs in the browser,
+but it's less common and has more rough edges.
+
+What the browser SDK can trace:
+  - Page load       how long HTML, CSS, JS took
+  - fetch / XHR     every API call the page makes
+  - User clicks     interactions
+
+‼️ THE BIG WIN: it adds the traceparent header (§8) to your API calls, so the
+   trace STARTS AT THE USER'S CLICK instead of at the server:
+
+   click → fetch /api/checkout → orders-api → payments → Postgres
+   └──────────────────── one waterfall ────────────────────┘
+
+   Now you can answer "the button felt slow — frontend or backend?"‼️
+```
+
+```bash
+npm install @opentelemetry/sdk-trace-web \
+            @opentelemetry/auto-instrumentations-web \
+            @opentelemetry/exporter-trace-otlp-http \
+            @opentelemetry/instrumentation \
+            @opentelemetry/resources \
+            @opentelemetry/semantic-conventions
+```
+
+```typescript
+// src/tracing.ts — import this FIRST in main.tsx
+import { WebTracerProvider, BatchSpanProcessor } from '@opentelemetry/sdk-trace-web';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+
+const provider = new WebTracerProvider({
+  resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: 'web-app' }),
+  spanProcessors: [
+    // ‼️ A PUBLIC Collector endpoint — never a vendor URL with an API key.
+    new BatchSpanProcessor(new OTLPTraceExporter({ url: 'https://otel.example.com/v1/traces' })),
+  ],
+});
+provider.register();
+
+registerInstrumentations({
+  instrumentations: [
+    getWebAutoInstrumentations({
+      '@opentelemetry/instrumentation-fetch': {
+        // ‼️ Only add traceparent to calls to YOUR API (see CORS below).
+        propagateTraceHeaderCorsUrls: [/^https:\/\/api\.example\.com/],
+      },
+    }),
+  ],
+});
+```
+
+```text
+‼️ CATCHES COMPARED TO THE BACKEND
+
+  CORS        The browser only sends traceparent to URLs listed in
+              propagateTraceHeaderCorsUrls, AND your API must allow it:
+                Access-Control-Allow-Headers: traceparent
+              Miss either → the request fails, or the trace breaks in two.‼️
+
+  Secrets     Anyone can read frontend code. NEVER put a vendor API key in it.
+              Send to your own Collector (with CORS enabled), which holds the
+              keys and forwards to the backend.‼️
+
+  Size        Adds weight to your JS bundle. The browser packages are also
+              less stable than the Node SDK.
+
+WHAT TEAMS USUALLY DO
+  Many use a "Real User Monitoring" (RUM) tool for the frontend instead of
+  raw OTel — Sentry, Datadog RUM, Grafana Faro (built on OTel). They also give
+  you JS errors, Core Web Vitals and session replays, and still connect to
+  backend traces through traceparent.
+```
+
+---
+
+## 12. Common Beginner Mistakes
 
 ```text
 ‼️ 1. Loading instrumentation AFTER the app.
@@ -390,7 +474,7 @@ OTEL_TRACES_SAMPLER_ARG=0.1
 
 ---
 
-## 12. Cheat Sheet
+## 13. Cheat Sheet
 
 ```typescript
 // ── SETUP (instrumentation.ts) ────────────────────────────────────────────
