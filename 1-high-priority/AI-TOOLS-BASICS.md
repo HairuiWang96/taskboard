@@ -22,7 +22,7 @@
   - [2. Coding Agents](#2-coding-agents)
   - [3. Working Well with Coding Agents](#3-working-well-with-coding-agents)
   - [4. Chat Assistants](#4-chat-assistants)
-  - [5. UI & App Generators](#5-ui--app-generators)
+  - [5. UI \& App Generators](#5-ui--app-generators)
   - [6. AI Code Review](#6-ai-code-review)
   - [7. Research Tools](#7-research-tools)
   - [8. Building AI Into Your App](#8-building-ai-into-your-app)
@@ -178,8 +178,13 @@ GOOD FOR
   - Catching obvious bugs, missing null checks, typos, forgotten cleanup
   - A first pass before a human reviewer spends time on it
 
-‼️ They SUPPORT human review, they don't replace it. They miss business
-   context ("this breaks the refund flow") and sometimes flag non-issues.
+‼️ WATCH OUT
+  - They SUPPORT human review, they don't replace it
+  - They miss business context ("this breaks the refund flow") — they only
+    see the code, not what the feature is supposed to do
+  - They flag non-issues too. Too many comments → people start ignoring
+    ALL of them, including the real ones
+  - "The bot approved it" is not a reason to merge
 ```
 
 ---
@@ -188,7 +193,7 @@ GOOD FOR
 
 ```text
   Perplexity    Web search with an AI answer AND links to sources.
-                Good for "what's the current way to do X in library Y?"
+                Good for "what's the current way to do X in library Y?" ‼️
 
   NotebookLM    Upload YOUR documents (PDFs, notes, docs) and ask questions
                 about them. Answers cite the exact passage.
@@ -276,7 +281,7 @@ EXAMPLES
    Auth, permissions, payments, encryption, SQL built from user input.
    AI code here can look right and be exploitable. Review extra carefully.
 
-‼️ 4. SECRETS AND PRIVATE DATA
+‼️ 4. SECRETS AND PRIVATE DATA‼️
    Don't paste API keys, passwords, customer data or company code into
    tools your company hasn't approved. Check your company's AI policy.
 
@@ -334,20 +339,20 @@ for some rounds — and then they're watching HOW you use it.
 ‼️ 3. Giant tasks in one go.
    Break them up. Plan first.
 
-‼️ 4. No instructions file.
+‼️ 4. No instructions file.‼️
    The agent re-learns your project every session and guesses your conventions.
 
 ‼️ 5. Working without git commits.
    No easy way back from a bad run.
 
-‼️ 6. Installing packages the AI suggests without checking they exist.
+‼️ 6. Installing packages the AI suggests without checking they exist.‼️
 
 ‼️ 7. Trusting the AI on the latest library versions.
    Check the official docs for anything recent.
 
 ‼️ 8. Pasting secrets or company code into unapproved tools.
 
-‼️ 9. Using AI for everything, including learning the basics.
+‼️ 9. Using AI for everything, including learning the basics.‼️
    For things you're LEARNING, ask it to explain — then write it yourself.
 
 ‼️ 10. Arguing with a stuck agent for 20 messages.
@@ -365,7 +370,7 @@ WHICH TOOL FOR WHAT
   Understand a concept / an error   → chat assistant (Claude, ChatGPT, Gemini)
   Quick UI prototype                → v0, Lovable, Bolt
   First-pass PR review              → CodeRabbit, Copilot review, Claude Code review
-  Research with sources             → Perplexity
+  Research with sources             → Perplexity‼️
   Questions about my own documents  → NotebookLM
   AI feature in my app              → direct API call → AI SDK / Agent SDK if needed
   Connect AI to GitHub/DB/etc.      → MCP server
@@ -384,7 +389,7 @@ THE WORKFLOW
 THE RULES
   1. You own the code — review every diff
   2. Verify packages and APIs exist
-  3. Extra care on auth, payments, security
+  3. Extra care on auth, payments, security‼️
   4. No secrets or private data in unapproved tools
   5. API keys stay on the backend
 ```
