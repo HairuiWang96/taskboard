@@ -56,7 +56,7 @@ Which one was slow? With only console.log in each service:
 ## 2. What OpenTelemetry Is (and Isn't)
 
 ```text
-‼️ OTel COLLECTS and SENDS data. It does NOT store or display it.
+‼️ OTel COLLECTS and SENDS data. It does NOT store or display it.‼️
 
   OpenTelemetry   = the camera      Records what happens in your app.
   Backend         = the photo album Stores it and lets you search/view it.
@@ -104,7 +104,7 @@ OTel can collect three kinds of data ("signals"):
           "HTTP GET /checkout", "SELECT * FROM orders", "call Stripe".
 
   TRACE   ALL the spans for ONE request, linked together as a tree.
-          Every span in it shares the same TRACE ID.
+          Every span in it shares the same TRACE ID.‼️
 
 A trace for "POST /checkout" (each bar is a span, length = time taken):
 
@@ -188,7 +188,7 @@ node --require @opentelemetry/auto-instrumentations-node/register dist/main.js
 ## 6. Seeing Your Traces Locally
 
 ```bash
-# Jaeger — a free trace viewer. One container, accepts OTLP directly.
+# Jaeger — a free trace viewer. One container, accepts OTLP directly.‼️
 docker run -d --name jaeger \
   -p 16686:16686 \
   -p 4318:4318 \
@@ -281,7 +281,7 @@ orders service?
 ‼️ With auto-instrumentation this happens AUTOMATICALLY for HTTP — outgoing
    requests get the header added, incoming requests have it read.‼️
 
-   Where it does NOT happen automatically: message queues and background jobs
+   Where it does NOT happen automatically: ‼️ message queues and background jobs
    (Kafka, RabbitMQ, BullMQ) without an instrumentation for them. There the
    trace breaks into separate pieces unless you pass the context yourself.
 ```
@@ -336,7 +336,7 @@ service:
 A busy service handles thousands of requests a second. Keeping a trace for
 every single one costs a lot of storage and money.
 
-SAMPLING = keep only some of the traces.
+SAMPLING = keep only some of the traces.‼️
 
   Development   keep 100% — you want to see everything
   Production    keep e.g. 10% — still plenty to spot patterns
@@ -357,7 +357,7 @@ OTEL_TRACES_SAMPLER_ARG=0.1
 
 ```text
 Everything above is for the BACKEND (Node). OTel also runs in the browser,
-but it's less common and has more rough edges.
+but it's less common and has more rough edges.‼️
 
 What the browser SDK can trace:
   - Page load       how long HTML, CSS, JS took
@@ -457,11 +457,11 @@ WHAT TEAMS USUALLY DO
    Passwords, tokens, emails, card numbers end up in your monitoring tool.
    Add ids, not sensitive values.
 
-‼️ 6. Huge or unique values as span NAMES.
+‼️ 6. Huge or unique values as span NAMES.‼️
    "GET /users/123" → a new name per user. Use "GET /users/:id" and put 123
    in an attribute.
 
-‼️ 7. Keeping 100% of traces in production.
+‼️ 7. Keeping 100% of traces in production.‼️
    Storage and vendor bills explode. Sample.
 
 ‼️ 8. Broken traces across queues/jobs.
