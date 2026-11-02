@@ -27,6 +27,7 @@ Root files (start here):
 |---|---|
 | [JAVASCRIPT-DEEP.md](1-high-priority/JAVASCRIPT-DEEP.md) | Closures, prototypes, event loop, ES6+, async |
 | [JS-ASYNC-DEEP.md](1-high-priority/JS-ASYNC-DEEP.md) | Promises, async/await edge cases, generators, observables |
+| [JS-RUNTIME-BASICS.md](1-high-priority/JS-RUNTIME-BASICS.md) | Beginner guide — engine vs runtime, browser/Node/Deno/Bun/edge, event loop, where React runs |
 | [JS-INTERVIEW-LIVE-CODING.md](1-high-priority/JS-INTERVIEW-LIVE-CODING.md) | 25 JS live coding implementations |
 | [TYPESCRIPT-DEEP.md](1-high-priority/TYPESCRIPT-DEEP.md) | TS fundamentals for JS devs |
 | [TYPESCRIPT-ADVANCED-DEEP.md](1-high-priority/TYPESCRIPT-ADVANCED-DEEP.md) | Generics, conditional/mapped types, infer, branded types |
@@ -37,6 +38,8 @@ Root files (start here):
 | [STATE-MANAGEMENT-DEEP.md](1-high-priority/STATE-MANAGEMENT-DEEP.md) | Redux, Zustand, Jotai, TanStack Query |
 | [TANSTACK-QUERY-BASICS.md](1-high-priority/TANSTACK-QUERY-BASICS.md) | Beginner guide — server state, useQuery/useMutation, keys, caching, invalidation |
 | [ZUSTAND-BASICS.md](1-high-priority/ZUSTAND-BASICS.md) | Beginner guide — stores, selectors, set, persist, when to use it |
+| [REACT-TESTING-BASICS.md](1-high-priority/REACT-TESTING-BASICS.md) | Beginner guide — Vitest + React Testing Library: queries, userEvent, mocks, async, providers, hooks |
+| [REACT-ERROR-BOUNDARY-BASICS.md](1-high-priority/REACT-ERROR-BOUNDARY-BASICS.md) | Beginner guide — what boundaries catch and don't, react-error-boundary, reset, placement, testing |
 | [ALGORITHMS-DEEP.md](1-high-priority/ALGORITHMS-DEEP.md) | Patterns + implementations (sliding window, two-pointer, BFS/DFS) |
 | [DATA-STRUCTURES-DEEP.md](1-high-priority/DATA-STRUCTURES-DEEP.md) | Linked list, tree, heap, trie, graph from scratch |
 | [INTERVIEW-CODING-PATTERNS-DEEP.md](1-high-priority/INTERVIEW-CODING-PATTERNS-DEEP.md) | Pattern recognition + templates |
