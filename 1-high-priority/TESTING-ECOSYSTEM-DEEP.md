@@ -7,12 +7,14 @@
 ## Table of Contents
 
 ### Part 1 — Testing Philosophy & Fundamentals
+
 1. [Testing Philosophy](#1-testing-philosophy)
 2. [Types of Testing Overview](#2-types-of-testing-overview)
 3. [Test-Driven Development (TDD)](#3-test-driven-development-tdd)
 4. [Testing Patterns & Anti-patterns](#4-testing-patterns--anti-patterns)
 
 ### Part 2 — Developer Testing (Code-Level)
+
 5. [Unit Testing with Vitest/Jest](#5-unit-testing-with-vitestjest)
 6. [Mocking & Test Doubles](#6-mocking--test-doubles)
 7. [Integration Testing](#7-integration-testing)
@@ -22,15 +24,17 @@
 11. [Code Coverage](#11-code-coverage)
 
 ### Part 3 — QA & Team Workflow
+
 12. [QA Roles & Responsibilities](#12-qa-roles--responsibilities)
 13. [Testing in Agile/Scrum](#13-testing-in-agilescrum)
 14. [Test Planning & Test Case Management](#14-test-planning--test-case-management)
 15. [Manual Testing](#15-manual-testing)
-16. [Bug Lifecycle & Defect Management](#16-bug-lifecycle--defect-management)
+16. [Bug Lifecycle & Defect Management] (#16-bug-lifecycle--defect-management)
 17. [Test Environments Strategy](#17-test-environments-strategy)
 18. [Test Data Management](#18-test-data-management)
 
 ### Part 4 — Automation at Scale
+
 19. [Test Automation Strategy](#19-test-automation-strategy)
 20. [Automation Framework Design](#20-automation-framework-design)
 21. [CI/CD Testing Pipeline](#21-cicd-testing-pipeline)
@@ -38,6 +42,7 @@
 23. [Cross-Browser & Cross-Device Testing](#23-cross-browser--cross-device-testing)
 
 ### Part 5 — Specialized Testing
+
 24. [Performance & Load Testing](#24-performance--load-testing)
 25. [Security Testing](#25-security-testing)
 26. [Accessibility Testing](#26-accessibility-testing)
@@ -45,11 +50,13 @@
 28. [Contract Testing](#28-contract-testing)
 
 ### Part 6 — Metrics, Reporting & Release
+
 29. [Test Metrics & Reporting](#29-test-metrics--reporting)
 30. [Release Management](#30-release-management)
 31. [Production Testing](#31-production-testing)
 
 ### Part 7 — The Complete Testing Workflow
+
 32. [End-to-End Team Workflow](#32-end-to-end-team-workflow)
 
 ---
@@ -479,12 +486,12 @@ import { defineFeature, loadFeature } from 'jest-cucumber';
 
 const feature = loadFeature('./features/checkout.feature');
 
-defineFeature(feature, (test) => {
+defineFeature(feature, test => {
   test('Apply discount code', ({ given, and, when, then }) => {
     let cart: Cart;
     let result: CheckoutResult;
 
-    given(/^I have items totaling \$(\d+) in my cart$/, (total) => {
+    given(/^I have items totaling \$(\d+) in my cart$/, total => {
       cart = createCart(Number(total));
     });
 
@@ -496,7 +503,7 @@ defineFeature(feature, (test) => {
       result = applyDiscount(cart, 'SAVE10');
     });
 
-    then(/^the total should be \$(\d+)$/, (expectedTotal) => {
+    then(/^the total should be \$(\d+)$/, expectedTotal => {
       expect(result.total).toBe(Number(expectedTotal));
     });
   });
@@ -700,8 +707,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   test: {
-    globals: true,           // no need to import describe, it, expect
-    environment: 'node',     // or 'jsdom' for browser-like environment
+    globals: true, // no need to import describe, it, expect
+    environment: 'node', // or 'jsdom' for browser-like environment
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
@@ -904,8 +911,12 @@ describe('UserService', () => {
     vi.restoreAllMocks(); // restore any spies
   });
 
-  it('creates a user', async () => { /* ... */ });
-  it('finds a user by email', async () => { /* ... */ });
+  it('creates a user', async () => {
+    /* ... */
+  });
+  it('finds a user by email', async () => {
+    /* ... */
+  });
 });
 ```
 
@@ -920,19 +931,19 @@ import fc from 'fast-check';
 
 // Property: sorting twice gives same result as sorting once
 fc.assert(
-    fc.property(fc.array(fc.integer()), (arr) => {
-        const once = [...arr].sort((a, b) => a - b);
-        const twice = [...once].sort((a, b) => a - b);
-        expect(once).toEqual(twice);
-    })
+  fc.property(fc.array(fc.integer()), arr => {
+    const once = [...arr].sort((a, b) => a - b);
+    const twice = [...once].sort((a, b) => a - b);
+    expect(once).toEqual(twice);
+  }),
 );
 // fast-check generates hundreds of random arrays automatically
 
 // Property: encode then decode = original
 fc.assert(
-    fc.property(fc.string(), (str) => {
-        expect(decode(encode(str))).toBe(str);
-    })
+  fc.property(fc.string(), str => {
+    expect(decode(encode(str))).toBe(str);
+  }),
 );
 
 // Great for: algorithms, parsers, serializers, data transformation functions
@@ -982,8 +993,8 @@ vi.spyOn(userService, 'findById').mockResolvedValue({ id: 1, name: 'Alice' });
 
 // Mock — assert it was called
 expect(emailService.send).toHaveBeenCalledWith({
-    to: 'alice@example.com',
-    subject: 'Welcome',
+  to: 'alice@example.com',
+  subject: 'Welcome',
 });
 
 // Spy — real implementation + observe calls
@@ -1054,26 +1065,26 @@ global.fetch = vi.fn().mockResolvedValue({
 
 ```ts
 // vi.fn() — create a mock function
-const mockFn = vi.fn().mockReturnValue(42)
-mockFn()  // 42
-expect(mockFn).toHaveBeenCalledTimes(1)
-expect(mockFn).toHaveBeenCalledWith()
+const mockFn = vi.fn().mockReturnValue(42);
+mockFn(); // 42
+expect(mockFn).toHaveBeenCalledTimes(1);
+expect(mockFn).toHaveBeenCalledWith();
 
 // Mock return values
-vi.fn().mockReturnValueOnce(1).mockReturnValueOnce(2).mockReturnValue(3)
-vi.fn().mockResolvedValue({ data: 'ok' })  // async
-vi.fn().mockRejectedValue(new Error('fail'))
+vi.fn().mockReturnValueOnce(1).mockReturnValueOnce(2).mockReturnValue(3);
+vi.fn().mockResolvedValue({ data: 'ok' }); // async
+vi.fn().mockRejectedValue(new Error('fail'));
 
 // vi.mock — mock entire module
 vi.mock('../lib/stripe', () => ({
   createPaymentIntent: vi.fn().mockResolvedValue({ clientSecret: 'pi_test' }),
-}))
+}));
 
 // Mock with factory (runs before imports — hoisted)
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => '/dashboard',
-}))
+}));
 ```
 
 ### MSW (Mock Service Worker)
@@ -1303,40 +1314,37 @@ describe('Task API Integration', () => {
 
 ```ts
 // Supertest + Vitest — test HTTP endpoints with real DB (Postgres in test container)
-import request from 'supertest'
-import { app } from '../app'
-import { db } from '../db'
+import request from 'supertest';
+import { app } from '../app';
+import { db } from '../db';
 
 beforeAll(async () => {
-  await db.migrate.latest()  // run migrations on test DB
-})
+  await db.migrate.latest(); // run migrations on test DB
+});
 
 afterEach(async () => {
-  await db('users').delete()  // clean up between tests
-})
+  await db('users').delete(); // clean up between tests
+});
 
 afterAll(async () => {
-  await db.destroy()
-})
+  await db.destroy();
+});
 
 test('POST /users creates user', async () => {
-  const res = await request(app)
-    .post('/api/users')
-    .send({ email: 'alice@example.com', name: 'Alice' })
-    .set('Authorization', `Bearer ${testToken}`)
+  const res = await request(app).post('/api/users').send({ email: 'alice@example.com', name: 'Alice' }).set('Authorization', `Bearer ${testToken}`);
 
-  expect(res.status).toBe(201)
-  expect(res.body).toMatchObject({ email: 'alice@example.com' })
+  expect(res.status).toBe(201);
+  expect(res.body).toMatchObject({ email: 'alice@example.com' });
 
   // Verify DB state directly — confirm it actually persisted
-  const dbUser = await db('users').where({ email: 'alice@example.com' }).first()
-  expect(dbUser).toBeDefined()
-})
+  const dbUser = await db('users').where({ email: 'alice@example.com' }).first();
+  expect(dbUser).toBeDefined();
+});
 
 test('GET /users/:id returns 404 for unknown user', async () => {
-  const res = await request(app).get('/api/users/99999')
-  expect(res.status).toBe(404)
-})
+  const res = await request(app).get('/api/users/99999');
+  expect(res.status).toBe(404);
+});
 ```
 
 ### Database integration tests
@@ -1374,19 +1382,19 @@ describe('Task DB queries', () => {
 ```ts
 // ‼️ @testcontainers/postgresql — spins up real Postgres in Docker for tests
 // No more "works on my machine" — identical DB in CI and local
-import { PostgreSqlContainer } from '@testcontainers/postgresql'
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
 
-let container: StartedPostgreSqlContainer
+let container: StartedPostgreSqlContainer;
 
 beforeAll(async () => {
-  container = await new PostgreSqlContainer().start()
-  process.env.DATABASE_URL = container.getConnectionUri()
-  await runMigrations()
-}, 60_000)  // 60s timeout — container startup can be slow
+  container = await new PostgreSqlContainer().start();
+  process.env.DATABASE_URL = container.getConnectionUri();
+  await runMigrations();
+}, 60_000); // 60s timeout — container startup can be slow
 
 afterAll(async () => {
-  await container.stop()
-})
+  await container.stop();
+});
 
 // Benefits:
 // - Real database, not an in-memory fake
@@ -1535,46 +1543,46 @@ describe('TaskForm', () => {
 ### More RTL examples
 
 ```tsx
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 // Basic render + assert
 test('shows greeting', () => {
-  render(<Greeting name="Alice" />)
-  expect(screen.getByRole('heading', { name: /hello, alice/i })).toBeInTheDocument()
-})
+  render(<Greeting name='Alice' />);
+  expect(screen.getByRole('heading', { name: /hello, alice/i })).toBeInTheDocument();
+});
 
 // User interaction
 test('submits login form', async () => {
-  const user = userEvent.setup()
-  const onSubmit = vi.fn()
-  render(<LoginForm onSubmit={onSubmit} />)
+  const user = userEvent.setup();
+  const onSubmit = vi.fn();
+  render(<LoginForm onSubmit={onSubmit} />);
 
-  await user.type(screen.getByLabelText(/email/i), 'alice@example.com')
-  await user.type(screen.getByLabelText(/password/i), 'secret123')
-  await user.click(screen.getByRole('button', { name: /sign in/i }))
+  await user.type(screen.getByLabelText(/email/i), 'alice@example.com');
+  await user.type(screen.getByLabelText(/password/i), 'secret123');
+  await user.click(screen.getByRole('button', { name: /sign in/i }));
 
   expect(onSubmit).toHaveBeenCalledWith({
     email: 'alice@example.com',
     password: 'secret123',
-  })
-})
+  });
+});
 
 // Async — waiting for data to load
 test('loads and displays users', async () => {
-  render(<UserList />)
+  render(<UserList />);
 
-  expect(screen.getByText(/loading/i)).toBeInTheDocument()
+  expect(screen.getByText(/loading/i)).toBeInTheDocument();
 
-  const users = await screen.findAllByRole('listitem')  // waits up to 1000ms
-  expect(users).toHaveLength(3)
-})
+  const users = await screen.findAllByRole('listitem'); // waits up to 1000ms
+  expect(users).toHaveLength(3);
+});
 
 // Assert element NOT present
 test('hides error when valid', () => {
-  render(<Form />)
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-})
+  render(<Form />);
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
 ```
 
 ### Testing with providers (Context, Router, etc.)
@@ -1594,23 +1602,14 @@ function createTestQueryClient() {
   });
 }
 
-export function renderWithProviders(
-  ui: React.ReactElement,
-  {
-    initialEntries = ['/'],
-    user = null,
-    ...renderOptions
-  } = {}
-) {
+export function renderWithProviders(ui: React.ReactElement, { initialEntries = ['/'], user = null, ...renderOptions } = {}) {
   const queryClient = createTestQueryClient();
 
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <MemoryRouter initialEntries={initialEntries}>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider initialUser={user}>
-            {children}
-          </AuthProvider>
+          <AuthProvider initialUser={user}>{children}</AuthProvider>
         </QueryClientProvider>
       </MemoryRouter>
     );
@@ -1661,9 +1660,7 @@ it('createTask adds task to local state', async () => {
     await result.current.createTask('New task');
   });
 
-  expect(result.current.tasks).toContainEqual(
-    expect.objectContaining({ title: 'New task' })
-  );
+  expect(result.current.tasks).toContainEqual(expect.objectContaining({ title: 'New task' }));
 });
 
 // ‼️ Tip: Only use renderHook for complex hooks with many branches.
@@ -1689,11 +1686,8 @@ describe('RegistrationForm', () => {
   it('shows server-side errors after submission', async () => {
     server.use(
       http.post('/api/register', () => {
-        return HttpResponse.json(
-          { errors: { email: 'Email already taken' } },
-          { status: 422 }
-        );
-      })
+        return HttpResponse.json({ errors: { email: 'Email already taken' } }, { status: 422 });
+      }),
     );
 
     const user = userEvent.setup();
@@ -1730,7 +1724,7 @@ describe('RegistrationForm', () => {
 // Testing components that load data asynchronously
 describe('UserProfile', () => {
   it('shows loading state, then user data', async () => {
-    render(<UserProfile userId="123" />);
+    render(<UserProfile userId='123' />);
 
     // Loading state
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
@@ -1745,10 +1739,10 @@ describe('UserProfile', () => {
     server.use(
       http.get('/api/users/:id', () => {
         return HttpResponse.json({ error: 'Not found' }, { status: 404 });
-      })
+      }),
     );
 
-    render(<UserProfile userId="999" />);
+    render(<UserProfile userId='999' />);
 
     await screen.findByRole('alert');
     expect(screen.getByRole('alert')).toHaveTextContent(/not found/i);
@@ -1774,14 +1768,14 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,  // fail if test.only in CI
+  forbidOnly: !!process.env.CI, // fail if test.only in CI
   retries: process.env.CI ? 2 : 0, // retry flaky tests in CI
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html'], ['github']],
 
   use: {
     baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry',  // record trace on failure
+    trace: 'on-first-retry', // record trace on failure
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
@@ -1878,24 +1872,24 @@ test.describe('Task Management', () => {
 
 ```ts
 // e2e/checkout.spec.ts
-import { test, expect } from '@playwright/test'
+import { test, expect } from '@playwright/test';
 
 test('complete checkout flow', async ({ page }) => {
-  await page.goto('/shop')
+  await page.goto('/shop');
 
-  await page.getByRole('button', { name: 'Add to cart' }).first().click()
-  await page.getByRole('link', { name: 'Cart' }).click()
+  await page.getByRole('button', { name: 'Add to cart' }).first().click();
+  await page.getByRole('link', { name: 'Cart' }).click();
 
-  await expect(page.getByText('1 item')).toBeVisible()
+  await expect(page.getByText('1 item')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Checkout' }).click()
-  await page.getByLabel('Card number').fill('4242424242424242')
-  await page.getByLabel('Expiry').fill('12/28')
-  await page.getByLabel('CVC').fill('123')
-  await page.getByRole('button', { name: 'Pay now' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click();
+  await page.getByLabel('Card number').fill('4242424242424242');
+  await page.getByLabel('Expiry').fill('12/28');
+  await page.getByLabel('CVC').fill('123');
+  await page.getByRole('button', { name: 'Pay now' }).click();
 
-  await expect(page.getByText('Order confirmed')).toBeVisible()
-})
+  await expect(page.getByText('Order confirmed')).toBeVisible();
+});
 ```
 
 ### Page Object Model (POM)
@@ -1942,11 +1936,11 @@ export class TaskPage {
 class LoginPage {
   constructor(private page: Page) {}
   async login(email: string, password: string) {
-    await this.page.goto('/login')
-    await this.page.getByLabel(/email/i).fill(email)
-    await this.page.getByLabel(/password/i).fill(password)
-    await this.page.getByRole('button', { name: /sign in/i }).click()
-    await this.page.waitForURL('/dashboard')
+    await this.page.goto('/login');
+    await this.page.getByLabel(/email/i).fill(email);
+    await this.page.getByLabel(/password/i).fill(password);
+    await this.page.getByRole('button', { name: /sign in/i }).click();
+    await this.page.waitForURL('/dashboard');
   }
 }
 
@@ -3201,19 +3195,25 @@ it('shows high priority badge', () => {
 // seed.ts — run before test suite
 async function seedTestData(db: Database) {
   // Create users
-  const adminUser = await db.insert(users).values({
-    id: 'admin-001',
-    name: 'Admin User',
-    email: 'admin@test.com',
-    role: 'admin',
-  }).returning();
+  const adminUser = await db
+    .insert(users)
+    .values({
+      id: 'admin-001',
+      name: 'Admin User',
+      email: 'admin@test.com',
+      role: 'admin',
+    })
+    .returning();
 
-  const regularUser = await db.insert(users).values({
-    id: 'user-001',
-    name: 'Regular User',
-    email: 'user@test.com',
-    role: 'user',
-  }).returning();
+  const regularUser = await db
+    .insert(users)
+    .values({
+      id: 'user-001',
+      name: 'Regular User',
+      email: 'user@test.com',
+      role: 'user',
+    })
+    .returning();
 
   // Create related data
   await db.insert(tasks).values([
@@ -3606,8 +3606,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run typecheck   # tsc --noEmit
-      - run: npm run lint        # eslint
+      - run: npm run typecheck # tsc --noEmit
+      - run: npm run lint # eslint
 
   unit-integration:
     runs-on: ubuntu-latest
@@ -3851,11 +3851,13 @@ export default defineConfig({
       name: 'browserstack-safari',
       use: {
         connectOptions: {
-          wsEndpoint: `wss://cdp.browserstack.com/playwright?caps=${encodeURIComponent(JSON.stringify({
-            'browser': 'safari',
-            'os': 'osx',
-            'os_version': 'Sonoma',
-          }))}`,
+          wsEndpoint: `wss://cdp.browserstack.com/playwright?caps=${encodeURIComponent(
+            JSON.stringify({
+              browser: 'safari',
+              os: 'osx',
+              os_version: 'Sonoma',
+            }),
+          )}`,
         },
       },
     },
@@ -3974,14 +3976,14 @@ const errorRate = new Rate('errors');
 
 export const options = {
   stages: [
-    { duration: '1m', target: 50 },   // ramp up to 50 users
-    { duration: '3m', target: 50 },   // stay at 50 for 3 min
-    { duration: '1m', target: 200 },  // spike to 200
-    { duration: '1m', target: 0 },    // ramp down
+    { duration: '1m', target: 50 }, // ramp up to 50 users
+    { duration: '3m', target: 50 }, // stay at 50 for 3 min
+    { duration: '1m', target: 200 }, // spike to 200
+    { duration: '1m', target: 0 }, // ramp down
   ],
   thresholds: {
-    http_req_duration: ['p95<500'],   // 95% of requests < 500ms
-    http_req_failed: ['rate<0.01'],   // < 1% error rate
+    http_req_duration: ['p95<500'], // 95% of requests < 500ms
+    http_req_failed: ['rate<0.01'], // < 1% error rate
     errors: ['rate<0.01'],
   },
 };
@@ -3992,9 +3994,9 @@ export default function () {
   });
 
   const success = check(res, {
-    'status is 200': (r) => r.status === 200,
-    'response time < 200ms': (r) => r.timings.duration < 200,
-    'has data field': (r) => JSON.parse(r.body).data !== undefined,
+    'status is 200': r => r.status === 200,
+    'response time < 200ms': r => r.timings.duration < 200,
+    'has data field': r => JSON.parse(r.body).data !== undefined,
   });
 
   errorRate.add(!success);
@@ -4661,7 +4663,7 @@ describe('User API Contract', () => {
         }),
       });
 
-    await provider.executeTest(async (mockServer) => {
+    await provider.executeTest(async mockServer => {
       const user = await fetchUser(mockServer.url, '123');
       expect(user.name).toBe('Alice');
     });
@@ -5347,4 +5349,4 @@ Shared responsibilities:
 
 ---
 
-*This document consolidates and extends the content from TESTING-DEEP.md and TESTING-STRATEGY-DEEP.md into a single, comprehensive enterprise testing reference. All original content has been preserved and organized into a unified structure covering the complete testing ecosystem.*
+_This document consolidates and extends the content from TESTING-DEEP.md and TESTING-STRATEGY-DEEP.md into a single, comprehensive enterprise testing reference. All original content has been preserved and organized into a unified structure covering the complete testing ecosystem._
