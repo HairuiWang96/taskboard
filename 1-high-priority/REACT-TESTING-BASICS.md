@@ -519,7 +519,7 @@ only in the context of a <Router>".
 ```
 
 ```tsx
-// src/test/render.tsx — a custom render with all your providers
+// src/test/render.tsx — a custom render with all your providers‼️
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router'; // v7+; on React Router v6 it's 'react-router-dom'
@@ -536,7 +536,7 @@ export function renderWithProviders(ui: ReactElement, { route = '/' } = {}) {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      {/* MemoryRouter = a router that lives in memory — no real URL bar needed */}
+      {/* MemoryRouter = a router that lives in memory — no real URL bar needed */}‼️
       <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
     </QueryClientProvider>,
   );
@@ -555,7 +555,7 @@ it('shows the profile page', async () => {
 
 ```tsx
 // ── Zustand: no provider needed, but RESET the store between tests ─────────
-// A Zustand store is global, so state from one test leaks into the next.
+// A Zustand store is global, so state from one test leaks into the next.‼️
 import { useCartStore } from '../stores/cartStore';
 
 const initialState = useCartStore.getState();
@@ -592,12 +592,12 @@ import { renderHook, act } from '@testing-library/react';
 import { useToggle } from './useToggle';
 
 it('toggles on and off', () => {
-  // renderHook runs the hook inside a tiny invisible test component
+  // renderHook runs the hook inside a tiny invisible test component‼️
   const { result } = renderHook(() => useToggle());
 
   expect(result.current.on).toBe(false);
 
-  // ‼️ Anything that updates state OUTSIDE a user event goes inside act()
+  // ‼️ Anything that updates state OUTSIDE a user event goes inside act()‼️‼️
   act(() => result.current.toggle());
   expect(result.current.on).toBe(true);
 
@@ -605,14 +605,14 @@ it('toggles on and off', () => {
   expect(result.current.on).toBe(false);
 });
 
-// ‼️ result.current is always the LATEST value — read it AFTER act(),
+// ‼️ result.current is always the LATEST value — read it AFTER act(),‼️
 // don't save it to a variable before.
 ```
 
 ```text
 ‼️ Only test a hook on its own when it's REUSED or has real logic.
    A hook used by one component is usually better tested THROUGH that
-   component — it's closer to what the user sees.
+   component — it's closer to what the user sees.‼️
 ```
 
 ---
@@ -635,7 +635,7 @@ export function Toast({ message }: { message: string }) {
 import { render, screen, act } from '@testing-library/react';
 
 describe('Toast', () => {
-  beforeEach(() => vi.useFakeTimers()); // ‼️ fake clock — time only moves when YOU say
+  beforeEach(() => vi.useFakeTimers()); // ‼️ fake clock — time only moves when YOU say‼️
   afterEach(() => vi.useRealTimers()); // ‼️ always switch back
 
   it('disappears after 3 seconds', () => {
@@ -652,7 +652,7 @@ describe('Toast', () => {
 
 ```text
 ‼️ FAKE TIMERS + userEvent: tell userEvent about the fake clock, or its
-   internal delays never finish and the test hangs:
+   internal delays never finish and the test hangs:‼️
 
      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
@@ -667,7 +667,7 @@ describe('Toast', () => {
 
 ```bash
 npm test                         # watch mode — reruns affected tests on save
-npx vitest run                   # run once and exit (CI)
+npx vitest run                   # run once and exit (CI)‼️
 npx vitest Counter               # only files matching "Counter"
 npx vitest -t "resets"           # only tests whose name matches "resets"
 npx vitest --coverage            # coverage report (prompts to install @vitest/coverage-v8)
@@ -675,7 +675,7 @@ npx vitest --ui                  # browser UI (prompts to install @vitest/ui)
 ```
 
 ```tsx
-// Focus or skip while debugging — ‼️ never commit these
+// Focus or skip while debugging — ‼️ never commit these‼️
 it.only('runs ONLY this test in the file', () => {});
 it.skip('skips this test', () => {});
 it.todo('write this test later');
@@ -697,7 +697,7 @@ it.todo('write this test later');
 ✗ SKIP
   - Internal state values                 "state.isOpen is true"
   - That React works                      "useState updates" — React is tested
-  - Exact CSS / pixel layout              → visual tests or E2E
+  - Exact CSS / pixel layout              → visual tests or E2E‼️
   - Third-party libraries themselves      trust the date picker; test YOUR use of it
   - Every tiny presentational component   a <Card> that only renders children
 
@@ -717,7 +717,7 @@ it.todo('write this test later');
 
 ‼️ 3. Testing implementation details.
    Checking state, calling component methods, counting renders. Test what's
-   on screen instead.
+   on screen instead.‼️
 
 ‼️ 4. Querying by class name or test id first.
    Use getByRole / getByLabelText. Test ids are the last resort.
@@ -740,7 +740,7 @@ it.todo('write this test later');
    Something updated AFTER your test stopped looking — usually a fetch that
    finished late. Wait for the final UI with findBy, so the test ends after it.
 
-‼️ 10. Big snapshot tests.
+‼️ 10. Big snapshot tests.‼️
    toMatchSnapshot() on a whole page → huge files nobody reads, updated
    blindly with -u. Prefer specific assertions.
 
@@ -772,7 +772,7 @@ it('does the thing', async () => {
 screen.getByRole('button', { name: 'Save' })   // must exist now
 screen.queryByText('Error')                    // null if missing → for .not
 await screen.findByText('Ada')                 // waits for it
-screen.getAllByRole('listitem')                // several → array
+screen.getAllByRole('listitem')                // several → array‼️
 screen.debug()                                 // print the DOM
 
 // ── MOCKS ─────────────────────────────────────────────────────────────────
@@ -791,14 +791,14 @@ act(() => result.current.toggle());
 expect(result.current.on).toBe(true);
 
 // ── TIMERS ────────────────────────────────────────────────────────────────
-vi.useFakeTimers();
+vi.useFakeTimers();‼️
 act(() => vi.advanceTimersByTime(3000));
 vi.useRealTimers();
 ```
 
 ```text
 RULES
-  1. Test what the user sees, not internals
+  1. Test what the user sees, not internals‼️
   2. getByRole first, getByTestId last
   3. await every user action and findBy
   4. findBy for anything that appears later
