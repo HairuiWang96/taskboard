@@ -96,6 +96,7 @@ Root files (start here):
 | [DESIGN-PATTERNS-LOW-DEEP.md](2-medium-priority/DESIGN-PATTERNS-LOW-DEEP.md) | GoF patterns in JS/TS |
 | [WEBSOCKETS-REALTIME-DEEP.md](2-medium-priority/WEBSOCKETS-REALTIME-DEEP.md) | WebSocket, SSE, real-time patterns |
 | [DOCKER-BASICS.md](2-medium-priority/DOCKER-BASICS.md) | Beginner guide — images vs containers, first Dockerfile, ports, volumes, compose |
+| [TERRAFORM-BASICS.md](2-medium-priority/TERRAFORM-BASICS.md) | Beginner guide — init/plan/apply, reading plans, AWS example, variables, state, modules, environments |
 | [OPENTELEMETRY-BASICS.md](2-medium-priority/OPENTELEMETRY-BASICS.md) | Beginner guide — traces & spans, auto-instrumentation, custom spans, Collector, sampling |
 | [DOCKER-KUBERNETES-DEEP.md](2-medium-priority/DOCKER-KUBERNETES-DEEP.md) | Containers, pods, deployments, services |
 | [CSS-HTML-LIVE-CODING.md](2-medium-priority/CSS-HTML-LIVE-CODING.md) | CSS live coding: flexbox, grid, components from scratch, responsive design |
