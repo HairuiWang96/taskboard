@@ -21,10 +21,10 @@
   - [5. The Event Loop — One Picture](#5-the-event-loop--one-picture)
   - [6. The Browser Runtime](#6-the-browser-runtime)
   - [7. The Node.js Runtime](#7-the-nodejs-runtime)
-  - [8. Deno & Bun](#8-deno--bun)
+  - [8. Deno \& Bun](#8-deno--bun)
   - [9. Edge Runtimes](#9-edge-runtimes)
   - [10. Where React Code Actually Runs](#10-where-react-code-actually-runs)
-  - [11. Versions & Compatibility](#11-versions--compatibility)
+  - [11. Versions \& Compatibility](#11-versions--compatibility)
   - [12. Common Beginner Mistakes](#12-common-beginner-mistakes)
   - [13. Cheat Sheet](#13-cheat-sheet)
   - [Related Files](#related-files)
@@ -34,7 +34,7 @@
 ## 1. What a Runtime Is
 
 ```text
-JavaScript code is just text. Something has to READ it and RUN it — and give
+JavaScript code is just text. ‼️ Something has to READ it and RUN it — and give
 it a world to interact with: a screen, files, the network, a clock.
 
 ‼️ RUNTIME IN ONE SENTENCE
@@ -61,24 +61,24 @@ it a world to interact with: a screen, files, the network, a clock.
 
   ENGINE    Understands and executes the JavaScript LANGUAGE itself:
             variables, functions, objects, arrays, Promise, JSON, Math…
-            Knows NOTHING about web pages, files or networks.
+            Knows NOTHING about web pages, files or networks.‼️
 
   RUNTIME   Engine + extra APIs + an event loop (§5).
             The extra APIs are what let JS do useful things.
 
   The analogy:
-    Engine   = a car engine — powerful, but on its own it goes nowhere
-    Runtime  = the whole car — engine + wheels + steering + dashboard
+    Engine   = a car engine —- powerful, but on its own it goes nowhere
+    Runtime  = the whole car —- engine + wheels + steering + dashboard
 
-  RUNTIME = ENGINE + APIs + EVENT LOOP
+  RUNTIME = ENGINE + APIs + EVENT LOOP‼️
 ```
 
 ```text
 THE MAIN ENGINES
   V8               Google — inside Chrome, Edge, Node.js, Deno
-  SpiderMonkey     Mozilla — inside Firefox
-  JavaScriptCore   Apple — inside Safari, and Bun
-  Hermes           Meta — built for React Native apps
+  SpiderMonkey     Mozilla — inside Firefox‼️
+  JavaScriptCore   Apple — inside Safari, and Bun‼️
+  Hermes           Meta — built for React Native apps‼️
 
 ‼️ One engine, many runtimes: V8 powers Chrome AND Node.js AND Deno.
    They run your code the same way — they just offer different APIs.‼️
@@ -120,7 +120,7 @@ THE MAIN ENGINES
    let/const, functions, classes, arrays, objects, Map, Set,
    Promise, async/await, JSON, Math, Date, RegExp, Error
 
-COMMON WEB APIS — now in browsers AND Node AND Deno AND Bun AND edge
+COMMON WEB APIS — now in browsers AND Node AND Deno AND Bun AND edge‼️
    fetch, URL, setTimeout, console, TextEncoder,
    crypto.randomUUID(), structuredClone, AbortController
 
@@ -156,7 +156,7 @@ const isNode = typeof process !== 'undefined' && !!process.versions?.node;
 ‼️ JavaScript runs on ONE THREAD — it does one thing at a time.
    So how does it wait for a network request without freezing?
 
-   It DOESN'T wait. It hands slow work to the RUNTIME and keeps going.
+   It DOESN'T wait. It hands slow work ‼️ to the RUNTIME and keeps going.
    When the work is done, the runtime puts a callback in a queue, and the
    EVENT LOOP runs it when JS is free.‼️
 
@@ -177,13 +177,13 @@ const isNode = typeof process !== 'undefined' && !!process.versions?.node;
 
 ```javascript
 console.log('1 sync');
-setTimeout(() => console.log('4 timeout'), 0);       // task queue
+setTimeout(() => console.log('4 timeout'), 0); // task queue
 Promise.resolve().then(() => console.log('3 promise')); // microtask queue
 console.log('2 sync');
 
 // Prints: 1 sync, 2 sync, 3 promise, 4 timeout
 // ‼️ All normal code first → then ALL microtasks (promises) → then the next task.
-// setTimeout(..., 0) means "as soon as possible", NOT "right now".
+// setTimeout(..., 0) means "as soon as possible", NOT "right now".‼️
 ```
 
 ```text
@@ -191,7 +191,7 @@ console.log('2 sync');
    A long loop on the main thread blocks EVERYTHING:
      browser → the page freezes, clicks don't respond
      Node    → the server can't answer ANY other request
-   Heavy work → Web Workers (browser) or worker_threads (Node).
+   Heavy work → Web Workers (browser) or worker_threads (Node).‼️
 ```
 
 ---
@@ -207,7 +207,7 @@ What the browser gives your JavaScript (on top of the language):
   Storage          localStorage, sessionStorage, IndexedDB, cookies
   Timers           setTimeout, setInterval, requestAnimationFrame
   Device           navigator.geolocation, clipboard, camera (with permission)
-  Background       Web Workers, Service Workers
+  Background       Web Workers, Service Workers‼️
 
 ‼️ THE BROWSER IS A SANDBOX — for the user's safety, page JS CANNOT:
    - read or write files on the computer (only ones the user picks)
@@ -233,7 +233,7 @@ What Node gives you (on top of the language):
   http            servers    the base that Express and Nest build on
   process         the program   process.env.DATABASE_URL, process.argv, process.exit()
   path, os        file paths, system info
-  child_process   run other programs
+  child_process   run other programs‼️
   npm             the package manager that comes with it
 
 ‼️ NO SANDBOX — Node code can do anything your user account can:
@@ -260,7 +260,7 @@ MODULES — two systems, both in Node:
   ‼️ Use ES modules for new code ("type": "module" in package.json).
      You'll still see require() in older projects and tutorials.
 
-TypeScript: recent Node versions can run simple .ts files directly
+TypeScript: recent Node versions can run simple .ts files directly‼️
 (`node app.ts`) by stripping the types. Bigger projects still compile with tsc
 or a bundler. → see TYPESCRIPT-DEEP.md
 ```
@@ -297,7 +297,7 @@ Both are alternatives to Node.js. Same language, similar server APIs.
 
 ```text
 "The edge" = servers spread around the world, close to users (a CDN).
-An edge runtime runs SMALL JavaScript functions on those servers.
+An edge runtime runs SMALL JavaScript functions on those servers.‼️
 
   Cloudflare Workers, Vercel Edge Functions, Deno Deploy, Netlify Edge
 
@@ -307,7 +307,7 @@ An edge runtime runs SMALL JavaScript functions on those servers.
 
 GOOD FOR: redirects, auth checks, A/B tests, personalising a page, simple APIs
 
-‼️ They are NOT full Node.js. Usually:
+‼️ They are NOT full Node.js. Usually:‼️
    ✓ web-standard APIs: fetch, Request, Response, URL, crypto
    ✗ often no fs, limited or no native Node modules
    ✗ short time and memory limits per request
@@ -335,11 +335,11 @@ export default {
   YOUR REACT PROJECT
   ═══════════════════════════════════════════════════════════════════════════
 
-  ① BUILD TIME — runs in NODE.JS (on your laptop / CI)
+  ① BUILD TIME — runs in NODE.JS (on your laptop / CI)‼️
      Vite, TypeScript, ESLint, Vitest, npm
      → turns your .tsx files into plain .js the browser can understand
      ‼️ This is why you need Node installed for FRONTEND work, even though
-        your app never runs in Node for users.
+        your app never runs in Node for users.‼️
 
   ② IN THE BROWSER — the BROWSER runtime (on the user's device)
      react + react-dom: renders components, handles clicks, useState,
@@ -355,7 +355,7 @@ export default {
      Same React ideas (components, hooks), but renders native mobile views
      instead of a DOM
 
-  A plain Vite + React app (like this repo's client/) uses ① and ② only.
+  A plain Vite + React app (like this repo's client/) uses ① and ② only.‼️
 ```
 
 ```tsx
@@ -391,7 +391,7 @@ BROWSERS
   - New JS and CSS features arrive in different browsers at different times
   - Check support: caniuse.com, or MDN's "Baseline" badge
     (Baseline = works in all major browsers)
-  - Your bundler can TRANSPILE newer syntax into older syntax, and POLYFILLS
+  - ‼️ Your bundler can TRANSPILE newer syntax into older syntax, and POLYFILLS
     add missing APIs — set your targets in the build config
 
 NODE.JS
@@ -424,7 +424,7 @@ NODE.JS
    Everything sent to the browser is public. Keys stay on the server.
 
 ‼️ 5. Thinking React "is" the runtime.
-   React is a library. The browser (or Node, or Hermes) is the runtime.
+   React is a library. The browser (or Node, or Hermes) is the runtime.‼️
 
 ‼️ 6. Blocking the event loop.
    A huge synchronous loop freezes the page — or stops a Node server from
@@ -434,13 +434,13 @@ NODE.JS
    It runs after the current code AND all pending promises.
 
 ‼️ 8. Assuming a new feature works in every browser.
-   Check caniuse / Baseline, especially for Safari.
+   Check caniuse / Baseline, especially for Safari.‼️
 
 ‼️ 9. Unpinned Node versions.
    Different laptops and servers run different Node → mysterious failures.
 
 ‼️ 10. Using any npm package on the edge.
-   Edge runtimes aren't full Node. Packages that need fs or native modules fail.
+   Edge runtimes aren't full Node. Packages that need fs or native modules fail.‼️
 ```
 
 ---
@@ -456,8 +456,8 @@ DEFINITIONS
 WHICH RUNTIME FOR WHAT
   Website / web app UI            → browser
   Backend API, scripts            → Node (or Deno / Bun)
-  Build tools (Vite, tsc, tests)  → Node
-  Tiny fast functions near users  → edge (Cloudflare Workers, Vercel Edge)
+  Build tools (Vite, tsc, tests)  → Node‼️
+  Tiny fast functions near users  → edge (Cloudflare Workers, Vercel Edge)‼️
   Mobile app                      → React Native (Hermes)
   Desktop app                     → Electron
 
