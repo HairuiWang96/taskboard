@@ -22,9 +22,9 @@
   - [5. Your First Project — Free, No Cloud Account](#5-your-first-project--free-no-cloud-account)
   - [6. Reading a Plan](#6-reading-a-plan)
   - [7. A Real Example — AWS](#7-a-real-example--aws)
-  - [8. Variables, Locals & Outputs](#8-variables-locals--outputs)
+  - [8. Variables, Locals \& Outputs](#8-variables-locals--outputs)
   - [9. State — Terraform's Memory](#9-state--terraforms-memory)
-  - [10. Many of the Same Thing — `for_each` & `count`](#10-many-of-the-same-thing--for_each--count)
+  - [10. Many of the Same Thing — `for_each` \& `count`](#10-many-of-the-same-thing--for_each--count)
   - [11. Modules — Reusable Blocks](#11-modules--reusable-blocks)
   - [12. Environments — dev, staging, prod](#12-environments--dev-staging-prod)
   - [13. Common Beginner Mistakes](#13-common-beginner-mistakes)
@@ -53,24 +53,24 @@ That's called INFRASTRUCTURE AS CODE (IaC):
   ✓ it's in git — reviewed in pull requests, with history
   ✓ staging and prod built from the SAME code
   ✓ repeatable — rebuild everything with one command
-  ✓ the code IS the documentation
+  ✓ the code IS the documentation‼️
 ```
 
 ```text
-‼️ DECLARATIVE — you describe WHAT you want, not the steps to get there.
+‼️ DECLARATIVE — you describe WHAT you want, ‼️ not the steps to get there.
 
   ✗ "create a bucket, then turn on versioning, then..."      (a script)
   ✓ "there should be a bucket called X with versioning on"  (Terraform)
 
   Run it once  → it creates the bucket.
   Run it again → nothing to do — it already matches.
-  Change the file → it changes ONLY what's different.
+  Change the file → it changes ONLY what's different.‼️
 
 Works with AWS, Google Cloud, Azure, Cloudflare, GitHub, Datadog, Vercel…
 thousands of services, through PROVIDERS (§2).
 
 Note: OpenTofu is an open-source fork of Terraform. Same language, same
-commands (`tofu` instead of `terraform`). Everything here works in both.
+commands (`tofu` instead of `terraform`). Everything here works in both.‼️
 ```
 
 ---
@@ -80,7 +80,7 @@ commands (`tofu` instead of `terraform`). Everything here works in both.
 ```text
 ‼️ THE WORDS YOU'LL SEE IN EVERY FILE.
 
-  PROVIDER      A plugin that talks to one service's API.
+  PROVIDER      A plugin that talks to one service's API.‼️
                 "aws", "google", "cloudflare", "github".
   RESOURCE      One thing Terraform CREATES and MANAGES.
                 A bucket, a database, a DNS record.
@@ -88,11 +88,11 @@ commands (`tofu` instead of `terraform`). Everything here works in both.
                 "what's my AWS account id?", "find the latest Ubuntu image".
   VARIABLE      An input — so the same code works for dev AND prod.
   OUTPUT        A value printed after apply — a URL, a bucket name.
-  LOCAL         A named value used inside the config, to avoid repeating yourself.
-  STATE         Terraform's record of what it created (§9).
+  LOCAL         A named value used inside the config, to avoid repeating yourself.‼️
+  STATE         Terraform's record of what it created (§9).‼️
   MODULE        A reusable folder of Terraform code (§11).
 
-Files end in .tf and are written in HCL (HashiCorp Configuration Language).
+Files end in .tf and are written in HCL (HashiCorp Configuration Language).‼️
 Terraform reads ALL .tf files in a folder together — the file names are
 just for humans.
 ```
@@ -142,7 +142,7 @@ syntax highlighting, autocomplete, and format-on-save.
 ‼️ THE FOUR COMMANDS YOU'LL USE 95% OF THE TIME.
 
   terraform init       Download providers, set up the folder.
-                       Run once, and again after adding a provider or module.
+                       Run once, and again after adding a provider or module.‼️
 
   terraform plan       DRY RUN. "Here's what I WOULD change." Changes nothing.‼️
 
@@ -161,7 +161,7 @@ syntax highlighting, autocomplete, and format-on-save.
 ```
 
 ```bash
-# Two helpers worth running all the time
+# Two helpers worth running all the time‼️
 terraform fmt        # auto-format all .tf files (like Prettier)
 terraform validate   # check syntax and references, without touching the cloud
 ```
@@ -216,7 +216,7 @@ terraform destroy                    # type "yes" → hello.txt is deleted
 ```
 
 ```text
-‼️ Notice what you DIDN'T do: you never wrote "create file" or "delete file".
+‼️ Notice what you DIDN'T do: you never wrote "create file" or "delete file".‼️
    You described the result, and Terraform worked out the steps.‼️
 
 After apply, look in the folder:
@@ -243,14 +243,14 @@ After apply, look in the folder:
 ‼️ "must be replaced" IS THE DANGEROUS ONE.
    Some settings can't be changed in place — e.g. a database's name or a
    bucket's name. Terraform deletes the old one and makes a new, EMPTY one.
-   For a database, that means ALL ITS DATA IS GONE.
+   For a database, that means ALL ITS DATA IS GONE.‼️
 
    In the first project, changing `name` replaced the file — harmless there.
    On a real database, stop and check before saying yes.‼️
 ```
 
 ```hcl
-# Safety net for things that must NEVER be deleted
+# Safety net for things that must NEVER be deleted‼️
 resource "aws_db_instance" "main" {
   # ...
 
@@ -330,7 +330,7 @@ resource "aws_s3_bucket_public_access_block" "uploads" {
 ```
 
 ```text
-‼️ REFERENCES SET THE ORDER AUTOMATICALLY.
+‼️ REFERENCES SET THE ORDER AUTOMATICALLY.‼️
    aws_s3_bucket_versioning uses aws_s3_bucket.uploads.id, so Terraform knows
    the bucket must exist FIRST. You never write "do this, then that" —
    Terraform builds the order from the references. Unrelated resources are
@@ -409,7 +409,7 @@ output "uploads_bucket_arn" {
 ```text
   var.x      an INPUT, set from outside         (variable "x")
   local.x    a value computed INSIDE            (locals { x = ... })
-  output     something you want to SEE or share
+  output     something you want to SEE or share‼️
 
   terraform output                  print all outputs again
   terraform output -raw uploads_bucket_name   just the value (for scripts)
@@ -436,9 +436,9 @@ Every plan = compare THREE things:
 ```text
 ‼️ THE STATE RULES
 
-1. NEVER EDIT IT BY HAND. Use terraform state commands if you must.
+1. NEVER EDIT IT BY HAND. Use terraform state commands if you must.‼️
 
-2. NEVER COMMIT IT TO GIT. It often contains SECRETS in plain text —
+2. NEVER COMMIT IT TO GIT. It often contains SECRETS in plain text —‼️
    database passwords, keys — because providers store resource details.
 
 3. ON A TEAM, STORE IT REMOTELY — not on one person's laptop. Everyone
@@ -641,10 +641,10 @@ TERRAFORM IN CI — how most teams run it
    Laptop dies → Terraform forgets everything. Use remote state with locking.
 
 ‼️ 4. Changing things by hand in the console.
-   The next apply undoes them (drift). Change it in code instead.
+   The next apply undoes them (drift). Change it in code instead.‼️
 
 ‼️ 5. Access keys inside .tf files.
-   Use `aws configure` / SSO / environment variables. Never in the code.
+   Use `aws configure` / SSO / environment variables. Never in the code.‼️
 
 ‼️ 6. Not pinning provider versions.
    A new major version changes behaviour under you. Use version = "~> 6.0"
@@ -657,7 +657,7 @@ TERRAFORM IN CI — how most teams run it
    One wrong apply hits production. Separate state per environment.
 
 ‼️ 9. count for lists of things.
-   Removing one item shifts the rest → mass replace. Use for_each.
+   Removing one item shifts the rest → mass replace. Use for_each.‼️
 
 ‼️ 10. Renaming a resource in code.
    aws_s3_bucket.uploads → aws_s3_bucket.files looks like "delete one, create
