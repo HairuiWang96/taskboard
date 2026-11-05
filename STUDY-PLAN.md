@@ -15,6 +15,30 @@ Adjust the pace based on your timeline — compress to 4 weeks by doubling up we
 
 ---
 
+## New to a Topic? Read the Beginner Guide First
+
+The `-DEEP` files assume you already know the basics. If a week's topic is new to you,
+spend the first session on its beginner guide (each takes 1–2 hours), then start the plan.
+
+| Week | Topic | Beginner guide |
+|---|---|---|
+| 1 | How JavaScript runs (browser, Node, event loop) | `JS-RUNTIME-BASICS.md` |
+| 2 | Server state in React | `TANSTACK-QUERY-BASICS.md` |
+| 2 | Client state in React | `ZUSTAND-BASICS.md` |
+| 2 | Error handling in React | `REACT-ERROR-BOUNDARY-BASICS.md` |
+| 3 | SQL | `SQL-BASICS-DEEP.md` |
+| 3 | NestJS (if you know Express) | `NESTJS-BASICS.md` |
+| 3 | ORMs | `TYPEORM-BASICS.md` |
+| 6 | Testing in general | `TESTING-BASICS.md` |
+| 6 | React component tests (Vitest) | `REACT-TESTING-BASICS.md` |
+| 6 | CSS layout | `CSS-BASICS.md` |
+| Any | Docker | `DOCKER-BASICS.md` |
+| Any | Terraform | `TERRAFORM-BASICS.md` |
+| Any | Tracing / observability | `OPENTELEMETRY-BASICS.md` |
+| Any | AI tools — and how to talk about them in interviews | `AI-TOOLS-BASICS.md` |
+
+---
+
 ## Week 1 — JavaScript Core + TypeScript
 
 **Goal:** Be able to explain any JS concept from first principles and write clean TS.
