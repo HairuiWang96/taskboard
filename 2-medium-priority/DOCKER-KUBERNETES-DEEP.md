@@ -152,7 +152,7 @@ RUN apk add --no-cache python3 make g++
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --only=production   # production deps only
+RUN npm ci --omit=dev            # production deps only
 
 # Stage 2: Build (TypeScript compile, bundling, etc.)
 FROM node:24-alpine AS builder

@@ -129,7 +129,7 @@ Docker CLI  ──→  Docker daemon (dockerd)  ──→  containerd  ──→
 
 Image layers (OverlayFS):
   ubuntu:22.04      ← base layer (read-only)
-  + node:18         ← node layer (read-only)
+  + node:24         ← node layer (read-only)
   + npm install     ← dependencies layer (read-only)
   + COPY app/       ← app code layer (read-only)
   + container rw    ← thin writable layer per running container
@@ -250,10 +250,10 @@ COPY src/ ./src/
 
 ```dockerfile
 # Size comparison for Node.js:
-# node:18          ~950MB  — full Debian, all dev tools
-# node:18-slim     ~240MB  — Debian, minimal packages
+# node:24          ~950MB  — full Debian, all dev tools
+# node:24-slim     ~240MB  — Debian, minimal packages
 # node:24-alpine   ~180MB  — Alpine Linux, musl libc
-# node:18-distroless ~120MB — no shell, no package manager, hardened
+# distroless/nodejs24 ~120MB — no shell, no package manager, hardened
 
 # ✓ Production: use alpine or distroless
 FROM node:24-alpine
@@ -274,7 +274,7 @@ RUN apk add --no-cache python3 make g++
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --only=production   # production deps only
+RUN npm ci --omit=dev            # production deps only
 
 # Stage 2: Build (TypeScript compile, bundling, etc.)
 FROM node:24-alpine AS builder
@@ -2573,14 +2573,14 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
   backend "s3" {              # store state in S3 (not local — team collaboration)
     bucket         = "my-tf-state"
     key            = "production/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "terraform-locks"   # state locking
+    use_lockfile   = true   # state locking (S3 lock file — Terraform 1.10+; replaces DynamoDB)
     encrypt        = true
   }
 }
@@ -2666,10 +2666,12 @@ terraform apply -target=aws_db_instance.main
 ‼️ State is Terraform's brain — it maps your config to real resources.
    NEVER store state locally for shared projects. Use remote backend.
 
-S3 backend with DynamoDB locking:
+S3 backend with native S3 locking (use_lockfile — Terraform 1.10+):
   - State file stored in S3 (versioned, encrypted)
-  - DynamoDB table provides locking (prevents concurrent modifications)
-  - Multiple team members can safely run terraform at the same time
+  - A .tflock file in the same bucket provides locking (prevents concurrent
+    modifications). Older setups used a DynamoDB table for this — now deprecated.
+  - Multiple team members can safely work on the same infrastructure — one
+    apply at a time
   - S3 versioning = state history (can recover from bad applies)
 ```
 
@@ -2680,13 +2682,15 @@ terraform {
     bucket         = "company-terraform-state"
     key            = "production/networking/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "terraform-state-locks"
+    use_lockfile   = true   # ‼️ lock with a .tflock file in the bucket (Terraform 1.10+)
     encrypt        = true
   }
 }
 
-# ‼️ Bootstrap: create the S3 bucket and DynamoDB table FIRST
+# ‼️ Bootstrap: create the S3 bucket FIRST
 # (manually or with a separate Terraform config using local backend)
+# Older setups also needed a DynamoDB table for locking — that option
+# (dynamodb_table) is deprecated; use_lockfile needs only the bucket.
 resource "aws_s3_bucket" "terraform_state" {
   bucket = "company-terraform-state"
 
@@ -2702,16 +2706,6 @@ resource "aws_s3_bucket_versioning" "terraform_state" {
   }
 }
 
-resource "aws_dynamodb_table" "terraform_locks" {
-  name         = "terraform-state-locks"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-}
 ```
 
 ### State manipulation commands
@@ -3423,7 +3417,7 @@ remote_state {
     key            = "${path_relative_to_include()}/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
-    dynamodb_table = "terraform-state-locks"
+    use_lockfile   = true
   }
 }
 
@@ -5639,7 +5633,7 @@ dast:
 dependency_scan:
   stage: test
   script:
-    - npm audit --production --audit-level=high
+    - npm audit --omit=dev --audit-level=high
     # Or: snyk test --severity-threshold=high
   allow_failure: true   # warn but don't block (many false positives)
 

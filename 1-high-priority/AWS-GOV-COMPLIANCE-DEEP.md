@@ -2367,13 +2367,13 @@ When to use which:‼️
     - More mature CI/CD integration
 
 Terraform state management for enterprise:‼️
-  Remote state in S3 + DynamoDB locking:
+  Remote state in S3 with native locking (use_lockfile, Terraform 1.10+):
     terraform {
       backend "s3" {
         bucket         = "org-terraform-state"
         key            = "project/environment/terraform.tfstate"
         region         = "us-east-1"
-        dynamodb_table = "terraform-state-lock"
+        use_lockfile   = true
         encrypt        = true
         kms_key_id     = "arn:aws:kms:us-east-1:123456789:key/abc-123"
       }

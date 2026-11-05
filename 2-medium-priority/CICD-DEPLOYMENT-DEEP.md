@@ -374,7 +374,7 @@ COPY package*.json ./
 RUN npm ci
 
 # 3. Config files (change occasionally)
-COPY tsconfig.json .eslintrc.js ./
+COPY tsconfig.json eslint.config.js ./
 
 # 4. Source code (changes most often)
 COPY src/ ./src/
@@ -817,7 +817,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
   backend "s3" {              # store state in S3 (not local — team collaboration)

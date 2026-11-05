@@ -91,7 +91,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy source code LAST (this layer changes most often)
 COPY . .
@@ -126,7 +126,7 @@ FROM node:24-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 COPY . .
 
@@ -188,7 +188,7 @@ RUN npm ci                  # all deps including devDependencies
 
 COPY . .
 RUN npm run build           # compiles TypeScript → dist/
-RUN npm prune --production  # remove dev dependencies
+RUN npm prune --omit=dev    # remove dev dependencies
 
 # Stage 2: production (lean runtime image)
 FROM node:24-alpine AS production

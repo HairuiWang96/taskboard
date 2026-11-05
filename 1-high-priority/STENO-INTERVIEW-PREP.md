@@ -1830,12 +1830,13 @@ try {
 
 ```dockerfile
 # Dockerfile — recipe for building a container image:
-FROM node:20-alpine              # base image
+FROM node:24-alpine              # base image
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --production           # install deps
+RUN npm ci                        # install deps (incl. dev deps — the build needs TypeScript)
 COPY . .
 RUN npm run build                 # compile TypeScript
+RUN npm prune --omit=dev          # then drop dev deps to keep the image small
 EXPOSE 3000
 CMD ["node", "dist/index.js"]     # start command
 ```
@@ -1871,12 +1872,12 @@ volumes:
 ```
 
 ```bash
-docker-compose up    # starts app + postgres + redis
-docker-compose down  # stops everything
+docker compose up    # starts app + postgres + redis
+docker compose down  # stops everything
 ```
 
 **Why Docker matters for Steno's stack:**
-1. **Development** — `docker-compose up` gives every developer identical Postgres, Redis, Node.js
+1. **Development** — `docker compose up` gives every developer identical Postgres, Redis, Node.js
 2. **CI/CD** — tests run in containers, same environment as production
 3. **Deployment** — build image once, deploy the same image to staging and production
 4. **Isolation** — each service runs independently; a crash in one doesn't affect others

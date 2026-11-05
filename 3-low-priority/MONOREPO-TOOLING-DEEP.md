@@ -283,19 +283,30 @@ const RemoteButton = React.lazy(() => import('remote_app/Button'));
 ### ESLint — Shared Config Package
 
 ```ts
-// packages/config/eslint-base.js
-module.exports = {
-    extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
-    rules: {
-        'no-console': ['warn', { allow: ['error'] }],
-        '@typescript-eslint/no-unused-vars': 'error',
-    },
-};
+// ESLint flat config (eslint.config.js) — the old .eslintrc format is gone in ESLint 10.
 
-// apps/web/.eslintrc.js
-module.exports = {
-    extends: ['@myorg/config/eslint-base', 'next/core-web-vitals'],
-};
+// packages/config/eslint-base.js — the shared base every app reuses
+import js from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import { defineConfig } from 'eslint/config';
+
+export default defineConfig(
+    js.configs.recommended,
+    tseslint.configs.recommended,
+    {
+        rules: {
+            'no-console': ['warn', { allow: ['error'] }],
+            '@typescript-eslint/no-unused-vars': 'error',
+        },
+    },
+);
+
+// apps/web/eslint.config.js — import the shared base, add app-specific config
+import { defineConfig } from 'eslint/config';
+import base from '@myorg/config/eslint-base';
+import nextVitals from 'eslint-config-next/core-web-vitals';
+
+export default defineConfig(base, nextVitals);
 ```
 
 ---

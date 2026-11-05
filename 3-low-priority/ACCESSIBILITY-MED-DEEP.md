@@ -693,7 +693,15 @@ if (process.env.NODE_ENV !== 'production') {
 
 # eslint-plugin-jsx-a11y: catch issues at write time
 npm install -D eslint-plugin-jsx-a11y
-# .eslintrc: "plugins": ["jsx-a11y"], "extends": ["plugin:jsx-a11y/recommended"]
+# eslint.config.js (flat config — the old .eslintrc format is gone in ESLint 10):
+#   import { defineConfig } from 'eslint/config';
+#   import jsxA11y from 'eslint-plugin-jsx-a11y';
+#   export default defineConfig({
+#     files: ['**/*.{jsx,tsx}'],              // ESLint only checks .js files without this
+#     extends: [jsxA11y.flatConfigs.recommended],
+#   });
+# Next.js projects: eslint-config-next already includes jsx-a11y — don't add it twice.
+# (Check the plugin's ESLint peer range before upgrading ESLint — it lagged behind ESLint 10.)
 ```
 
 ### Manual testing checklist

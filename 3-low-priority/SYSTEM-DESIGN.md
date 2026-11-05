@@ -1339,12 +1339,13 @@ Docker:
   Image → Container (running instance)
 
 Dockerfile basics:
-  FROM node:20-alpine          # base image
+  FROM node:24-alpine          # base image
   WORKDIR /app
   COPY package*.json ./
-  RUN npm ci --only=production # install deps (cached layer if package.json unchanged)
+  RUN npm ci                   # install deps incl. dev deps the build needs (cached layer if package.json unchanged)
   COPY . .
   RUN npm run build
+  RUN npm prune --omit=dev     # drop dev deps after building
   EXPOSE 3000
   CMD ["node", "dist/index.js"]
 
