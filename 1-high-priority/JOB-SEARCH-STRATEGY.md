@@ -153,7 +153,7 @@ The recruiter's job is to qualify you before spending engineering time on you. T
 2-minute summary. Current role → key accomplishments → why you're looking → what you want next. Practise this until it's smooth.
 
 **"What are your compensation expectations?"**
-Do not anchor low. Research market rates first (Levels.fyi, Glassdoor, Blind, Glassdoor).
+Do not anchor low. Research market rates first (Levels.fyi, Glassdoor, Blind).
 
 Tactical responses:
 - "I'm flexible depending on the full package. What's the band for this role?"

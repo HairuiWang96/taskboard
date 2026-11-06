@@ -162,7 +162,7 @@ useEffect(() => {
 // [dep] — run on mount + whenever dep changes
 // ‼️ no array — run after EVERY render (rare, usually a bug)
 
-// React 18 StrictMode: effects run TWICE on mount in development ‼️
+// React 18+ StrictMode: effects run TWICE on mount in development ‼️
 // Purpose: verify your cleanup function correctly reverses the effect
 // This catches missing cleanups
 
@@ -565,29 +565,34 @@ const TaskItem = React.memo(TaskItemBase, (prevProps, nextProps) => {
 // Problem: rendering 10,000 list items creates 10,000 DOM nodes
 // Virtualization: only render items currently visible in the viewport
 
-import { FixedSizeList as List } from 'react-window';
+// ‼️ react-window v2 API (2025+). v1's FixedSizeList / VariableSizeList and
+//    "Row as children" are gone — you pass the row via rowComponent instead.
+import { List, type RowComponentProps } from 'react-window';
 
-function VirtualList({ items }) {
-    const Row = ({ index, style }) => (
-        <div style={style}>
-            {' '}
-            {/* style contains position — MUST apply */}
+// Defined OUTSIDE the parent so it isn't a new component every render.
+// Extra data (items) arrives through rowProps.
+function Row({ index, style, ariaAttributes, items }: RowComponentProps<{ items: Item[] }>) {
+    return (
+        // style contains position — MUST apply. ariaAttributes marks it as a row.
+        <div style={style} {...ariaAttributes}>
             {items[index].name}
         </div>
     );
+}
 
+function VirtualList({ items }: { items: Item[] }) {
     return (
         <List
-            height={600} // visible area height
-            itemCount={items.length}
-            itemSize={50} // height of each row
-            width='100%'
-        >
-            {Row}
-        </List>
+            rowComponent={Row}
+            rowCount={items.length}
+            rowHeight={50} // height of each row (or a function, or useDynamicRowHeight)
+            rowProps={{ items }}
+            style={{ height: 600 }} // visible area height
+        />
     );
 }
 // Only ~15 DOM nodes rendered at a time regardless of list size
+// TanStack Virtual (useVirtualizer) is the headless alternative.
 ```
 
 ### Code splitting
@@ -915,7 +920,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 const schema = z.object({
-    email: z.string().email(),
+    email: z.email(), // Zod 4 — z.string().email() still works but is deprecated
     password: z.string().min(8),
     role: z.enum(['admin', 'user']),
 });
@@ -1099,7 +1104,9 @@ class ResettableErrorBoundary extends React.Component {
         return { error };
     }
 
-    reset = () => this.setState({ error: null, key: k => k + 1 });
+    // ‼️ setState takes an updater FUNCTION for the whole state — not per key.
+    //    ({ key: k => k + 1 } would store the function itself as key.)
+    reset = () => this.setState(s => ({ error: null, key: s.key + 1 }));
 
     render() {
         if (this.state.error) {

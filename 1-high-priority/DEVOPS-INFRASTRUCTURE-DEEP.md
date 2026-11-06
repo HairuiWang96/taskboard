@@ -263,7 +263,7 @@ FROM node:24-alpine
 RUN apk add --no-cache python3 make g++
 
 # Distroless — no shell, minimal attack surface
-# FROM gcr.io/distroless/nodejs18-debian11
+# FROM gcr.io/distroless/nodejs24-debian12
 # Cannot exec into container (no /bin/sh) — debugging harder
 ```
 
@@ -326,7 +326,7 @@ Smaller images = faster pulls, smaller attack surface, less egress cost.
 
 ```dockerfile
 # Multi-stage for a Go service — final image has NO Go toolchain
-FROM golang:1.21-alpine AS builder
+FROM golang:1.27-alpine AS builder
 WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download                      # cache deps layer
@@ -1352,7 +1352,12 @@ Ingress Controller: a Pod running nginx/Traefik/HAProxy/Envoy that
   watches Ingress objects and reconfigures itself when rules change.
 
 You need to install an Ingress Controller (not included in Kubernetes):
-  nginx:   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/...
+  ‼️ The community ingress-nginx controller was RETIRED in March 2026 (repo
+     archived, no more security patches). New clusters: use the Gateway API
+     with a maintained implementation (Envoy Gateway, Istio, Cilium, NGINX
+     Gateway Fabric, Traefik) — or F5's separate "NGINX Ingress Controller".
+     The Ingress API itself is still supported.
+  nginx:   (legacy) kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/...
   Traefik: helm install traefik traefik/traefik
   AWS:     AWS Load Balancer Controller (uses ALB natively)
 ```
@@ -1366,9 +1371,12 @@ kind: Ingress
 metadata:
   name: app-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /        # strip path prefix
+    # (ingress-nginx annotations — that controller is retired, see above)
+    # rewrite-target: / alone rewrites EVERY path to "/". To strip a prefix you need
+    # a regex path like /api(/|$)(.*) with rewrite-target: /$2
+    nginx.ingress.kubernetes.io/rewrite-target: /
     cert-manager.io/cluster-issuer: letsencrypt-prod     # auto TLS via cert-manager
-    nginx.ingress.kubernetes.io/rate-limit: '100'
+    nginx.ingress.kubernetes.io/limit-rps: '100'         # (there is no "rate-limit" annotation)
 spec:
   ingressClassName: nginx
   tls:
@@ -1416,13 +1424,13 @@ kind: Ingress
 metadata:
   name: api-ingress
   annotations:
-    kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing    # or internal
     alb.ingress.kubernetes.io/target-type: ip            # for VPC CNI pod IPs
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:123456:certificate/abc123
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: "443"        # redirect HTTP → HTTPS
     alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:...  # optional WAF
+  # (the old kubernetes.io/ingress.class annotation is deprecated — use spec.ingressClassName)
     alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/group.name: shared-alb     # share ALB across Ingresses
 spec:
@@ -1997,9 +2005,11 @@ spec:
       ports:
         - port: 53
           protocol: UDP
-# ‼️ NetworkPolicy requires a CNI plugin that supports it (Calico, Cilium, Weave)
+# ‼️ NetworkPolicy requires a CNI plugin that supports it (Calico, Cilium; Weave is archived)
 # The default kubenet CNI does NOT enforce NetworkPolicies.
-# On EKS, VPC CNI does NOT enforce NetworkPolicies — install Calico or Cilium alongside it.
+# On EKS, the VPC CNI enforces NetworkPolicies natively since v1.14 (Aug 2023) —
+# turn it on with enableNetworkPolicy=true on the vpc-cni add-on. (Before that you
+# needed Calico or Cilium alongside it.)
 ```
 
 ### OPA/Gatekeeper — policy enforcement
@@ -2341,6 +2351,10 @@ MIXED APPROACH (recommended for large projects):
 
 ```text
 ‼️ IRSA lets Kubernetes pods assume AWS IAM roles without access keys.
+‼️ Newer option: EKS Pod Identity (Nov 2023) — same goal, simpler setup: no OIDC
+   provider per cluster, no role trust-policy edits per cluster; you create a
+   "pod identity association" (namespace + service account → role). AWS now
+   recommends it for new EKS clusters; IRSA still works (and is needed off-EKS).
 
 Before IRSA:
   - Attach IAM role to EC2 instance → ALL pods on that node get the same permissions
@@ -3252,7 +3266,7 @@ tfsec --format json .
 # In GitLab CI
 tfsec_scan:
   stage: validate
-  image: aquasec/tfsec:latest
+  image: aquasec/tfsec:latest   # ‼️ tfsec is deprecated — its checks moved into Trivy (trivy config .)
   script:
     - tfsec . --format json --out tfsec-report.json
   artifacts:
@@ -3294,7 +3308,7 @@ conftest test --policy policy/ terraform-plan.json
 # .gitlab-ci.yml — policy checks in pipeline
 terraform_validate:
   stage: validate
-  image: hashicorp/terraform:1.7
+  image: hashicorp/terraform:1.17
   script:
     - terraform init -backend=false
     - terraform validate
@@ -3796,9 +3810,9 @@ unit_test:
 
 build_image:
   stage: build
-  image: docker:24
+  image: docker:29
   services:
-    - docker:24-dind               # Docker-in-Docker for building images
+    - docker:29-dind               # Docker-in-Docker for building images
   variables:
     DOCKER_HOST: tcp://docker:2376
     DOCKER_TLS_CERTDIR: "/certs"
@@ -3824,7 +3838,7 @@ build_and_push_ecr:
     name: amazon/aws-cli:latest
     entrypoint: [""]
   services:
-    - docker:24-dind
+    - docker:29-dind
   variables:
     DOCKER_HOST: tcp://docker:2376
     AWS_DEFAULT_REGION: us-east-1
@@ -3841,7 +3855,7 @@ build_and_push_ecr:
 
 deploy_staging:
   stage: deploy-staging
-  image: bitnami/kubectl:latest
+  image: alpine/kubectl:1.37.2   # bitnami/kubectl versioned tags went paid in Sept 2025
   environment:
     name: staging
     url: https://staging.example.com
@@ -3855,7 +3869,7 @@ deploy_staging:
 
 deploy_production:
   stage: deploy-production
-  image: bitnami/kubectl:latest
+  image: alpine/kubectl:1.37.2   # bitnami/kubectl versioned tags went paid in Sept 2025
   environment:
     name: production
     url: https://api.example.com
@@ -4673,7 +4687,10 @@ envFromSecret: api-production-secrets
 
 ```bash
 # Install a chart from a repo
-helm repo add bitnami https://charts.bitnami.com/bitnami
+# ‼️ Bitnami stopped publishing free versioned images and chart updates in
+#    Aug-Sept 2025 (Broadcom). Old images moved to docker.io/bitnamilegacy (unpatched).
+#    Prefer an operator (CloudNativePG) or a managed DB for Postgres today.
+helm repo add bitnami https://charts.bitnami.com/bitnami   # legacy — shown for the commands
 helm repo update
 helm install my-postgres bitnami/postgresql \
   --namespace production \
@@ -5608,7 +5625,7 @@ Tools: Pact (most popular), Spring Cloud Contract
 # SAST — Static Application Security Testing
 sast:
   stage: test
-  image: returntocorp/semgrep:latest
+  image: semgrep/semgrep:latest   # (renamed from returntocorp/semgrep)
   script:
     - semgrep --config=auto --json -o semgrep-report.json src/
   artifacts:
@@ -5756,7 +5773,7 @@ Tools:
     - ChaosEngine CRD defines experiments
     - GameDay automation
 
-  AWS Fault Injection Simulator (FIS):
+  AWS Fault Injection Service (FIS — renamed from "Simulator" in 2023):
     - Managed chaos engineering for AWS
     - EC2 instance termination, AZ failure simulation
     - EKS pod deletion, network disruption
@@ -6188,7 +6205,7 @@ spec:
       serviceAccountName: fluent-bit
       containers:
         - name: fluent-bit
-          image: fluent/fluent-bit:2.2
+          image: fluent/fluent-bit:5.1
           volumeMounts:
             - name: varlog
               mountPath: /var/log
@@ -6519,6 +6536,10 @@ Bad alerts (too noisy, cause alert fatigue):
 ### PagerDuty/Opsgenie integration
 
 ```text
+‼️ Opsgenie: end of sale June 2025, shuts down April 5, 2027 — Atlassian is
+   folding it into Jira Service Management. Pick PagerDuty, incident.io,
+   Grafana OnCall/IRM or JSM for new setups.
+
 Alerting flow:
   Prometheus AlertManager → PagerDuty/Opsgenie → On-call engineer
 
@@ -6686,7 +6707,7 @@ Install on EKS:
 
 ```yaml
 # Istio VirtualService — traffic splitting for canary
-apiVersion: networking.istio.io/v1beta1
+apiVersion: networking.istio.io/v1   # v1 since Istio 1.22
 kind: VirtualService
 metadata:
   name: api
@@ -6710,7 +6731,7 @@ spec:
 
 ---
 # DestinationRule — define subsets + circuit breaking
-apiVersion: networking.istio.io/v1beta1
+apiVersion: networking.istio.io/v1   # v1 since Istio 1.22
 kind: DestinationRule
 metadata:
   name: api
@@ -6740,7 +6761,11 @@ spec:
 ### AWS App Mesh
 
 ```text
-‼️ App Mesh = AWS-managed service mesh.
+‼️ App Mesh was SHUT DOWN on Sept 30, 2026 (closed to new customers Sept 2024).
+   The console and resources are gone. Migrate to ECS Service Connect (ECS)
+   or Amazon VPC Lattice / Istio (EKS). Kept here for interview history only.
+
+‼️ App Mesh was an AWS-managed service mesh.
 
 Pros:
   - Fully managed by AWS (no control plane to maintain)
@@ -6755,7 +6780,7 @@ Cons:
   - Smaller community
   - ‼️ Less actively developed — AWS is investing more in VPC Lattice
 
-‼️ For new projects on AWS: consider VPC Lattice (newer, simpler)
+‼️ For projects on AWS today: VPC Lattice or ECS Service Connect (App Mesh is gone)
    For existing Istio users: Istio works fine on EKS
 ```
 
@@ -6769,10 +6794,14 @@ vs Istio:
   - Lighter weight (Rust-based proxy instead of Envoy)
   - Fewer features but covers 90% of use cases
   - mTLS, observability, retries, timeouts
-  - ‼️ No VirtualService-style traffic splitting (limited routing)
+  - Traffic splitting via Gateway API HTTPRoute (weights) — simpler than Istio's
+    VirtualService, fewer knobs
+  - ‼️ Since Feb 2024 the open-source project ships only "edge" releases; stable
+    builds come from Buoyant (free for small orgs, paid for larger companies)
 
 Install:
-  curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install | sh
+  curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install-edge | sh
+  linkerd install --crds | kubectl apply -f -   # CRDs first (since 2.12)
   linkerd install | kubectl apply -f -
   linkerd inject deployment.yaml | kubectl apply -f -
 
@@ -6937,9 +6966,9 @@ test:
 
 build_image:
   stage: build
-  image: docker:24
+  image: docker:29
   services:
-    - docker:24-dind
+    - docker:29-dind
   script:
     - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA

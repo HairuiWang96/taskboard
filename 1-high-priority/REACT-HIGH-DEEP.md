@@ -154,13 +154,21 @@ function Parent({ isLoggedIn }) {
     );
     // Same result — they unmount/mount
 
-    // To PRESERVE state: always render, use CSS to hide
+    // To PRESERVE state: keep both mounted and hide one.
+    // React 19.2+: <Activity> does this properly — hidden content keeps its state,
+    // its effects are cleaned up while hidden, and it renders at low priority.
     return (
         <>
-            <UserDashboard style={{ display: isLoggedIn ? 'block' : 'none' }} />
-            <LoginForm style={{ display: isLoggedIn ? 'none' : 'block' }} />
+            <Activity mode={isLoggedIn ? 'visible' : 'hidden'}>
+                <UserDashboard />
+            </Activity>
+            <Activity mode={isLoggedIn ? 'hidden' : 'visible'}>
+                <LoginForm />
+            </Activity>
         </>
     );
+    // (Before Activity: render both and toggle CSS display — state survives,
+    //  but effects keep running in the hidden one.)
 }
 ```
 
@@ -443,15 +451,16 @@ Hybrid: RSC + Client Components
 ```jsx
 // Server Component (default in Next.js App Router — no 'use client' directive)
 // app/users/page.tsx
+// ✓ Heavy library — imported at the top as usual, but it never ships to the
+//   browser bundle because this file only runs on the server (~100KB saved)
+import { parseMarkdown } from 'heavy-markdown-library';
+
 async function UsersPage() {
     // ✓ Can await directly — no useEffect needed
     const users = await db.select().from(usersTable);
 
     // ✓ Access env vars — never exposed to browser
     console.log(process.env.DATABASE_URL); // safe on server
-
-    // ✓ Heavy library — doesn't ship to browser bundle
-    import { parseMarkdown } from 'heavy-markdown-library'; // ~100KB saved
 
     return <UserList users={users} />;
 }
@@ -483,11 +492,14 @@ function UserList({ users }) {
 ### Serialization boundary
 
 ```jsx
-// Server → Client boundary: props must be serializable
-// ✓ Strings, numbers, arrays, plain objects, Dates
-// ✗ Functions, class instances, undefined (in objects), React elements (sometimes)
+// Server → Client boundary: props must be serializable by React
+// ✓ Primitives (incl. undefined, bigint), arrays, plain objects, Date, Map, Set,
+//   typed arrays, Promises (unwrap with use()), JSX, and Server Functions ('use server')
+// ✗ Ordinary functions, class instances, objects with null prototypes, symbols
+//   that aren't registered with Symbol.for
 
-// ✗ Can't pass a function from Server to Client Component as prop
+// ✗ Can't pass an ordinary function from Server to Client Component as prop
+//   (✓ a Server Function — an async function marked 'use server' — is allowed)
 function ServerComponent() {
     const handleClick = () => console.log('click'); // function
     return <ClientButton onClick={handleClick} />; // ✗ can't serialize
@@ -599,6 +611,11 @@ const handleDelete = useCallback(id => {
     setUsers(prev => prev.filter(u => u.id !== id));
 }, []); // stable reference — safe to pass to React.memo child
 
+// ‼️ REACT COMPILER (1.0, Oct 2025): with the compiler enabled, React memoizes
+//    components, values and callbacks automatically at build time — you mostly
+//    STOP writing useMemo / useCallback / React.memo by hand. Know both: many
+//    codebases don't use the compiler yet, and interviewers ask why it exists.
+
 // When NOT to use them (most of the time):
 // - Simple calculations (adding numbers, basic filtering) — memoization adds overhead
 // - Components that re-render anyway due to parent renders
@@ -618,6 +635,7 @@ const handleDelete = useCallback(id => {
 
 ```jsx
 // React.memo: skip re-render if props haven't changed (shallow comparison)
+// (With React Compiler enabled this is usually automatic — see §7.)
 const UserCard = React.memo(function UserCard({ user, onDelete }) {
     return (
         <div>

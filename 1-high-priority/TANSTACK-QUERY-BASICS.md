@@ -322,7 +322,12 @@ useQuery({
 // Order keys from GENERAL to SPECIFIC. ‼️ This matters because invalidation
 // matches by PREFIX (§8), so the hierarchy is what gives you control.
 
-['todos'][('todos', 'list')][('todos', 'list', { done: false })][('todos', 'detail', '123')]; // everything todo-related // all lists // one specific filtered list // one specific todo
+const keyHierarchy = [
+  ['todos'], //                                 everything todo-related
+  ['todos', 'list'], //                         all lists
+  ['todos', 'list', { done: false }], //        one specific filtered list
+  ['todos', 'detail', '123'], //                one specific todo
+];
 
 // ‼️ Once you have more than a handful, centralise them in a factory so a typo
 // cannot silently create a second cache entry:

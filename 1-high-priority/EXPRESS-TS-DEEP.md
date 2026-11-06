@@ -512,10 +512,15 @@ app.get('/users/:userId/posts/:postId', (req: Request<{ userId: string; postId: 
     req.params.postId; // '456'
 });
 
-// Optional parameters (regex)
+// Regex-constrained parameters — ‼️ EXPRESS 4 ONLY
 app.get('/users/:id(\\d+)', (req: Request<{ id: string }>, res: Response): void => {
     // Only matches if :id is all digits — /users/abc returns 404
 });
+// ‼️ Express 5 (path-to-regexp v8) REMOVED inline regex — the line above throws
+//    "Unexpected ( at index 10" at startup. In Express 5, validate inside the
+//    handler (or with Zod), or pass a real RegExp: app.get(/^\/users\/(\d+)$/, ...)
+
+// Optional parameters — Express 5 uses braces: '/users{/:id}'  (Express 4: '/users/:id?')
 ```
 
 ### express.Router() — modular route grouping
@@ -1037,7 +1042,10 @@ const validateRequest =
                 res.status(400).json({ error: result.error.flatten() });
                 return;
             }
-            req.query = result.data;
+            // ‼️ Express 5: req.query is a GETTER — `req.query = ...` throws
+            //    "Cannot set property query ... which has only a getter".
+            //    Store the parsed value somewhere else instead:
+            res.locals.query = result.data;
         }
         next();
     };
@@ -1056,7 +1064,7 @@ app.get(
         query: getUserQuerySchema,
     }),
     asyncHandler(async (req: Request<GetUserParams, {}, {}, GetUserQuery>, res: Response): Promise<void> => {
-        const user = await getUser(req.params.id, req.query.include);
+        const user = await getUser(req.params.id, (res.locals.query as GetUserQuery).include);
         res.json(user);
     }),
 );
@@ -1154,7 +1162,11 @@ app.post(
 
         // Refresh token — long-lived, stored in httpOnly cookie
         const refreshToken: string = crypto.randomBytes(64).toString('hex');
-        await storeRefreshToken(user.id, await bcrypt.hash(refreshToken, 10));
+        // Store a HASH, never the raw token. Use SHA-256 (not bcrypt): the token is already
+        // 64 random bytes, and a deterministic hash lets /auth/refresh look it up by value.
+        // (bcrypt adds a random salt, so findRefreshToken(token) could never match it.)
+        const tokenHash: string = crypto.createHash('sha256').update(refreshToken).digest('hex');
+        await storeRefreshToken(user.id, tokenHash);
 
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true, // no JS access — safe from XSS‼️
@@ -1350,7 +1362,7 @@ app.use(
 
 // Production — whitelist specific origins
 const corsOptionsDelegate: CorsOptionsDelegate = (req, callback) => {
-    const allowed: string[] = ['https://app.example.com', 'https://admin.example.com'] as const;
+    const allowed: readonly string[] = ['https://app.example.com', 'https://admin.example.com']; // (string[] + `as const` is a TS error — readonly tuple)
     const origin: string | undefined = req.headers.origin;
     if (!origin || allowed.includes(origin)) {
         callback(null, {
@@ -1376,7 +1388,7 @@ app.use(cors(corsOptionsDelegate));
 
 ```ts
 import express, { Request, Response } from 'express';
-import rateLimit, { Options as RateLimitOptions } from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator, Options as RateLimitOptions } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import Redis from 'ioredis';
 
@@ -1386,13 +1398,16 @@ const redis: Redis = new Redis(process.env.REDIS_URL as string);
 // Global rate limiter
 const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute window
-    max: 100, // 100 requests per window
+    limit: 100, // 100 requests per window (v7+ name; `max` is the old alias)
     standardHeaders: true, // return RateLimit-* headers in response
     store: new RedisStore({
         // Redis-backed for multi-server consistency‼️
         sendCommand: (...args: string[]) => redis.call(...args),
     }),
-    keyGenerator: (req: Request): string => req.user?.sub ?? req.ip ?? 'unknown', // per-user if authenticated
+    // per-user if authenticated. ‼️ v8 THROWS (ERR_ERL_KEY_GEN_IPV6) if a custom
+    // keyGenerator uses req.ip directly — wrap it so one IPv6 user can't rotate
+    // through the addresses in their /64 to dodge the limit.
+    keyGenerator: (req: Request): string => req.user?.sub ?? ipKeyGenerator(req.ip ?? ''),
     handler: (req: Request, res: Response): void => {
         res.status(429).json({ error: 'Too many requests, try again later' });
     },
@@ -1403,7 +1418,7 @@ app.use('/api/', limiter);
 // Stricter limiter for auth endpoints (prevent brute force)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // only 5 attempts
+    limit: 5, // only 5 attempts
     message: { error: 'Too many login attempts, try again in 15 minutes' },
 });
 
@@ -1509,14 +1524,14 @@ app.get(
 
 ```ts
 import express, { Request, Response, NextFunction } from 'express';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'node:crypto'; // built in — no uuid package needed
 
 const app: express.Express = express();
 
 // Middleware — runs on every request
 app.use((req: Request, res: Response, next: NextFunction): void => {
     // Use upstream correlation ID if provided, otherwise generate one
-    req.correlationId = (req.headers['x-correlation-id'] as string) ?? uuid();
+    req.correlationId = (req.headers['x-correlation-id'] as string) ?? randomUUID();
     res.setHeader('x-correlation-id', req.correlationId);
 
     // Attach to logger for all logs in this request
@@ -1592,7 +1607,8 @@ app.post('/upload', memoryUpload.single('file'), async (req: Request, res: Respo
         res.status(400).json({ error: 'No file uploaded' });
         return;
     }
-    await s3.upload({ Bucket: 'my-bucket', Key: file.originalname, Body: file.buffer });
+    // AWS SDK v3: s3 = new S3Client({...}); v2's s3.upload() reached end-of-support Sept 2025
+    await s3.send(new PutObjectCommand({ Bucket: 'my-bucket', Key: file.originalname, Body: file.buffer }));
     res.json({ success: true });
 });
 ```
@@ -1646,7 +1662,7 @@ const pool: Pool = new Pool(poolConfig);
 // Graceful shutdown — close DB connections before exiting
 process.on('SIGTERM', async (): Promise<void> => {
     console.log('SIGTERM received, shutting down gracefully');
-    server.close(); // stop accepting new requests
+    await new Promise<void>(resolve => server.close(() => resolve())); // stop accepting, wait for in-flight
     await pool.end(); // close all DB connections
     process.exit(0);
 });
@@ -2056,9 +2072,10 @@ async function gracefulShutdown(signal: string): Promise<void> {
     console.log(`${signal} received, shutting down gracefully`);
 
     // 1. Stop accepting new requests
-    server.close();
-
-    // 2. Wait for in-flight requests to finish (Express does this on close)
+    // 2. Wait for in-flight requests to finish — server.close() only calls its
+    //    callback once they're done, so AWAIT it (otherwise the pool closes
+    //    under requests that are still running)
+    await new Promise<void>(resolve => server.close(() => resolve()));
 
     // 3. Close external connections
     await pool.end(); // close DB connection pool

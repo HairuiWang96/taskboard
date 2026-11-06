@@ -362,12 +362,15 @@ ALTER TABLE users RENAME COLUMN name TO full_name;
 
 -- ── PHASE 1: EXPAND (deploy 1) ───────────────────────────────────────────
 -- Add the new column, nullable. Old code ignores it entirely.
-ALTER TABLE users ADD COLUMN full_name varchar(255);
+ALTER TABLE users ADD COLUMN full_name text;
 
 -- ‼️ Nullable and no default: on Postgres this is a fast metadata-only change
--- that does not rewrite the table or hold a long lock. Adding NOT NULL with a
--- default can rewrite the whole table — on a large table that is a long
--- ACCESS EXCLUSIVE lock, which IS an outage.
+-- that does not rewrite the table or hold a long lock. Since Postgres 11, a
+-- CONSTANT default (even with NOT NULL) is also metadata-only. What still
+-- rewrites the whole table is a VOLATILE default (random(), clock_timestamp(),
+-- gen_random_uuid()) — on a large table that is a long ACCESS EXCLUSIVE lock,
+-- which IS an outage. (Every ALTER still needs a brief exclusive lock: set a
+-- lock_timeout so it fails fast instead of queueing behind a long query.)
 
 -- ── PHASE 2a: DUAL WRITE (deploy 2) ──────────────────────────────────────
 -- Application code now writes BOTH columns on every insert and update.
@@ -408,8 +411,12 @@ ALTER TABLE users DROP COLUMN name;
                        reads → drop old
   CHANGING A TYPE      add new column of new type → dual write with conversion
                        → backfill → switch → drop
-  ADDING NOT NULL      add nullable → backfill → add constraint NOT VALID →
-                       VALIDATE CONSTRAINT (‼️ the two-step avoids a long lock)
+  ADDING NOT NULL      add nullable → backfill → ADD CONSTRAINT … CHECK (col IS
+                       NOT NULL) NOT VALID → VALIDATE CONSTRAINT → SET NOT NULL
+                       (Postgres 12+ uses the validated check and skips the
+                       scan). Postgres 18 can do it directly: ADD CONSTRAINT …
+                       NOT NULL col NOT VALID, then VALIDATE.
+                       (‼️ the two-step avoids a long lock)
   ADDING AN INDEX      ‼️ CREATE INDEX CONCURRENTLY — a normal CREATE INDEX
                        locks writes for the duration. CONCURRENTLY cannot run
                        inside a transaction, so it needs its own migration

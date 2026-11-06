@@ -94,6 +94,13 @@ const fastest = await Promise.any([cdn1.fetch(url), cdn2.fetch(url)])
 // AggregateError if all reject
 // Use when: trying multiple sources, want first success
 
+// Newer helpers — withResolvers (ES2024): all current browsers + Node 22+;
+//   Promise.try (ES2025): current browsers + Node 24+ (NOT Node 22):
+// Promise.withResolvers() → { promise, resolve, reject } without the wrapper
+const { promise, resolve, reject } = Promise.withResolvers()
+// Promise.try(fn) → runs fn now; sync throws AND async rejections both become a rejected promise
+await Promise.try(() => mightThrowSyncOrReturnPromise())
+
 // Summary:
 // all        → short-circuit on first reject
 // allSettled → never short-circuits, always waits for all
@@ -363,24 +370,25 @@ JavaScript Promises are **not natively cancellable**. Options:
 ### AbortController (fetch + native APIs)
 
 ```js
-const controller = new AbortController()
-const { signal } = controller
-
-// Cancel after 5 seconds
-const timeout = setTimeout(() => controller.abort('Timeout'), 5000)
-
+// Timeout — the modern one-liner
 try {
-  const res = await fetch('/api/data', { signal })
-  const data = await res.json()
-  clearTimeout(timeout)
-  return data
+  const res = await fetch('/api/data', { signal: AbortSignal.timeout(5000) })
+  return await res.json()
 } catch (err) {
-  if (err.name === 'AbortError') console.log('Request cancelled')
+  if (err.name === 'TimeoutError') console.log('Took longer than 5s')   // from AbortSignal.timeout
+  else if (err.name === 'AbortError') console.log('Request cancelled')  // from controller.abort()
   else throw err
 }
 
-// Cancel from UI (e.g., component unmount)
-controller.abort()
+// Manual cancel (e.g. component unmount)
+const controller = new AbortController()
+fetch('/api/data', { signal: controller.signal })
+controller.abort()   // ‼️ no argument → rejects with an 'AbortError' DOMException
+// ‼️ controller.abort('Timeout') rejects with the STRING 'Timeout' (the reason),
+//    so an err.name === 'AbortError' check would NOT match it.
+
+// Both at once: cancel on unmount OR after 5s
+const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(5000)])
 ```
 
 ### Cancellable async function pattern
@@ -411,7 +419,7 @@ useEffect(() => {
 
 ```js
 import { Observable, Subject, BehaviorSubject, fromEvent, interval } from 'rxjs'
-import { map, filter, debounceTime, switchMap, takeUntil } from 'rxjs/operators'
+import { map, filter, debounceTime, switchMap, takeUntil } from 'rxjs'  // RxJS 7.2+: operators export from 'rxjs' ('rxjs/operators' is the old path)
 
 // Observable = lazy stream that can emit multiple values over time
 // Promise = eager, single value

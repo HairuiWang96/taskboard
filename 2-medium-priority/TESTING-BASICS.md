@@ -1041,7 +1041,7 @@ beforeAll(() =>
     server.listen({
         // ‼️ Fail loudly if your code calls an endpoint you did not mock, rather
         // than letting a real request escape to the internet during a test run.‼️
-        onUnhandledRequest: 'error',
+        onUnhandledFrame: 'error', // MSW 3 name (MSW 2 called it onUnhandledRequest)
     }),
 );
 afterEach(() => server.resetHandlers()); // undo per-test overrides
@@ -1343,10 +1343,10 @@ jobs:
     test:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
               with:
-                  node-version: 20
+                  node-version: 24
                   cache: 'npm' # caches dependencies between runs — big speedup
 
             - run:

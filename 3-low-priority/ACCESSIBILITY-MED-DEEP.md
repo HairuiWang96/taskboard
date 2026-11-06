@@ -260,7 +260,7 @@ function Tabs({ tabs }) {
             aria-selected={activeIndex === i}
             aria-controls={`panel-${tab.id}`}
             tabIndex={activeIndex === i ? 0 : -1} // roving tabindex
-            ref={el => (tabRefs.current[i] = el)}
+            ref={el => { tabRefs.current[i] = el; }} // braces: React 19 types reject a non-function return
             onClick={() => setActiveIndex(i)}
             onKeyDown={e => handleKeyDown(e, i)}
           >

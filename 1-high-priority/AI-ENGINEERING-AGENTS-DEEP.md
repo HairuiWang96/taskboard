@@ -4,7 +4,7 @@ The job market has shifted. Companies are hiring "AI engineers" — developers w
 
 This file covers what you need to know for interviews at companies building with AI.
 
-> Model names, prices, context windows and SDK APIs reviewed October 2026. This field moves
+> Model names, prices, context windows and SDK APIs reviewed November 2026. This field moves
 > monthly — check the provider's docs before quoting a number in an interview or using a
 > model ID in code.
 
@@ -64,10 +64,10 @@ Token: the unit LLMs process — roughly 3/4 of a word in English.
 Context window: maximum tokens the model can process in one request.
   Input tokens (prompt) + output tokens (completion) = total tokens
   
-  Approximate, October 2026 — check provider docs:
-  Claude Opus 5 / Sonnet 5:  1M context, up to 128K output (stream large outputs)
-  Claude Haiku 4.5:          200K context
-  OpenAI GPT-6 family:       ~1M context
+  Approximate, November 2026 — check provider docs:
+  Claude Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5:
+                             1M context, up to 128K output (stream large outputs)
+  OpenAI GPT-6 family:       ~1M context (GPT-6 Astra, GPT-6.1 Sol / Terra, GPT-6 Luna)
   Google Gemini Pro models:  1M+ context
   Llama 4 Scout / Maverick:  up to 10M / 1M context (open weights)
 
@@ -96,8 +96,8 @@ In practice (models that still accept sampling parameters):
   - Don't set both temperature and top_p to extreme values
 
 ‼️ CHANGED IN 2025–26 — REASONING MODELS DROPPED THESE KNOBS:
-  - Current Claude models (Opus 4.7+, Opus 5, Sonnet 5, Fable) REJECT
-    temperature / top_p / top_k with a 400 error. OpenAI's reasoning models
+  - Current Claude models (Opus 4.7 onward — Opus 5.5, Sonnet 5.5, Haiku 5.5,
+    Fable 5.1) REJECT temperature / top_p / top_k with a 400 error. OpenAI's reasoning models
     also only accept the default temperature.
   - Instead you control quality vs cost with THINKING and EFFORT:
       thinking: { type: 'adaptive' }          // model decides how much to think
@@ -128,7 +128,7 @@ const Analysis = z.object({
 });
 
 const response = await client.messages.parse({
-  model: 'claude-opus-5',
+  model: 'claude-opus-5-5',
   max_tokens: 16000,
   messages: [{ role: 'user', content: 'Analyze: "The new dashboard is great but loading is slow"' }],
   output_config: { format: zodOutputFormat(Analysis) },
@@ -229,7 +229,7 @@ async function chat(userMessage: string) {
 
   // Step 1: send message with tools
   let response = await client.messages.create({
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     max_tokens: 16000,
     tools,
     messages,
@@ -265,7 +265,7 @@ async function chat(userMessage: string) {
     messages.push({ role: 'user', content: toolResults });
 
     response = await client.messages.create({
-      model: 'claude-opus-5',
+      model: 'claude-opus-5-5',
       max_tokens: 16000,
       tools,
       messages,
@@ -484,7 +484,7 @@ const docsServer = createSdkMcpServer({ name: 'docs', version: '1.0.0', tools: [
 for await (const message of query({
   prompt: 'How do I set up authentication?',
   options: {
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     systemPrompt: 'You are a helpful documentation assistant.',
     mcpServers: { docs: docsServer },
     // MCP tools are named mcp__<server>__<tool>
@@ -520,7 +520,7 @@ const weatherTool = tool(
 
 // Create agent — model as a "provider:model" string
 const agent = createAgent({
-  model: 'anthropic:claude-opus-5',
+  model: 'anthropic:claude-opus-5-5',
   tools: [weatherTool],
   systemPrompt: 'You are a helpful assistant.',
 });
@@ -565,7 +565,7 @@ import { z } from 'zod';
 
 // Simple generation
 const { text } = await generateText({
-  model: anthropic('claude-opus-5'),
+  model: anthropic('claude-opus-5-5'),
   prompt: 'Explain React Server Components in one paragraph',
 });
 
@@ -577,7 +577,7 @@ const result = streamText({
 
 // With tools
 const { text } = await generateText({
-  model: anthropic('claude-opus-5'),
+  model: anthropic('claude-opus-5-5'),
   tools: {
     weather: tool({
       description: 'Get weather for a city',
@@ -687,7 +687,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 for await (const message of query({
   prompt: 'Write a blog post about WebSocket vs SSE for real-time features',
   options: {
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     systemPrompt: `You are a project supervisor. Break tasks into research and writing phases.
       Delegate research to the researcher and drafting to the writer.`,
     agents: {
@@ -695,7 +695,7 @@ for await (const message of query({
         description: 'Searches the web and summarises findings. Use for any fact-finding.',
         prompt: 'You are a research assistant. Search for information and summarise findings with sources.',
         tools: ['WebSearch', 'WebFetch'],
-        model: 'claude-haiku-4-5', // reading-heavy work → cheaper model
+        model: 'claude-haiku-5-5', // reading-heavy work → cheaper model
       },
       writer: {
         description: 'Writes the final content from a brief plus research notes.',
@@ -802,7 +802,7 @@ async function ragQuery(question: string): Promise<string> {
 
   // Generate answer
   const response = await anthropic.messages.create({
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     max_tokens: 16000,
     system: `Answer questions using only the provided context. 
       If the context doesn't contain the answer, say "I don't have enough information."
@@ -962,7 +962,7 @@ async function evaluateResponse(
 ): Promise<{ score: number; reasoning: string }> {
   // Structured outputs guarantee the JSON shape — no JSON.parse on free text
   const evaluation = await anthropic.messages.parse({
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     max_tokens: 16000,
     output_config: { format: zodOutputFormat(Verdict) },
     messages: [{
@@ -1092,7 +1092,7 @@ export async function POST(req: Request) {
   const client = new Anthropic();
 
   const stream = client.messages.stream({
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     max_tokens: 64000,
     messages,
   });
@@ -1165,14 +1165,18 @@ Fallback to human:      Route to a human when AI confidence is low
 ### Token costs (approximate, October 2026 — prices drop often, check before quoting)
 
 ```text
-Claude Opus 5:        $5 / 1M input tokens,  $25 / 1M output tokens
-Claude Sonnet 5:      $2 / 1M input,         $10 / 1M output
-Claude Haiku 4.5:     $1 / 1M input,         $5 / 1M output
+Claude Fable 5.1:     $10 / 1M input tokens, $50 / 1M output tokens
+Claude Opus 5.5:      $4 / 1M input,         $20 / 1M output
+Claude Sonnet 5.5:    $2 / 1M input,         $10 / 1M output
+Claude Haiku 5.5:     from $0.10 / 1M input, from $0.50 / 1M output
+OpenAI GPT-6 Astra:   $10 / 1M input,        $50 / 1M output
 OpenAI GPT-6.1 Sol:   $2 / 1M input,         $10 / 1M output
+OpenAI GPT-6.1 Terra: $1 / 1M input,         $5 / 1M output
 OpenAI GPT-6 Luna:    $0.10 / 1M input,      $0.50 / 1M output
 
 Discounts that matter more than the list price:
   Prompt caching — cached input reads cost ~10% of normal input
+                   (Claude: 5% on Opus 5.5 / Sonnet 5.5, 2.5% on Fable 5.1)
   Batch API      — ~50% off for work that can wait (up to 24h)
 
 ‼️ Thinking tokens are billed as OUTPUT tokens. A reasoning model at high
@@ -1226,9 +1230,10 @@ Parallel tool calls:
 
 ```text
 Foundation models (the "brain"):
-  Closed: Anthropic Claude (Opus / Sonnet / Haiku), OpenAI GPT-6 family,
+  Closed: Anthropic Claude (Fable / Opus / Sonnet / Haiku), OpenAI GPT-6 family,
           Google Gemini
-  Open weights: Meta Llama 4, Qwen, DeepSeek, Mistral, Gemma, OpenAI gpt-oss
+  Open weights: Qwen, DeepSeek, Meta (Muse Glimmer, Llama 4), Mistral, Gemma,
+                OpenAI gpt-oss
   (see AI-OPEN-SOURCE-MODELS-DEEP.md)
 
 Frameworks:
@@ -1249,7 +1254,7 @@ Vector databases (for RAG):
 
 Embedding models:
   text-embedding-3-small (OpenAI) — cheap, good quality
-  Voyage AI (voyage-3.5, voyage-code-3) — strong for code and technical text;
+  Voyage AI (voyage-4 family, voyage-code-3) — strong for code and technical text;
     Anthropic's recommended embedding provider (Anthropic has no embedding
     model of its own). Voyage is now part of MongoDB.
   Gemini embeddings, Cohere Embed — other strong hosted options

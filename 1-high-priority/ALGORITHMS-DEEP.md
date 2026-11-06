@@ -578,7 +578,7 @@ function isValidBST(root: TreeNode | null, min = -Infinity, max = Infinity): boo
 }
 
 // Lowest Common Ancestor — O(n)
-function lowestCommonAncestor(root: TreeNode, p: TreeNode, q: TreeNode): TreeNode {
+function lowestCommonAncestor(root: TreeNode | null, p: TreeNode, q: TreeNode): TreeNode | null {
   if (!root || root === p || root === q) return root;
 
   const left = lowestCommonAncestor(root.left, p, q);

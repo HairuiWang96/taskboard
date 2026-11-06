@@ -357,9 +357,14 @@ I'm also comfortable with Python — I used it extensively in my data
 science roles, and I use FastAPI for smaller services.
 
 I pick up new tools quickly — for example, I integrated OpenAI's
-assistant API into production within a few weeks, starting from zero
+API into production within a few weeks, starting from zero
 experience with it."
 ```
+
+> ‼️ If they ask which OpenAI API: OpenAI shut down the **Assistants API** on 26 Aug 2026;
+> its replacement is the **Responses API** (+ Conversations API). If your integration used
+> Assistants, say so and add how you migrated — or would migrate — it. Knowing about the
+> shutdown shows you keep up with the AI stack.
 
 ### If they ask about something you DON'T know
 

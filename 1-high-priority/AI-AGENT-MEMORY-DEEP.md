@@ -265,7 +265,7 @@ import { createAgent, summarizationMiddleware } from 'langchain';
 import { MemorySaver } from '@langchain/langgraph';
 
 const agent = createAgent({
-  model: 'anthropic:claude-opus-5',
+  model: 'anthropic:claude-opus-5-5',
   tools: [],
   // Short-term memory: saves the conversation state after every step.
   // MemorySaver is in-process — use a Postgres/Redis checkpointer in production.
@@ -273,7 +273,7 @@ const agent = createAgent({
   middleware: [
     // Summarise older messages once the history gets long, keep recent ones verbatim
     summarizationMiddleware({
-      model: 'anthropic:claude-haiku-4-5', // cheap model for summarisation
+      model: 'anthropic:claude-haiku-5-5', // cheap model for summarisation
       trigger: { tokens: 4000 },
       keep: { messages: 20 },
     }),
@@ -304,7 +304,7 @@ import { Memory } from 'mem0ai/oss';
 const memory = new Memory({
   // Vector store + embedder for search, plus an LLM that extracts facts
   vectorStore: { provider: 'qdrant', config: { url: process.env.QDRANT_URL, collectionName: 'memories' } },
-  llm: { provider: 'anthropic', config: { model: 'claude-haiku-4-5' } },
+  llm: { provider: 'anthropic', config: { model: 'claude-haiku-5-5' } },
   embedder: { provider: 'openai', config: { model: 'text-embedding-3-small' } },
 });
 
@@ -331,9 +331,11 @@ Anthropic (Claude API):
   Memory tool       — Claude reads/writes files in a /memories directory that
                       YOUR code stores (database, S3, disk). The model decides
                       what to save; you control where it lives.
-  Compaction        — server-side: when the conversation nears a token
-                      threshold, the API summarises older turns automatically
-                      (beta). Replaces your own compressContext().
+  Compaction        — server-side summary of older turns, so you don't write
+                      your own compressContext(). Two modes (both beta):
+                      ON DEMAND (you ask for a summary — the recommended one;
+                      can keep recent turns verbatim and run in the background)
+                      and AT A TOKEN THRESHOLD (the API compacts automatically).
   Context editing   — automatically clears old tool results / thinking blocks
                       that are no longer needed (beta).
   Managed Agents    — hosted agents with persistent memory stores.
@@ -483,4 +485,4 @@ const memoryTools = [
 
 ### "How would you handle memory for a multi-user application?"
 
-> Each user gets a namespaced memory scope — all keys/vectors include the user ID as a filter. In Redis: `memory:{userId}:{key}`. In a vector store: filter by `userId` metadata field during search so users never see each other's memories. Additionally: encrypt sensitive memories at rest, give users a way to view and delete their stored memories (GDPR compliance), and set TTLs on episodic memories you don't need forever. Separate the memory store from the application database so it can be independently scaled and cleared.
+> Each user gets a namespaced memory scope — all keys/vectors include the user ID as a filter. In Redis: one hash per user, `memory:{userId}`, as in Pattern 1. In a vector store: filter by `userId` metadata field during search so users never see each other's memories. Additionally: encrypt sensitive memories at rest, give users a way to view and delete their stored memories (GDPR compliance), and set TTLs on episodic memories you don't need forever. Separate the memory store from the application database so it can be independently scaled and cleared.

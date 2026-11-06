@@ -212,7 +212,8 @@ function insert(intervals: number[][], newInterval: number[]): number[][] {
 // JavaScript doesn't have a built-in heap — use a sorted structure or implement one
 // In interviews, describe the algorithm and note you'd use a library
 
-// Top K frequent elements — O(n log k)
+// Top K frequent elements — this version sorts: O(n log n). With a size-k min-heap: O(n log k);
+// with bucket sort by frequency: O(n). Mention both in an interview.
 function topKFrequent(nums: number[], k: number): number[] {
     const freq = new Map<number, number>();
     for (const n of nums) freq.set(n, (freq.get(n) ?? 0) + 1);
@@ -478,6 +479,8 @@ function bfs(graph: Map<string, string[]>, start: string, target: string): numbe
     const queue: [string, number][] = [[start, 0]];
     const visited = new Set([start]);
     while (queue.length) {
+        // ‼️ queue.shift() is O(n) in JS. Fine in interviews for small inputs; for big
+        //    graphs use an index pointer (let head = 0; queue[head++]) instead.
         const [node, dist] = queue.shift()!;
         if (node === target) return dist;
         for (const neighbor of (graph.get(node) ?? [])) {
@@ -645,7 +648,8 @@ function longestCommonSubsequence(text1: string, text2: string): number {
 
 Common gotchas:
 □ Off-by-one in binary search (left <= right vs left < right)
-□ Integer overflow (use left + Math.floor((right - left) / 2) not (left + right) / 2)
+□ Integer overflow — left + Math.floor((right - left) / 2) instead of (left + right) / 2
+  (a real bug in Java/C++; JS numbers don't overflow at array sizes, but interviewers like it)
 □ Empty array / single element
 □ Duplicates handling
 □ Forgetting to mark visited in graph problems

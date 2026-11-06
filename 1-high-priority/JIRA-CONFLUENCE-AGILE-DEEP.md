@@ -790,7 +790,8 @@ Key fields on every Jira issue:
   Priority:        Highest, High, Medium, Low, Lowest
   Assignee:        Who is working on it RIGHT NOW
   Reporter:        Who created it
-  Epic Link:       Which epic this belongs to
+  Parent:          Which epic this belongs to (Jira Cloud replaced the old
+                   "Epic Link" field with Parent in 2023)
   Sprint:          Which sprint (if Scrum)
   Story Points:    Complexity estimate (Fibonacci: 1, 2, 3, 5, 8, 13)
   Labels:          Free-form tags (e.g., "frontend", "tech-debt", "accessibility")
@@ -1577,8 +1578,11 @@ Planning Poker — how estimation actually works:
   endOfDay()          end of today
   startOfWeek()       Monday of current week
   startOfMonth()      1st of current month
-  startOfSprint()     first day of current sprint
-  endOfSprint()       last day of current sprint
+  openSprints()       sprints that are currently active
+  closedSprints()     completed sprints
+  futureSprints()     sprints not started yet
+  (‼️ there is NO built-in startOfSprint()/endOfSprint() — those come from
+   apps like ScriptRunner)
   now()               current date/time
 
   Date math:
@@ -1656,10 +1660,10 @@ Planning Poker — how estimation actually works:
     AND description !~ "AC1"
 
   Epic progress (stories in an epic):
-    "Epic Link" = FE-200
+    parent = FE-200          (Cloud; older Data Center: "Epic Link" = FE-200)
 
   All items in an epic by status:
-    "Epic Link" = FE-200 ORDER BY status ASC
+    parent = FE-200 ORDER BY status ASC
 
   Blocked issues:
     project = "FE" AND status = Blocked
@@ -1685,8 +1689,8 @@ Planning Poker — how estimation actually works:
     AND status != Done
 
   Scope creep (added to sprint after it started):
-    project = "FE" AND sprint in openSprints()
-    AND (sprint CHANGED AFTER startOfSprint())
+    ‼️ JQL can't do this — the Sprint field doesn't support CHANGED/WAS.
+    Use the Sprint Report instead: it lists "Issues added after sprint start" (marked *).
 
   CROSS-PROJECT:
   ──────────────────────────────────────────────────────────────────
@@ -1924,8 +1928,10 @@ Issue Links — connecting related work:
   git commit -m "FE-123 #time 2h #comment 'Added unit tests for validation logic'"
   → Logs 2 hours and adds a comment to FE-123
 
-  git commit -m "FE-123 #done 'All acceptance criteria met, tests passing'"
+  git commit -m "FE-123 #done #comment All acceptance criteria met, tests passing"
   → Transitions FE-123 to Done and adds a comment
+  (‼️ text after a transition is ignored — use #comment for the message.
+   Quotes aren't needed; they'd end up inside the comment.)
 
   Multiple tickets:
   git commit -m "FE-123 FE-124 #comment 'Shared utility function for both features'"

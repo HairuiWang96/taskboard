@@ -745,24 +745,34 @@ declare module 'some-library' {
 ## 10. Class Types
 
 ```ts
-// Access modifiers
+// Access modifiers — written out in full
 class BankAccount {
     public owner: string; // accessible everywhere (default)
-    private balance: number; // only within this class
-    protected accountType: string; // within this class and subclasses
+    private balance: number; // only within this class (compile-time only)
+    protected accountType = 'checking'; // within this class and subclasses
     readonly id: string; // can't be reassigned after construction
 
     // Private class fields (ES2022) — truly private, even at runtime‼️
-    #secret: string;
+    #secret = 'shhh';
 
-    // Parameter properties shorthand
+    constructor(owner: string, balance: number) {
+        this.owner = owner;
+        this.balance = balance;
+        this.id = crypto.randomUUID();
+    }
+}
+
+// The same thing with PARAMETER PROPERTIES — declares AND assigns in one go.
+// (Use one style or the other: declaring `owner` both ways is a
+//  "Duplicate identifier" error. Parameter properties are also not allowed
+//  under erasableSyntaxOnly / Node's type stripping — see §11.)
+class BankAccount2 {
+    #secret = 'shhh';
     constructor(
-        public owner: string, // shorthand: declares AND assigns
+        public owner: string,
         private balance: number,
         readonly id: string = crypto.randomUUID(),
-    ) {
-        this.#secret = 'shhh';
-    }
+    ) {}
 }
 
 // Abstract classes — can't be instantiated, must be extended

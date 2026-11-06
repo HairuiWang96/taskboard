@@ -202,7 +202,7 @@ interface SearchResult {
     name: string;
 }
 
-function SearchBox(): JSX.Element {
+function SearchBox(): React.JSX.Element {
     const [query, setQuery] = useState<string>('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
@@ -244,7 +244,7 @@ interface AutocompleteProps {
     options: string[];
 }
 
-function Autocomplete({ options }: AutocompleteProps): JSX.Element {
+function Autocomplete({ options }: AutocompleteProps): React.JSX.Element {
     const [query, setQuery] = useState<string>('');
     const [open, setOpen] = useState<boolean>(false);
     const [highlighted, setHighlighted] = useState<number>(0);
@@ -312,7 +312,7 @@ interface PageResponse {
     hasMore: boolean;
 }
 
-function InfiniteList(): JSX.Element {
+function InfiniteList(): React.JSX.Element {
     const [items, setItems] = useState<ListItem[]>([]);
     const [page, setPage] = useState<number>(1);
     const [hasMore, setHasMore] = useState<boolean>(true);
@@ -367,7 +367,7 @@ interface AccordionProps {
     items: AccordionItem[];
 }
 
-function Accordion({ items }: AccordionProps): JSX.Element {
+function Accordion({ items }: AccordionProps): React.JSX.Element {
     const [openIndex, setOpenIndex] = useState<number | null>(null);
 
     return (
@@ -414,18 +414,22 @@ interface TabsProps {
     tabs: Tab[];
 }
 
-// JSX.Element vs React.ReactNode:
-//   JSX.Element   → only JSX tags: <div/>, <MyComponent/>
+// ‼️ React 19 types removed the GLOBAL JSX namespace — write React.JSX.Element
+//    (bare JSX.Element now fails: "Cannot find namespace 'JSX'").
+//    You can also just omit the return type and let TS infer it.
+//
+// React.JSX.Element vs React.ReactNode:
+//   React.JSX.Element   → only JSX tags: <div/>, <MyComponent/>
 //   React.ReactNode → anything renderable: JSX, "string", 42, null, arrays, fragments
 //
-//   const a: JSX.Element = <div />;    // ✓
-//   const b: JSX.Element = "hello";    // ✗ error — not a JSX tag
+//   const a: React.JSX.Element = <div />;    // ✓
+//   const b: React.JSX.Element = "hello";    // ✗ error — not a JSX tag
 //   const c: React.ReactNode = "hello";// ✓ — accepts anything
 //
 // When to use which:
 //   React.ReactNode → for props like children/content (accept anything renderable)
-//   JSX.Element     → for function return types (a component always returns JSX)
-function Tabs({ tabs }: TabsProps): JSX.Element {
+//   React.JSX.Element     → for function return types (a component always returns JSX)
+function Tabs({ tabs }: TabsProps): React.JSX.Element {
     const [active, setActive] = useState<number>(0);
 
     return (
@@ -465,7 +469,7 @@ interface ModalProps {
     children: React.ReactNode;
 }
 
-function Modal({ isOpen, onClose, children }: ModalProps): JSX.Element | null {
+function Modal({ isOpen, onClose, children }: ModalProps): React.JSX.Element | null {
     useEffect(() => {
         const handler = (e: KeyboardEvent): void => {
             if (e.key === 'Escape') onClose();
@@ -501,7 +505,7 @@ interface Todo {
     done: boolean;
 }
 
-function TodoApp(): JSX.Element {
+function TodoApp(): React.JSX.Element {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [input, setInput] = useState<string>('');
 
@@ -543,7 +547,7 @@ interface StarRatingProps {
     onChange?: (rating: number) => void;
 }
 
-function StarRating({ max = 5, onChange }: StarRatingProps): JSX.Element {
+function StarRating({ max = 5, onChange }: StarRatingProps): React.JSX.Element {
     const [rating, setRating] = useState<number>(0);
     const [hovered, setHovered] = useState<number>(0);
 
@@ -585,7 +589,7 @@ interface PaginatedProps {
     pageSize?: number;
 }
 
-function Paginated({ data, pageSize = 10 }: PaginatedProps): JSX.Element {
+function Paginated({ data, pageSize = 10 }: PaginatedProps): React.JSX.Element {
     const [page, setPage] = useState<number>(1);
     const totalPages = Math.ceil(data.length / pageSize);
 
@@ -635,7 +639,7 @@ interface FormState {
 // Partial so we only set the fields that have errors
 type FormErrors = Partial<Record<keyof FormState, string>>;
 
-function SignupForm(): JSX.Element {
+function SignupForm(): React.JSX.Element {
     const [form, setForm] = useState<FormState>({ email: '', password: '' });
     const [errors, setErrors] = useState<FormErrors>({});
 
@@ -687,7 +691,7 @@ interface CountdownProps {
     initialSeconds?: number;
 }
 
-function Countdown({ initialSeconds = 60 }: CountdownProps): JSX.Element {
+function Countdown({ initialSeconds = 60 }: CountdownProps): React.JSX.Element {
     const [seconds, setSeconds] = useState<number>(initialSeconds);
     const [running, setRunning] = useState<boolean>(false);
     // ‼️ ReturnType<typeof setInterval> is `number` in browsers, `NodeJS.Timeout` in Node — use ReturnType to avoid the conflict
@@ -757,7 +761,7 @@ interface DragListProps {
     initialItems: DragItem[];
 }
 
-function DragList({ initialItems }: DragListProps): JSX.Element {
+function DragList({ initialItems }: DragListProps): React.JSX.Element {
     const [items, setItems] = useState<DragItem[]>(initialItems);
     const dragIndex = useRef<number | null>(null);
 
@@ -800,7 +804,7 @@ interface VirtualListProps {
     containerHeight?: number;
 }
 
-function VirtualList({ items, itemHeight = 40, containerHeight = 400 }: VirtualListProps): JSX.Element {
+function VirtualList({ items, itemHeight = 40, containerHeight = 400 }: VirtualListProps): React.JSX.Element {
     const [scrollTop, setScrollTop] = useState<number>(0);
 
     const startIndex = Math.floor(scrollTop / itemHeight);
@@ -924,7 +928,7 @@ interface CartProps {
     products: Product[];
 }
 
-function Cart({ products }: CartProps): JSX.Element {
+function Cart({ products }: CartProps): React.JSX.Element {
     const [cart, dispatch] = useReducer(cartReducer, []);
     const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
 
@@ -981,7 +985,7 @@ const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
     }
 };
 
-function ThemeProvider({ children }: { children: React.ReactNode }): JSX.Element {
+function ThemeProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
     const [theme, dispatch] = useReducer(themeReducer, { mode: 'light' });
     const value = useMemo<ThemeContextValue>(() => ({ theme, dispatch }), [theme]);
     return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
@@ -1052,7 +1056,7 @@ interface OTPInputProps {
     onComplete?: (value: string) => void;
 }
 
-function OTPInput({ length = 6, onComplete }: OTPInputProps): JSX.Element {
+function OTPInput({ length = 6, onComplete }: OTPInputProps): React.JSX.Element {
     const [values, setValues] = useState<string[]>(Array(length).fill(''));
     const refs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -1087,7 +1091,11 @@ function OTPInput({ length = 6, onComplete }: OTPInputProps): JSX.Element {
             {values.map((val, i) => (
                 <input
                     key={i}
-                    ref={el => (refs.current[i] = el)}
+                    // ‼️ Braces matter: React 19 ref callbacks may return a cleanup
+                    //    function, so `el => (refs.current[i] = el)` (returns el) is a TS error.
+                    ref={el => {
+                        refs.current[i] = el;
+                    }}
                     value={val}
                     onChange={e => handleChange(i, e)}
                     onKeyDown={e => handleKeyDown(i, e)}
@@ -1119,9 +1127,11 @@ interface SortState<T> {
     direction: SortDirection;
 }
 
-// T extends Record<string, unknown> means "T must be some kind of object"
-//   Record<string, unknown> ≈ { [key: string]: unknown } ≈ "any object"
+// T extends object means "T must be some kind of object"
 //   Rejects primitives like string, number, boolean — only objects allowed.
+//   ‼️ Not Record<string, unknown>: that requires an index signature, so an
+//      `interface Person { name: string }` would be REJECTED
+//      ("Index signature for type 'string' is missing in type 'Person'").
 //
 // data: T[] — an array of row objects
 //   If T = { name: string; age: number; city: string }, then:
@@ -1146,12 +1156,12 @@ interface SortState<T> {
 //   ‼️ keyof T extracts just the KEY NAMES as a union of strings.
 //   That's the whole point — TypeScript prevents you from referencing
 //   a column key that doesn't exist in your data.
-interface SortableTableProps<T extends Record<string, unknown>> {
+interface SortableTableProps<T extends object> {
     data: T[];
     columns: Column<T>[];
 }
 
-function SortableTable<T extends Record<string, unknown>>({ data, columns }: SortableTableProps<T>): JSX.Element {
+function SortableTable<T extends object>({ data, columns }: SortableTableProps<T>): React.JSX.Element {
     const [sort, setSort] = useState<SortState<T>>({ key: null, direction: 'asc' });
 
     const sorted = useMemo<T[]>(() => {
@@ -1211,7 +1221,7 @@ interface WizardFormState {
 
 type WizardFormErrors = Partial<Record<keyof WizardFormState, string>>;
 
-function WizardForm(): JSX.Element {
+function WizardForm(): React.JSX.Element {
     const [step, setStep] = useState<number>(0);
     const [form, setForm] = useState<WizardFormState>({ name: '', email: '', street: '', city: '' });
     const [errors, setErrors] = useState<WizardFormErrors>({});
@@ -1310,7 +1320,7 @@ interface Coords {
     left: number;
 }
 
-function Tooltip({ text, children }: TooltipProps): JSX.Element {
+function Tooltip({ text, children }: TooltipProps): React.JSX.Element {
     const [visible, setVisible] = useState<boolean>(false);
     const [coords, setCoords] = useState<Coords>({ top: 0, left: 0 });
     const triggerRef = useRef<HTMLSpanElement>(null);
@@ -1372,7 +1382,7 @@ interface DropdownMenuProps {
     items: MenuItem[];
 }
 
-function DropdownMenu({ label, items }: DropdownMenuProps): JSX.Element {
+function DropdownMenu({ label, items }: DropdownMenuProps): React.JSX.Element {
     const [open, setOpen] = useState<boolean>(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -1420,7 +1430,7 @@ interface LikeButtonProps {
     initialLikes: number;
 }
 
-function LikeButton({ postId, initialLikes }: LikeButtonProps): JSX.Element {
+function LikeButton({ postId, initialLikes }: LikeButtonProps): React.JSX.Element {
     const [likes, setLikes] = useState<number>(initialLikes);
     const [liked, setLiked] = useState<boolean>(false);
 
@@ -1468,7 +1478,7 @@ function useInterval(callback: () => void, delay: number | null): void {
 }
 
 // Usage — self-updating clock:
-function Clock(): JSX.Element {
+function Clock(): React.JSX.Element {
     const [time, setTime] = useState<Date>(new Date());
     useInterval(() => setTime(new Date()), 1000);
     return <p>{time.toLocaleTimeString()}</p>;
@@ -1508,7 +1518,7 @@ type LazyImageProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
     src: string;
 };
 
-function LazyImage({ src, alt, style, ...props }: LazyImageProps): JSX.Element {
+function LazyImage({ src, alt, style, ...props }: LazyImageProps): React.JSX.Element {
     const imgRef = useRef<HTMLImageElement>(null);
     const [loaded, setLoaded] = useState<boolean>(false);
 
@@ -1540,7 +1550,7 @@ interface CopyButtonProps {
     text: string;
 }
 
-function CopyButton({ text }: CopyButtonProps): JSX.Element {
+function CopyButton({ text }: CopyButtonProps): React.JSX.Element {
     const [copied, setCopied] = useState<boolean>(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1584,7 +1594,7 @@ interface CheckboxListProps {
     items: CheckboxItem[];
 }
 
-function CheckboxList({ items }: CheckboxListProps): JSX.Element {
+function CheckboxList({ items }: CheckboxListProps): React.JSX.Element {
     const [selected, setSelected] = useState<Set<number>>(new Set());
     const headerRef = useRef<HTMLInputElement>(null);
 
@@ -1638,7 +1648,7 @@ interface ResizablePanelsProps {
     initialSplit?: number; // percentage 0–100
 }
 
-function ResizablePanels({ left, right, initialSplit = 50 }: ResizablePanelsProps): JSX.Element {
+function ResizablePanels({ left, right, initialSplit = 50 }: ResizablePanelsProps): React.JSX.Element {
     const [split, setSplit] = useState<number>(initialSplit);
     const containerRef = useRef<HTMLDivElement>(null);
     const dragging = useRef<boolean>(false);

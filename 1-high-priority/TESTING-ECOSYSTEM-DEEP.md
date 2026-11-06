@@ -702,8 +702,10 @@ Sources of non-determinism and fixes:
 ### Setup
 
 ```ts
-// vite.config.ts
-import { defineConfig } from 'vite';
+// vitest.config.ts (or vite.config.ts)
+// ‼️ Import defineConfig from 'vitest/config' — the one from 'vite' doesn't know
+//    about the `test` key, so TypeScript flags it
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -871,7 +873,7 @@ it('serializes user to expected format', () => {
   `);
 });
 
-// Update snapshots: vitest --update-snapshots
+// Update snapshots: vitest -u   (or --update)
 // Inline snapshots (above) are better than file snapshots — visible in code review
 
 // ❌ Bad use: large component snapshot (any change → noisy diff → people update blindly)
@@ -1140,7 +1142,7 @@ export const server = setupServer(...handlers);
 // src/test/setup.ts
 import { server } from './server';
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' })); // MSW 3 name (v2: onUnhandledRequest)
 afterEach(() => server.resetHandlers()); // reset per-test overrides
 afterAll(() => server.close());
 
@@ -1591,7 +1593,7 @@ test('hides error when valid', () => {
 // src/test/renderWithProviders.tsx — a custom render wrapper
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router'; // React Router 7+/8: 'react-router-dom' is gone
 import { AuthProvider } from '../contexts/AuthContext';
 
 function createTestQueryClient() {
@@ -1634,7 +1636,7 @@ it('shows admin button for admin users', () => {
 ### Testing hooks
 
 ```tsx
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useTasks } from './useTasks';
 
 it('loads tasks on mount', async () => {
@@ -1644,11 +1646,9 @@ it('loads tasks on mount', async () => {
 
   expect(result.current.loading).toBe(true);
 
-  await act(async () => {
-    await vi.runAllTimersAsync();
-  });
-
-  expect(result.current.loading).toBe(false);
+  // ‼️ Wait for the async state update. (vi.runAllTimersAsync() would THROW here —
+  //    it only works after vi.useFakeTimers(), and a resolved mock isn't a timer anyway.)
+  await waitFor(() => expect(result.current.loading).toBe(false));
   expect(result.current.tasks).toHaveLength(1);
   expect(result.current.tasks[0].title).toBe('Test task');
 });
@@ -3630,7 +3630,7 @@ jobs:
       - run: npm test -- --coverage
         env:
           DATABASE_URL: postgresql://postgres:test@localhost:5432/testdb
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v7
 
   e2e:
     runs-on: ubuntu-latest
@@ -3982,7 +3982,7 @@ export const options = {
     { duration: '1m', target: 0 }, // ramp down
   ],
   thresholds: {
-    http_req_duration: ['p95<500'], // 95% of requests < 500ms
+    http_req_duration: ['p(95)<500'], // 95% of requests < 500ms (syntax is p(95), not p95)
     http_req_failed: ['rate<0.01'], // < 1% error rate
     errors: ['rate<0.01'],
   },
@@ -4062,7 +4062,7 @@ Resource utilization:
 
 Frontend budgets:
   - Largest Contentful Paint (LCP): < 2.5 seconds
-  - First Input Delay (FID): < 100ms
+  - Interaction to Next Paint (INP): < 200ms (replaced FID in March 2024)
   - Cumulative Layout Shift (CLS): < 0.1
   - Total JavaScript size: < 200KB (gzipped)
   - Total page weight: < 1MB
@@ -4088,9 +4088,11 @@ load-test:
   needs: deploy-staging
   steps:
     - uses: actions/checkout@v7
-    - uses: grafana/k6-action@v0.3.1
+    # grafana/k6-action is deprecated — use setup-k6 + run-k6
+    - uses: grafana/setup-k6-action@v1
+    - uses: grafana/run-k6-action@v1
       with:
-        filename: load-tests/api-load.js
+        path: load-tests/api-load.js
       env:
         TEST_TOKEN: ${{ secrets.STAGING_TEST_TOKEN }}
         BASE_URL: https://staging.myapp.com
@@ -4289,11 +4291,11 @@ Frequency: annually or before major releases
 # Add to CI pipeline
 security:
   runs-on: ubuntu-latest
+  container: semgrep/semgrep   # semgrep-action is deprecated; run the CLI image
   steps:
+    - uses: actions/checkout@v7
     # SAST
-    - uses: returntocorp/semgrep-action@v1
-      with:
-        config: p/owasp-top-ten
+    - run: semgrep scan --config p/owasp-top-ten --error
 
     # SCA — dependency scanning
     - run: npm audit --audit-level=high
@@ -4357,7 +4359,8 @@ test('dashboard page is accessible', async ({ page }) => {
   await page.goto('/dashboard');
 
   const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa'])  // WCAG 2.1 AA
+    // ‼️ 'wcag2a'/'wcag2aa' only cover WCAG 2.0 rules — add the 2.1/2.2 tags too
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();
 
   expect(results.violations).toEqual([]);
@@ -4401,7 +4404,11 @@ Screen reader testing:
 ### WCAG 2.1 AA compliance
 
 ```text
-‼️ WCAG 2.1 AA is the standard most organizations aim for.
+‼️ WCAG 2.1 AA is what most laws reference today (ADA Title II rule, EU
+   Accessibility Act via EN 301 549). WCAG 2.2 (Oct 2023) is the current W3C
+   version and adds: focus not obscured, 24×24px target size, dragging
+   alternatives, accessible authentication, consistent help, redundant entry.
+   Aim for 2.2 AA — it's a superset of 2.1 AA.
    Four principles: Perceivable, Operable, Understandable, Robust (POUR).
 
 Key requirements:
@@ -4510,7 +4517,7 @@ Gremlin:
   - Supports: infrastructure, application, network chaos
   - Nice UI for experiment management
 
-AWS Fault Injection Simulator (FIS):
+AWS Fault Injection Service (FIS — renamed from "Simulator" in 2023):
   - AWS-native chaos engineering service
   - Inject faults into AWS resources
   - Good for: EC2 stop, RDS failover, AZ failure simulation
@@ -5115,7 +5122,7 @@ QA's role in A/B testing:
 
 What RUM captures:
   - Page load time (real users, not synthetic)
-  - Core Web Vitals (LCP, FID, CLS) by page
+  - Core Web Vitals (LCP, INP, CLS) by page
   - JavaScript errors (with stack traces)
   - User session replays
   - Performance by geography, device, browser

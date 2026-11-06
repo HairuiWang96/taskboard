@@ -467,11 +467,12 @@ jobs:
 
       - name: Notify on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@v4   # v2+ takes the webhook as an input (v1 used env)
         with:
-          payload: '{"text":"Deploy failed: ${{ github.repository }} on ${{ github.ref }}"}'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "Deploy failed: ${{ github.repository }} on ${{ github.ref }}"
 ```
 
 ### Secrets in GitHub Actions

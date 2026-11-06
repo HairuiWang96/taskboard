@@ -139,6 +139,11 @@ window.addEventListener('scroll', onScroll);
 // Key insight: JSON.parse(JSON.stringify(x)) fails for: Date, undefined, functions,
 // circular references, Map/Set, and Infinity/NaN.
 // The correct solution uses recursion + a WeakMap to handle circular refs.
+// ‼️ Say this first: the platform has structuredClone(value) built in (all browsers,
+// Node 17+) — it handles Date, Map, Set, typed arrays and circular refs. It throws on
+// functions and DOM nodes and drops prototypes (class instances become plain objects).
+// Then implement it by hand, which is what the question is really testing.
+// (This version handles plain objects, arrays and Date — not Map/Set.)
 
 function deepClone(value, seen = new WeakMap()) {
   // Primitives (string, number, boolean, null, undefined, symbol, bigint) — return as-is
@@ -213,7 +218,8 @@ function deepEqual(a, b) {
   const keysB = Object.keys(b);
   if (keysA.length !== keysB.length) return false;
 
-  return keysA.every((key) => b.hasOwnProperty(key) && deepEqual(a[key], b[key]));
+  return keysA.every((key) => Object.hasOwn(b, key) && deepEqual(a[key], b[key]));
+  // Object.hasOwn (ES2022) — b.hasOwnProperty(key) breaks on objects with no prototype
 }
 
 // Usage:
@@ -732,6 +738,10 @@ groupBy(people, 'dept');
 
 groupBy([1, 2, 3, 4, 5, 6], (n) => (n % 2 === 0 ? 'even' : 'odd'));
 // { odd: [1, 3, 5], even: [2, 4, 6] }
+
+// Native since ES2024 (all current browsers, Node 21+) — mention it:
+Object.groupBy(people, (p) => p.dept); // plain object (null prototype)
+Map.groupBy(people, (p) => p.dept);    // Map — use when keys aren't strings
 ```
 
 ---
@@ -804,6 +814,14 @@ function symmetricDifference(a, b) {
   ];
 }
 symmetricDifference(x, y); // [1, 2, 5, 6]
+
+// Native Set methods (ES2025 — all current browsers, Node 22+):
+const sx = new Set(x), sy = new Set(y);
+sx.intersection(sy);        // Set {3, 4}
+sx.difference(sy);          // Set {1, 2}
+sx.union(sy);               // Set {1, 2, 3, 4, 5, 6}
+sx.symmetricDifference(sy); // Set {1, 2, 5, 6}
+// also isSubsetOf / isSupersetOf / isDisjointFrom
 ```
 
 ---
@@ -1350,7 +1368,7 @@ bad(); // UnhandledPromiseRejection — not caught!
 // 8. Closure in loops (see closure section above for full example)
 // Always use `let` or create a new scope when capturing loop variable.
 
-// 9. Object.keys / for...in includes inherited keys
+// 9. for...in includes inherited keys (Object.keys does not)
 function Parent() {}
 Parent.prototype.inherited = true;
 const child = new Parent();
@@ -1367,4 +1385,4 @@ console.log(nested.a.b); // 999 — nested objects are still shared references
 
 ---
 
-*Last updated: 2026-05-16*
+*Last updated: 2026-11-05*

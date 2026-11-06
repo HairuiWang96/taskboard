@@ -106,7 +106,7 @@ Volume:
 import { ChatAnthropic } from '@langchain/anthropic';
 
 // All calls are automatically traced in LangSmith
-const model = new ChatAnthropic({ model: 'claude-opus-5' });
+const model = new ChatAnthropic({ model: 'claude-opus-5-5' });
 const result = await model.invoke('Hello');
 // → appears in LangSmith dashboard with full input/output, latency, token count
 
@@ -204,7 +204,7 @@ span.log({
   input: userMessage,
   output: outputText,
   metadata: {
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     userId,
     feature: 'chat',
     tokens: response.usage,

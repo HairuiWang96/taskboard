@@ -1119,7 +1119,10 @@ class ErrorBoundary extends React.Component {
     <MyComponent />
 </ErrorBoundary>;
 
-// ‼️ React 19+ also has: use(promise) + Suspense for async errors, but class boundary still needed for render errors
+// ‼️ React 19+: use(promise) + Suspense handles the LOADING state; if that promise
+//    rejects, the error is thrown during render and caught by the nearest error boundary.
+//    There is still no hook version of an error boundary — it must be a class
+//    (or use the react-error-boundary package, which wraps one for you).
 ```
 
 ---
@@ -1766,7 +1769,7 @@ const isLandscape = useMediaQuery('(orientation: landscape)');
 ```jsx
 // ‼️ Only load image src when it enters the viewport — saves bandwidth on long pages
 // Key: swap data-src → src on intersection; disconnect observer after load
-function LazyImage({ src, alt, ...props }) {
+function LazyImage({ src, alt, style, ...props }) {
     const imgRef = useRef();
     const [loaded, setLoaded] = useState(false);
 
@@ -1785,7 +1788,9 @@ function LazyImage({ src, alt, ...props }) {
         return () => observer.disconnect();
     }, [src]);
 
-    return <img ref={imgRef} alt={alt} style={{ opacity: loaded ? 1 : 0, transition: 'opacity 0.3s', background: '#eee', ...props.style }} {...props} />;
+    return <img ref={imgRef} alt={alt} style={{ opacity: loaded ? 1 : 0, transition: 'opacity 0.3s', background: '#eee', ...style }} {...props} />;
+    // style is pulled out of props first — otherwise {...props} (which still contains
+    // style) would come AFTER and overwrite the merged opacity/transition style.
 }
 
 // Usage:
@@ -1937,7 +1942,7 @@ function ResizablePanels({ left, right, initialSplit = 50 }) {
 | Stale closures               | Store mutable values in `useRef`; use functional setState `(prev) => ...`                            |
 | Controlled inputs            | Keep value in state, pass `onChange` — never mix controlled + uncontrolled                           |
 | Avoid unnecessary re-renders | `useMemo` for derived data, `useCallback` for callbacks passed to children, `React.memo` on children |
-| Event delegation             | Prefer handlers on the list container, not each item, for huge lists                                 |
+| Event delegation             | React already delegates to the root, so per-item handlers are fine; know the concept if asked        |
 | Accessibility                | Add `aria-*` attributes, `role`, keyboard handlers (`Enter`, `Escape`, `ArrowUp/Down`)               |
 | Loading + error states       | Always handle both, even with mock data                                                              |
 

@@ -194,7 +194,8 @@ Chunking strategy:
 Embedding model:
   text-embedding-3-small: cheap, fast, good quality ($0.02/1M tokens)
   text-embedding-3-large: better quality, 5x more expensive
-  Voyage AI (voyage-3.5 / voyage-code-3): strong for technical/code content —
+  Voyage AI (voyage-4 family, Jan 2026: -lite / base / -large, plus open-weight
+    -nano; voyage-code-3 for code): strong for technical content —
     Anthropic's recommended embedding provider (now part of MongoDB)
   → Start with text-embedding-3-small, upgrade if retrieval quality is insufficient
 
@@ -449,7 +450,7 @@ Human-in-the-loop:
 
 ### "How would you prevent an AI system from hallucinating?"
 
-> No technique eliminates hallucination, but several reduce it. **RAG** — ground the model in retrieved source documents rather than relying on its training knowledge. **Prompt engineering** — instruct the model: "Only use information from the provided context. If unsure, say 'I don't know'." **Structured output with citations** — force the model to cite the specific chunk that supports each claim, then verify the claim appears in that chunk. **Temperature 0** — deterministic sampling for factual tasks. **Model selection** — larger, more capable models hallucinate less. **Post-processing** — verify factual claims programmatically where possible (dates, numbers, URLs). **Confidence thresholds** — if the model expresses uncertainty, route to a human or flag the response.
+> No technique eliminates hallucination, but several reduce it. **RAG** — ground the model in retrieved source documents rather than relying on its training knowledge. **Prompt engineering** — instruct the model: "Only use information from the provided context. If unsure, say 'I don't know'." **Structured output with citations** — force the model to cite the specific chunk that supports each claim, then verify the claim appears in that chunk. **Low randomness** — on models that still accept it, temperature 0 for factual tasks; current Claude models and OpenAI reasoning models reject or ignore sampling parameters, so use lower effort, tighter prompts and structured outputs instead. **Model selection** — larger, more capable models hallucinate less. **Post-processing** — verify factual claims programmatically where possible (dates, numbers, URLs). **Confidence thresholds** — if the model expresses uncertainty, route to a human or flag the response.
 
 ### "How do you evaluate an AI feature in production?"
 

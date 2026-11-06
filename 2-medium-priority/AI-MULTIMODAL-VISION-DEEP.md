@@ -43,7 +43,7 @@ const imageData = fs.readFileSync('./screenshot.png');
 const base64Image = imageData.toString('base64');
 
 const response = await client.messages.create({
-  model: 'claude-opus-5',
+  model: 'claude-opus-5-5',
   max_tokens: 16000,
   messages: [{
     role: 'user',
@@ -67,7 +67,7 @@ console.log(textOf(response));
 
 // Method 2: Image URL (Claude fetches it)
 const responseFromUrl = await client.messages.create({
-  model: 'claude-opus-5',
+  model: 'claude-opus-5-5',
   max_tokens: 16000,
   messages: [{
     role: 'user',
@@ -91,7 +91,7 @@ const responseFromUrl = await client.messages.create({
 
 // Multiple images in one request
 const comparisonResponse = await client.messages.create({
-  model: 'claude-opus-5',
+  model: 'claude-opus-5-5',
   max_tokens: 16000,
   messages: [{
     role: 'user',
@@ -161,7 +161,7 @@ const pdfData = fs.readFileSync('./contract.pdf');
 const base64PDF = pdfData.toString('base64');
 
 const response = await client.messages.create({
-  model: 'claude-opus-5',
+  model: 'claude-opus-5-5',
   max_tokens: 16000,
   messages: [{
     role: 'user',
@@ -236,7 +236,7 @@ const Invoice = z.object({
 
 async function extractInvoiceData(imageBase64: string) {
   const response = await client.messages.parse({
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     max_tokens: 16000,
     output_config: { format: zodOutputFormat(Invoice) },
     messages: [{
@@ -261,7 +261,7 @@ async function extractInvoiceData(imageBase64: string) {
 // Accessibility review
 async function reviewAccessibility(screenshotBase64: string) {
   const response = await client.messages.create({
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     max_tokens: 16000,
     messages: [{
       role: 'user',
@@ -291,7 +291,7 @@ List each issue with: element, issue, severity (critical/major/minor), fix.`,
 // Visual regression testing
 async function compareScreenshots(before: string, after: string) {
   const response = await client.messages.create({
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     max_tokens: 16000,
     messages: [{
       role: 'user',
@@ -313,7 +313,7 @@ async function compareScreenshots(before: string, after: string) {
 ```typescript
 async function analyseChart(chartImageBase64: string, question: string) {
   const response = await client.messages.create({
-    model: 'claude-opus-5',
+    model: 'claude-opus-5-5',
     max_tokens: 16000,
     messages: [{
       role: 'user',

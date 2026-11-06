@@ -302,7 +302,7 @@ type DA = DeepAwaited<Promise<Promise<string>>>; // string
 
 ---
 
-## Decorators (TS 5+ — using `experimentalDecorators` or new standard)
+## Decorators — legacy (`experimentalDecorators`) vs standard (TS 5+)
 
 ```ts
 // What are decorators?‼
@@ -330,6 +330,13 @@ type DA = DeepAwaited<Promise<Promise<string>>>; // string
 //   1. Class decorator — wraps the entire class (e.g., make it a Singleton)
 //   2. Method decorator — wraps a method (e.g., add logging before/after)
 //   3. Property decorator — intercepts a property (e.g., add validation on set)
+
+// ‼️ TWO DIFFERENT DECORATOR SYSTEMS — they are NOT interchangeable:
+//   LEGACY   "experimentalDecorators": true in tsconfig. Signature (target, key, descriptor).
+//            What NestJS, Angular, TypeORM and class-validator still use.
+//   STANDARD TS 5.0+ default (no flag), follows the TC39 proposal.
+//            Signature (value, context). Example at the end of this section.
+// The examples below are LEGACY decorators.
 
 // Class decorator
 function Singleton<T extends new (...args: any[]) => {}>(Base: T) {
@@ -361,6 +368,9 @@ function Log(target: any, key: string, descriptor: PropertyDescriptor) {
 }
 
 // Property decorator
+// ‼️ Bug to spot in interviews: `val` lives in the decorator's closure and the
+// property is defined on the PROTOTYPE — so every instance shares ONE value.
+// Real code stores per-instance state (e.g. in a WeakMap keyed by `this`).
 function Validate(min: number, max: number) {
     return function (target: any, key: string) {
         let val: number;
@@ -371,6 +381,17 @@ function Validate(min: number, max: number) {
                 val = v;
             },
         });
+    };
+}
+
+// STANDARD decorator (TS 5.0+, no experimentalDecorators flag) — same Log idea
+function log<This, Args extends any[], R>(
+    target: (this: This, ...args: Args) => R,
+    context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => R>,
+) {
+    return function (this: This, ...args: Args): R {
+        console.log(`Calling ${String(context.name)} with`, args);
+        return target.call(this, ...args);
     };
 }
 ```

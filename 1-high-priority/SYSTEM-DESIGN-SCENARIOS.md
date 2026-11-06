@@ -201,7 +201,10 @@ Example:
   → That partition hits its limit even though total is under 10,000
 
 How to confirm:
-  - CloudWatch metric: ConsumedWriteCapacityUnits per partition‼️
+  - CloudWatch Contributor Insights for DynamoDB → shows the most-throttled /
+    most-accessed partition keys‼️ (plain CloudWatch metrics are per table, not per partition)
+  - Each partition tops out at ~1,000 WCU / 3,000 RCU. Adaptive capacity shifts
+    unused capacity to hot partitions automatically, but can't push one key past that cap
   - Check for "ProvisionedThroughputExceededException" in logs
   - Analyse partition key distribution — is it skewed?
 ```
@@ -340,7 +343,8 @@ Step 2: Identify the leak source
 
 Step 3: Production-safe profiling
   - Use clinic.js or 0x for flamegraph analysis
-  - Enable --max-old-space-size to get a heap dump on OOM
+  - Run with --heapsnapshot-near-heap-limit=2 to write heap snapshots just before
+    the OOM (--max-old-space-size only changes the limit — it doesn't dump anything)
   - Add custom metrics: track size of known caches/maps via Prometheus gauge
 ```
 
@@ -431,7 +435,8 @@ Step 2: Common causes
 
   c) Index bloat
      - Many updates/deletes → dead tuples → index is fragmented
-     - Fix: REINDEX or VACUUM FULL (careful: locks table)
+     - Fix: REINDEX INDEX CONCURRENTLY (Postgres 12+, no write lock)
+       — avoid plain REINDEX / VACUUM FULL on busy tables (they lock it)
 
   d) Lock contention
      - Long-running transaction holding a lock → your query waits
@@ -444,8 +449,10 @@ Step 2: Common causes
 
   f) Parameter sniffing (more common in SQL Server but exists in Postgres)
      - Query plan was cached with unrepresentative parameter value
-     - Fix: use PREPARE/EXECUTE with different values, or disable
-       generic plans for that query
+     - Postgres switches a prepared statement to a cached "generic" plan after
+       5 executions — bad if the data is skewed
+     - Fix: SET plan_cache_mode = force_custom_plan (Postgres 12+) for that
+       session/role, so each execution is planned with its real parameters
 
 Step 3: Investigate data changes
   - Did a bulk import/delete happen? (check pg_stat_user_tables for row count changes)
@@ -1693,7 +1700,8 @@ Level 3 — Details that impress:
   - DNS uses UDP (port 53), falls back to TCP for large responses
   - TCP slow start: initial window is small, grows exponentially
   - TLS 1.3 reduces handshake to 1 round trip (vs 2 in TLS 1.2)
-  - HTTP/2: multiplexed streams, header compression, server push
+  - HTTP/2: multiplexed streams, header compression (server push existed but browsers
+    dropped it — Chrome removed it in 2022; 103 Early Hints replaced it)
   - HTTP/3: runs over QUIC (UDP), eliminates head-of-line blocking
   - Browser has a preload scanner that fetches resources while parsing HTML
   - Render-blocking: CSS blocks rendering, JS blocks HTML parsing (unless async/defer)
@@ -2277,7 +2285,7 @@ For simple async processing / serverless:
   - FIFO queues for ordering, standard queues for max throughput
   - Dead-letter queues built-in
   - Integrates natively with Lambda, SNS, EventBridge
-  - Tradeoff: AWS lock-in, 256KB message size limit, no replay
+  - Tradeoff: AWS lock-in, 1 MiB message size limit (was 256 KB until Aug 2025), no replay
 
 Quick decision framework:
   - "Do I need to replay old events?" → Kafka
@@ -2436,7 +2444,8 @@ Vertical scaling (scale up): bigger machine
   - Limit: you can't buy a machine bigger than the biggest available
   - Cost: exponential (2x CPU ≠ 2x price, more like 3-4x)
   - Downtime: usually need to stop and restart on new machine
-  - When it fails: when you hit hardware limits (~100 cores, ~12TB RAM on AWS)
+  - When it fails: when you hit hardware limits (the biggest AWS instance, u7inh-32tb,
+    has 1,920 vCPUs and 32 TB RAM — but costs a fortune)
     or when cost becomes absurd
 
 Horizontal scaling (scale out): more machines

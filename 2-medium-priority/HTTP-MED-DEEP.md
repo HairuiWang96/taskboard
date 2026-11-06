@@ -649,7 +649,7 @@ source.addEventListener('taskUpdated', e => updateTask(JSON.parse(e.data)));
 
 ### "What is the difference between HTTP/1.1, HTTP/2, and HTTP/3?"
 
-> **HTTP/1.1**: one request per TCP connection (or persistent with Keep-Alive but still sequential). Head-of-line blocking — slow request blocks others. **HTTP/2**: multiplexing — multiple requests over a single connection concurrently. Header compression (HPACK). Server push. Significantly faster for multiple resources. **HTTP/3**: runs over QUIC (UDP-based) instead of TCP. Eliminates TCP head-of-line blocking. Faster connection setup. ‼️ Better on unreliable networks (mobile).
+> **HTTP/1.1**: one request per TCP connection (or persistent with Keep-Alive but still sequential). Head-of-line blocking — slow request blocks others. **HTTP/2**: multiplexing — multiple requests over a single connection concurrently. Header compression (HPACK). (Server push was in the spec, but browsers have removed it.) Significantly faster for multiple resources. **HTTP/3**: runs over QUIC (UDP-based) instead of TCP. Eliminates TCP head-of-line blocking. Faster connection setup. ‼️ Better on unreliable networks (mobile).
 
 ### "What is REST and what are its constraints?"
 

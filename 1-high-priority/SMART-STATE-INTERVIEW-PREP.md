@@ -648,7 +648,8 @@ src/
 > {
 >   provide: 'CONFIG_SERVICE',
 >   useFactory: async (httpService: HttpService) => {
->     const config = await httpService.get('/config').toPromise();
+>     // firstValueFrom (from 'rxjs') — .toPromise() was deprecated in RxJS 7
+>     const { data: config } = await firstValueFrom(httpService.get('/config'));
 >     return new ConfigService(config);
 >   },
 >   inject: [HttpService],
@@ -789,7 +790,7 @@ src/
 > 5. **Check** — `setImmediate()` callbacks
 > 6. **Close callbacks** — `socket.on('close')` etc.
 >
-> `process.nextTick()` runs between phases (microtask queue). Promises also go to microtask queue.
+> `process.nextTick()` and Promise microtasks run after EVERY callback (since Node 11), not just between phases — nextTick queue first, then Promises.
 
 **Q: How do you handle memory leaks in Node.js?**
 
@@ -985,7 +986,7 @@ await User.updateOne(
 const updated = await User.findOneAndUpdate(
     { email: 'alice@example.com' },
     { $inc: { balance: 50 } }, // increment balance by 50
-    { new: true }, // return the updated doc, not the old one
+    { returnDocument: 'after' }, // return the updated doc (Mongoose 9 deprecates the old `new: true`)
 );
 
 // Update many
@@ -5811,7 +5812,7 @@ For the interview, if they ask, just say: "It handles I/O callbacks that were de
 
 - Node.js is **single-threaded** for JavaScript execution, but uses **libuv** thread pool for I/O (file system, DNS, etc.)
 - The event loop is what makes Node.js non-blocking — it delegates I/O to the OS/thread pool and picks up results when ready
-- **Microtask queue** (process.nextTick + Promises) runs between EVERY phase, not just at the end
+- **Microtask queue** (process.nextTick + Promises) drains after EVERY callback (since Node 11) — so also between phases, not just at the end
 - `process.nextTick()` has higher priority than `Promise.then()` — nextTick queue is drained first
 - `setImmediate()` runs in the **check** phase (after poll), `setTimeout(fn, 0)` runs in the **timers** phase — their order depends on context
 

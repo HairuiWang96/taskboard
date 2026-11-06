@@ -9,7 +9,7 @@ Don't read — glance at the question, close the file, speak it.
 
 **Q1. What is the event loop? How does Node.js handle async operations?**
 
-> JavaScript is single-threaded. The event loop allows non-blocking I/O by offloading work (timers, I/O) to the OS/libuv and processing their callbacks when the call stack is empty. Phases: timers → I/O callbacks → poll → check (setImmediate) → close. Microtasks (Promises, nextTick) run between every phase.
+> JavaScript is single-threaded. The event loop allows non-blocking I/O by offloading work (timers, I/O) to the OS/libuv and processing their callbacks when the call stack is empty. Phases: timers → I/O callbacks → poll → check (setImmediate) → close. Microtasks (nextTick first, then Promises) are drained after every individual callback (since Node 11 — before that, only between phases).
 
 **Q2. What is a closure? Give a real-world use case.**
 
@@ -63,7 +63,7 @@ const obj = {
             //   func()         → this = window  (no object → global)
             //   new Func()     → this = new instance
             //   func.call(obj) → this = obj     (explicitly set)
-            console.log(this.name); // undefined — regular fn, setTimeout sets this = window‼️
+            console.log(this.name); // undefined — regular fn: this = window in browsers (in Node it's the Timeout object)‼️
         }, 100);
 
         setTimeout(() => {
@@ -215,7 +215,7 @@ function useDebounce<T>(value: T, ms: number): T {
 
 **Q19. What is React Suspense and what can it do?**
 
-> ‼️Suspense lets components wait for something before rendering, showing a fallback in the meantime. Originally for lazy-loaded components (`React.lazy`). ‼️In React 18+: also handles data fetching (via frameworks like Next.js, TanStack Query's `suspense: true`). Works with Server Components for streaming HTML. Concurrent mode features (transitions, `useDeferredValue`) integrate with Suspense.
+> ‼️Suspense lets components wait for something before rendering, showing a fallback in the meantime. Originally for lazy-loaded components (`React.lazy`). ‼️In React 18+: also handles data fetching (via frameworks like Next.js, TanStack Query's `useSuspenseQuery` — v5 removed the old `suspense: true` option, and React 19's `use()`). Works with Server Components for streaming HTML. Concurrent mode features (transitions, `useDeferredValue`) integrate with Suspense.
 
 **Q20. What problem does the key prop solve in lists?**
 
@@ -294,7 +294,7 @@ const name = getProperty({ name: 'Alice', age: 30 }, 'name'); // string
 
 **Q31. Explain the Node.js event loop phases.**
 
-> 6 phases: timers (setTimeout/setInterval), pending callbacks (I/O from prev iteration), idle/prepare (internal), poll (wait for I/O, execute callbacks), check (setImmediate), close callbacks. Microtasks (nextTick, Promises) drain after each phase. nextTick has higher priority than Promise microtasks.
+> 6 phases: timers (setTimeout/setInterval), pending callbacks (I/O from prev iteration), idle/prepare (internal), poll (wait for I/O, execute callbacks), check (setImmediate), close callbacks. Microtasks (nextTick, Promises) drain after every individual callback — since Node 11; older versions drained them only between phases. nextTick has higher priority than Promise microtasks.
 
 **Q32. When would you use worker threads vs child_process in Node.js?**‼️
 
@@ -378,4 +378,4 @@ const name = getProperty({ name: 'Alice', age: 30 }, 'name'); // string
 
 **Q50. What are your salary expectations?**
 
-> Don't anchor first if you can help it. "I'm flexible depending on the total compensation package — could you share the band for this role?" If pushed: give a range based on research (levels.fyi, Glassdoor, Blind, LinkedIn Salary). Make the bottom of your range your actual minimum — they often land there.
+> Don't anchor first if you can help it. "I'm flexible depending on the total compensation package — could you share the band for this role?" If pushed: give a range based on research (levels.fyi, Glassdoor, Blind, LinkedIn Salary). Make the bottom of your range your actual target, not your minimum — offers often land at the bottom.

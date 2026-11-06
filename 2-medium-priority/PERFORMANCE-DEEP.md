@@ -127,10 +127,10 @@ const handleToggle = useCallback((id: string) => {
 }, []);
 
 // 4. Virtualize long lists (react-window / TanStack Virtual)
-import { FixedSizeList } from 'react-window';
-<FixedSizeList height={600} itemCount={10000} itemSize={50}>
-    {({ index, style }) => <div style={style}>{items[index].title}</div>}
-</FixedSizeList>
+// (react-window v2 API — v1's FixedSizeList was removed)
+import { List } from 'react-window';
+const Row = ({ index, style, items }) => <div style={style}>{items[index].title}</div>;
+<List rowComponent={Row} rowCount={10000} rowHeight={50} rowProps={{ items }} style={{ height: 600 }} />
 
 // 5. Profiler — measure render time
 import { Profiler } from 'react';

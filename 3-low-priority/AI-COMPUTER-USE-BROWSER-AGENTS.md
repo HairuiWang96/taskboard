@@ -106,7 +106,7 @@ def run_computer_agent(task: str, max_steps: int = 50):
 
     for _ in range(max_steps):
         response = client.messages.create(
-            model="claude-opus-5",
+            model="claude-opus-5-5",
             max_tokens=16000,
             tools=tools,
             messages=messages,
@@ -273,7 +273,7 @@ class BrowserAgent {
 
     for (let step = 0; step < 20; step++) {
       const response = await client.messages.create({
-        model: 'claude-opus-5',
+        model: 'claude-opus-5-5',
         max_tokens: 16000,
         system: `You are a browser automation agent. Use your tools to complete tasks.
         Always check the page content before clicking or typing.
@@ -349,7 +349,7 @@ const browser = await browserbase.launch({ apiKey: process.env.BROWSERBASE_API_K
 
 const stagehand = await Stagehand.create({
   browser,
-  model: { modelName: 'anthropic/claude-opus-5', apiKey: process.env.ANTHROPIC_API_KEY },
+  model: { modelName: 'anthropic/claude-opus-5-5', apiKey: process.env.ANTHROPIC_API_KEY },
 });
 
 const [page] = await browser.context.pages();

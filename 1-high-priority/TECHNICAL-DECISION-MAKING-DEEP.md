@@ -612,9 +612,10 @@ THE TRANSLATION RULE
      four payment incidents this quarter. Two engineers for six weeks would
      get us back to a few days and remove the most common incident cause."
 
-  ✗ "We should migrate to Postgres 16."
-  ✓ "We're on a version that stops receiving security patches in November.
-     After that, any vulnerability found is ours to live with, and it would
+  ✗ "We should migrate off Postgres 14."
+  ✓ "We're on a version that stopped receiving security patches in November
+     2026 (Postgres 14's end of life).
+     From now on, any vulnerability found is ours to live with, and it will
      show up in the next customer security review."
 
   ✗ "The architecture doesn't scale."

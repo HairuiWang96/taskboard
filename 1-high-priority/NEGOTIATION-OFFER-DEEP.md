@@ -300,9 +300,10 @@ Then get it in writing (offer letter) before giving notice at current job.
 ## Counter-Offer from Current Employer
 
 ```text
-When you resign, your employer may counter-offer. Statistics consistently show:
+When you resign, your employer may counter-offer. A widely quoted (but poorly sourced) claim is that
+most people who accept one leave within 6–12 months anyway. Whatever the exact number:
 
-- 80% of people who accept a counter-offer leave within 6 months anyway
+- Many people who accept a counter-offer still leave soon after
 - The underlying reasons you wanted to leave don't change
 - Your loyalty is now questioned — you may be first on the layoff list
 

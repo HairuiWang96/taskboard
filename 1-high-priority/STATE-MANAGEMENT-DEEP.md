@@ -110,7 +110,7 @@ export const fetchCart = createAsyncThunk(
       const res = await fetch(`/api/cart/${userId}`)
       return await res.json()         // becomes action.payload in fulfilled
     } catch (err) {
-      return thunkAPI.rejectWithValue(err.message)  // becomes action.error
+      return thunkAPI.rejectWithValue(err.message)  // becomes action.payload in rejected
     }
   }
 )
@@ -177,10 +177,11 @@ const total = useSelector(selectCartTotal)
 ### Typed Hooks (avoid casting everywhere)
 
 ```ts
-// hooks.ts
-import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux'
-export const useAppDispatch = () => useDispatch<AppDispatch>()
-export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
+// hooks.ts — React-Redux 9.1+ way (.withTypes)
+import { useDispatch, useSelector } from 'react-redux'
+export const useAppDispatch = useDispatch.withTypes<AppDispatch>()
+export const useAppSelector = useSelector.withTypes<RootState>()
+// Older code: `const useAppSelector: TypedUseSelectorHook<RootState> = useSelector`
 ```
 
 ### RTK Query (built-in data fetching)
@@ -379,7 +380,6 @@ const mutation = useMutation({
   onSuccess: (data, variables, context) => {
     queryClient.invalidateQueries({ queryKey: ['users'] })  // refetch list
   },
-  onError: (error) => { /* rollback */ },
   // Optimistic update:
   onMutate: async (newUser) => {
     await queryClient.cancelQueries({ queryKey: ['users'] })
@@ -409,10 +409,11 @@ const { data } = useQuery({
 // Infinite scroll
 const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
   queryKey: ['todos'],
-  queryFn: ({ pageParam = 0 }) => fetchTodos(pageParam),
+  queryFn: ({ pageParam }) => fetchTodos(pageParam),
+  initialPageParam: 0,                 // required in v5 (no default-argument trick)
   getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
 })
-// data.pages = array of pages; data.pages.flat() for all items
+// data.pages = array of pages; data.pages.flatMap(p => p.items) for all items
 ```
 
 ### Prefetching

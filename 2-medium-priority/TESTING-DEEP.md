@@ -75,8 +75,8 @@ Test the things most likely to break:
 ### Setup
 
 ```ts
-// vite.config.ts
-import { defineConfig } from 'vite';
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'; // not 'vite' — that one doesn't type the `test` key
 
 export default defineConfig({
   test: {
@@ -214,7 +214,7 @@ it('serializes user to expected format', () => {
   `);
 });
 
-// Update snapshots: vitest --update-snapshots
+// Update snapshots: vitest -u   (or --update)
 // Inline snapshots (above) are better than file snapshots — visible in code review
 ```
 
@@ -835,7 +835,7 @@ export const server = setupServer(...handlers);
 // src/test/setup.ts
 import { server } from './server';
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' })); // MSW 3 name (v2: onUnhandledRequest)
 afterEach(() => server.resetHandlers()); // reset per-test overrides
 afterAll(() => server.close());
 
@@ -1009,7 +1009,7 @@ export const options = {
     { duration: '1m', target: 0 },    // ramp down
   ],
   thresholds: {
-    http_req_duration: ['p95<500'],   // 95% of requests < 500ms
+    http_req_duration: ['p(95)<500'],   // 95% of requests < 500ms (p(95), not p95)
     http_req_failed: ['rate<0.01'],   // < 1% error rate
     errors: ['rate<0.01'],
   },

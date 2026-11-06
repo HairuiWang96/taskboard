@@ -130,13 +130,15 @@ WHAT HAPPENED
   because it was written to test the system.
 
   In 45 minutes it executed millions of trades. Knight lost $440 million,
-  roughly four times its annual profit, and was acquired within days.
+  roughly four times its annual profit. It survived only through an emergency
+  rescue by outside investors within a week, and was taken over (by Getco) the
+  following year.
 
 ‼️ THE REAL CAUSES — note how many there are
   - No automated deployment. A human copied files to servers by hand.
   - No verification that the deploy reached all servers.
   - A feature flag was REUSED for a new purpose while old code still read it.
-  - Dead code was left in production for eight years.
+  - Dead code was left in production for nearly a decade (unused since 2003).
   - No kill switch. Engineers watched it trade for 45 minutes.
   - Alerts fired but were sent to an email address nobody was watching.
 

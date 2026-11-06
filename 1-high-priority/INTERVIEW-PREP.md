@@ -166,7 +166,9 @@ fastify.addHook('onRequest', async (req, reply) => {
     // runs before route handler — good for auth checks
     const token = req.headers.authorization;
     if (!token) {
-        reply.code(401).send({ error: 'Unauthorized' });
+        // ‼️ RETURN the reply in an async hook — otherwise Fastify carries on to the
+        //    route handler and you get "Reply was already sent" errors
+        return reply.code(401).send({ error: 'Unauthorized' });
     }
 });
 ```
@@ -355,6 +357,8 @@ colors: {
   },
 }
 // Now bg-primary, text-primary, text-primary-foreground all work
+// (This is the Tailwind v3 setup this project uses. Tailwind v4 has no config file —
+//  new shadcn projects declare colors in CSS with @theme inline and OKLCH values.)
 ```
 
 ---
@@ -489,7 +493,7 @@ import { z } from 'zod';
 const CreateTaskSchema = z.object({
     title: z.string().min(1, 'Title is required').max(200),
     priority: z.enum(['low', 'medium', 'high']).default('medium'),
-    dueDate: z.string().datetime().optional(), // ISO 8601
+    dueDate: z.iso.datetime().optional(), // ISO 8601 (Zod 4; z.string().datetime() is the deprecated v3 form)
 });
 
 // Type inferred — no duplication
@@ -512,7 +516,9 @@ const task = CreateTaskSchema.parse(req.body);
 const Schema = z.object({
     id: z.string().uuid(),
     tags: z.array(z.string()).default([]), // missing → []
-    email: z.string().email().toLowerCase().trim(), // sanitize on parse
+    email: z.string().trim().toLowerCase().email(), // sanitize on parse
+    // ‼️ Order matters: steps run left to right, so trim BEFORE the email check —
+    //    z.string().email().trim() rejects '  a@b.com ' (tested on Zod 4.6)
     count: z.coerce.number(), // "5" → 5 (from query strings)
 });
 ```
@@ -702,14 +708,17 @@ fastify.get<{ Querystring: { page?: number; limit?: number } }>('/', async req =
 ### Cursor pagination (better for large datasets)
 
 ```ts
-// GET /tasks?cursor=<lastId>&limit=20
-// Cursor = the ID of the last item seen — no offset needed
-const tasks = await db
+// GET /tasks?cursor=<lastCreatedAt>&limit=20
+// Cursor = the sort value of the last item seen — no offset needed
+// ‼️ The cursor must be the SAME column you ORDER BY. Random UUIDs (defaultRandom)
+//    have no order, so lt(tasks.id, cursor) would skip/repeat rows.
+//    (Use a tie-breaker like (createdAt, id) if two rows can share a timestamp.)
+const page = await db // ‼️ not `const tasks` — that would shadow the tasks table (TDZ ReferenceError)
     .select()
     .from(tasks)
-    .where(cursor ? lt(tasks.id, cursor) : undefined) // lt = less than
-    .limit(limit)
-    .orderBy(desc(tasks.createdAt));
+    .where(cursor ? lt(tasks.createdAt, new Date(cursor)) : undefined) // lt = less than
+    .orderBy(desc(tasks.createdAt))
+    .limit(limit);
 
 //! Why cursor > offset: offset queries get slower as offset grows (DB scans all skipped rows)
 ```
@@ -1733,7 +1742,7 @@ A function that captures variables from its outer scope, even after that scope h
 
 ### "What is a memory leak in React?"
 
-Setting state on an unmounted component. Common pattern: fetch starts, component unmounts before fetch resolves, then setState is called. Fix: use an `AbortController` to cancel the fetch on cleanup, or check if component is still mounted.
+Real leaks come from things that outlive the component: intervals, event listeners, subscriptions or sockets that are never cleaned up in the effect's return function. (Setting state after unmount used to be the classic answer, but React 18 removed that warning — it isn't a leak on its own.) For fetches, the bigger risk is a stale response overwriting newer data, so cancel with an `AbortController` on cleanup.
 
 ```ts
 useEffect(() => {
@@ -1760,7 +1769,7 @@ Parent renders → React diffs virtual DOM vs previous → only changed DOM node
 
 ## Solace Health — Company Intel
 
-**What they do:** Patient advocacy platform. They connect patients (primarily Medicare-covered) with trained health advocates — RNs, social workers — who help navigate the US healthcare system: scheduling appointments, interpreting treatment plans, handling medical billing disputes, coordinating care. Serves 20,000+ patients/month. Valued at $1B+ (Series C, Feb 2026, $211M raised total).
+**What they do:** Patient advocacy platform. They connect patients (primarily Medicare-covered) with trained health advocates — RNs, social workers — who help navigate the US healthcare system: scheduling appointments, interpreting treatment plans, handling medical billing disputes, coordinating care. Serves 20,000+ patients/month. Valued at $1B+ ($130M Series C led by IVP, Feb 2026; ~$211M raised total). 2,000+ advocates, 10x year-over-year growth.
 
 **Why this matters for the interview:** They're not just a CRUD app. They're a marketplace (patient ↔ advocate matching), a healthcare platform (HIPAA-regulated PHI everywhere), and a communications platform (text, phone, video). Every engineering decision has a compliance dimension.
 
@@ -2335,7 +2344,7 @@ Both push data from server to client. SSE is simpler and often sufficient.
 
 ```text
                     SSE                           WebSocket
-Protocol            HTTP/1.1 (EventSource API)    WS (separate protocol upgrade)
+Protocol            Plain HTTP (EventSource API)  WS (separate protocol upgrade)
 Direction           Server → Client only          Bidirectional
 Browser reconnect   Automatic                     Manual
 Complexity          Trivial                       Moderate
@@ -2380,7 +2389,9 @@ useEffect(() => {
     setNotifications(prev => [data, ...prev]);
   });
 
-  es.onerror = () => es.close(); // browser auto-reconnects by default
+  // ‼️ Don't close() in onerror — the browser auto-reconnects on errors, and close()
+  //    switches that off for good. Only close on unmount (or after N failures).
+  es.onerror = () => console.warn('SSE connection lost — browser will retry');
 
   return () => es.close(); // cleanup on unmount
 }, []);

@@ -398,9 +398,10 @@ NODE.JS
   - You choose the version on your server, so it's under your control
   - Use the current LTS (Long-Term Support) version — check nodejs.org
   - Pin it so everyone uses the same one:
-      "engines": { "node": ">=22" }     in package.json
-      .nvmrc  →  22                     for nvm / fnm users
-      FROM node:22-alpine                in your Dockerfile
+      "engines": { "node": ">=26" }     in package.json
+      .nvmrc  →  26                     for nvm / fnm users
+      FROM node:26-alpine                in your Dockerfile
+  - From Node 27 there's one major release a year, and every one becomes LTS
 
 ‼️ "It works on my machine" is often a Node VERSION difference. Pin it.‼️
 ```

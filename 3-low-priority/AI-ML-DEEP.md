@@ -618,7 +618,7 @@ def text_of(message) -> str:
 
 # Basic completion
 message = client.messages.create(
-    model="claude-opus-5",
+    model="claude-opus-5-5",
     max_tokens=16000,
     messages=[
         {"role": "user", "content": "Explain HIPAA in one paragraph."}
@@ -628,7 +628,7 @@ print(text_of(message))
 
 # System prompt
 message = client.messages.create(
-    model="claude-opus-5",
+    model="claude-opus-5-5",
     max_tokens=16000,
     system="You are a healthcare compliance expert. Be concise and accurate.",
     messages=[
@@ -643,7 +643,7 @@ while True:
     messages.append({"role": "user", "content": user_input})
 
     response = client.messages.create(
-        model="claude-opus-5",
+        model="claude-opus-5-5",
         max_tokens=16000,
         messages=messages
     )
@@ -705,7 +705,7 @@ def rag_query(user_question: str, vector_store, client: Anthropic) -> str:
 
     # Step 3: send to LLM with context
     response = client.messages.create(
-        model="claude-opus-5",
+        model="claude-opus-5-5",
         max_tokens=16000,
         system="Answer questions using only the provided context. If unsure, say so.",
         messages=[{

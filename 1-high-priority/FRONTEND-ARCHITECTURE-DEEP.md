@@ -228,7 +228,7 @@ Select.Option = function Option({ value, children }: OptionProps) {
 <Select value={selectedRole} onChange={setSelectedRole}>
   <Select.Option value="admin">Admin</Select.Option>
   <Select.Option value="editor">Editor</Select.Option>
-  <Select.Option value="viewer">Viewer</Selecct.Option>
+  <Select.Option value="viewer">Viewer</Select.Option>
 </Select>
 ```
 
@@ -515,7 +515,8 @@ Users only download the code for the route they're on.
 
 ```typescript
 // React Router (data mode) — explicit route tree
-// (v7+: import from 'react-router'; 'react-router-dom' is only a re-export)
+// (v7+: import from 'react-router'. In v7 'react-router-dom' is only a re-export;
+//  v8 (June 2026) removed it — DOM-specific APIs live in 'react-router/dom')
 // router.tsx
 const router = createBrowserRouter([
   {
@@ -601,6 +602,12 @@ export const dynamic = 'force-dynamic'; // opt out of caching
 
 // ISR — regenerate every 60 seconds
 export const revalidate = 60;
+
+// ‼️ With Cache Components (cacheComponents: true + partialPrefetching: true in
+// next.config — the direction the Next team recommends in 16.x) data is dynamic by
+// default and these route-segment configs are migrated away ("Migrating to Cache
+// Components" in the docs): you opt INTO caching with 'use cache' + cacheLife():
+//   async function getPosts() { 'use cache'; cacheLife('minutes'); return api.posts.getAll(); }
 
 // Partial prerendering — static shell + dynamic content
 // (experimental in Next 14–15; in Next 16 it's part of Cache Components —
@@ -699,25 +706,39 @@ Why this matters:
 ```
 
 ```typescript
-// eslint.config.js — enforce boundaries
+// eslint.config.js — enforce boundaries (eslint-plugin-boundaries v7)
 // (flat config; the old .eslintrc format was removed in ESLint 10)
 import boundaries from 'eslint-plugin-boundaries';
 
 export default [
   {
+    files: ['src/**/*.{js,ts,tsx}'],
     plugins: { boundaries },
+    settings: {
+      // ‼️ 1. Tell the plugin what each folder IS — without this, no rule can match anything
+      'boundaries/elements': [
+        { type: 'feature', pattern: 'src/features/*' },
+        { type: 'shared', pattern: 'src/shared' },
+        { type: 'app', pattern: 'src/app' },
+      ],
+    },
     rules: {
-      'boundaries/element-types': ['error', {
+      // 2. Who may import whom. ('boundaries/element-types' is the older, now
+      //    deprecated rule — v7 uses 'boundaries/dependencies' with policies.)
+      'boundaries/dependencies': ['error', {
         default: 'disallow',
-        rules: [
-          { from: 'feature', allow: ['shared', 'app'] },
-          { from: 'shared',  allow: [] },
-          { from: 'app',     allow: ['feature', 'shared'] },
+        policies: [
+          { from: { element: { type: 'feature' } }, allow: { to: { element: { types: ['shared'] } } } },
+          { from: { element: { type: 'app' } },     allow: { to: { element: { types: ['feature', 'shared'] } } } },
+          // shared/ gets no policy → it can import nothing from features or app
         ],
       }],
     },
   },
 ];
+// A feature importing another feature now fails lint:
+//   error  There is no policy allowing dependencies from elements of type
+//          "feature" to elements of type "feature"   boundaries/dependencies
 ```
 
 ---

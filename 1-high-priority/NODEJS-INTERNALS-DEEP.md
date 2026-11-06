@@ -23,10 +23,13 @@ Node.js is single-threaded but non-blocking via the event loop + libuv thread po
          ↑ repeats until nothing to process
 ```
 
-### Microtask Queue (runs BETWEEN every phase)
+### Microtask Queue (drained after EVERY callback)
 
 ```
-Microtasks run after each phase completes, before moving to the next.
+Microtasks are drained after each individual callback — e.g. after each
+setTimeout callback, not after the whole timers phase. (This changed in
+Node 11; older versions drained them only between phases, which is what
+many older articles still describe.)
 Two microtask queues (processed in order):
   1. process.nextTick queue  (higher priority)
   2. Promise microtask queue (then/catch/finally, ‼️queueMicrotask)
@@ -111,7 +114,7 @@ Node.js is single-threaded for JS, but libuv uses a thread pool for:
   - User code via worker_threads (see below)
 
 Default thread pool size: 4
-Set via: UV_THREADPOOL_SIZE=8 node app.js (max 128)
+Set via: UV_THREADPOOL_SIZE=8 node app.js (max 1024)
 
 Network I/O (TCP, HTTP) does NOT use thread pool — uses OS epoll/kqueue (async)‼️
 
@@ -162,16 +165,17 @@ child_process:  separate process, separate memory, IPC via stdin/stdout/pipe
                Use: shell commands, separate Node processes, isolation needed
 
 cluster:        multiple Node processes sharing same port (load balancing)
-               Master forks workers, OS distributes connections round-robin
+               Primary forks workers; the primary accepts connections and
+               hands them out round-robin (default everywhere except Windows)
                Use: HTTP servers — use all CPU cores
                Modern alternative: PM2 cluster mode or running multiple containers‼️
+```
 
 ---
 
 ## Streams
 
-```
-
+```text
 Why streams: process data chunk by chunk instead of loading all into memory
 Reading 10GB file without streams: crashes (RAM exceeded)
 With streams: constant ~64KB memory
@@ -181,8 +185,7 @@ Readable: source (fs.createReadStream, HTTP request, process.stdin)
 Writable: sink (fs.createWriteStream, HTTP response, process.stdout)
 Duplex: both (TCP socket, zlib Transform)
 Transform: Duplex that transforms data (compression, encryption, parsing)‼️
-
-````
+```
 
 ```js
 // Pipe — connects readable to writable (handles backpressure automatically)
@@ -218,7 +221,7 @@ async function processFile(path) {
         process(chunk);
     }
 }
-````
+```
 
 ### Backpressure
 
@@ -263,8 +266,9 @@ if (cluster.isPrimary) {
     }).listen(8000);
 }
 
-// OS distributes incoming connections across workers (round-robin on Linux)
-// Workers share the same port — OS handles accept() distribution
+// The primary accepts connections and distributes them round-robin to workers
+// (cluster.SCHED_RR — the default on every platform except Windows).
+// Workers share the same port.
 
 // Graceful shutdown:
 process.on('SIGTERM', () => {
@@ -323,7 +327,9 @@ server.on('stream', (stream, headers) => {
     stream.end('Hello HTTP/2');
 });
 
-// Server push — push assets before client requests them
+// ‼️ Server push — DON'T rely on it: Chrome removed HTTP/2 push in 2022 and
+// other browsers followed. Node still has the API, but browsers ignore it.
+// Use 103 Early Hints (res.writeEarlyHints) or <link rel="preload"> instead.
 server.on('stream', stream => {
     stream.pushStream({ ':path': '/style.css' }, (err, pushStream) => {
         pushStream.respond({ ':status': 200 });
@@ -367,29 +373,30 @@ console.log(entry.duration)
 ## Modern Node.js — Versions and Built-ins
 
 ```text
-RELEASE LINES (October 2026 — check nodejs.org/en/about/previous-releases):
-  Node 24  Active LTS — the default choice for production
-  Node 22  Maintenance LTS — fine, plan the upgrade
-  Node 26  Current — becomes LTS in late October 2026
-  Node 20  END OF LIFE (April 2026) — no security fixes; upgrade
-  Even-numbered releases become LTS; odd ones are short-lived. Production
-  should run an LTS line.
+RELEASE LINES (November 2026 — check nodejs.org/en/about/previous-releases):
+  Node 26  Active LTS since 28 Oct 2026 — the default choice for production
+  Node 24  Maintenance LTS (EOL April 2028) — fine, plan the upgrade
+  Node 22  Maintenance LTS (EOL April 2027) — upgrade soon
+  Node 20  END OF LIFE (March 2026) — no security fixes; upgrade
+  ‼️ NEW SCHEDULE from Node 27: one major release a year (April), and EVERY
+  release becomes LTS (October). The old "even = LTS, odd = short-lived" rule
+  ends with Node 26. Production should run an LTS line.
 
 ‼️ THINGS YOU NO LONGER NEED A PACKAGE FOR:
   fetch, Request, Response, WebSocket client   global, built in
   Test runner          node --test   (node:test + node:assert)
   Watch mode           node --watch app.js        (replaces nodemon)
   .env files           node --env-file=.env app.js  (replaces dotenv)
-  Run TypeScript       node app.ts — type stripping is on by default in
-                       current LTS lines: Node deletes the type annotations
-                       and runs the JS. No type-CHECKING (still run tsc),
-                       and no enums/namespaces unless you use
-                       --experimental-transform-types.
+  Run TypeScript       node app.ts — type stripping is STABLE and on by
+                       default: Node deletes the type annotations and runs
+                       the JS. No type-CHECKING (still run tsc), and no
+                       enums or runtime namespaces (use
+                       --experimental-transform-types, or avoid them).
   require() an ES module   works since Node 22.12 / 20.19 — ends most of the
                        "ERR_REQUIRE_ESM" pain
   Permission model     node --permission --allow-fs-read=./data app.js
                        restricts file system, child processes and workers
-  SQLite               node:sqlite (built-in, still marked experimental)
+  SQLite               node:sqlite (built-in, release candidate since Node 25.7)
   glob, styleText, parseArgs, crypto.randomUUID — all in core
 
 Interview angle: "What would you remove from a Node project's dependencies

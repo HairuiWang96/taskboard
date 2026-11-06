@@ -98,18 +98,25 @@ function Autocomplete({ onSelect }: AutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
 
+  const abortRef = useRef<AbortController | null>(null);
+
   // Debounce API calls — don't fire on every keystroke
   const debouncedFetch = useMemo(
     () => debounce(async (query: string) => {
       if (query.length < 2) { setSuggestions([]); return; }
+      // ‼️ Cancel the previous request — otherwise a slow response for "re" can
+      //    arrive AFTER the one for "react" and overwrite the newer results.
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
       setStatus('loading');
       try {
-        const results = await api.search(query);
+        const results = await api.search(query, { signal: controller.signal });
         setSuggestions(results);
         setIsOpen(results.length > 0);
         setStatus('idle');
-      } catch {
-        setStatus('error');
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') setStatus('error');
       }
     }, 300),
     []
@@ -142,14 +149,18 @@ function Autocomplete({ onSelect }: AutocompleteProps) {
   }
 
   return (
-    <div role="combobox" aria-expanded={isOpen} aria-haspopup="listbox">
+    <div>
+      {/* ‼️ ARIA 1.2 combobox: role="combobox" goes ON THE INPUT, not a wrapper
+          div (the wrapper version was ARIA 1.1 and is no longer recommended). */}
       <input
-        value={inputValue}
-        onChange={e => { setInputValue(e.target.value); debouncedFetch(e.target.value); }}
-        onKeyDown={handleKeyDown}
+        role="combobox"
+        aria-expanded={isOpen}
         aria-autocomplete="list"
         aria-controls="suggestions-list"
         aria-activedescendant={selectedIndex >= 0 ? `option-${selectedIndex}` : undefined}
+        value={inputValue}
+        onChange={e => { setInputValue(e.target.value); debouncedFetch(e.target.value); }}
+        onKeyDown={handleKeyDown}
       />
       {isOpen && (
         <ul id="suggestions-list" role="listbox">
@@ -187,7 +198,8 @@ Min chars: 2 — avoid fetching for single characters
 Cancellation: cancel in-flight requests when a new one starts (AbortController)
 Caching: cache results per query string — avoids re-fetching the same query
 Highlight: bold the matching portion in suggestions
-Accessibility: ARIA combobox pattern (role, aria-expanded, aria-activedescendant)
+Accessibility: ARIA 1.2 combobox pattern (role="combobox" on the input, aria-expanded,
+               aria-controls, aria-activedescendant; listbox + option roles)
 Keyboard: full ↑↓ Enter Esc support
 Click outside: close dropdown when clicking outside (useClickOutside hook)
 ```
@@ -230,7 +242,8 @@ function InfiniteFeed() {
     status,
   } = useInfiniteQuery({
     queryKey: ['feed'],
-    queryFn: ({ pageParam = 0 }) => api.getFeed({ cursor: pageParam, limit: 20 }),
+    queryFn: ({ pageParam }) => api.getFeed({ cursor: pageParam, limit: 20 }),
+    initialPageParam: 0,          // required in TanStack Query v5
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 
@@ -291,8 +304,9 @@ function VirtualList({ items }: { items: Item[] }) {
 
   return (
     <div ref={parentRef} style={{ height: '600px', overflow: 'auto' }}>
-      {/* Total height — makes scrollbar correct */}
-      <div style={{ height: virtualizer.getTotalSize() }}>
+      {/* Total height — makes scrollbar correct. ‼️ position: relative is required:
+          the rows below are absolutely positioned against THIS element. */}
+      <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
         {virtualizer.getVirtualItems().map(virtualItem => (
           <div
             key={virtualItem.key}
@@ -536,7 +550,9 @@ function FileUploader({ onUploadComplete, accept, maxSizeMb = 10 }: FileUploader
       };
       xhr.onload = () => xhr.status < 400 ? resolve() : reject(new Error('Upload failed'));
       xhr.onerror = () => reject(new Error('Network error'));
-      signal.addEventListener('abort', () => { xhr.abort(); reject(new Error('AbortError')); });
+      // ‼️ Reject with an error whose NAME is 'AbortError' — new Error('AbortError')
+      //    only sets the message, so the err.name check above would never match.
+      signal.addEventListener('abort', () => { xhr.abort(); reject(new DOMException('Upload cancelled', 'AbortError')); });
 
       xhr.open('PUT', url);
       xhr.setRequestHeader('Content-Type', file.type);
@@ -608,9 +624,11 @@ HTML5 Drag and Drop API:
   - dataTransfer: pass data between drag source and drop target
 
 Libraries:
-  - dnd-kit: modern, accessible, composable (recommended)
-  - react-beautiful-dnd: popular but less maintained
-  - @dnd-kit/core: headless — bring your own UI
+  - dnd-kit (@dnd-kit/core + @dnd-kit/sortable): modern, accessible, headless —
+    bring your own UI (recommended)
+  - Pragmatic drag and drop (Atlassian): framework-agnostic, very small
+  - react-beautiful-dnd: ‼️ deprecated and archived by Atlassian — you'll still see it
+    in older codebases; don't start new work with it
 
 Key problems:
   - Performance: re-rendering the whole list on every drag event
@@ -629,6 +647,7 @@ import {
   SortableContext, sortableKeyboardCoordinates,
   verticalListSortingStrategy, useSortable, arrayMove,
 } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Each column is a droppable container
 // Each card is a sortable (draggable + droppable) item
@@ -800,9 +819,13 @@ function useNotifications() {
       }
     };
 
-    es.onerror = () => es.close();
+    // ‼️ Don't close on error — EventSource reconnects by itself (that's the main
+    //    advantage of SSE). Closing here would turn a network blip into a dead feed.
+    es.onerror = () => {
+      if (es.readyState === EventSource.CLOSED) setConnectionLost(true);
+    };
     return () => es.close();
-  }, []);
+  }, [toast]);
 
   function markAllRead() {
     setUnreadCount(0);

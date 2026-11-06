@@ -230,7 +230,7 @@ import Anthropic from '@anthropic-ai/sdk';
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY from env‼️
 
 const msg = await client.messages.create({
-  model: 'claude-sonnet-5',
+  model: 'claude-sonnet-5-5', // check the Models page for the current IDs
   max_tokens: 300,
   messages: [{ role: 'user', content: `Summarise this ticket in 2 lines:\n\n${ticket}` }],
 });

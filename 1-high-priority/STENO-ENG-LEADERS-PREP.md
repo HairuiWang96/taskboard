@@ -138,6 +138,9 @@ I also led the frontend admin dashboard that streamlined operations and reduced 
 
 **Technical details:**
 - Used OpenAI Assistants API with function calling for structured output
+  ‼️ OpenAI shut the Assistants API down on 26 Aug 2026 (replacement: Responses API +
+  Conversations API). If asked, say how you migrated / would migrate it — Steno builds
+  on LLM APIs, so knowing this shows you keep up.
 - Prompts were engineered to return JSON with vehicle type, price breakdown, and reasoning
 - Implemented rate limiting and fallback (if API fails, queue for manual processing)‼️
 - Response time: ~3-5 seconds vs. 15-20 minutes manual
@@ -318,10 +321,13 @@ For a legal product, accuracy is even more critical — hallucinated citations c
 **Example — renaming a column:**
 ```sql
 -- Step 1: Add new column (safe)
-ALTER TABLE users ADD COLUMN full_name VARCHAR(255);
+ALTER TABLE users ADD COLUMN full_name text;
 
 -- Step 2: Backfill (run in batches to avoid locking)‼️
-UPDATE users SET full_name = name WHERE full_name IS NULL LIMIT 1000;
+-- ‼️ Postgres UPDATE has no LIMIT clause — batch through a subquery instead:
+UPDATE users SET full_name = name
+WHERE id IN (SELECT id FROM users WHERE full_name IS NULL LIMIT 1000);
+-- repeat until 0 rows updated
 
 -- Step 3: Deploy code that reads full_name, writes both full_name and name
 
@@ -330,7 +336,9 @@ ALTER TABLE users DROP COLUMN name;
 ```
 
 **What to NEVER do in production:**
-- `ALTER TABLE ... ADD COLUMN ... NOT NULL` without a default (locks the entire table on large tables)
+- `ALTER TABLE ... ADD COLUMN ... NOT NULL` without a default (fails outright on a non-empty
+  table) — or with a VOLATILE default like random()/clock_timestamp(), which rewrites the whole
+  table under a lock. (A constant default is instant since Postgres 11.)
 - `CREATE INDEX` without `CONCURRENTLY` (locks the table for writes)‼️
 - Drop a column that the running code still reads (deploy code first, then migrate)
 
@@ -500,7 +508,8 @@ socket.on('exhibit-shared', ({ exhibitId }) => {
 
 **Scaling WebSockets:**
 - WebSockets are stateful — the connection is tied to a specific server‼️
-- With multiple servers, ‼️ use Redis adapter (socket.io-redis) so messages are broadcast across all instances
+- With multiple servers, ‼️ use the Redis adapter (@socket.io/redis-adapter — the old
+  `socket.io-redis` package name is deprecated) so messages are broadcast across all instances
 - Use sticky sessions on the load balancer, or use Redis pub/sub for cross-server communication‼️
 
 **At Gophr:**
@@ -526,16 +535,20 @@ Client → Pre-signed URL from API → Direct upload to S3 → S3 event triggers
 **Implementation:**
 ```ts
 * 1. Client requests a pre-signed upload URL:
+* (AWS SDK v3 — v2's s3.getSignedUrl() reached end of support in 2025)
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+const s3 = new S3Client({});
+
 app.post('/api/uploads/request', authenticate, async (req, res) => {
   const { fileName, fileType, caseId } = req.body;
-  const key = `cases/${caseId}/exhibits/${uuidv4()}-${fileName}`;
+  const key = `cases/${caseId}/exhibits/${crypto.randomUUID()}-${fileName}`;
 
-  const presignedUrl = await s3.getSignedUrl('putObject', {
-    Bucket: 'steno-uploads',
-    Key: key,
-    ContentType: fileType,
-    Expires: 300,  // URL valid for 5 minutes
-  });
+  const presignedUrl = await getSignedUrl(
+    s3,
+    new PutObjectCommand({ Bucket: 'steno-uploads', Key: key, ContentType: fileType }),
+    { expiresIn: 300 },  // URL valid for 5 minutes
+  );
 
   * Record the upload in the database (status: 'pending')
   await db.query(
@@ -752,7 +765,7 @@ const redis = new Redis();
 app.use(rateLimit({
   store: new RedisStore({ sendCommand: (...args) => redis.call(...args) }),
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  limit: 100,             // (called `max` before express-rate-limit v7)
   standardHeaders: true,  // Return rate limit info in RateLimit-* headers
   message: { error: 'Too many requests, please try again later.' },
 }));
@@ -761,7 +774,7 @@ app.use(rateLimit({
 app.use('/api/login', rateLimit({
   store: new RedisStore({ sendCommand: (...args) => redis.call(...args) }),
   windowMs: 15 * 60 * 1000,
-  max: 5,  // 5 login attempts per 15 minutes
+  limit: 5,  // 5 login attempts per 15 minutes
   message: { error: 'Too many login attempts.' },
 }));
 ```
@@ -825,9 +838,17 @@ ORDER BY ts_rank(search_vector, query) DESC;
 SELECT * FROM transcripts
 WHERE search_vector @@ phraseto_tsquery('english', 'objection sustained');
 
--- Fuzzy search (handles typos):
+-- Prefix matching ("depo" → deposition, depositions, deponent):
 SELECT * FROM transcripts
-WHERE search_vector @@ to_tsquery('english', 'depo:*');  -- prefix matching
+WHERE search_vector @@ to_tsquery('english', 'depo:*');
+
+-- User-typed search box → websearch_to_tsquery (accepts "quotes", OR, -exclude;
+-- to_tsquery throws a syntax error on plain sentences):
+SELECT * FROM transcripts
+WHERE search_vector @@ websearch_to_tsquery('english', 'accident highway -parking');
+
+-- Real typo tolerance needs the pg_trgm extension (trigram similarity), not FTS:
+--   CREATE EXTENSION pg_trgm;  ... WHERE witness_name % 'Jonh Smiht'
 ```
 
 **When to use PostgreSQL FTS vs Elasticsearch:**‼️
@@ -840,7 +861,7 @@ Start with PostgreSQL FTS — it's already in the stack and handles legal transc
 **Combine with pgvector for AI search:**
 ```sql
 -- Traditional FTS for keyword search:
-WHERE search_vector @@ to_tsquery('accident on highway 101')
+WHERE search_vector @@ websearch_to_tsquery('english', 'accident on highway 101')
 
 -- pgvector for semantic search (AI embeddings):‼️
 ORDER BY embedding <=> query_embedding LIMIT 10
@@ -888,8 +909,15 @@ CREATE POLICY firm_isolation ON cases
     USING (firm_id = current_setting('app.current_firm_id')::uuid);
 
 -- Set tenant context per request (in middleware):
-await db.query("SET app.current_firm_id = $1", [req.user.firmId]);
--- Now ALL queries on `cases` are automatically filtered
+-- ‼️ SET can't take a $1 parameter — use set_config(). The `true` makes it
+--    transaction-local (like SET LOCAL), which is what you want with a connection
+--    pool, so the next request on this connection doesn't inherit the firm id.
+await client.query('BEGIN');
+await client.query("SELECT set_config('app.current_firm_id', $1, true)", [req.user.firmId]);
+-- ... run the request's queries on this same client ...
+await client.query('COMMIT');
+-- Now ALL queries on `cases` in this transaction are automatically filtered
+-- (Note: the table owner and superusers bypass RLS unless you FORCE ROW LEVEL SECURITY)
 ```
 
 **2. Shared database, separate schemas:**

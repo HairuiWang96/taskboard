@@ -46,7 +46,9 @@ CREATE TABLE tasks (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 -- ON DELETE CASCADE: deleting a user deletes all their tasks
--- ON DELETE RESTRICT: prevents deleting a user if they have tasks (default)
+-- ON DELETE RESTRICT: prevents deleting a user if they have tasks
+-- (The DEFAULT is NO ACTION — also blocks the delete, but the check can be
+--  deferred to the end of the transaction; RESTRICT checks immediately)
 -- ON DELETE SET NULL: sets user_id to NULL (requires nullable column)
 
 -- Many-to-Many: tasks can have many tags, tags can have many tasks
@@ -321,17 +323,21 @@ Node.js HTTP Agent — a non-database pool you use every day:
                                              // → same request (5ms)
   // Total: 110ms for 2 requests
 
-  // WITH pooling (keepAlive: true — default in Node 19+)
-  const agent = new http.Agent({
+  // WITH pooling (keepAlive: true — default for http.globalAgent in Node 19+)
+  const agent = new https.Agent({
     keepAlive: true,      // reuse connections (pool them)
     maxSockets: 50,       // max connections per host
     maxFreeSockets: 10,   // max idle connections kept open
   });
-  fetch('https://api.stripe.com/charges', { agent })  // → TCP+TLS (50ms) + request (5ms)
-  fetch('https://api.stripe.com/charges', { agent })  // → reuse connection (0ms) + request (5ms)
+  https.get('https://api.stripe.com/charges', { agent })  // → TCP+TLS (50ms) + request (5ms)
+  https.get('https://api.stripe.com/charges', { agent })  // → reuse connection (0ms) + request (5ms)
   // Total: 60ms for 2 requests — almost 2x faster
 
-  // axios, got, undici all pool HTTP connections by default in modern versions.
+  // ‼️ Node's built-in fetch is undici, NOT the http module — it ignores an `agent`
+  //    option. It already pools per origin; to tune it, pass an undici dispatcher:
+  //      import { Agent } from 'undici';
+  //      fetch(url, { dispatcher: new Agent({ connections: 50 }) })
+  // axios and got pool via http.Agent and do so by default.
 
 
 Python requests.Session — same idea:
@@ -585,10 +591,13 @@ Sequelize — built-in pool (uses pg underneath):
     }
   });
 
-Prisma — built-in pool:
-  // Set in DATABASE_URL:
-  // postgresql://user:pass@host/db?connection_limit=10&pool_timeout=10
-  // Prisma manages the pool automatically — fewer knobs to turn.
+Prisma — pool comes from the driver adapter (Prisma 7+):
+  // Prisma 7 uses driver adapters by default, so the POOL is the driver's own:
+  import { PrismaPg } from '@prisma/adapter-pg';
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL, max: 10 });
+  const prisma = new PrismaClient({ adapter });
+  // (Prisma 6 and earlier: ?connection_limit=10&pool_timeout=10 in DATABASE_URL —
+  //  you'll still see this in older projects and tutorials.)
 
   // For serverless (Lambda, Vercel), use Prisma Accelerate or an external pooler
   // because each Lambda invocation would create its own pool otherwise.
@@ -606,14 +615,16 @@ SQLAlchemy — built-in pool:
       pool_recycle=1800      # recycle connections after 30 min
   )
 
-Django — built-in pool (Django 4.1+):
+Django — real pooling since Django 5.1 (PostgreSQL + psycopg 3):
   DATABASES = {
       'default': {
-          'CONN_MAX_AGE': 600,      # reuse connections for 10 min
-          'CONN_HEALTH_CHECKS': True # check connection before reuse
+          'ENGINE': 'django.db.backends.postgresql',
+          'OPTIONS': {'pool': True},   # or {'pool': {'min_size': 2, 'max_size': 10}}
       }
   }
-  # Before Django 4.1: each request opened/closed a connection (slow).
+  # Older option: CONN_MAX_AGE = persistent connections (reuse one connection per
+  # worker thread, not a shared pool); CONN_HEALTH_CHECKS (4.1+) checks it first.
+  # With CONN_MAX_AGE = 0 (the default), each request opens and closes one.
 
 
 ─── Java / Spring ─────────────────────────────────────────────────
@@ -660,8 +671,8 @@ Solutions:
      Instead of TCP connections, use HTTP/WebSocket — no pooling needed
      Lambda → HTTP → Database edge proxy → Database
 
-  3. Prisma Accelerate / Prisma Data Proxy
-     Lambda → HTTP → Prisma Proxy (with pool) → Database
+  3. Prisma Accelerate (the successor to the retired Prisma Data Proxy)
+     Lambda → HTTP → Accelerate (with pool + cache) → Database
 
 Rule of thumb: if you're serverless, you NEED an external pooler or
                an HTTP-based database driver. App-level pools alone won't work.

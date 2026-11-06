@@ -143,7 +143,8 @@ Promise.resolve()
 5. check:         setImmediate callbacks
 6. close:         socket.on('close') callbacks
 
-‼️ Between each phase: process.nextTick() and Promise micro-tasks drain
+‼️ After EVERY callback (since Node 11 — not just between phases):
+   process.nextTick() queue drains, then Promise micro-tasks drain
 ‼️ process.nextTick() runs before Promise micro-tasks
 
 ‼️ setImmediate vs setTimeout(fn, 0):
@@ -478,7 +479,7 @@ const merged = { ...obj1, ...obj2 }; // new object, doesn't mutate
 
 // Shallow vs deep copy
 const shallow = { ...original }; // nested objects still shared
-const deep = structuredClone(original); //! ES2022 deep clone (most cases)
+const deep = structuredClone(original); //! built-in deep clone (web/Node API, 2022) — not functions/class prototypes
 const deepOld = JSON.parse(JSON.stringify(original)); //! loses: functions, Date, undefined
 ```
 
@@ -841,8 +842,9 @@ export { add };
 // CJS: dynamic require() can be inside conditions/functions
 // ESM is the future — Node.js supports it natively with .mjs or "type": "module"
 
-//! Interop: ESM can import CJS, CJS cannot require ESM
-// (CJS require is sync, ESM modules may have async initialization)
+//! Interop: ESM can import CJS. CJS can require() ESM since Node 22.12 / 20.19
+// (on by default) — UNLESS the ES module uses top-level await, because require()
+// is synchronous. Older Node: CJS must use await import() instead.
 ```
 
 ### .mjs file explained
@@ -1049,7 +1051,7 @@ highlight`Name: ${name}, Age: ${age}`;
 ### Symbol
 
 ```js
-//! Symbol: unique, non-enumerable primitive — great for meta-programming
+//! Symbol: unique primitive, often used as a "hidden" property key — great for meta-programming
 
 const id = Symbol('id'); // description is just for debugging
 const id2 = Symbol('id');
@@ -1143,7 +1145,8 @@ class ApiError extends Error {
     this.name = 'ApiError';
     this.statusCode = statusCode;
     this.code = code;
-    //! Fix: ensure instanceof works correctly across bundlers
+    //! Only needed when compiling to ES5 (old TS/Babel targets broke instanceof
+    //  for subclasses of Error). With ES2015+ output this line is unnecessary.
     Object.setPrototypeOf(this, ApiError.prototype);
   }
 }
@@ -1741,9 +1744,11 @@ if (!Object.hasOwn) {
     Object.hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 }
 
-// In practice — use a polyfill service or core-js:
-// <script src="https://polyfill.io/v3/polyfill.min.js"></script>
-// or with bundlers: import 'core-js/stable';
+// In practice — use core-js with your bundler: import 'core-js/stable';
+// (or let @babel/preset-env with useBuiltIns: 'usage' add only what you need)
+// ‼️ NEVER load polyfill.io — the domain was bought and used in a supply-chain
+//    attack in June 2024 that injected malware into 100,000+ sites.
+//    Cloudflare/Fastly run safe mirrors, but bundling core-js is the safer default.
 
 // Babel + @babel/preset-env: transpiles modern JS syntax for older browsers
 // Set targets in .browserslistrc:
@@ -1760,15 +1765,16 @@ if (!Object.hasOwn) {
 // 2. Safari: Date parsing is strict — only accepts ISO 8601
 new Date('2024-01-15'); // ✓ works everywhere
 new Date('January 15, 2024'); // ✓ works in Chrome/Firefox
-new Date('2024/01/15'); // ✗ Invalid Date in Safari
-// Fix: always use ISO format or a library like date-fns
+new Date('2024-01-15 10:30:00'); // ✗ Invalid Date in older Safari (space instead of 'T')
+// Any non-ISO string is implementation-defined — results can differ per engine.
+// Fix: always use full ISO format ('2024-01-15T10:30:00') or a library like date-fns
 
 // 3. Safari: scroll behavior
 el.scrollTo({ top: 0, behavior: 'smooth' }); // ✗ ignored in older Safari
 // Fix: detect and use a scroll polyfill, or use CSS scroll-behavior
 
-// 4. Firefox: event.path does not exist
-e.path; // ✗ Chrome-only
+// 4. event.path was a non-standard Chrome-only property (removed in Chrome 109)
+e.path; // ✗ undefined in every current browser
 e.composedPath(); // ✓ standard, works everywhere
 
 // 5. All browsers: structuredClone (added 2022) — check before using
@@ -1777,10 +1783,12 @@ const clone = typeof structuredClone === 'function' ? structuredClone(obj) : JSO
 // 6. iOS Safari: audio/video autoplay blocked unless user gesture
 //    Fix: only call .play() inside a click/touch event handler
 
-// 7. Safari: ResizeObserver loop error — fires a non-fatal error
-//    "ResizeObserver loop limit exceeded" — safe to ignore but noisy
+// 7. All browsers: ResizeObserver loop error — a non-fatal error when a resize
+//    callback changes layout again. Current message: "ResizeObserver loop completed
+//    with undelivered notifications" (older Chrome: "ResizeObserver loop limit exceeded").
+//    Safe to ignore but noisy (often shows up in Sentry)
 window.addEventListener('error', e => {
-    if (e.message === 'ResizeObserver loop limit exceeded') e.stopImmediatePropagation();
+    if (e.message?.startsWith('ResizeObserver loop')) e.stopImmediatePropagation();
 });
 ```
 
@@ -1793,7 +1801,7 @@ Transpilation: converts NEW SYNTAX → old syntax
 
 Polyfilling: adds MISSING APIS at runtime
   e.g. Array.prototype.flat, Promise, fetch
-  Tool: core-js, polyfill.io (runtime)
+  Tool: core-js (bundled — not polyfill.io, compromised in 2024)
 
 You need BOTH for full legacy support.
 
@@ -1811,7 +1819,7 @@ Example:
 - Chrome DevTools → Sensors: simulate mobile / touch
 - Firefox Developer Edition: different engine from Chrome — good secondary test
 - Safari via Xcode Simulator (Mac only) — free
-- VM with IE/Edge legacy: Microsoft offers free VMs at developer.microsoft.com
+- IE 11 is retired (June 2022) — most teams no longer test it at all
 - Automated: Playwright and WebdriverIO support multiple browsers in CI
 ```
 
@@ -2004,7 +2012,9 @@ async function withdraw(amount) {
 //
 // The bug: you start a fetch when the component loads → the user navigates away (component
 // unmounts) → the fetch finally resolves → it tries to call setUser(data) to update state
-// on a component that no longer exists → React warns you about this.
+// on a component that no longer exists. (React 18 removed the old warning for this — it's
+// harmless on its own.) The REAL bug is when id changes: the old request can finish
+// AFTER the new one and overwrite the screen with the wrong user.
 //
 // The fix (below): AbortController cancels the fetch when the component unmounts,
 // so the callback never runs on dead state.
@@ -2012,7 +2022,7 @@ async function withdraw(amount) {
 useEffect(() => {
     fetch(`/api/user/${id}`)
         .then(r => r.json())
-        .then(data => setUser(data)); // setState on unmounted component — warning!
+        .then(data => setUser(data)); // stale response can overwrite newer data!
 }, [id]);
 
 // ✓ Fix with AbortController in cleanup
@@ -2168,7 +2178,7 @@ const obj = {
     greet() {
         console.log(this.name);
     }, // 'Alice' — implicit
-    greetArrow: () => console.log(this.name), // undefined — arrow, no own this
+    greetArrow: () => console.log(this.name), // NOT 'Alice' — arrow uses the outer this (undefined in a module → TypeError)
 };
 const fn = obj.greet;
 fn(); // undefined — lost implicit binding (default binding in strict mode)

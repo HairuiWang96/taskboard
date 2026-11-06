@@ -225,7 +225,12 @@ app.use(logger);
 *
 * This is a higher-order function — a function that takes a function and returns a new function.
 *
-* The problem it solves: Express doesn't catch errors from async handlers.‼️
+* ‼️ EXPRESS 5 (what `npm install express` gives you now) CATCHES REJECTED
+* PROMISES FROM ASYNC HANDLERS BY ITSELF and passes them to the error handler —
+* so this wrapper is only needed on Express 4. Know it anyway: many codebases
+* are still on v4, and interviewers like asking why it existed.
+*
+* The problem it solves (Express 4): Express doesn't catch errors from async handlers.‼️
 * If you throw or a promise rejects, the request just hangs:
 *
 *   ❌ If getUser() rejects, Express never sends an error response
@@ -577,10 +582,10 @@ export default router;
 
 <!-- ```sql
 -- src/db/schema.sql  (or migrations/ folder)
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
+-- gen_random_uuid() is built in since Postgres 13 — no extension needed
+-- (Postgres 18+: uuidv7() is time-ordered and kinder to indexes)
 CREATE TABLE items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     description TEXT,
     status VARCHAR(50) DEFAULT 'active',
@@ -703,7 +708,7 @@ Brief description of what this does and the approach you took.
 ## Setup & Running Locally
 
 ### Prerequisites
-- Node.js 22+ (24 LTS recommended)
+- Node.js 22+ (26 LTS recommended)
 - PostgreSQL 16+
 
 ### Installation

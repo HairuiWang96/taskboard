@@ -49,7 +49,7 @@ Traffic:
   Real-world examples:
     Twitter:  300M DAU × 20 reads/day = 6B reads/day = ~70K reads/sec
     Instagram: 500M DAU × 10 feed loads/day = 5B/day = ~58K/sec
-    Google:   8.5B searches/day = ~100K searches/sec
+    Google:   ~14B searches/day (5T/year, Google's 2025 figure) = ~160K searches/sec
 
 Storage:
   1 byte  = 1 char (ASCII), 2-4 bytes for Unicode
@@ -206,7 +206,8 @@ Example: e-commerce product page
 Vertical scaling: bigger machine (limited, expensive)
   - More CPU cores, more RAM, faster SSD
   - Simple: no code changes, no architecture changes
-  - Limit: largest AWS RDS instance is ~128 vCPUs, 1TB RAM
+  - Limit: the biggest managed-DB instances top out around 190 vCPUs and a few TB
+    of RAM — huge, but a ceiling
   - Cost: price increases exponentially with size
   - When to use: if your data fits on one machine, start here
 
@@ -787,6 +788,13 @@ Response:
 Why: in a distributed system, you need globally unique IDs without coordination.
 Database auto-increment doesn't work across multiple databases or services.
 
+UUID v7 (RFC 9562, 2024): 128-bit, time-ordered — ‼️ the modern default answer
+  - First 48 bits = millisecond timestamp, rest random → sorts by creation time
+  - Still a standard UUID: same column type, same libraries, no coordination
+  - Sequential inserts → no B-tree fragmentation (the main v4 problem below)
+  - Postgres 18: DEFAULT uuidv7(); JS: the `uuid` package's v7()
+  - Caveat: the timestamp is visible in the ID — don't use it where creation time is secret
+
 UUID v4: 128-bit random
   - No coordination needed: any server can generate independently
   - Collision probability: 50% chance after generating 2.71 × 10^18 UUIDs
@@ -822,12 +830,14 @@ Database sequence: simple but centralised bottleneck
     This reduces coordination but creates gaps in sequences
 
 Comparison:
+  UUID v7:    no coordination, sortable, 16 bytes, sequential B-tree insert, standard
   UUID v4:    no coordination, not sortable, 16 bytes, random B-tree insert
   Snowflake:  needs machine ID, sortable, 8 bytes, sequential B-tree insert
   ULID:       no coordination, sortable, 16 bytes, sequential B-tree insert
   DB sequence: centralised, sortable, 8 bytes, sequential but SPOF
 
-  For most systems: Snowflake or ULID. UUID if you can't set up anything.
+  For most systems today: UUID v7 (standard, sortable, zero setup). Snowflake when
+  you need 8-byte IDs. ULID is the older non-standard predecessor of v7.
 ```
 
 ---
@@ -1258,8 +1268,9 @@ Notifications:
 
 ```
 Requirements:
-  - 1:1 and group chat (up to 256 members), message delivery, online presence, history
-  - 2B users, 100B messages/day
+  - 1:1 and group chat (WhatsApp allows up to 1,024 members), message delivery,
+    online presence, history
+  - 3B+ users, 100B+ messages/day
   - Low latency (< 200ms message delivery), high reliability (no message loss)
   - End-to-end encryption, media sharing, read receipts
 
@@ -1340,11 +1351,14 @@ Presence (online/offline):
 
 End-to-end encryption (E2EE):
   - Signal Protocol (used by WhatsApp, Signal)
-  - Each user has a public/private key pair
-  - Message encrypted with recipient's public key
+  - Each user has identity keys; the first message sets up a shared session
+    (X3DH key agreement), then every message uses a fresh key (Double Ratchet) —
+    so leaking one key doesn't expose past or future messages
   - Server stores encrypted blob — cannot read the message
-  - Key exchange happens when users first message each other
-  - Group E2EE: sender encrypts once per member (expensive for large groups)
+  - Group E2EE: SENDER KEYS — each sender shares a group key with every member once
+    (one encrypted copy per member), then encrypts each message ONCE for the whole
+    group. Cheap per message; the per-member cost is paid when keys rotate
+    (e.g. someone leaves the group)
 ```
 
 ---
@@ -1384,11 +1398,11 @@ Token bucket in Redis (Lua script for atomicity):
 
   if tokens >= 1 then
     tokens = tokens - 1
-    redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
+    redis.call('HSET', key, 'tokens', tokens, 'last_refill', now)  -- HMSET is deprecated
     redis.call('EXPIRE', key, 3600)  -- cleanup after 1 hour of inactivity
     return 1  -- allowed
   else
-    redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
+    redis.call('HSET', key, 'tokens', tokens, 'last_refill', now)
     redis.call('EXPIRE', key, 3600)
     return 0  -- rejected
   end
@@ -1398,7 +1412,8 @@ Distributed rate limiting challenges:‼️
     Fix: local in-memory cache with periodic sync (accept ~5% overrun)
   - Redis SPOF: use Redis Cluster with replicas → automatic failover
   - Race conditions: Lua scripts run atomically in Redis → no races
-  - Clock drift: use Redis server time, not application server time
+  - Clock drift: use Redis server time, not application server time — i.e. read
+    redis.call('TIME') inside the script instead of passing `now` in as ARGV[3]
 
 Multiple rules:
   User can have multiple rate limit rules applied simultaneously:
@@ -1647,7 +1662,8 @@ SQL vs NoSQL:
     Wide-column: Cassandra (time-series, write-heavy, horizontal scale)
     Key-value: Redis / Valkey (cache, sessions), DynamoDB (managed, auto-scale)
       (Valkey = the Linux Foundation fork created after Redis changed its licence
-       in 2024; AWS ElastiCache and Google Memorystore now lead with it. Same
+       in 2024; AWS ElastiCache and Google Memorystore now lead with it. Redis
+       itself became open source again (AGPLv3) with Redis 8 in May 2025. Same
        commands and clients — in an interview, "Redis" covers both.)
     Graph: Neo4j (social networks, recommendations)
 

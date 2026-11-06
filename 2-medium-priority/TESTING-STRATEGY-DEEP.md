@@ -503,7 +503,7 @@ jobs:
         env: { POSTGRES_PASSWORD: test }
     steps:
       - run: npm test -- --coverage
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v7
 
   e2e:
     runs-on: ubuntu-latest
@@ -511,7 +511,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: npx playwright test
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v7 # v3 stopped working Jan 2025
         if: failure()
         with:
           name: playwright-report

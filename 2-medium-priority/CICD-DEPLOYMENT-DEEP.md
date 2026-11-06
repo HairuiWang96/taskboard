@@ -193,9 +193,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: docker/setup-buildx-action@v3  # enables cache, multi-platform
+      - uses: docker/setup-buildx-action@v4  # enables cache, multi-platform
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -203,7 +203,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -211,7 +211,7 @@ jobs:
             type=ref,event=branch                    # ghcr.io/org/app:main
             type=semver,pattern={{version}}          # ghcr.io/org/app:1.2.3
 
-      - uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v7
         with:
           context: .
           push: true

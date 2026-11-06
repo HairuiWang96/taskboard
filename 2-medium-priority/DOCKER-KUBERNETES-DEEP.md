@@ -1382,6 +1382,7 @@ With Helm:    helm install my-app ./charts/my-app -f production-values.yaml
 
 ```bash
 # Install a chart from a repo
+# (‼️ Bitnami stopped free versioned images/chart updates in Sept 2025 — legacy example)
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 helm install my-postgres bitnami/postgresql \

@@ -329,12 +329,13 @@ Passive practice:
 
 Specific for interviews:
   - Practice the 10 most common questions from BEHAVIORAL-STAR-STORIES.md aloud
-  - Do a mock interview in English with a friend or on Pramp.com
+  - Do a mock interview in English with a friend or on Aced (formerly Exponent, which absorbed Pramp) —
+    free peer mock interviews
   - After each LeetCode problem: explain your solution aloud in English before submitting
 
 Best YouTube channels for tech interview English:
   - "NeetCode" — explains solutions clearly and simply
-  - "Exponent" — mock interviews with real engineers
+  - "Aced" (formerly "Exponent") — mock interviews with real engineers
   - "interviewing.io" — real anonymised tech interviews
 ```
 

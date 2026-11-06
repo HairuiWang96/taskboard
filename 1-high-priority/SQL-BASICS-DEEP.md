@@ -407,8 +407,11 @@ DELETE FROM users WHERE id = 5 RETURNING *;‼️
 DELETE FROM users;
 -- DANGER: removes every row! Use TRUNCATE instead for better performance on large tables.‼️
 
--- TRUNCATE: faster way to delete all rows (resets auto-increment too)‼️
+-- TRUNCATE: faster way to delete all rows‼️
 TRUNCATE TABLE users;
+-- ‼️ In PostgreSQL the auto-increment KEEPS counting (next id = 4, not 1) unless you ask:
+TRUNCATE TABLE users RESTART IDENTITY;   -- now the next id starts at 1 again
+-- (MySQL's TRUNCATE always resets it)
 
 -- CRITICAL SAFETY RULE:‼️
 -- ALWAYS write the WHERE clause FIRST when writing UPDATE or DELETE.
@@ -836,7 +839,9 @@ CREATE TABLE orders (
 
   -- Other options:
   -- ON DELETE SET NULL    → set user_id to NULL (order stays, but unlinked)
-  -- ON DELETE RESTRICT    → block the delete (default behavior)
+  -- ON DELETE RESTRICT    → block the delete immediately
+  -- ON DELETE NO ACTION   → block the delete (the DEFAULT if you write nothing —
+  --                         same result as RESTRICT, but checked at end of statement)
   -- ON DELETE SET DEFAULT → set user_id to its DEFAULT value
 );
 ```
@@ -1402,7 +1407,7 @@ WHERE salary < (SELECT MAX(salary) FROM employees);
 
 ### "What is the difference between DELETE and TRUNCATE?"
 
-> DELETE removes rows one by one, can have a WHERE clause, fires triggers, and can be rolled back. TRUNCATE removes all rows at once — faster, resets auto-increment, no WHERE clause, can be rolled back in PostgreSQL. Use DELETE for selective removal, TRUNCATE for clearing an entire table.‼️
+> DELETE removes rows one by one, can have a WHERE clause, fires triggers, and can be rolled back. TRUNCATE removes all rows at once — faster, no WHERE clause, can be rolled back in PostgreSQL. In PostgreSQL it does NOT reset auto-increment unless you add `RESTART IDENTITY` (MySQL always resets it). Use DELETE for selective removal, TRUNCATE for clearing an entire table.‼️
 
 ---
 

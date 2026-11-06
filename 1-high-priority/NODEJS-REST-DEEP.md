@@ -47,7 +47,7 @@ The event loop phases (in order):
   5. check:        setImmediate callbacks
   6. close:        socket close callbacks
 
-Between each phase:
+After EVERY callback (since Node 11 — not just between phases):
   process.nextTick() queue drains (runs before Promises)
   Promise micro-task queue drains
 ```
@@ -122,7 +122,8 @@ V8 heap:‼️
   Code space:           compiled code
   Large object space:   objects > 1MB — not compacted
 
-Default heap limit: ~1.5GB (32-bit), ~4GB (64-bit)
+Default heap limit: picked from available memory (on 64-bit, typically ~2-4GB;
+  since Node 20 it respects container memory limits)
 Increase for memory-intensive apps:
   node --max-old-space-size=4096 server.js  (4GB)
 
@@ -188,8 +189,8 @@ const upperCase = new Transform({
 });
 
 // Pipeline — safe pipe with error propagation (use instead of .pipe())‼️
-const { promisify } = require('util');
-const pipelineAsync = promisify(pipeline);
+// Promise version is built in — no need to promisify:
+const { pipeline: pipelineAsync } = require('stream/promises');
 
 await pipelineAsync(fs.createReadStream('input.csv'), upperCase, fs.createWriteStream('output.csv'));
 // Any error in any stage propagates, all streams cleaned up
@@ -473,7 +474,9 @@ fastify.get('/users', async request => {
 ### Route options and schemas
 
 ```ts
-import { Type, Static } from '@sinclair/typebox'; // Fastify's recommended schema library
+import { Type, Static } from 'typebox'; // Fastify's recommended schema library
+// (TypeBox 1.0 moved from '@sinclair/typebox' to the 'typebox' package —
+//  @fastify/type-provider-typebox v6 uses the new one)
 
 const CreateUserBody = Type.Object({
     name: Type.String({ minLength: 1, maxLength: 100 }),
@@ -674,8 +677,8 @@ Learning curve    Very low                    Low-medium
 When to use       Quick prototypes,           New production APIs,
                   legacy codebases            performance-critical services
 
-Most teams starting new projects in 2024+ choose Fastify.‼️
-Express is still fine — most apps are I/O-bound, not framework-bound.
+Fastify is a common choice for new performance-sensitive APIs.‼️
+Express is still the most-used and is fine — most apps are I/O-bound, not framework-bound.
 ```
 
 ---
@@ -883,14 +886,17 @@ NestJS request lifecycle (in order):
 ```ts
 // Guard example — role-based access control‼️
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {} // inject it — this.reflector doesn't exist otherwise
+
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
     const requiredRoles = this.reflector.get<string[]>('roles', context.getHandler());
-    return requiredRoles.includes(user.role);  // true = allow, false = 403‼️
+    if (!requiredRoles) return true; // route has no @Roles() → allow
+    const user = context.switchToHttp().getRequest().user;
+    return requiredRoles.includes(user?.role);  // true = allow, false = 403‼️
   }
 }
 
@@ -954,17 +960,17 @@ app.use('/api/admin', adminRouter); // admin auth
 ### Express — rate limiting
 
 ```ts
-import rateLimit from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import Redis from 'ioredis';
 
 // Global rate limiter
 const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
-    max: 100, // 100 requests per window
+    limit: 100, // 100 requests per window (v7+ name; `max` is the old alias)
     standardHeaders: true, // Return rate limit info in headers
     store: new RedisStore({ sendCommand: (...args) => redis.call(...args) }),
-    keyGenerator: req => req.user?.id ?? req.ip,
+    keyGenerator: req => req.user?.id ?? ipKeyGenerator(req.ip), // v8 throws if you use req.ip raw (IPv6 bypass)
     handler: (req, res) =>
         res.status(429).json({
             error: 'Too Many Requests',
@@ -974,7 +980,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Stricter for login
-const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5 });
 app.post('/auth/login', loginLimiter, loginHandler);
 ```
 
@@ -1185,7 +1191,8 @@ app.post(
         const refreshToken = crypto.randomBytes(64).toString('hex');
 
         // Store refresh token hash in DB
-        await storeRefreshToken(user.id, await bcrypt.hash(refreshToken, 10));
+        // SHA-256, not bcrypt: bcrypt's random salt means you could never look the token up by value
+        await storeRefreshToken(user.id, crypto.createHash('sha256').update(refreshToken).digest('hex'));
 
         // Set refresh token in httpOnly cookie (not localStorage)‼️
         res.cookie('refreshToken', refreshToken, {
@@ -1291,7 +1298,8 @@ fastify.post<{ Body: { email: string; password: string } }>('/auth/login', async
     const accessToken = app.jwt.sign({ sub: user.id, role: user.role });
     const refreshToken = crypto.randomBytes(64).toString('hex');
 
-    await storeRefreshToken(user.id, await bcrypt.hash(refreshToken, 10));
+    // SHA-256, not bcrypt: bcrypt's random salt means you could never look the token up by value
+    await storeRefreshToken(user.id, crypto.createHash('sha256').update(refreshToken).digest('hex'));
 
     reply.setCookie('refreshToken', refreshToken, {
         httpOnly: true,
@@ -1310,7 +1318,7 @@ const authenticate: FastifyPluginAsync = fp(async fastify => {
         try {
             await request.jwtVerify(); // verifies Bearer token, sets request.user
         } catch {
-            reply.code(401).send({ error: 'Unauthorized' });
+            return reply.code(401).send({ error: 'Unauthorized' }); // RETURN — or the handler still runs
         }
     });
 });
@@ -1537,7 +1545,7 @@ app.get(
 ### Express — correlation IDs
 
 ```ts
-import { v4 as uuid } from 'uuid';
+import { randomUUID as uuid } from 'node:crypto'; // built in — no uuid package needed
 
 // Middleware — runs on every request
 app.use((req, res, next) => {
@@ -1583,7 +1591,7 @@ fastify.get('/users', async request => {
 ### Fastify — correlation IDs
 
 ```ts
-import { v4 as uuid } from 'uuid';
+import { randomUUID as uuid } from 'node:crypto'; // built in — no uuid package needed
 
 const correlationPlugin: FastifyPluginAsync = fp(async fastify => {
     fastify.addHook('onRequest', async request => {
@@ -1728,7 +1736,7 @@ fastify.addHook('preHandler', async (request, reply) => {
 // Maintaining backward compatibility:
 // - Add new optional fields to responses (additive)
 // - Never remove or rename existing fields in the same version
-// - Deprecation header: Deprecation: version="v1", Sunset: "Sat, 01 Jan 2026 00:00:00 GMT"
+// - Deprecation header: Deprecation: version="v1", Sunset: "Fri, 01 Jan 2027 00:00:00 GMT"
 ```
 
 ### Pagination, filtering, sorting
@@ -1765,11 +1773,17 @@ fastify.get<{
         const { page = 1, limit = 20, status, sort = '-createdAt', search } = request.query;
         const offset = (page - 1) * limit;
 
-        const orderBy = sort.startsWith('-') ? desc(tasks[sort.slice(1) as keyof typeof tasks]) : asc(tasks[sort as keyof typeof tasks]);
+        // ‼️ Allowlist sortable columns — never index the table with raw user input
+        const sortable = { createdAt: tasks.createdAt, status: tasks.status, title: tasks.title };
+        const sortKey = (sort.startsWith('-') ? sort.slice(1) : sort) as keyof typeof sortable;
+        const column = sortable[sortKey] ?? tasks.createdAt;
+        const orderBy = sort.startsWith('-') ? desc(column) : asc(column);
 
         const conditions = [status && eq(tasks.status, status), search && ilike(tasks.title, `%${search}%`)].filter(Boolean);
 
-        const [items, [{ count }]] = await Promise.all([
+        // ‼️ Destructure as `total`, not `count` — `const [{ count }]` would shadow the
+        //    imported count() helper used below (TDZ ReferenceError)
+        const [items, [{ total }]] = await Promise.all([
             db
                 .select()
                 .from(tasks)
@@ -1778,7 +1792,7 @@ fastify.get<{
                 .limit(limit)
                 .offset(offset),
             db
-                .select({ count: count() })
+                .select({ total: count() })
                 .from(tasks)
                 .where(and(...conditions)),
         ]);
@@ -1788,9 +1802,9 @@ fastify.get<{
             meta: {
                 page,
                 limit,
-                total: Number(count),
-                totalPages: Math.ceil(Number(count) / limit),
-                hasNextPage: page * limit < Number(count),
+                total,
+                totalPages: Math.ceil(total / limit),
+                hasNextPage: page * limit < total,
             },
         };
     },
@@ -1945,6 +1959,8 @@ app.get(
 );
 
 // Express — apicache middleware (simple route-level caching)
+// ‼️ apicache hasn't been published since 2022 — fine to know, but prefer the manual
+//    Redis pattern above (or a CDN with Cache-Control) for new code
 import apicache from 'apicache';
 app.get(
     '/tasks',
@@ -1955,13 +1971,12 @@ app.get(
     }),
 );
 
-// Fastify — plugin-based caching
+// Fastify — @fastify/caching sets HTTP cache headers (Cache-Control, ETag support)
+// for browsers/CDNs. It does NOT cache handler results in Redis for you.
 import caching from '@fastify/caching';
 
-fastify.get('/tasks', {
-    config: { cache: { ttl: 60 } },
-    handler: async () => db.select().from(tasks),
-});
+await fastify.register(caching, { privacy: caching.privacy.PUBLIC, expiresIn: 60 });
+fastify.get('/tasks', async () => db.select().from(tasks)); // response gets Cache-Control: public, max-age=60
 
 // Fastify — manual caching
 fastify.get('/stats', async (request, reply) => {
@@ -2300,7 +2315,7 @@ Fastify:
    - Pagination — don't return 10,000 rows
    - Field selection — return only requested fields
    - Compression (gzip/brotli) for large text responses
-   - fastify-compress plugin
+   - @fastify/compress plugin
 
 4. Concurrency:
    - Run independent async operations in parallel (Promise.all)
@@ -2317,7 +2332,7 @@ Fastify:
 
 ### "How does the Node.js event loop work?"
 
-> Node.js is single-threaded but non-blocking thanks to its event loop and libuv. When you call an async operation (fs, network), Node offloads it to the OS/thread pool and continues executing. When the operation completes, the callback is queued. The event loop processes phases in order: timers (`setTimeout`/`setInterval`) → pending I/O callbacks → idle/prepare → poll (wait for I/O) → check (`setImmediate`) → close callbacks. Microtasks (`Promise`, `process.nextTick`) run between every phase — `nextTick` before Promise callbacks.
+> Node.js is single-threaded but non-blocking thanks to its event loop and libuv. When you call an async operation (fs, network), Node offloads it to the OS/thread pool and continues executing. When the operation completes, the callback is queued. The event loop processes phases in order: timers (`setTimeout`/`setInterval`) → pending I/O callbacks → idle/prepare → poll (wait for I/O) → check (`setImmediate`) → close callbacks. Microtasks (`Promise`, `process.nextTick`) run after every single callback (since Node 11) — `nextTick` before Promise callbacks.
 
 ```js
 setTimeout(() => console.log('timeout'), 0);
@@ -2325,8 +2340,9 @@ setImmediate(() => console.log('immediate'));
 Promise.resolve().then(() => console.log('promise'));
 process.nextTick(() => console.log('nextTick'));
 
-// Output: nextTick → promise → timeout → immediate
-// (nextTick and promise are microtasks, run before next phase)
+// Output: nextTick → promise → then timeout/immediate in EITHER order
+// (nextTick and promise are microtasks, run first. In the main module timeout vs
+//  immediate depends on process timing — inside an I/O callback immediate always wins)
 ```
 
 ### "What are Node.js Streams and why use them?"
@@ -2471,12 +2487,12 @@ function authMiddleware(req, res, next) {
 > Rate limiting restricts how many requests a client can make in a time window — protects against brute force attacks, DoS, and API abuse. Implement per-IP or per-user. In production, store counters in Redis (not in-memory, which breaks with multiple instances).
 
 ```js
-const rateLimit = require('express-rate-limit');
-const RedisStore = require('rate-limit-redis');
+const { rateLimit } = require('express-rate-limit');
+const { RedisStore } = require('rate-limit-redis'); // named export — require() returns an object
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests per window per IP
+    limit: 100, // 100 requests per window per IP (v7+ name for `max`)
     standardHeaders: true,
     store: new RedisStore({
         /* redis client */
@@ -2487,7 +2503,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Stricter for login
-const loginLimiter = rateLimit({ windowMs: 60_000, max: 5 });
+const loginLimiter = rateLimit({ windowMs: 60_000, limit: 5 });
 app.post('/auth/login', loginLimiter, loginHandler);
 ```
 
@@ -2512,7 +2528,7 @@ export const env = envSchema.parse(process.env);
 
 ### "What is the difference between `require` (CommonJS) and `import` (ESM)?"
 
-> CommonJS (`require`) is synchronous, loads at runtime, outputs a copy of the value (not live binding). ESM (`import`) is static (analyzed at parse time), asynchronous, tree-shakeable, and produces live bindings. Node.js supports both, but they don't mix cleanly. Use `.mjs` or `"type": "module"` in package.json for ESM. Modern packages ship ESM; older Node.js codebases use CJS. Top-level `await` only works in ESM.
+> CommonJS (`require`) is synchronous, loads at runtime, outputs a copy of the value (not live binding). ESM (`import`) is static (analyzed at parse time), asynchronous, tree-shakeable, and produces live bindings. Node.js supports both: ESM can import CJS, and since Node 22.12 / 20.19 CJS can `require()` ESM too (unless it uses top-level await). Use `.mjs` or `"type": "module"` in package.json for ESM. Modern packages ship ESM; older Node.js codebases use CJS. Top-level `await` only works in ESM.
 
 ```js
 // CommonJS

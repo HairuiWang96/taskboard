@@ -202,7 +202,9 @@ Authorization levels (impact levels):‼️
     - Examples: law enforcement, healthcare, financial, defense
     - Much more expensive and time-consuming
     - AWS GovCloud is FedRAMP High authorized
-    - Requires additional controls like FIPS 140-2 validated encryption,
+    - Requires additional controls like FIPS 140-3 validated encryption
+      (‼️ all FIPS 140-2 certificates moved to "Historical" on Sept 21, 2026 —
+      they no longer count for new federal procurement),
       enhanced logging, stricter access controls
 ```
 
@@ -211,17 +213,21 @@ Authorization levels (impact levels):‼️
 ```text
 ATO = Authority to Operate — the formal authorization to run a system‼️
 
-Two paths to FedRAMP authorization:
+‼️ 2024-2026 CHANGES — the JAB P-ATO path no longer exists:
+  - OMB M-24-15 (July 2024) replaced the JAB with the FedRAMP Board (Aug 2024)
+    and set two paths: Agency Authorization and Program Authorization
+  - FedRAMP 20x (announced March 2025) is the new automation-first path:
+    machine-readable evidence and "key security indicators" instead of
+    300-page Word documents, with FedRAMP itself certifying the CSP
+    (no agency sponsor needed). It runs alongside the classic Rev5 path.
+  - If an interviewer says "JAB P-ATO", know that it's the OLD model
 
-Path 1: JAB (Joint Authorization Board) Provisional ATO (P-ATO)‼️
+Historical path: JAB (Joint Authorization Board) Provisional ATO (P-ATO)
   - JAB = DOD CIO, DHS CIO, GSA CIO
-  - More rigorous but more prestigious
-  - P-ATO is "provisional" — agencies still issue their own ATO on top
-  - Best for: broad market appeal (many agencies will use it)
-  - Timeline: 6-12 months after readiness
-  - The JAB selects which CSPs to review (limited capacity)
+  - P-ATO was "provisional" — agencies still issued their own ATO on top
+  - Existing P-ATOs carried over; no new JAB reviews
 
-Path 2: Agency ATO‼️
+Main Rev5 path: Agency ATO‼️
   - A single agency sponsors and authorizes the CSP
   - Faster to start (no JAB queue)
   - The sponsoring agency's Authorizing Official (AO) signs off
@@ -247,7 +253,7 @@ The process step by step:
      - Produces the SAR with findings
 
   3. Authorization Phase (1-3 months)
-     - Submit package to JAB or agency AO
+     - Submit package to the agency AO (or FedRAMP, on the 20x path)
      - Review and feedback cycles
      - Address findings, update POA&M
      - AO signs the ATO letter
@@ -532,7 +538,7 @@ NIST 800-53 Rev 5 defines 20 control families with ~1,000+ controls:‼️
        SC-7: Boundary Protection (firewalls, network segmentation)
        SC-8: Transmission Confidentiality and Integrity (TLS)
        SC-12: Cryptographic Key Establishment and Management
-       SC-13: Cryptographic Protection (FIPS 140-2)
+       SC-13: Cryptographic Protection (FIPS 140-3)
        SC-28: Protection of Information at Rest (encryption at rest)
 
   SI — System and Information Integrity‼️
@@ -551,7 +557,7 @@ How NIST 800-53 maps to FedRAMP:‼️
   - FedRAMP adds "additional requirements and guidance" on top
   - FedRAMP parameter values are often stricter
     Example: NIST says "implement MFA" — FedRAMP says "implement
-    FIPS 140-2 validated MFA with hardware token for privileged accounts"
+    FIPS 140-3 validated MFA with hardware token for privileged accounts"
   - FedRAMP baselines are subsets of NIST 800-53 with specific parameters
   - Think of FedRAMP as "NIST 800-53 with teeth" — it's prescriptive
     where NIST is flexible
@@ -776,10 +782,11 @@ AWS HIPAA architecture pattern:
 PCI-DSS (Payment Card Industry Data Security Standard):‼️
   - Required for anyone who stores, processes, or transmits cardholder data
   - 12 requirements across 6 categories
-  - Current version: PCI DSS 4.0 (effective March 2024)
+  - Current version: PCI DSS 4.0.1 (June 2024; 4.0 retired end of 2024,
+    and the "future-dated" 4.x requirements became mandatory March 31, 2025)
   - Enforced by card brands (Visa, Mastercard, etc.) through acquiring banks
 
-SAQ (Self-Assessment Questionnaire) levels:‼️
+Merchant levels (decide whether you need a QSA audit or an SAQ):‼️
   Level 1: >6 million transactions/year → annual on-site audit by QSA
   Level 2: 1-6 million transactions/year → annual SAQ
   Level 3: 20K-1 million e-commerce transactions/year → annual SAQ
@@ -839,9 +846,11 @@ Network segmentation for PCI on AWS:‼️
 CMMC (Cybersecurity Maturity Model Certification):‼️
   - Required for DOD contractors handling CUI
   - Replaced self-attestation with third-party assessment
+  - In force: the CMMC program rule took effect Dec 16, 2024, and the DFARS rule
+    putting it into contracts took effect Nov 10, 2025 (phased rollout to 2028)
   - CMMC 2.0 has three levels:
 
-  Level 1: Foundational (17 controls)
+  Level 1: Foundational (15 requirements from FAR 52.204-21; CMMC 1.0 said 17)
     - Basic cyber hygiene
     - Self-assessment allowed
     - For FCI (Federal Contract Information)
@@ -863,7 +872,7 @@ CMMC (Cybersecurity Maturity Model Certification):‼️
     - Examples: technical drawings, export-controlled data, law enforcement
       sensitive data, proprietary business information from government
 
-StateRAMP:
+StateRAMP (now operating as GovRAMP since Feb 2025):
   - FedRAMP equivalent for state and local government
   - Uses same NIST 800-53 controls
   - Three levels: Impact Level 1, 2, 3 (similar to FedRAMP Low/Mod/High)
@@ -876,7 +885,7 @@ CJIS (Criminal Justice Information Services):‼️
     supporting these agencies
   - Key requirements:
     - Advanced authentication (MFA required)
-    - Encryption at rest and in transit (FIPS 140-2)
+    - Encryption at rest and in transit (FIPS 140-3)
     - Personnel screening (background checks)
     - Audit logging (who accessed what, when)
     - Media protection (secure disposal)
@@ -889,7 +898,7 @@ IRS 1075:
   - Very restrictive:
     - Data must stay within US borders
     - Background checks for all personnel
-    - Encryption requirements (FIPS 140-2)
+    - Encryption requirements (FIPS 140-3)
     - Strict access controls and auditing
     - Annual safeguard reviews by IRS
   - AWS GovCloud supports IRS 1075 workloads
@@ -1076,7 +1085,8 @@ SCPs — organizational-level IAM guardrails:‼️
   2. Deny disabling security services:
      Deny actions:
        - guardduty:DeleteDetector
-       - guardduty:DisassociateFromMasterAccount
+       - guardduty:DisassociateFromAdministratorAccount
+         (and the older alias guardduty:DisassociateFromMasterAccount)
        - securityhub:DisableSecurityHub
        - config:StopConfigurationRecorder
        - config:DeleteConfigurationRecorder
@@ -1503,7 +1513,7 @@ Security Hub — centralized security posture management:‼️
       - Industry-standard hardening guide
       - 50+ controls (IAM, logging, monitoring, networking)
 
-    PCI DSS v3.2.1:
+    PCI DSS v4.0.1 (v3.2.1 is still listed for older setups):
       - Automated checks for PCI-relevant AWS controls
       - Does NOT make you PCI compliant, but helps
 
@@ -1894,17 +1904,18 @@ KMS (Key Management Service):‼️
     Only the data key (small) crosses the network to KMS.
 ```
 
-### CloudHSM & FIPS 140-2
+### CloudHSM & FIPS 140-3
 
 ```text
 CloudHSM:‼️
   - Dedicated Hardware Security Module in AWS
-  - FIPS 140-2 Level 3 validated‼️ (KMS is Level 2)
+  - FIPS 140-3 Level 3 validated‼️ (current hsm2m.medium HSMs)
+  - ‼️ KMS's own HSMs are ALSO Level 3 now (140-2 L3 since May 2023, 140-3 L3
+    since late 2024) — so "need Level 3" alone is no longer a reason for CloudHSM
   - You own and manage the keys — AWS cannot access them
   - Single-tenant: the HSM is yours alone
   - Use cases:
-    - Compliance requiring FIPS 140-2 Level 3
-    - Contractual requirement for dedicated HSM
+    - Contractual requirement for a dedicated, single-tenant HSM / sole key control
     - Custom key store for KMS (KMS + CloudHSM backend)
     - SSL/TLS offloading with keys in HSM
     - Oracle TDE (Transparent Data Encryption)
@@ -1918,14 +1929,14 @@ CloudHSM:‼️
 
   KMS Custom Key Store:
     - Use KMS API, but keys stored in your CloudHSM
-    - Best of both worlds: KMS integration + FIPS 140-2 Level 3
+    - Best of both worlds: KMS integration + FIPS 140-3 Level 3
     - All KMS-integrated services can use it
     - Higher cost than standard KMS
 
-FIPS 140-2 validation levels:
+FIPS 140-3 validation levels (same 4 levels as 140-2):
   Level 1: basic requirements, software crypto
-  Level 2: tamper-evident seals, role-based auth (KMS)
-  Level 3: tamper-resistant, identity-based auth (CloudHSM)‼️
+  Level 2: tamper-evident seals, role-based auth
+  Level 3: tamper-resistant, identity-based auth (KMS HSMs and CloudHSM)‼️
   Level 4: tamper-active, environmental protection (not common in cloud)
 
 FIPS endpoints:‼️
@@ -1989,7 +2000,8 @@ TLS everywhere:
   - API Gateway: TLS by default
   - RDS: force SSL connections (rds.force_ssl parameter)
   - ElastiCache: in-transit encryption
-  - EKS: mutual TLS with service mesh (Istio, App Mesh)
+  - EKS: mutual TLS with a service mesh (Istio, Linkerd) or VPC Lattice
+    (AWS App Mesh was shut down Sept 30, 2026 — ECS Service Connect / VPC Lattice replace it)
 
 ACM (AWS Certificate Manager):‼️
   - Free public TLS certificates for AWS services
@@ -2383,7 +2395,8 @@ Terraform state management for enterprise:‼️
     - One state file per environment per component‼️
       (not one giant state file for everything)
     - S3 bucket: versioning enabled, encryption, Object Lock
-    - DynamoDB table: prevents concurrent state modifications
+    - Locking: use_lockfile (S3-native). The old DynamoDB lock table is
+      deprecated since Terraform 1.11 — only needed on older versions
     - Separate state for: networking, compute, database, security
     - Cross-stack references via terraform_remote_state data source
     - State bucket in a dedicated Infrastructure account
@@ -2547,7 +2560,7 @@ Reserved Instances vs Savings Plans:‼️
     On-Demand: unpredictable, short-term, spiky workloads
     Spot: fault-tolerant, flexible, batch processing (up to 90% discount)
 
-EDP (Enterprise Discount Program):‼️
+EDP (Enterprise Discount Program — now called a Private Pricing Agreement, PPA):‼️
   - Negotiated volume discount with AWS
   - Typically requires $1M+ annual spend commitment
   - Discount: 5-15% on top of other discounts
@@ -2591,7 +2604,7 @@ The 7 Rs — evaluate each workload:‼️
      - Move as-is to AWS (VM → EC2)
      - Fastest migration path
      - No application changes
-     - Tools: Application Migration Service (MGN), CloudEndure
+     - Tools: Application Migration Service (MGN) — CloudEndure Migration was retired (MGN replaced it)
      - When: tight timeline, legacy apps, first wave
      - Risk: you bring all the tech debt with you
      - Cost: same or higher (not optimized for cloud)
@@ -2648,7 +2661,9 @@ Migration phases:‼️
 
   Phase 1: Assess (2-4 weeks)
     - Portfolio discovery: what do you have?
-    - AWS Application Discovery Service:
+    - Discovery: AWS Transform (launched May 2025) for new projects —
+      ‼️ Migration Hub, Application Discovery Service, Strategy Recommendations
+      and Refactor Spaces closed to NEW customers on Nov 7, 2025
       - Agentless: VMware vCenter integration (basic data)
       - Agent-based: OS-level data (processes, connections, performance)‼️
     - Build application inventory
@@ -2666,7 +2681,7 @@ Migration phases:‼️
   Phase 3: Migrate & Modernize (ongoing)
     - Execute in waves (5-20 apps per wave)‼️
     - Each wave follows: plan → migrate → test → cutover
-    - Migration Hub: central tracking dashboard
+    - Tracking dashboard: AWS Transform (Migration Hub for existing customers only)
     - Parallel run: old and new running simultaneously
     - Cutover: DNS switch, database sync, final validation
 
@@ -2680,7 +2695,8 @@ Database Migration Service (DMS):‼️
   - Continuous replication from source to target database
   - Supports: Oracle, SQL Server, MySQL, PostgreSQL, MongoDB, etc.
   - Homogeneous (same engine) and heterogeneous (different engine)
-  - Schema Conversion Tool (SCT) for heterogeneous migrations
+  - DMS Schema Conversion (managed, in the console) for heterogeneous migrations
+    (the desktop Schema Conversion Tool / SCT still exists)
   - Full load + CDC (Change Data Capture) for zero-downtime migration
   - Validation: compare source and target data
 
@@ -2804,10 +2820,13 @@ A: This finding means EC2 instance credentials (from the instance
    1. Confirm the finding — check the source IP in CloudTrail
    2. Identify the affected instance and role
    3. DO NOT terminate the instance yet (preserve forensic evidence)
-   4. Revoke the role's active sessions:
-      aws iam put-role-policy —role-name ROLE —policy-name DenyAll \
-        —policy-document '{"Statement":[{"Effect":"Deny","Action":"*","Resource":"*",
-        "Condition":{"DateLessThan":{"aws:TokenIssueTime":"NOW"}}}]}'
+   4. Revoke the role's active sessions (console: IAM → role → "Revoke active
+      sessions", which adds the AWSRevokeOlderSessions inline policy):
+      aws iam put-role-policy --role-name ROLE --policy-name AWSRevokeOlderSessions \
+        --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Deny","Action":"*","Resource":"*",
+        "Condition":{"DateLessThan":{"aws:TokenIssueTime":"2026-11-05T14:30:00Z"}}}]}'
+      ‼️ Use the CURRENT time as a real ISO timestamp — "NOW" is not a valid value.
+      Every session issued before that moment is denied; new sessions still work.
    5. Isolate the instance:
       - Create a quarantine security group (deny all inbound/outbound)
       - Replace the instance's security group
@@ -2881,11 +2900,11 @@ A: PCI requires isolating the Cardholder Data Environment (CDE):
 
 Q5: "Explain your encryption strategy for a FedRAMP High system."‼️
 
-A: FedRAMP High requires FIPS 140-2 validated encryption:
+A: FedRAMP High requires FIPS 140-3 validated encryption:
 
    Data at rest:
-   - KMS CMK with FIPS 140-2 Level 2 (standard KMS)
-   - OR: CloudHSM custom key store for Level 3
+   - KMS customer managed key (KMS HSMs are FIPS 140-3 Level 3)
+   - OR: CloudHSM custom key store if you need single-tenant HSMs you control
    - S3: SSE-KMS with CMK (not SSE-S3 — need key policy control)
    - EBS: default encryption enabled org-wide
    - RDS: encryption enabled at creation
@@ -2896,7 +2915,7 @@ A: FedRAMP High requires FIPS 140-2 validated encryption:
    Data in transit:
    - FIPS endpoints for ALL AWS API calls‼️
    - TLS 1.2+ for all connections
-   - ALB/NLB with TLS termination (FIPS 140-2 validated)
+   - ALB/NLB with TLS termination (FIPS 140-3 validated)
    - VPN with FIPS-validated algorithms (AES-256-GCM)
    - Direct Connect with MACsec (Layer 2 encryption)
    - Internal service-to-service: mutual TLS
@@ -2910,9 +2929,9 @@ A: FedRAMP High requires FIPS 140-2 validated encryption:
    - Audit: all KMS API calls logged in CloudTrail
 
    Decision: KMS vs CloudHSM?
-   - KMS (Level 2): sufficient for most FedRAMP High controls
-   - CloudHSM (Level 3): required if contract specifies Level 3,
-     or if you need PKCS#11 or JCE interface
+   - KMS: its HSMs are FIPS 140-3 Level 3 — sufficient for FedRAMP High
+   - CloudHSM: when you need single-tenant HSMs you fully control,
+     or PKCS#11 / JCE / OpenSSL interfaces (e.g. custom crypto, Oracle TDE)
    - KMS Custom Key Store: KMS API + CloudHSM backend (best of both)
 
 
@@ -3049,7 +3068,7 @@ A: Key distinction:
 
    The practical difference:
    - FISMA: agency security team does the assessment
-   - FedRAMP: 3PAO does the assessment, JAB or agency authorizes
+   - FedRAMP: 3PAO does the assessment, the agency authorizes (or FedRAMP on 20x)
    - FedRAMP ATOs are reusable across agencies ("do once, use many")
    - FISMA ATOs are agency-specific
 
@@ -3169,7 +3188,8 @@ Q13: "Walk through how you would migrate a 500-server on-prem
 A: Phase approach:
 
    Months 1-3: Assess
-   - Deploy Application Discovery agents on all servers
+   - Discovery agents on all servers (AWS Transform for new projects;
+     Application Discovery Service if you're an existing customer)
    - Map dependencies (which servers talk to which)
    - Categorize all 500 servers by 7 Rs:
      - ~50 retire (unused, redundant)
@@ -3250,7 +3270,12 @@ A: Continuous monitoring (ConMon) program:
 Q15: "Compare the cost and timeline of FedRAMP Moderate via JAB
       vs Agency path. When would you recommend each?"‼️
 
-A: JAB Path:
+A: ‼️ First, update the premise: the JAB path closed in 2024 (OMB M-24-15).
+   Today the choice is Agency ATO (Rev5) vs FedRAMP 20x program certification.
+   The JAB comparison below is still useful history — 20x plays the role the
+   JAB used to (an authorization any agency can reuse, no single sponsor).
+
+   (Historical) JAB Path:
    Timeline: 12-18 months (after readiness)
      - FedRAMP Connect application: 2-3 months
      - RAR (Readiness Assessment Report): 2-3 months
@@ -3283,9 +3308,11 @@ A: JAB Path:
      - Other agencies may add requirements on top
      - Less "portable" than JAB P-ATO
 
-   Recommendation:
+   Recommendation (2026):
    - If you have ONE agency customer: Agency path (faster to revenue)
-   - If you want broad federal market: JAB path (once JAB accepts you)
-   - If you need speed: Agency path, then pursue JAB P-ATO in parallel
-   - Many companies do Agency ATO first, then "upgrade" to JAB P-ATO
+   - If you want broad federal market without a sponsor: FedRAMP 20x
+     program certification (the JAB's old role)
+   - If your controls evidence is already automated (IaC, Security Hub,
+     Config), 20x favours you — it's built around machine-readable evidence
+   - (Before 2024, the answer was "Agency ATO first, then upgrade to JAB P-ATO")
 ```

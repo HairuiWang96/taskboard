@@ -231,7 +231,9 @@ Merge Join:
 4. Sort shows "Sort Method: external merge Disk"‼️
    → Data didn't fit in memory, had to sort on disk (SLOW)‼
    → Fix: SET work_mem = '256MB';  (give more memory for sorting)
-   → Note: set per-session, not globally (each query gets this much)
+   → ‼️ Set it per-session or per-query, not globally: work_mem is allowed PER
+     SORT/HASH OPERATION, so one complex query can use several times it, and
+     every connection gets its own
 
 5. Very high "actual time" on one specific step
    → That step is the bottleneck — focus your optimization there
@@ -694,15 +696,19 @@ READ COMMITTED (default):
 
 REPEATABLE READ:
   All statements in the tx see a snapshot from tx start.
-  Protects: non-repeatable reads.
-  Problem: phantom reads (new rows inserted by other txs might be invisible... mostly).
+  Protects: non-repeatable reads — and in Postgres also PHANTOM reads (the
+  snapshot hides rows inserted later; the SQL standard allows phantoms here,
+  Postgres is stricter). Concurrent writes to the same row fail with a
+  serialization error you must retry.
+  Problem: write skew — two txs read overlapping data and write different rows.
 
 SERIALIZABLE:
   Strongest. Transactions appear to run one after another.
   Protects everything. Slowest — more aborts/retries.
 
-SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
-BEGIN;
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+-- (or BEGIN; then SET TRANSACTION ISOLATION LEVEL ... as the FIRST statement —
+--  SET TRANSACTION before BEGIN does nothing except print a warning)
   SELECT balance FROM accounts WHERE id = 1; -- snapshot taken here
   -- Other tx commits a change to balance — you still see original value
   SELECT balance FROM accounts WHERE id = 1; -- same result
@@ -761,10 +767,11 @@ SELECT pg_advisory_unlock(12345);
 -- In application code with Drizzle:
 await db.transaction(async (tx) => {
   const [fromAccount, toAccount] = [Math.min(a, b), Math.max(a, b)]; // consistent order
-  const from = await tx.select().from(accounts)
-    .where(eq(accounts.id, fromAccount)).for('update').get();
-  const to   = await tx.select().from(accounts)
-    .where(eq(accounts.id, toAccount)).for('update').get();
+  // (Postgres driver: queries return arrays — .get() exists only for SQLite)
+  const [from] = await tx.select().from(accounts)
+    .where(eq(accounts.id, fromAccount)).for('update');
+  const [to]   = await tx.select().from(accounts)
+    .where(eq(accounts.id, toAccount)).for('update');
   // ... transfer logic
 });
 ```
@@ -1045,7 +1052,7 @@ SELECT * FROM org_tree ORDER BY level;
 
 ### "What is the difference between `DELETE`, `TRUNCATE`, and `DROP`?"
 
-> `DELETE` removes rows one by one, fires triggers, can be rolled back, can have WHERE clause. `TRUNCATE` removes ALL rows at once — faster (doesn't log individual rows), resets auto-increment, cannot have WHERE, can be rolled back in PostgreSQL (not MySQL). `DROP` removes the entire table structure and all data — cannot be rolled back.
+> `DELETE` removes rows one by one, fires row triggers, can be rolled back, can have a WHERE clause. `TRUNCATE` removes ALL rows at once — much faster (no per-row work), cannot have WHERE, and in PostgreSQL can be rolled back (in MySQL it commits implicitly). It resets auto-increment in MySQL, but in PostgreSQL only if you add `RESTART IDENTITY`. `DROP` removes the table itself — in PostgreSQL even that is transactional (`BEGIN; DROP TABLE t; ROLLBACK;` brings it back), while in MySQL it commits immediately.
 
 ### "What are transactions and the ACID properties?"
 

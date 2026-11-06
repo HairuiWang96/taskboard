@@ -1161,8 +1161,10 @@ It's just like passing a function to another function in plain JavaScript:
   // List decides WHEN and WITH WHAT props to call your function‼️
 
 Libraries like react-window use this pattern:
-  "Give me a component/function as children, and I'll call it myself
+  "Give me a component/function, and I'll call it myself
    with { index, style } for each visible row."
+  react-window v1 took it as children; v2 takes it as a prop
+  (rowComponent={Row}) — same idea, different prop name.
   The API design choice is the library's. The syntax is just standard React.‼️
 ```
 
@@ -1170,40 +1172,45 @@ Libraries like react-window use this pattern:
 
 ```tsx
 // Alternative virtualization library
-import { FixedSizeList as List } from 'react-window';
+// ‼️ react-window v2 API (2025+). v1's FixedSizeList and "Row as children"
+//    are gone — you hand List the Row component through the rowComponent prop.
+import { List, type RowComponentProps } from 'react-window';
 
-function VirtualList({ items }) {
-    // Row is a component — react-window will call it for each VISIBLE row
-    // and automatically pass { index, style } as props
-    const Row = ({ index, style }) => (
-        <div style={style}>
-            {' '}
-            {/* style contains position (absolute) — MUST apply */}
+// Row is a component — react-window will call it for each VISIBLE row
+// and automatically pass { index, style, ariaAttributes } as props,
+// plus whatever you put in rowProps (here: items).
+// Defined OUTSIDE VirtualList so it isn't a brand-new component every render.
+function Row({ index, style, ariaAttributes, items }: RowComponentProps<{ items: Item[] }>) {
+    return (
+        // style contains position (absolute) — MUST apply
+        // ariaAttributes identify the element as a row — spread them on
+        <div style={style} {...ariaAttributes}>
             {items[index].name}
         </div>
     );
+}
 
+function VirtualList({ items }: { items: Item[] }) {
     return (
         <List
-            height={600} // visible area height
-            itemCount={items.length} // total items (e.g., 10,000)
-            itemSize={50} // height of each row in pixels
-            width='100%'
-        >
-            {Row}
-            {/* ‼️ {Row} passes the Row component as children to List.
-                List receives it as: children = Row
-                Internally, List calls Row for each visible row:‼️
-                  Row({ index: 0, style: { position: 'absolute', top: 0, height: 50 } })
-                  Row({ index: 1, style: { position: 'absolute', top: 50, height: 50 } })
-                  Row({ index: 2, style: { position: 'absolute', top: 100, height: 50 } })
-                  ...only for the ~12 rows visible on screen
+            rowComponent={Row}
+            rowCount={items.length} // total items (e.g., 10,000)
+            rowHeight={50} // height of each row in pixels
+            rowProps={{ items }} // extra props passed to every Row
+            style={{ height: 600 }} // visible area height
+        />
+        /* ‼️ rowComponent={Row} passes the Row component to List as a prop.
+           List receives it as: rowComponent = Row
+           Internally, List renders Row for each visible row:‼️
+             <Row index={0} style={{ position: 'absolute', top: 0, height: 50 }} items={items} />
+             <Row index={1} style={{ position: 'absolute', top: 50, height: 50 }} items={items} />
+             <Row index={2} style={{ position: 'absolute', top: 100, height: 50 }} items={items} />
+             ...only for the ~12 rows visible on screen
 
-                YOU don't pass index — List does it FOR you automatically.‼️
-                You just tell List how many items and how tall each is.
-                List figures out which rows are visible and calls Row
-                with the right { index, style } for each one. */}
-        </List>
+           YOU don't pass index — List does it FOR you automatically.‼️
+           You just tell List how many items and how tall each is.
+           List figures out which rows are visible and renders Row
+           with the right { index, style } for each one. */
     );
 }
 // Only ~15 DOM nodes rendered at a time regardless of list size
@@ -4065,8 +4072,10 @@ export async function POST(request: NextRequest) {
 }
 
 // Dynamic route handler: app/api/users/[id]/route.ts
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-    const user = await db.user.findUnique({ where: { id: params.id } });
+// ‼️ Next 15+: params is a Promise — await it
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const user = await db.user.findUnique({ where: { id } });
     if (!user) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
@@ -5429,9 +5438,11 @@ File convention: ComponentName.stories.tsx (co-located with component)
 
 ```tsx
 // Button.stories.tsx
-import type { Meta, StoryObj } from '@storybook/react';
+// Storybook 9+: types come from your framework package, test utils from 'storybook/test'
+// (the old '@storybook/react' / '@storybook/test' imports are Storybook 8)
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button } from './Button';
-import { within, userEvent, expect } from '@storybook/test';
+import { within, userEvent, expect } from 'storybook/test';
 
 // ‼️ Meta — configures all stories for this component
 const meta = {
@@ -6034,7 +6045,9 @@ function reportVitals() {
     });
 }
 
-// ‼️ Next.js has this built in — reportWebVitals in app/layout.tsx
+// ‼️ Next.js has this built in — in the App Router, call useReportWebVitals()
+//    from 'next/web-vitals' inside a small 'use client' component rendered in
+//    app/layout.tsx (the old `export function reportWebVitals` was Pages Router)
 // Or use @next/third-parties for Google Analytics integration
 
 // ‼️ Performance budgets — fail CI if metrics regress
@@ -6045,7 +6058,7 @@ module.exports = {
             assertions: {
                 'largest-contentful-paint': ['error', { maxNumericValue: 2500 }],
                 'cumulative-layout-shift': ['error', { maxNumericValue: 0.1 }],
-                interactive: ['error', { maxNumericValue: 3500 }],
+                'total-blocking-time': ['error', { maxNumericValue: 200 }], // TTI ("interactive") was removed in Lighthouse 10
             },
         },
     },
@@ -6378,6 +6391,9 @@ Flow:
   6. Receive access_token + id_token + refresh_token
 
 ‼️ NextAuth.js / Auth.js handles all of this for you:
+  (‼️ Since Sept 2025 Auth.js is maintained by the Better Auth team and is in
+   maintenance mode — security fixes only. New projects: Better Auth is the
+   recommended path; existing Auth.js v5 apps keep working.)
   - Google, GitHub, Discord, etc. providers out of the box
   - Session management (JWT or database sessions)
   - CSRF protection built in
@@ -6983,6 +6999,8 @@ import tsParser from '@typescript-eslint/parser';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import a11y from 'eslint-plugin-jsx-a11y';
+// ‼️ eslint-plugin-jsx-a11y 6.10 still lists ESLint ≤9 as its peer — on ESLint 10
+//    npm reports a peer conflict. Stay on ESLint 9 or install with --legacy-peer-deps.
 
 export default [
     js.configs.recommended,
@@ -6992,7 +7010,7 @@ export default [
             parser: tsParser,
             parserOptions: {
                 ecmaFeatures: { jsx: true },
-                project: './tsconfig.json',
+                projectService: true, // typescript-eslint v8+: replaces `project: './tsconfig.json'`
             },
         },
         plugins: {
@@ -7689,8 +7707,9 @@ export const metadata: Metadata = {
 };
 
 // ‼️ Dynamic metadata — for pages with dynamic content (product pages, blog posts)
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-    const post = await getPost(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+    const { slug } = await params; // Next 15+: params is async
+    const post = await getPost(slug);
 
     return {
         title: post.title,
@@ -7931,7 +7950,7 @@ Profiler tab:
   - Record → interact → stop → analyze
   - Main thread: see all JS execution, identify long tasks (>50ms blocks)
   - Look for: long yellow (scripting) blocks, layout thrashing, forced reflows
-  - Timings: shows LCP, FCP, FID markers
+  - Timings: shows LCP, FCP markers; the Interactions track shows INP candidates
   - Bottom-up: see which functions took the most time
 
 ‼️ Memory tab:

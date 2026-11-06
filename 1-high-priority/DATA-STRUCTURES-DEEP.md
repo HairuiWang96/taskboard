@@ -110,8 +110,8 @@ class DNode<T> {
 }
 
 class DoublyLinkedList<T> {
-  private head: DNode<T> | null = null
-  private tail: DNode<T> | null = null
+  head: DNode<T> | null = null   // public — the LRU cache below reads head and tail
+  tail: DNode<T> | null = null
   private size = 0
 
   // O(1)
@@ -699,12 +699,10 @@ class Graph {
     for (const [v] of this.adj) dist.set(v, Infinity)
     dist.set(src, 0)
 
-    // [distance, vertex]
-    const heap = new MinHeap()
-    heap.insert(0)  // simplified — real: store pairs
+    // [distance, vertex] — a sorted array as a poor-man's priority queue, for
+    // clarity. ‼️ Re-sorting every pop makes this O(V² log V); a real min-heap
+    // of [distance, vertex] pairs gives the O((V + E) log V) above.
     const pq: [number, number][] = [[0, src]]
-
-    // Using sorted array as poor-man's priority queue for clarity:
     const visited = new Set<number>()
     while (pq.length) {
       pq.sort((a, b) => a[0] - b[0])

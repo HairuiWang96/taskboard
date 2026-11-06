@@ -710,9 +710,19 @@ SELECT * FROM org_tree;
 **Important safeguard:**
 Recursive queries can run forever if there's a cycle. Most databases let you set a limit:‼️
 ```sql
--- PostgreSQL: limit recursion depth
-WITH RECURSIVE ...
-SELECT * FROM tree WHERE depth <= 10;
+-- PostgreSQL: limit recursion depth — the limit must go INSIDE the recursive part.
+-- (A WHERE on the final SELECT only filters the output; the recursion itself never stops.)
+WITH RECURSIVE org_tree AS (
+    SELECT id, manager_id, 1 AS depth FROM employees WHERE id = 1
+    UNION ALL
+    SELECT e.id, e.manager_id, ot.depth + 1
+    FROM employees e JOIN org_tree ot ON e.manager_id = ot.id
+    WHERE ot.depth < 10              -- ← stops the recursion
+)
+SELECT * FROM org_tree;
+
+-- Postgres 14+: detect cycles directly
+--   ... ) CYCLE id SET is_cycle USING path
 ```
 
 Without recursion, you'd need multiple queries or application-level loops to traverse hierarchical data. -->
@@ -1290,15 +1300,15 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:                          # real DB for integration tests
-        image: postgres:15
+        image: postgres:18
         env:
           POSTGRES_DB: test_db
           POSTGRES_PASSWORD: test
         ports: ['5432:5432']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: '24' } # Node 20 is EOL; 24/26 are LTS
       - run: npm ci                      # install deps (uses lockfile)‼️
       - run: npm run lint                # ESLint
       - run: npm run typecheck           # tsc --noEmit
@@ -1312,7 +1322,7 @@ jobs:
     if: github.ref == 'refs/heads/main'  # only on main branch‼️
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: npm ci && npm run build
       - run: ./deploy.sh                 # deploy to cloud (AWS, GCP, etc.)
 ```
@@ -1857,15 +1867,18 @@ services:
     depends_on: [db, redis]
 
   db:
-    image: postgres:15
+    image: postgres:18
     environment:
       POSTGRES_DB: myapp
       POSTGRES_PASSWORD: pass
     volumes:
-      - pgdata:/var/lib/postgresql/data   # persist data
+      - pgdata:/var/lib/postgresql   # persist data
+      # ‼️ Postgres 18+ images moved the volume to /var/lib/postgresql (data lives in
+      #    /var/lib/postgresql/18/docker). Mounting the old .../data path fails on 18.
+      #    Postgres 17 and older still use /var/lib/postgresql/data.
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
 
 volumes:
   pgdata:
@@ -2544,11 +2557,11 @@ Always use parameterized queries. ORMs (Prisma, TypeORM) do this automatically.�
 ```ts
 import helmet from 'helmet';       // sets security headers
 import cors from 'cors';           // configure allowed origins
-import rateLimit from 'express-rate-limit';
+import { rateLimit } from 'express-rate-limit';
 
 app.use(helmet());
 app.use(cors({ origin: 'https://app.steno.com' }));
-app.use('/api/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }));‼️
+app.use('/api/login', rateLimit({ windowMs: 15 * 60 * 1000, limit: 10 })); // `limit` (v7+), formerly `max`‼️
 ``` -->
 
 ---

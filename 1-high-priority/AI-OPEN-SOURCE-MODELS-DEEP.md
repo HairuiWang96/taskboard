@@ -39,7 +39,8 @@ Tradeoffs:
   licence may restrict use.
 
   Permissive (use commercially, few strings):  Apache 2.0 (Qwen, Mistral's
-                                               open models, gpt-oss), MIT
+                                               open models, gpt-oss, Meta's
+                                               Muse Glimmer), MIT
                                                (DeepSeek, Phi)
   Custom licences with conditions:             Llama (extra terms above 700M
                                                monthly users, acceptable-use
@@ -93,10 +94,15 @@ NVIDIA Nemotron 3 (e.g. Super: 120B total, 12B active),
 IBM Granite 4.x (3B–30B, Apache 2.0, enterprise focus):
   Popular in enterprises that want a US vendor and clear licensing
 
-Meta Llama 4 (Scout / Maverick, Apr 2025):
-  Still Meta's latest open release; MoE, natively multimodal, long context.
-  Llama 3.x 8B/70B remain common in older production systems.
-  License: Llama Community License (conditions above)
+Meta — Llama ended with Llama 4; the new line is Muse:
+  Muse Glimmer (Aug 2026) — 30B open-weight model for local, always-on agent
+    workflows; runs on consumer hardware. License: Apache 2.0 (a big change
+    from Llama's custom licence)
+  Muse Spark Open (Oct 2026) — open weights of Meta's larger Muse Spark model;
+    check its model card for size and licence before using it
+  Llama 4 (Scout / Maverick, Apr 2025) — MoE, natively multimodal, long
+    context; Llama 3.x 8B/70B remain common in older production systems.
+    License: Llama Community License (conditions above)
 
 Microsoft Phi-4: small models with strong reasoning per parameter (MIT)
 
