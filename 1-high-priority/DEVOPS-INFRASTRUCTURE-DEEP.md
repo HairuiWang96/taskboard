@@ -7,6 +7,7 @@
 ## Table of Contents
 
 **Part 1 — Containers & Orchestration**
+
 1. [Docker Internals — How Containers Work](#1-docker-internals--how-containers-work)
 2. [Dockerfile — Deep Optimization](#2-dockerfile--deep-optimization)
 3. [Docker Networking & Volumes](#3-docker-networking--volumes)
@@ -25,51 +26,17 @@
 16. [Probes — Liveness, Readiness, Startup](#16-probes--liveness-readiness-startup)
 17. [AWS EKS Deep Dive](#17-aws-eks-deep-dive)
 
-**Part 2 — Infrastructure as Code**
-18. [Terraform Fundamentals](#18-terraform-fundamentals)
-19. [Terraform State Management](#19-terraform-state-management)
-20. [Terraform Modules](#20-terraform-modules)
-21. [Terraform Advanced](#21-terraform-advanced)
-22. [Terraform for AWS](#22-terraform-for-aws)
-23. [Policy as Code — Sentinel, OPA, Checkov, tfsec](#23-policy-as-code--sentinel-opa-checkov-tfsec)
-24. [Terraform vs CloudFormation vs Pulumi](#24-terraform-vs-cloudformation-vs-pulumi)
-25. [Terragrunt — DRY Patterns](#25-terragrunt--dry-patterns)
+**Part 2 — Infrastructure as Code** 18. [Terraform Fundamentals](#18-terraform-fundamentals) 19. [Terraform State Management](#19-terraform-state-management) 20. [Terraform Modules](#20-terraform-modules) 21. [Terraform Advanced](#21-terraform-advanced) 22. [Terraform for AWS](#22-terraform-for-aws) 23. [Policy as Code — Sentinel, OPA, Checkov, tfsec](#23-policy-as-code--sentinel-opa-checkov-tfsec) 24. [Terraform vs CloudFormation vs Pulumi](#24-terraform-vs-cloudformation-vs-pulumi) 25. [Terragrunt — DRY Patterns](#25-terragrunt--dry-patterns)
 
-**Part 3 — CI/CD & GitLab**
-26. [CI/CD Concepts](#26-cicd-concepts)
-27. [Self-Hosted GitLab — Architecture & Runners](#27-self-hosted-gitlab--architecture--runners)
-28. [GitLab CI/CD Deep Dive](#28-gitlab-cicd-deep-dive)
-29. [Pipeline Patterns](#29-pipeline-patterns)
-30. [Artifact Management](#30-artifact-management)
+**Part 3 — CI/CD & GitLab** 26. [CI/CD Concepts](#26-cicd-concepts) 27. [Self-Hosted GitLab — Architecture & Runners](#27-self-hosted-gitlab--architecture--runners) 28. [GitLab CI/CD Deep Dive](#28-gitlab-cicd-deep-dive) 29. [Pipeline Patterns](#29-pipeline-patterns) 30. [Artifact Management](#30-artifact-management)
 
-**Part 4 — GitOps & Deployment**
-31. [GitOps Principles](#31-gitops-principles)
-32. [ArgoCD](#32-argocd)
-33. [Helm Charts — Deep Dive](#33-helm-charts--deep-dive)
-34. [Kustomize](#34-kustomize)
-35. [Deployment Strategies Deep Dive](#35-deployment-strategies-deep-dive)
-36. [Database Migrations in CI/CD](#36-database-migrations-in-cicd)
-37. [Secrets Management — Vault, AWS Secrets Manager, External Secrets](#37-secrets-management--vault-aws-secrets-manager-external-secrets)
+**Part 4 — GitOps & Deployment** 31. [GitOps Principles](#31-gitops-principles) 32. [ArgoCD](#32-argocd) 33. [Helm Charts — Deep Dive](#33-helm-charts--deep-dive) 34. [Kustomize](#34-kustomize) 35. [Deployment Strategies Deep Dive](#35-deployment-strategies-deep-dive) 36. [Database Migrations in CI/CD](#36-database-migrations-in-cicd) 37. [Secrets Management — Vault, AWS Secrets Manager, External Secrets](#37-secrets-management--vault-aws-secrets-manager-external-secrets)
 
-**Part 5 — QA & Testing in the Pipeline**
-38. [QA Workflow for Large Projects](#38-qa-workflow-for-large-projects)
-39. [Testing Stages](#39-testing-stages)
-40. [Load & Performance Testing](#40-load--performance-testing)
-41. [Quality Gates](#41-quality-gates)
+**Part 5 — QA & Testing in the Pipeline** 38. [QA Workflow for Large Projects](#38-qa-workflow-for-large-projects) 39. [Testing Stages](#39-testing-stages) 40. [Load & Performance Testing](#40-load--performance-testing) 41. [Quality Gates](#41-quality-gates)
 
-**Part 6 — Observability & Production Operations**
-42. [Observability Stack — The Three Pillars](#42-observability-stack--the-three-pillars)
-43. [Metrics & Monitoring — Prometheus, Grafana, CloudWatch](#43-metrics--monitoring--prometheus-grafana-cloudwatch)
-44. [Logging — Centralized Logging, EFK, Structured Logging](#44-logging--centralized-logging-efk-structured-logging)
-45. [Distributed Tracing — Jaeger, X-Ray, OpenTelemetry](#45-distributed-tracing--jaeger-x-ray-opentelemetry)
-46. [Alerting & On-Call](#46-alerting--on-call)
-47. [Service Mesh — Istio, App Mesh, Linkerd](#47-service-mesh--istio-app-mesh-linkerd)
+**Part 6 — Observability & Production Operations** 42. [Observability Stack — The Three Pillars](#42-observability-stack--the-three-pillars) 43. [Metrics & Monitoring — Prometheus, Grafana, CloudWatch](#43-metrics--monitoring--prometheus-grafana-cloudwatch) 44. [Logging — Centralized Logging, EFK, Structured Logging](#44-logging--centralized-logging-efk-structured-logging) 45. [Distributed Tracing — Jaeger, X-Ray, OpenTelemetry](#45-distributed-tracing--jaeger-x-ray-opentelemetry) 46. [Alerting & On-Call](#46-alerting--on-call) 47. [Service Mesh — Istio, App Mesh, Linkerd](#47-service-mesh--istio-app-mesh-linkerd)
 
-**Part 7 — Platform Engineering & Operations**
-48. [Internal Developer Platform](#48-internal-developer-platform)
-49. [Cost Optimization for Infrastructure](#49-cost-optimization-for-infrastructure)
-50. [Incident Response](#50-incident-response)
-51. [End-to-End Workflow — Code to Production](#51-end-to-end-workflow--code-to-production)
+**Part 7 — Platform Engineering & Operations** 48. [Internal Developer Platform](#48-internal-developer-platform) 49. [Cost Optimization for Infrastructure](#49-cost-optimization-for-infrastructure) 50. [Incident Response](#50-incident-response) 51. [End-to-End Workflow — Code to Production](#51-end-to-end-workflow--code-to-production)
 
 ---
 
@@ -82,15 +49,15 @@
 ### Containers are NOT virtual machines
 
 ```text
-‼️ A container is a process (or group of processes) on the HOST OS kernel,
-   isolated using Linux kernel features. There is NO separate OS.
+‼️ A container is a process (or group of processes) on the HOST OS kernel,‼️
+   isolated using Linux kernel features. There is NO separate OS.‼️
 
 Virtual Machine:
   Host OS → Hypervisor → Guest OS → Application
   Separate kernel per VM. Full OS overhead. ~GBs of memory per VM. Minutes to start.
 
 Container:
-  Host OS (shared kernel) → Container runtime (Docker/containerd) → Application
+  ‼️ Host OS (shared kernel) → Container runtime (Docker/containerd) → Application
   Shared host kernel. Only app + its libs. ~MBs. Milliseconds to start.
 
 The three Linux kernel features that make containers work:
@@ -497,7 +464,7 @@ services:
   api:
     image: myapp
     environment:
-      DB_HOST: db         # ← "db" resolves to the db container's IP
+      DB_HOST: db # ← "db" resolves to the db container's IP
       REDIS_URL: redis://cache:6379
 
   db:
@@ -537,16 +504,16 @@ services:
   db:
     image: postgres:15
     volumes:
-      - pgdata:/var/lib/postgresql/data   # named volume — persists
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # bind mount
+      - pgdata:/var/lib/postgresql/data # named volume — persists
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # bind mount
 
   api:
     image: myapp
     volumes:
-      - ./src:/app/src    # bind mount for dev hot-reload
+      - ./src:/app/src # bind mount for dev hot-reload
 
 volumes:
-  pgdata:    # declares the named volume (Docker manages it)
+  pgdata: # declares the named volume (Docker manages it)
 ```
 
 ---
@@ -570,11 +537,11 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: taskboard
     ports:
-      - "5432:5432"    # host:container
+      - '5432:5432' # host:container
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # persist data across restarts
+      - postgres_data:/var/lib/postgresql/data # persist data across restarts
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -583,34 +550,34 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes   # persist data
+    command: redis-server --appendonly yes # persist data
 
   # API server
   api:
     build:
       context: ./server
       dockerfile: Dockerfile
-      target: builder   # use builder stage for hot reload in dev
+      target: builder # use builder stage for hot reload in dev
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/taskboard
       REDIS_URL: redis://redis:6379
       NODE_ENV: development
     volumes:
-      - ./server/src:/app/src   # mount source for hot reload
-      - /app/node_modules       # don't mount node_modules from host
+      - ./server/src:/app/src # mount source for hot reload
+      - /app/node_modules # don't mount node_modules from host
     depends_on:
       db:
-        condition: service_healthy  # wait for db healthcheck to pass
+        condition: service_healthy # wait for db healthcheck to pass
       redis:
         condition: service_started
-    command: npm run dev    # override CMD with dev command
+    command: npm run dev # override CMD with dev command
     develop:
-      watch:              # Docker compose watch (v2.22+)
+      watch: # Docker compose watch (v2.22+)
         - action: sync
           path: ./src
           target: /app/src
@@ -620,7 +587,7 @@ services:
     build:
       context: ./client
     ports:
-      - "5173:5173"
+      - '5173:5173'
     volumes:
       - ./client/src:/app/src
     environment:
@@ -700,11 +667,11 @@ scan_image:
   stage: scan
   image:
     name: aquasec/trivy:latest
-    entrypoint: [""]
+    entrypoint: ['']
   script:
     - trivy image --exit-code 1 --severity HIGH,CRITICAL
-        --no-progress
-        $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+      --no-progress
+      $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
   allow_failure: false
   # ‼️ --exit-code 1: fail the pipeline if HIGH or CRITICAL CVEs found
   # ‼️ Run this BEFORE deploying — block bad images from reaching production
@@ -721,8 +688,8 @@ snyk_scan:
     SNYK_TOKEN: $SNYK_TOKEN
   script:
     - snyk container test $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-        --severity-threshold=high
-        --json-file-output=snyk-results.json
+      --severity-threshold=high
+      --json-file-output=snyk-results.json
   artifacts:
     paths:
       - snyk-results.json
@@ -832,11 +799,7 @@ docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp:v1.2.3
       "Principal": {
         "AWS": "arn:aws:iam::222222222222:root"
       },
-      "Action": [
-        "ecr:GetDownloadUrlForLayer",
-        "ecr:BatchGetImage",
-        "ecr:BatchCheckLayerAvailability"
-      ]
+      "Action": ["ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage", "ecr:BatchCheckLayerAvailability"]
     }
   ]
 }
@@ -991,7 +954,7 @@ kind: Pod
 metadata:
   name: my-pod
   labels:
-    app: myapp           # labels — key for Services and Deployments to find pods
+    app: myapp # labels — key for Services and Deployments to find pods
 spec:
   containers:
     - name: app
@@ -1001,13 +964,13 @@ spec:
       env:
         - name: NODE_ENV
           value: production
-      resources:         # ALWAYS set resources in production
+      resources: # ALWAYS set resources in production
         requests:
-          cpu: "100m"    # 100 millicores = 0.1 CPU
-          memory: "128Mi"
+          cpu: '100m' # 100 millicores = 0.1 CPU
+          memory: '128Mi'
         limits:
-          cpu: "500m"
-          memory: "256Mi"
+          cpu: '500m'
+          memory: '256Mi'
 ```
 
 ### ReplicaSet & Deployment
@@ -1025,26 +988,26 @@ metadata:
   name: api
   namespace: production
 spec:
-  replicas: 3                     # desired pod count
+  replicas: 3 # desired pod count
   selector:
     matchLabels:
-      app: api                    # Deployment manages pods with this label
+      app: api # Deployment manages pods with this label
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 1                 # max extra pods during update
-      maxUnavailable: 0           # never go below desired replicas during update
-  template:                       # pod template — EVERY pod created looks like this
+      maxSurge: 1 # max extra pods during update
+      maxUnavailable: 0 # never go below desired replicas during update
+  template: # pod template — EVERY pod created looks like this
     metadata:
       labels:
-        app: api                  # MUST match selector.matchLabels
+        app: api # MUST match selector.matchLabels
     spec:
       # Graceful termination
       terminationGracePeriodSeconds: 60
 
       containers:
         - name: api
-          image: myapp:1.2.3      # ‼️ never use :latest in production
+          image: myapp:1.2.3 # ‼️ never use :latest in production
           ports:
             - containerPort: 3000
           envFrom:
@@ -1060,22 +1023,22 @@ spec:
             - name: POD_NAME
               valueFrom:
                 fieldRef:
-                  fieldPath: metadata.name  # inject pod name for logging
+                  fieldPath: metadata.name # inject pod name for logging
 
           resources:
             requests:
-              cpu: "100m"
-              memory: "128Mi"
+              cpu: '100m'
+              memory: '128Mi'
             limits:
-              cpu: "500m"
-              memory: "256Mi"
-          readinessProbe:         # don't send traffic until ready
+              cpu: '500m'
+              memory: '256Mi'
+          readinessProbe: # don't send traffic until ready
             httpGet:
               path: /health
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
-          livenessProbe:          # restart if unhealthy
+          livenessProbe: # restart if unhealthy
             httpGet:
               path: /health
               port: 3000
@@ -1086,7 +1049,7 @@ spec:
           lifecycle:
             preStop:
               exec:
-                command: ['/bin/sh', '-c', 'sleep 5']  # wait for LB to deregister
+                command: ['/bin/sh', '-c', 'sleep 5'] # wait for LB to deregister
 ```
 
 ### StatefulSet — for databases and stateful apps
@@ -1107,7 +1070,7 @@ kind: StatefulSet
 metadata:
   name: postgres
 spec:
-  serviceName: postgres     # Headless service for stable DNS
+  serviceName: postgres # Headless service for stable DNS
   replicas: 1
   selector:
     matchLabels:
@@ -1123,11 +1086,11 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
-  volumeClaimTemplates:     # each pod gets its own PVC automatically
+  volumeClaimTemplates: # each pod gets its own PVC automatically
     - metadata:
         name: data
       spec:
-        accessModes: ["ReadWriteOnce"]
+        accessModes: ['ReadWriteOnce']
         resources:
           requests:
             storage: 20Gi
@@ -1190,15 +1153,15 @@ kind: Job
 metadata:
   name: db-migration
 spec:
-  backoffLimit: 3              # retry up to 3 times on failure
-  activeDeadlineSeconds: 600   # timeout after 10 minutes
+  backoffLimit: 3 # retry up to 3 times on failure
+  activeDeadlineSeconds: 600 # timeout after 10 minutes
   template:
     spec:
-      restartPolicy: Never     # ‼️ Job pods must be Never or OnFailure
+      restartPolicy: Never # ‼️ Job pods must be Never or OnFailure
       containers:
         - name: migrate
           image: myapp:1.2.3
-          command: ["npm", "run", "db:migrate"]
+          command: ['npm', 'run', 'db:migrate']
           envFrom:
             - secretRef:
                 name: db-secrets
@@ -1210,8 +1173,8 @@ kind: CronJob
 metadata:
   name: nightly-cleanup
 spec:
-  schedule: "0 2 * * *"       # 2:00 AM daily (cron syntax)
-  concurrencyPolicy: Forbid   # don't start new if previous still running
+  schedule: '0 2 * * *' # 2:00 AM daily (cron syntax)
+  concurrencyPolicy: Forbid # don't start new if previous still running
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 5
   jobTemplate:
@@ -1222,7 +1185,7 @@ spec:
           containers:
             - name: cleanup
               image: myapp:1.2.3
-              command: ["npm", "run", "cleanup:old-sessions"]
+              command: ['npm', 'run', 'cleanup:old-sessions']
 
 # ‼️ concurrencyPolicy options:
 #   Allow:   multiple concurrent jobs (default)
@@ -1267,10 +1230,10 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: api              # routes to pods with label app=api
+    app: api # routes to pods with label app=api
   ports:
-    - port: 80            # Service port (what callers use)
-      targetPort: 3000    # container port (what the pod listens on)
+    - port: 80 # Service port (what callers use)
+      targetPort: 3000 # container port (what the pod listens on)
 # Access: http://api-service (within cluster) or http://api-service.namespace.svc.cluster.local
 
 ---
@@ -1281,7 +1244,7 @@ spec:
   ports:
     - port: 80
       targetPort: 3000
-      nodePort: 30080     # accessible at ANY_NODE_IP:30080
+      nodePort: 30080 # accessible at ANY_NODE_IP:30080
 
 ---
 # LoadBalancer — provisions a cloud load balancer (AWS ALB, GCP LB, etc.)
@@ -1375,14 +1338,14 @@ metadata:
     # rewrite-target: / alone rewrites EVERY path to "/". To strip a prefix you need
     # a regex path like /api(/|$)(.*) with rewrite-target: /$2
     nginx.ingress.kubernetes.io/rewrite-target: /
-    cert-manager.io/cluster-issuer: letsencrypt-prod     # auto TLS via cert-manager
-    nginx.ingress.kubernetes.io/limit-rps: '100'         # (there is no "rate-limit" annotation)
+    cert-manager.io/cluster-issuer: letsencrypt-prod # auto TLS via cert-manager
+    nginx.ingress.kubernetes.io/limit-rps: '100' # (there is no "rate-limit" annotation)
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
         - api.example.com
-      secretName: api-tls-secret     # cert-manager writes TLS cert here
+      secretName: api-tls-secret # cert-manager writes TLS cert here
   rules:
     - host: api.example.com
       http:
@@ -1424,15 +1387,15 @@ kind: Ingress
 metadata:
   name: api-ingress
   annotations:
-    alb.ingress.kubernetes.io/scheme: internet-facing    # or internal
-    alb.ingress.kubernetes.io/target-type: ip            # for VPC CNI pod IPs
+    alb.ingress.kubernetes.io/scheme: internet-facing # or internal
+    alb.ingress.kubernetes.io/target-type: ip # for VPC CNI pod IPs
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:123456:certificate/abc123
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-    alb.ingress.kubernetes.io/ssl-redirect: "443"        # redirect HTTP → HTTPS
-    alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:...  # optional WAF
-  # (the old kubernetes.io/ingress.class annotation is deprecated — use spec.ingressClassName)
+    alb.ingress.kubernetes.io/ssl-redirect: '443' # redirect HTTP → HTTPS
+    alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:... # optional WAF
+    # (the old kubernetes.io/ingress.class annotation is deprecated — use spec.ingressClassName)
     alb.ingress.kubernetes.io/healthcheck-path: /health
-    alb.ingress.kubernetes.io/group.name: shared-alb     # share ALB across Ingresses
+    alb.ingress.kubernetes.io/group.name: shared-alb # share ALB across Ingresses
 spec:
   rules:
     - host: api.example.com
@@ -1463,7 +1426,7 @@ data:
   NODE_ENV: production
   LOG_LEVEL: info
   DB_HOST: postgres-service
-  DB_PORT: "5432"           # ConfigMap values are always strings
+  DB_PORT: '5432' # ConfigMap values are always strings
   # Can also store entire config files:
   app.config.json: |
     {
@@ -1475,7 +1438,7 @@ data:
 # Consume in Pod — as environment variables
 envFrom:
   - configMapRef:
-      name: api-config      # all keys become env vars
+      name: api-config # all keys become env vars
 
 # Or individual keys:
 env:
@@ -1508,13 +1471,13 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: api-secrets
-type: Opaque           # generic; other types: kubernetes.io/tls, kubernetes.io/dockerconfigjson
+type: Opaque # generic; other types: kubernetes.io/tls, kubernetes.io/dockerconfigjson
 data:
   # Values MUST be base64 encoded: echo -n "mysecret" | base64
   DB_PASSWORD: bXlzZWNyZXQ=
   JWT_SECRET: c3VwZXJzZWNyZXQ=
-stringData:            # stringData takes plain text — K8s encodes it automatically
-  API_KEY: "plaintext-value"
+stringData: # stringData takes plain text — K8s encodes it automatically
+  API_KEY: 'plaintext-value'
 
 ---
 # Consume — same as ConfigMap but use secretRef / secretKeyRef
@@ -1532,7 +1495,7 @@ envFrom:
 # Don't store secrets in Git. Use AWS Secrets Manager / Vault / GCP Secret Manager.
 # External Secrets Operator syncs them into K8s Secrets automatically.
 
-apiVersion: external-secrets.io/v1   # v1beta1 is deprecated in current ESO releases
+apiVersion: external-secrets.io/v1 # v1beta1 is deprecated in current ESO releases
 kind: ExternalSecret
 metadata:
   name: api-secrets
@@ -1542,12 +1505,12 @@ spec:
     name: aws-secretsmanager
     kind: ClusterSecretStore
   target:
-    name: api-secrets          # creates/updates this K8s Secret
+    name: api-secrets # creates/updates this K8s Secret
   data:
-    - secretKey: DB_PASSWORD   # key in K8s Secret
+    - secretKey: DB_PASSWORD # key in K8s Secret
       remoteRef:
-        key: /production/api   # AWS Secrets Manager path
-        property: db_password  # JSON field in the secret
+        key: /production/api # AWS Secrets Manager path
+        property: db_password # JSON field in the secret
 ```
 
 ### Sealed Secrets (Git-safe secrets)
@@ -1605,10 +1568,10 @@ metadata:
   name: postgres-pvc
 spec:
   accessModes:
-    - ReadWriteOnce       # RWO: one node at a time (block storage — EBS, GCP PD)
+    - ReadWriteOnce # RWO: one node at a time (block storage — EBS, GCP PD)
     # ReadWriteMany (RWX): multiple nodes simultaneously (NFS, EFS)
     # ReadOnlyMany (ROX):  multiple nodes, read-only
-  storageClassName: gp3  # AWS EBS gp3 — use cluster's default if omitted
+  storageClassName: gp3 # AWS EBS gp3 — use cluster's default if omitted
   resources:
     requests:
       storage: 20Gi
@@ -1639,15 +1602,16 @@ kind: StorageClass
 metadata:
   name: ebs-gp3
   annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
+    storageclass.kubernetes.io/is-default-class: 'true'
 provisioner: ebs.csi.aws.com
 parameters:
   type: gp3
-  encrypted: "true"            # encrypt volumes at rest
+  encrypted: 'true' # encrypt volumes at rest
   fsType: ext4
-reclaimPolicy: Delete          # Delete PV when PVC is deleted (Retain for production DBs)
-volumeBindingMode: WaitForFirstConsumer   # ‼️ Important: don't provision until pod scheduled
-allowVolumeExpansion: true     # allow growing PVC size without recreating
+reclaimPolicy: Delete # Delete PV when PVC is deleted (Retain for production DBs)
+volumeBindingMode: WaitForFirstConsumer # ‼️ Important: don't provision until pod scheduled
+allowVolumeExpansion: true # allow growing PVC size without recreating
+
 
 # ‼️ WaitForFirstConsumer: prevents provisioning EBS in wrong AZ
 #    EBS volumes are AZ-specific — must match the pod's node AZ
@@ -1665,11 +1629,11 @@ metadata:
   name: efs-sc
 provisioner: efs.csi.aws.com
 parameters:
-  provisioningMode: efs-ap    # EFS Access Point
+  provisioningMode: efs-ap # EFS Access Point
   fileSystemId: fs-0123456789abcdef
-  directoryPerms: "700"
-  gidRangeStart: "1000"
-  gidRangeEnd: "2000"
+  directoryPerms: '700'
+  gidRangeStart: '1000'
+  gidRangeEnd: '2000'
 
 ---
 apiVersion: v1
@@ -1678,11 +1642,11 @@ metadata:
   name: shared-uploads
 spec:
   accessModes:
-    - ReadWriteMany            # multiple pods can read/write simultaneously
+    - ReadWriteMany # multiple pods can read/write simultaneously
   storageClassName: efs-sc
   resources:
     requests:
-      storage: 100Gi          # EFS is elastic — this is a nominal value
+      storage: 100Gi # EFS is elastic — this is a nominal value
 ```
 
 ---
@@ -1736,7 +1700,7 @@ spec:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 70   # scale up when avg CPU > 70%
+          averageUtilization: 70 # scale up when avg CPU > 70%
     - type: Resource
       resource:
         name: memory
@@ -1750,7 +1714,8 @@ spec:
           name: requests_per_second
         target:
           type: AverageValue
-          averageValue: "1000"     # scale when > 1000 req/s per pod
+          averageValue: '1000' # scale when > 1000 req/s per pod
+
 
 # ‼️ HPA requires metrics-server installed in the cluster
 # kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/...
@@ -1773,7 +1738,7 @@ spec:
     kind: Deployment
     name: api
   updatePolicy:
-    updateMode: "Auto"    # Auto, Initial (set on pod creation only), Off (recommendation only)
+    updateMode: 'Auto' # Auto, Initial (set on pod creation only), Off (recommendation only)
   resourcePolicy:
     containerPolicies:
       - containerName: api
@@ -1819,26 +1784,26 @@ spec:
       requirements:
         - key: kubernetes.io/arch
           operator: In
-          values: ["amd64"]
+          values: ['amd64']
         - key: karpenter.sh/capacity-type
           operator: In
-          values: ["on-demand", "spot"]       # ‼️ mix spot + on-demand
+          values: ['on-demand', 'spot'] # ‼️ mix spot + on-demand
         - key: karpenter.k8s.aws/instance-family
           operator: In
-          values: ["m5", "m6i", "c5", "c6i", "r5", "r6i"]
+          values: ['m5', 'm6i', 'c5', 'c6i', 'r5', 'r6i']
         - key: karpenter.k8s.aws/instance-size
           operator: In
-          values: ["large", "xlarge", "2xlarge"]
-      nodeClassRef:                           # v1 requires group + kind
+          values: ['large', 'xlarge', '2xlarge']
+      nodeClassRef: # v1 requires group + kind
         group: karpenter.k8s.aws
         kind: EC2NodeClass
         name: default
-      expireAfter: 720h                       # rotate nodes every 30 days (moved here in v1)
+      expireAfter: 720h # rotate nodes every 30 days (moved here in v1)
   limits:
-    cpu: 100                                  # max 100 vCPUs total
+    cpu: 100 # max 100 vCPUs total
     memory: 400Gi
   disruption:
-    consolidationPolicy: WhenEmptyOrUnderutilized  # ‼️ actively save costs (renamed in v1)
+    consolidationPolicy: WhenEmptyOrUnderutilized # ‼️ actively save costs (renamed in v1)
 ```
 
 ### Resource Quotas and LimitRanges
@@ -1852,12 +1817,12 @@ metadata:
   namespace: production
 spec:
   hard:
-    requests.cpu: "10"
+    requests.cpu: '10'
     requests.memory: 20Gi
-    limits.cpu: "20"
+    limits.cpu: '20'
     limits.memory: 40Gi
-    pods: "50"
-    services: "20"
+    pods: '50'
+    services: '20'
 
 ---
 # LimitRange — set defaults and limits for individual pods in a namespace
@@ -1869,14 +1834,14 @@ metadata:
 spec:
   limits:
     - type: Container
-      default:          # applied if container doesn't specify limits
+      default: # applied if container doesn't specify limits
         cpu: 500m
         memory: 256Mi
-      defaultRequest:   # applied if container doesn't specify requests
+      defaultRequest: # applied if container doesn't specify requests
         cpu: 100m
         memory: 128Mi
       max:
-        cpu: "2"
+        cpu: '2'
         memory: 2Gi
 ```
 
@@ -1917,12 +1882,12 @@ metadata:
   name: api-role
   namespace: production
 rules:
-  - apiGroups: [""]              # "" = core API group (pods, services, configmaps)
-    resources: ["configmaps"]
-    verbs: ["get", "list"]       # read-only access to configmaps
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["get", "list", "watch"]
+  - apiGroups: [''] # "" = core API group (pods, services, configmaps)
+    resources: ['configmaps']
+    verbs: ['get', 'list'] # read-only access to configmaps
+  - apiGroups: ['apps']
+    resources: ['deployments']
+    verbs: ['get', 'list', 'watch']
 
 ---
 # 3. Bind the Role to the ServiceAccount
@@ -1945,7 +1910,7 @@ roleRef:
 spec:
   template:
     spec:
-      serviceAccountName: api-sa    # pod uses this identity
+      serviceAccountName: api-sa # pod uses this identity
 ```
 
 ### Pod Security
@@ -1954,18 +1919,18 @@ spec:
 # SecurityContext — harden pod security
 spec:
   securityContext:
-    runAsNonRoot: true          # pod-level: refuse to run as root
+    runAsNonRoot: true # pod-level: refuse to run as root
     runAsUser: 1000
     runAsGroup: 3000
-    fsGroup: 2000               # files created in volumes owned by this group
+    fsGroup: 2000 # files created in volumes owned by this group
   containers:
     - name: app
       securityContext:
         allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true   # container cannot write to its own FS
+        readOnlyRootFilesystem: true # container cannot write to its own FS
         capabilities:
-          drop: ["ALL"]                # drop all Linux capabilities
-          add: ["NET_BIND_SERVICE"]    # only add what's needed
+          drop: ['ALL'] # drop all Linux capabilities
+          add: ['NET_BIND_SERVICE'] # only add what's needed
 ```
 
 ### NetworkPolicy — firewall rules for pods
@@ -1982,7 +1947,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: api              # applies to pods with label app=api
+      app: api # applies to pods with label app=api
   policyTypes:
     - Ingress
     - Egress
@@ -1990,17 +1955,17 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app: frontend   # only frontend can send traffic to api
+              app: frontend # only frontend can send traffic to api
       ports:
         - port: 3000
   egress:
     - to:
         - podSelector:
             matchLabels:
-              app: postgres   # api can only reach postgres
+              app: postgres # api can only reach postgres
       ports:
         - port: 5432
-    - to:                     # allow DNS resolution
+    - to: # allow DNS resolution
         - namespaceSelector: {}
       ports:
         - port: 53
@@ -2066,10 +2031,10 @@ metadata:
 spec:
   match:
     kinds:
-      - apiGroups: ["apps"]
-        kinds: ["Deployment"]
+      - apiGroups: ['apps']
+        kinds: ['Deployment']
   parameters:
-    labels: ["team", "env"]
+    labels: ['team', 'env']
 ```
 
 ---
@@ -2239,23 +2204,23 @@ containers:
       httpGet:
         path: /health
         port: 3000
-      failureThreshold: 30    # 30 × 10s = 5 minutes to start
+      failureThreshold: 30 # 30 × 10s = 5 minutes to start
       periodSeconds: 10
 
     # Liveness — checked AFTER startup probe succeeds
     livenessProbe:
       httpGet:
-        path: /health         # must return 2xx
+        path: /health # must return 2xx
         port: 3000
-      initialDelaySeconds: 0  # startup probe handles the delay
+      initialDelaySeconds: 0 # startup probe handles the delay
       periodSeconds: 15
-      failureThreshold: 3     # kill after 3 consecutive failures
+      failureThreshold: 3 # kill after 3 consecutive failures
 
     # Readiness — checked concurrently with liveness after startup
     readinessProbe:
       httpGet:
-        path: /ready          # SEPARATE endpoint from /health
-        port: 3000            # /ready: checks DB connection, cache, etc.
+        path: /ready # SEPARATE endpoint from /health
+        port: 3000 # /ready: checks DB connection, cache, etc.
       periodSeconds: 5
       failureThreshold: 3
 
@@ -2277,8 +2242,8 @@ app.get('/health', async (req, res) => {
 // /ready endpoint (readiness) — checks critical dependencies
 app.get('/ready', async (req, res) => {
   try {
-    await db.query('SELECT 1');     // verify DB is reachable
-    await redis.ping();             // verify Redis is reachable
+    await db.query('SELECT 1'); // verify DB is reachable
+    await redis.ping(); // verify Redis is reachable
     res.json({ status: 'ready' });
   } catch (err) {
     res.status(503).json({ status: 'not ready', error: err.message });
@@ -3658,7 +3623,7 @@ Runner executors (how the runner executes jobs):
 ```yaml
 # values.yaml for GitLab Runner Helm chart
 gitlabUrl: https://gitlab.company.com
-runnerToken: $RUNNER_TOKEN          # or use runnerRegistrationToken
+runnerToken: $RUNNER_TOKEN # or use runnerRegistrationToken
 
 runners:
   config: |
@@ -3733,9 +3698,9 @@ Best practices:
 # .gitlab-ci.yml — defines the CI/CD pipeline
 
 # Global settings
-image: node:24-alpine          # default Docker image for all jobs
+image: node:24-alpine # default Docker image for all jobs
 default:
-  timeout: 30m                  # max job duration
+  timeout: 30m # max job duration
   retry:
     max: 2
     when:
@@ -3746,10 +3711,10 @@ default:
 cache:
   key:
     files:
-      - package-lock.json      # new cache key when lockfile changes
+      - package-lock.json # new cache key when lockfile changes
   paths:
     - node_modules/
-  policy: pull-push             # pull: download cache, push: upload after job
+  policy: pull-push # pull: download cache, push: upload after job
 
 # Stages — define execution order
 stages:
@@ -3764,7 +3729,7 @@ stages:
 # Variables — available to all jobs
 variables:
   NODE_ENV: test
-  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_TLS_CERTDIR: '/certs'
 
 # ────────────────────────────────────────────────
 # Jobs
@@ -3786,7 +3751,7 @@ unit_test:
   stage: test
   services:
     - name: postgres:16-alpine
-      alias: postgres             # accessible as hostname "postgres"
+      alias: postgres # accessible as hostname "postgres"
       variables:
         POSTGRES_DB: testdb
         POSTGRES_PASSWORD: postgres
@@ -3799,10 +3764,10 @@ unit_test:
     - npm ci
     - npm run db:migrate
     - npm run test:coverage
-  coverage: '/All files\s+\|\s+(\d+\.?\d*)\s+\|/'   # regex to extract coverage %
+  coverage: '/All files\s+\|\s+(\d+\.?\d*)\s+\|/' # regex to extract coverage %
   artifacts:
     reports:
-      junit: junit.xml            # show test results in MR
+      junit: junit.xml # show test results in MR
       coverage_report:
         coverage_format: cobertura
         path: coverage/cobertura-coverage.xml
@@ -3812,19 +3777,19 @@ build_image:
   stage: build
   image: docker:29
   services:
-    - docker:29-dind               # Docker-in-Docker for building images
+    - docker:29-dind # Docker-in-Docker for building images
   variables:
     DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_CERTDIR: '/certs'
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
     - docker build
-        --cache-from $CI_REGISTRY_IMAGE:latest
-        --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-        --tag $CI_REGISTRY_IMAGE:latest
-        --build-arg BUILDKIT_INLINE_CACHE=1
-        .
+      --cache-from $CI_REGISTRY_IMAGE:latest
+      --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+      --tag $CI_REGISTRY_IMAGE:latest
+      --build-arg BUILDKIT_INLINE_CACHE=1
+      .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $CI_REGISTRY_IMAGE:latest
   rules:
@@ -3836,7 +3801,7 @@ build_and_push_ecr:
   stage: build
   image:
     name: amazon/aws-cli:latest
-    entrypoint: [""]
+    entrypoint: ['']
   services:
     - docker:29-dind
   variables:
@@ -3845,7 +3810,7 @@ build_and_push_ecr:
   before_script:
     - amazon-linux-extras install docker
     - aws ecr get-login-password | docker login --username AWS --password-stdin
-        $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
   script:
     - export IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/myapp
     - docker build -t $IMAGE_URI:$CI_COMMIT_SHORT_SHA .
@@ -3855,32 +3820,32 @@ build_and_push_ecr:
 
 deploy_staging:
   stage: deploy-staging
-  image: alpine/kubectl:1.37.2   # bitnami/kubectl versioned tags went paid in Sept 2025
+  image: alpine/kubectl:1.37.2 # bitnami/kubectl versioned tags went paid in Sept 2025
   environment:
     name: staging
     url: https://staging.example.com
   script:
     - kubectl config use-context staging
     - kubectl set image deployment/api api=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-        -n staging
+      -n staging
     - kubectl rollout status deployment/api -n staging --timeout=120s
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
 
 deploy_production:
   stage: deploy-production
-  image: alpine/kubectl:1.37.2   # bitnami/kubectl versioned tags went paid in Sept 2025
+  image: alpine/kubectl:1.37.2 # bitnami/kubectl versioned tags went paid in Sept 2025
   environment:
     name: production
     url: https://api.example.com
   script:
     - kubectl config use-context production
     - kubectl set image deployment/api api=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-        -n production
+      -n production
     - kubectl rollout status deployment/api -n production --timeout=300s
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-      when: manual                   # ‼️ Manual gate for production
+      when: manual # ‼️ Manual gate for production
   allow_failure: false
 ```
 
@@ -3950,12 +3915,12 @@ type_check:
 
 unit_test:
   stage: test
-  needs: [lint, type_check]    # ‼️ starts as soon as lint AND type_check finish
-  script: npm test             # doesn't wait for ALL validate jobs
+  needs: [lint, type_check] # ‼️ starts as soon as lint AND type_check finish
+  script: npm test # doesn't wait for ALL validate jobs
 
 build:
   stage: build
-  needs: [unit_test]           # start immediately after unit_test
+  needs: [unit_test] # start immediately after unit_test
   script: npm run build
 
 # Without needs: build waits for ALL test stage jobs to finish
@@ -3973,7 +3938,7 @@ trigger_api:
   stage: triggers
   trigger:
     include: services/api/.gitlab-ci.yml
-    strategy: depend                    # parent waits for child
+    strategy: depend # parent waits for child
   rules:
     - changes:
         - services/api/**/*
@@ -3998,11 +3963,11 @@ trigger_web:
 trigger_deploy_repo:
   stage: deploy
   trigger:
-    project: platform/deploy-manifests    # other GitLab project
+    project: platform/deploy-manifests # other GitLab project
     branch: main
     strategy: depend
   variables:
-    IMAGE_TAG: $CI_COMMIT_SHORT_SHA       # pass variables to child
+    IMAGE_TAG: $CI_COMMIT_SHORT_SHA # pass variables to child
     SERVICE_NAME: api
 ```
 
@@ -4051,7 +4016,7 @@ stages:
   rules:
     - changes:
         - services/api/**/*
-        - libs/shared/**/*           # shared libraries affect all
+        - libs/shared/**/* # shared libraries affect all
       when: on_success
 
 .only_web:
@@ -4090,8 +4055,8 @@ review_app:
   environment:
     name: review/$CI_COMMIT_REF_SLUG
     url: https://$CI_COMMIT_REF_SLUG.preview.example.com
-    on_stop: stop_review_app         # cleanup when MR is merged/closed
-    auto_stop_in: 1 week             # auto-cleanup after 1 week
+    on_stop: stop_review_app # cleanup when MR is merged/closed
+    auto_stop_in: 1 week # auto-cleanup after 1 week
   script:
     - deploy-preview-environment.sh
   rules:
@@ -4172,7 +4137,7 @@ build:
 
     # Also tag with branch name (mutable, for reference)
     - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-        $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+      $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
     # If this is a semver tag
@@ -4346,8 +4311,8 @@ spec:
 
   source:
     repoURL: https://gitlab.company.com/platform/deploy-manifests.git
-    targetRevision: main                    # branch to track
-    path: apps/api/overlays/production      # path within repo
+    targetRevision: main # branch to track
+    path: apps/api/overlays/production # path within repo
 
     # If using Helm:
     # helm:
@@ -4358,18 +4323,18 @@ spec:
     #       value: abc1234
 
   destination:
-    server: https://kubernetes.default.svc   # in-cluster
+    server: https://kubernetes.default.svc # in-cluster
     namespace: production
 
   syncPolicy:
     automated:
-      prune: true                           # delete resources removed from Git
-      selfHeal: true                        # revert manual changes
-      allowEmpty: false                     # prevent accidental deletion of all
+      prune: true # delete resources removed from Git
+      selfHeal: true # revert manual changes
+      allowEmpty: false # prevent accidental deletion of all
     syncOptions:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
-      - PruneLast=true                      # delete old resources last
+      - PruneLast=true # delete old resources last
     retry:
       limit: 5
       backoff:
@@ -4395,7 +4360,7 @@ spec:
   source:
     repoURL: https://gitlab.company.com/platform/deploy-manifests.git
     targetRevision: main
-    path: argocd/applications              # directory containing Application YAMLs
+    path: argocd/applications # directory containing Application YAMLs
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -4536,18 +4501,18 @@ my-chart/
 apiVersion: v2
 name: api
 description: API service Helm chart
-type: application           # application or library
-version: 1.2.3              # chart version (semver)
-appVersion: "abc1234"       # version of the app being deployed
+type: application # application or library
+version: 1.2.3 # chart version (semver)
+appVersion: 'abc1234' # version of the app being deployed
 
 dependencies:
   - name: postgresql
-    version: "13.2.1"
-    repository: "https://charts.bitnami.com/bitnami"
-    condition: postgresql.enabled       # optionally skip dependency
+    version: '13.2.1'
+    repository: 'https://charts.bitnami.com/bitnami'
+    condition: postgresql.enabled # optionally skip dependency
   - name: redis
-    version: "18.3.2"
-    repository: "https://charts.bitnami.com/bitnami"
+    version: '18.3.2'
+    repository: 'https://charts.bitnami.com/bitnami'
     condition: redis.enabled
 ```
 
@@ -4740,7 +4705,7 @@ environments:
 
 releases:
   - name: api
-    namespace: {{ .Environment.Name }}
+    namespace: { { .Environment.Name } }
     chart: ./charts/api
     values:
       - values/api/common.yaml
@@ -4754,7 +4719,7 @@ releases:
       - values/monitoring/prometheus.yaml
 
   - name: postgresql
-    namespace: {{ .Environment.Name }}
+    namespace: { { .Environment.Name } }
     chart: bitnami/postgresql
     version: 13.2.1
     values:
@@ -4863,13 +4828,13 @@ spec:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../base                    # include base resources
-  - hpa.yaml                     # add HPA (only in production)
+  - ../../base # include base resources
+  - hpa.yaml # add HPA (only in production)
 
-namespace: production             # set namespace for all resources
+namespace: production # set namespace for all resources
 
 images:
-  - name: myapp                  # ‼️ override image tag without patching
+  - name: myapp # ‼️ override image tag without patching
     newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/api
     newTag: abc1234
 
@@ -4922,9 +4887,10 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       # maxSurge: how many EXTRA pods can exist during update
-      maxSurge: 25%         # 25% of desired replicas (rounded up)
+      maxSurge: 25% # 25% of desired replicas (rounded up)
       # maxUnavailable: how many pods can be unavailable during update
-      maxUnavailable: 0     # ‼️ zero = never fewer than desired, safest
+      maxUnavailable: 0 # ‼️ zero = never fewer than desired, safest
+
 
 # Fast rollout (more aggressive):
 # maxSurge: 50%, maxUnavailable: 25%
@@ -4963,19 +4929,19 @@ spec:
   strategy:
     canary:
       steps:
-        - setWeight: 5              # 5% traffic to canary
-        - pause: { duration: 5m }   # wait 5 minutes
-        - analysis:                 # run automated analysis
+        - setWeight: 5 # 5% traffic to canary
+        - pause: { duration: 5m } # wait 5 minutes
+        - analysis: # run automated analysis
             templates:
               - templateName: success-rate
             args:
               - name: service-name
                 value: api
-        - setWeight: 25             # increase to 25%
+        - setWeight: 25 # increase to 25%
         - pause: { duration: 10m }
         - setWeight: 50
         - pause: { duration: 10m }
-        - setWeight: 100            # full rollout
+        - setWeight: 100 # full rollout
 
       # Traffic routing (requires service mesh or ingress controller)
       canaryService: api-canary
@@ -5000,7 +4966,7 @@ spec:
     - name: success-rate
       interval: 1m
       count: 5
-      successCondition: result[0] >= 0.95    # 95% success rate required
+      successCondition: result[0] >= 0.95 # 95% success rate required
       failureLimit: 3
       provider:
         prometheus:
@@ -5027,10 +4993,10 @@ spec:
     # ... pod template
   strategy:
     blueGreen:
-      activeService: api-active          # current production
-      previewService: api-preview        # new version (preview)
-      autoPromotionEnabled: false        # require manual promotion
-      scaleDownDelaySeconds: 600         # keep old version for 10 min after switch
+      activeService: api-active # current production
+      previewService: api-preview # new version (preview)
+      autoPromotionEnabled: false # require manual promotion
+      scaleDownDelaySeconds: 600 # keep old version for 10 min after switch
       prePromotionAnalysis:
         templates:
           - templateName: smoke-test
@@ -5257,9 +5223,9 @@ spec:
   template:
     metadata:
       annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "api-role"
-        vault.hashicorp.com/agent-inject-secret-db: "secret/data/production/db"
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/role: 'api-role'
+        vault.hashicorp.com/agent-inject-secret-db: 'secret/data/production/db'
         vault.hashicorp.com/agent-inject-template-db: |
           {{- with secret "secret/data/production/db" -}}
           export DB_PASSWORD="{{ .Data.data.password }}"
@@ -5269,16 +5235,13 @@ spec:
       serviceAccountName: api-sa
       containers:
         - name: api
-          command: ["/bin/sh", "-c", "source /vault/secrets/db && node dist/server.js"]
+          command: ['/bin/sh', '-c', 'source /vault/secrets/db && node dist/server.js']
 ```
 
 ### AWS Secrets Manager
 
 ```ts
-import {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-} from '@aws-sdk/client-secrets-manager';
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
 const client = new SecretsManagerClient({ region: 'us-east-1' });
 
@@ -5439,9 +5402,9 @@ deploy_preview:
     - export NAMESPACE="preview-${CI_COMMIT_REF_SLUG}"
     - kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
     - helm upgrade --install preview-$CI_COMMIT_REF_SLUG ./chart
-        --namespace $NAMESPACE
-        --set image.tag=$CI_COMMIT_SHORT_SHA
-        --set ingress.host=$CI_COMMIT_REF_SLUG.preview.example.com
+      --namespace $NAMESPACE
+      --set image.tag=$CI_COMMIT_SHORT_SHA
+      --set ingress.host=$CI_COMMIT_REF_SLUG.preview.example.com
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
@@ -5500,8 +5463,8 @@ stop_preview:
 lint:
   stage: validate
   script:
-    - npm run lint               # ESLint
-    - npm run type-check         # tsc --noEmit
+    - npm run lint # ESLint
+    - npm run type-check # tsc --noEmit
 
 hadolint:
   stage: validate
@@ -5519,10 +5482,10 @@ sonarqube:
     SONAR_TOKEN: $SONAR_TOKEN
   script:
     - sonar-scanner
-        -Dsonar.projectKey=$CI_PROJECT_NAME
-        -Dsonar.sources=src
-        -Dsonar.tests=test
-        -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+      -Dsonar.projectKey=$CI_PROJECT_NAME
+      -Dsonar.sources=src
+      -Dsonar.tests=test
+      -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
   # ‼️ SonarQube provides: code smells, bugs, vulnerabilities, coverage, duplication
   # Quality gate can block merge if thresholds not met
 ```
@@ -5579,9 +5542,7 @@ describe('User repository', () => {
 
   beforeAll(async () => {
     // Spin up a real Postgres container for the test suite
-    container = await new PostgreSqlContainer('postgres:16')
-      .withDatabase('testdb')
-      .start();
+    container = await new PostgreSqlContainer('postgres:16').withDatabase('testdb').start();
 
     db = createConnection(container.getConnectionUri());
     await runMigrations(db);
@@ -5625,7 +5586,7 @@ Tools: Pact (most popular), Spring Cloud Contract
 # SAST — Static Application Security Testing
 sast:
   stage: test
-  image: semgrep/semgrep:latest   # (renamed from returntocorp/semgrep)
+  image: semgrep/semgrep:latest # (renamed from returntocorp/semgrep)
   script:
     - semgrep --config=auto --json -o semgrep-report.json src/
   artifacts:
@@ -5639,7 +5600,7 @@ dast:
   image: owasp/zap2docker-stable:latest
   script:
     - zap-baseline.py -t https://$CI_COMMIT_REF_SLUG.preview.example.com
-        -J zap-report.json
+      -J zap-report.json
   artifacts:
     paths:
       - zap-report.json
@@ -5652,7 +5613,7 @@ dependency_scan:
   script:
     - npm audit --omit=dev --audit-level=high
     # Or: snyk test --severity-threshold=high
-  allow_failure: true   # warn but don't block (many false positives)
+  allow_failure: true # warn but don't block (many false positives)
 
 # License compliance
 license_scan:
@@ -5679,11 +5640,11 @@ e2e_test:
     reports:
       junit: playwright-results/results.xml
     paths:
-      - playwright-report/              # HTML report with screenshots
+      - playwright-report/ # HTML report with screenshots
     when: always
   retry:
     max: 2
-    when: script_failure                  # retry flaky tests
+    when: script_failure # retry flaky tests
 ```
 
 ---
@@ -5720,23 +5681,23 @@ import { check, sleep } from 'k6';
 
 export const options = {
   stages: [
-    { duration: '1m', target: 50 },    // ramp up to 50 users
-    { duration: '5m', target: 50 },    // hold at 50 users
-    { duration: '2m', target: 200 },   // ramp up to 200 users
-    { duration: '5m', target: 200 },   // hold at 200 users
-    { duration: '2m', target: 0 },     // ramp down
+    { duration: '1m', target: 50 }, // ramp up to 50 users
+    { duration: '5m', target: 50 }, // hold at 50 users
+    { duration: '2m', target: 200 }, // ramp up to 200 users
+    { duration: '5m', target: 200 }, // hold at 200 users
+    { duration: '2m', target: 0 }, // ramp down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<500'],   // 95% of requests under 500ms
-    http_req_failed: ['rate<0.01'],     // less than 1% failure rate
+    http_req_duration: ['p(95)<500'], // 95% of requests under 500ms
+    http_req_failed: ['rate<0.01'], // less than 1% failure rate
   },
 };
 
 export default function () {
   const res = http.get('https://staging.example.com/api/health');
   check(res, {
-    'status is 200': (r) => r.status === 200,
-    'response time < 500ms': (r) => r.timings.duration < 500,
+    'status is 200': r => r.status === 200,
+    'response time < 500ms': r => r.timings.duration < 500,
   });
   sleep(1);
 }
@@ -5758,8 +5719,8 @@ load_test:
     when: always
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-    - if: $CI_PIPELINE_SOURCE == "schedule"   # run on nightly schedule
-  allow_failure: true   # don't block deploy if thresholds are soft
+    - if: $CI_PIPELINE_SOURCE == "schedule" # run on nightly schedule
+  allow_failure: true # don't block deploy if thresholds are soft
 ```
 
 ### Chaos engineering
@@ -5805,12 +5766,12 @@ Start small:
 required_test:
   stage: test
   script: npm test
-  allow_failure: false     # ‼️ BLOCKS merge if fails (default)
+  allow_failure: false # ‼️ BLOCKS merge if fails (default)
 
 optional_scan:
   stage: test
   script: npm audit
-  allow_failure: true      # warns but doesn't block merge
+  allow_failure: true # warns but doesn't block merge
 ```
 
 ### Coverage thresholds
@@ -5987,17 +5948,14 @@ const requestsTotal = new client.Counter({
 });
 
 // Fastify hook to record metrics
-fastify.addHook('onRequest', async (req) => {
+fastify.addHook('onRequest', async req => {
   req.startTime = Date.now();
   activeRequests.inc();
 });
 
 fastify.addHook('onResponse', async (req, reply) => {
   const duration = (Date.now() - req.startTime) / 1000;
-  httpRequestDuration.observe(
-    { method: req.method, route: req.routerPath, status: reply.statusCode },
-    duration
-  );
+  httpRequestDuration.observe({ method: req.method, route: req.routerPath, status: reply.statusCode }, duration);
   requestsTotal.inc({
     method: req.method,
     route: req.routerPath,
@@ -6059,8 +6017,8 @@ spec:
           labels:
             severity: critical
           annotations:
-            summary: "High error rate on API"
-            description: "Error rate is {{ $value | humanizePercentage }} (>1%) for 5 minutes"
+            summary: 'High error rate on API'
+            description: 'Error rate is {{ $value | humanizePercentage }} (>1%) for 5 minutes'
 
         - alert: HighLatency
           expr: |
@@ -6069,8 +6027,8 @@ spec:
           labels:
             severity: warning
           annotations:
-            summary: "High p99 latency on API"
-            description: "p99 latency is {{ $value }}s (>500ms) for 10 minutes"
+            summary: 'High p99 latency on API'
+            description: 'p99 latency is {{ $value }}s (>500ms) for 10 minutes'
 
         - alert: PodCrashLooping
           expr: |
@@ -6078,7 +6036,7 @@ spec:
           labels:
             severity: critical
           annotations:
-            summary: "Pod {{ $labels.pod }} is crash-looping"
+            summary: 'Pod {{ $labels.pod }} is crash-looping'
 ```
 
 ### Recording rules (pre-computed queries)
@@ -6425,8 +6383,8 @@ spec:
         - name: collector
           image: otel/opentelemetry-collector-contrib:latest
           ports:
-            - containerPort: 4317   # gRPC
-            - containerPort: 4318   # HTTP
+            - containerPort: 4317 # gRPC
+            - containerPort: 4318 # HTTP
           volumeMounts:
             - name: config
               mountPath: /etc/otelcol-contrib
@@ -6591,7 +6549,7 @@ SLO (Service Level Objective):
 Error Budget:
   The allowed amount of unreliability.
   99.9% availability = 0.1% error budget = 43 minutes of downtime per month.
-  
+
   ‼️ If error budget is consumed:
     - Freeze non-critical deployments
     - Focus on reliability improvements
@@ -6707,7 +6665,7 @@ Install on EKS:
 
 ```yaml
 # Istio VirtualService — traffic splitting for canary
-apiVersion: networking.istio.io/v1   # v1 since Istio 1.22
+apiVersion: networking.istio.io/v1 # v1 since Istio 1.22
 kind: VirtualService
 metadata:
   name: api
@@ -6731,7 +6689,7 @@ spec:
 
 ---
 # DestinationRule — define subsets + circuit breaking
-apiVersion: networking.istio.io/v1   # v1 since Istio 1.22
+apiVersion: networking.istio.io/v1 # v1 since Istio 1.22
 kind: DestinationRule
 metadata:
   name: api
@@ -6744,7 +6702,7 @@ spec:
       http:
         h2UpgradePolicy: DEFAULT
         http1MaxPendingRequests: 100
-    outlierDetection:                    # circuit breaker
+    outlierDetection: # circuit breaker
       consecutive5xxErrors: 5
       interval: 10s
       baseEjectionTime: 30s
@@ -7381,4 +7339,4 @@ INFRASTRUCTURE REPO (platform/infrastructure):
 
 ---
 
-*This document is a living reference. Update it as your infrastructure evolves.*
+_This document is a living reference. Update it as your infrastructure evolves._

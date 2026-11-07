@@ -20,7 +20,7 @@
   - [3. Writing One Yourself](#3-writing-one-yourself)
   - [4. The Easy Way — `react-error-boundary`](#4-the-easy-way--react-error-boundary)
   - [5. "Try Again" — Resetting](#5-try-again--resetting)
-  - [6. Errors in Event Handlers & Async Code](#6-errors-in-event-handlers--async-code)
+  - [6. Errors in Event Handlers \& Async Code](#6-errors-in-event-handlers--async-code)
   - [7. Where to Put Boundaries](#7-where-to-put-boundaries)
   - [8. Logging Errors](#8-logging-errors)
   - [9. Testing an Error Boundary](#9-testing-an-error-boundary)
@@ -45,7 +45,7 @@ One component throws an error while rendering.
    The user sees a blank white page — for one broken card.‼️
 
 Why so harsh? React would rather show nothing than show a half-broken UI
-that might display wrong data (wrong balance, wrong user).
+that might display wrong data (wrong balance, wrong user).‼️
 
 ‼️ ERROR BOUNDARY IN ONE SENTENCE
    A component that wraps part of your app and, if anything inside it crashes
@@ -55,7 +55,7 @@ that might display wrong data (wrong balance, wrong user).
   Without:   one broken card  →  whole page blank
   With:      one broken card  →  that card says "Couldn't load", rest is fine
 
-It's try/catch — but for components.
+It's try/catch — but for components.‼️
 ```
 
 ---
@@ -64,7 +64,7 @@ It's try/catch — but for components.
 
 ```text
 ‼️ THE PART EVERYONE GETS WRONG. Error boundaries only catch errors that
-   happen while React is RENDERING the components inside them.
+   happen while React is RENDERING the components inside them.‼️
 
   ✓ CAUGHT
     - Errors during render           user.name.toUpperCase() on undefined
@@ -74,7 +74,7 @@ It's try/catch — but for components.
   ✗ NOT CAUGHT‼️
     - Event handlers                 onClick={() => { throw ... }}
     - Async code                     setTimeout, fetch().then(...), await
-    - Errors in the boundary ITSELF  (only boundaries ABOVE it can catch those)
+    - Errors in the boundary ITSELF  (only boundaries ABOVE it can catch those)‼️
     - Server-side rendering errors
 
 ‼️ Why not event handlers? They don't run during rendering — React calls them
@@ -154,7 +154,7 @@ import { ErrorBoundary, type FallbackProps } from 'react-error-boundary';
 // The fallback gets the error AND a function to reset (try again).
 function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   return (
-    <div role="alert">
+    <div role='alert'>
       <p>Something went wrong:</p>
       {/* ‼️ error is typed `unknown` — anything can be thrown, not only Errors */}
       <pre>{error instanceof Error ? error.message : 'Unknown error'}</pre>
@@ -181,10 +181,10 @@ THREE WAYS TO GIVE IT A FALLBACK — pick one
   FallbackComponent={ErrorFallback}         a component that gets { error, resetErrorBoundary }
   fallbackRender={({ error }) => <p>…</p>}  same, written inline
 
-‼️ Beginner advice: use FallbackComponent. It's the clearest.
+‼️ Beginner advice: use FallbackComponent. It's the clearest.‼️
 
 ‼️ In production, don't show error.message to users — it can expose internal
-   details. Show a friendly message; log the real error.
+   details. Show a friendly message; log the real error.‼️
 ```
 
 ---
@@ -192,13 +192,13 @@ THREE WAYS TO GIVE IT A FALLBACK — pick one
 ## 5. "Try Again" — Resetting
 
 ```text
-Once a boundary shows its fallback, it STAYS in error mode until reset.
+Once a boundary shows its fallback, it STAYS in error mode until reset.‼️
 Two ways to reset:
 
 1. A BUTTON — call resetErrorBoundary() (from the fallback props, §4).
    Use onReset to fix whatever caused the crash first, or it just crashes again.
 
-2. AUTOMATICALLY — when something changes, via resetKeys.
+2. AUTOMATICALLY — when something changes, via resetKeys.‼️
 ```
 
 ```tsx
@@ -211,14 +211,14 @@ Two ways to reset:
   }}
 >
   <Dashboard />
-</ErrorBoundary>
+</ErrorBoundary>;
 
-// 2. resetKeys — reset when the user navigates to a different page
+// 2. resetKeys — reset when the user navigates to a different page‼️
 const location = useLocation();
 
 <ErrorBoundary FallbackComponent={ErrorFallback} resetKeys={[location.pathname]}>
   <Outlet />
-</ErrorBoundary>
+</ErrorBoundary>;
 
 // ‼️ Without resetKeys here, one crashed page would keep showing the error
 // even after the user clicks to a DIFFERENT page.‼️
@@ -244,7 +244,7 @@ function SaveButton() {
   return (
     <>
       <button onClick={handleClick}>Save</button>
-      {error && <p role="alert">{error}</p>}
+      {error && <p role='alert'>{error}</p>}
     </>
   );
 }
@@ -259,9 +259,7 @@ function UserProfile({ id }: { id: string }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetchUser(id)
-      .then(setUser)
-      .catch(showBoundary); // ‼️ hands the error to the nearest boundary
+    fetchUser(id).then(setUser).catch(showBoundary); // ‼️ hands the error to the nearest boundary
   }, [id, showBoundary]);
 
   // ...
@@ -275,7 +273,7 @@ function UserProfile({ id }: { id: string }) {
    The component CAN'T work without this (its data failed to load)
      → showBoundary(error). Let the boundary show the fallback.
 
-TanStack Query does this for you with throwOnError: true — a failed query
+‼️ TanStack Query does this for you with throwOnError: true — a failed query
 throws during render, so the nearest error boundary catches it.
 See TANSTACK-QUERY-BASICS.md §10.
 ```
@@ -440,7 +438,7 @@ import { ErrorBoundary, useErrorBoundary, type FallbackProps } from 'react-error
 // ── FALLBACK ──────────────────────────────────────────────────────────────
 function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   return (
-    <div role="alert">
+    <div role='alert'>
       <p>Something went wrong.</p>
       <button onClick={resetErrorBoundary}>Try again</button>
     </div>
@@ -450,19 +448,23 @@ function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
 // ── BOUNDARY ──────────────────────────────────────────────────────────────
 <ErrorBoundary
   FallbackComponent={ErrorFallback}
-  onError={(error, info) => log(error, info)}   // send to Sentry etc.
-  onReset={() => clearBadState()}               // before "Try again" re-renders
-  resetKeys={[location.pathname]}               // auto-reset when these change
+  onError={(error, info) => log(error, info)} // send to Sentry etc.
+  onReset={() => clearBadState()} // before "Try again" re-renders
+  resetKeys={[location.pathname]} // auto-reset when these change
 >
   <Page />
-</ErrorBoundary>
+</ErrorBoundary>;
 
 // ── ASYNC ERRORS → BOUNDARY ───────────────────────────────────────────────
 const { showBoundary } = useErrorBoundary();
 fetchData().catch(showBoundary);
 
 // ── EVENT HANDLER ERRORS → TRY/CATCH ──────────────────────────────────────
-try { await save(); } catch { setError('Could not save'); }
+try {
+  await save();
+} catch {
+  setError('Could not save');
+}
 ```
 
 ```text
