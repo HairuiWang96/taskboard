@@ -296,7 +296,7 @@ See TANSTACK-QUERY-BASICS.md §10.
      │        └─ <ActivityFeed />
      └─ <Footer />
 
-  ①  ALWAYS have one. Without it, any uncaught crash = blank screen.
+  ①  ALWAYS have one. Without it, any uncaught crash = blank screen.‼️
   ②  One per route, so navigation keeps working when a page breaks.
   ③  Around parts that can fail ALONE — charts, feeds, third-party widgets.
 
@@ -328,7 +328,7 @@ fallback, you never find out. ‼️ Always send caught errors somewhere.
 ```
 
 ```text
-React 19 also lets you handle errors for the whole app in one place:
+React 19 also lets you handle errors for the whole app in one place:‼️
 
   createRoot(container, {
     onCaughtError:   (error, info) => { /* caught by a boundary */ },
@@ -410,9 +410,9 @@ it('recovers after "Try again"', async () => {
 
 ‼️ 5. "Try again" without fixing the cause.
    The same error happens again instantly. Use onReset to clear bad state
-   or refetch.
+   or refetch.‼️
 
-‼️ 6. No resetKeys on route-level boundaries.
+‼️ 6. No resetKeys on route-level boundaries.‼️
    The error sticks even after the user navigates to a different page.
 
 ‼️ 7. Not logging.
@@ -484,6 +484,6 @@ WHERE
 
 - [REACT-DEEP.md](REACT-DEEP.md) — React core concepts, including error boundaries at interview depth
 - [REACT-INTERVIEW-LIVE-CODING-TS.md](REACT-INTERVIEW-LIVE-CODING-TS.md) — §18, building an error boundary in a live-coding round
-- [TANSTACK-QUERY-BASICS.md](TANSTACK-QUERY-BASICS.md) — §10, `throwOnError` sends failed queries to the nearest boundary
+- [TANSTACK-QUERY-BASICS.md](TANSTACK-QUERY-BASICS.md) — §10, `throwOnError` sends failed queries to the nearest boundary‼️
 - [REACT-TESTING-BASICS.md](REACT-TESTING-BASICS.md) — setup for the tests in §9
 - [FRONTEND-ARCHITECTURE-DEEP.md](FRONTEND-ARCHITECTURE-DEEP.md) — where boundaries fit in an app's structure
