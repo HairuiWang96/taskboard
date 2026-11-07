@@ -1,14 +1,14 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-138 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+139 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    57 files — study these first, highest interview ROI
+1-high-priority/    58 files — study these first, highest interview ROI
 2-medium-priority/  43 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
@@ -41,6 +41,7 @@ Root files (start here):
 | [ZUSTAND-BASICS.md](1-high-priority/ZUSTAND-BASICS.md) | Beginner guide — stores, selectors, set, persist, when to use it |
 | [REACT-TESTING-BASICS.md](1-high-priority/REACT-TESTING-BASICS.md) | Beginner guide — Vitest + React Testing Library: queries, userEvent, mocks, async, providers, hooks |
 | [REACT-ERROR-BOUNDARY-BASICS.md](1-high-priority/REACT-ERROR-BOUNDARY-BASICS.md) | Beginner guide — what boundaries catch and don't, react-error-boundary, reset, placement, testing |
+| [STORYBOOK-BASICS.md](1-high-priority/STORYBOOK-BASICS.md) | Beginner guide — what stories are, setup, args/controls, actions, decorators, play tests, sharing |
 | [TESTING-ECOSYSTEM-DEEP.md](1-high-priority/TESTING-ECOSYSTEM-DEEP.md) | Testing philosophy, QA workflows, automation, performance/security testing, environments, release management |
 | [ALGORITHMS-DEEP.md](1-high-priority/ALGORITHMS-DEEP.md) | Patterns + implementations (sliding window, two-pointer, BFS/DFS) |
 | [DATA-STRUCTURES-DEEP.md](1-high-priority/DATA-STRUCTURES-DEEP.md) | Linked list, tree, heap, trie, graph from scratch |
