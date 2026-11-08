@@ -17,6 +17,8 @@
   - [1. What Storybook Is](#1-what-storybook-is)
   - [2. What You See When It Runs](#2-what-you-see-when-it-runs)
   - [3. Adding Storybook to a Project](#3-adding-storybook-to-a-project)
+    - [Option A — the official generator (what you'll usually do)](#option-a--the-official-generator-what-youll-usually-do)
+    - [Option B — by hand (the minimal version)](#option-b--by-hand-the-minimal-version)
   - [4. The Two Config Files](#4-the-two-config-files)
   - [5. Your First Story File](#5-your-first-story-file)
   - [6. Args and Controls — Change Props Live](#6-args-and-controls--change-props-live)
@@ -24,6 +26,8 @@
   - [8. A Real Example — TaskList](#8-a-real-example--tasklist)
   - [9. Decorators — Wrapping Stories](#9-decorators--wrapping-stories)
   - [10. Docs Pages and Interaction Tests](#10-docs-pages-and-interaction-tests)
+    - [Auto-generated docs page](#auto-generated-docs-page)
+    - [Interaction tests — the `play` function](#interaction-tests--the-play-function)
   - [11. Building and Sharing](#11-building-and-sharing)
   - [12. Common Beginner Mistakes](#12-common-beginner-mistakes)
   - [13. Cheat Sheet](#13-cheat-sheet)
@@ -188,7 +192,7 @@ export default preview;
 ```
 
 ```text
-THE SPLIT, IN ONE LINE EACH
+THE SPLIT, IN ONE LINE EACH‼️
   main.ts      runs in Node, at build time   → finds files, picks framework, loads addons
   preview.ts   runs in the browser           → global CSS, decorators, default parameters
 ```
@@ -204,8 +208,8 @@ import { Button } from './button';
 
 // ── 1. The default export ("meta") describes the component ───────────────────
 const meta = {
-  title: 'UI/Button',         // sidebar location — the slash makes a folder
-  component: Button,          // which component these stories are for
+  title: 'UI/Button', // sidebar location — the slash makes a folder
+  component: Button, // which component these stories are for
   args: { children: 'Button' }, // default props shared by every story below
 } satisfies Meta<typeof Button>;
 
@@ -213,10 +217,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 // ── 2. Each NAMED export is one story ────────────────────────────────────────
-export const Default: Story = {};   // uses only the default args
+export const Default: Story = {}; // uses only the default args
 
 export const Destructive: Story = {
-  args: { variant: 'destructive', children: 'Delete' },  // overrides the defaults
+  args: { variant: 'destructive', children: 'Delete' }, // overrides the defaults
 };
 
 export const Disabled: Story = {
@@ -268,8 +272,8 @@ it's a playground for trying states without writing code.
 const meta = {
   component: Button,
   argTypes: {
-    variant: { control: 'radio' },        // radio buttons instead of a dropdown
-    onClick: { control: false },          // hide from the Controls panel
+    variant: { control: 'radio' }, // radio buttons instead of a dropdown
+    onClick: { control: false }, // hide from the Controls panel
   },
 } satisfies Meta<typeof Button>;
 ```
@@ -289,7 +293,7 @@ import { fn } from 'storybook/test';
 
 const meta = {
   component: Button,
-  args: { onClick: fn() },   // fake function
+  args: { onClick: fn() }, // fake function
 } satisfies Meta<typeof Button>;
 ```
 
@@ -325,7 +329,7 @@ import { TaskList } from './TaskList';
 const meta = {
   title: 'Tasks/TaskList',
   component: TaskList,
-  parameters: { layout: 'padded' }, // a list looks better full-width than centered
+  parameters: { layout: 'padded' }, // a list looks better full-width than centered‼️
   args: {
     onComplete: fn(),
     onDelete: fn(),
@@ -358,7 +362,7 @@ WHICH STORIES SHOULD A COMPONENT HAVE?
     ✓ empty
     ✓ loading, error (if the component shows them)
     ✓ edge cases: very long title, 100 items, disabled
-  Not one per possible prop combination — that's what Controls are for.
+  Not one per possible prop combination — that's what Controls are for.‼️
 
 WHAT ABOUT App.tsx, WHICH CALLS useTasks() AND FETCHES FROM THE SERVER?
   Components that fetch their own data are harder to story — you'd need to mock the
@@ -495,12 +499,12 @@ on each pull request, flagging any pixel that changed. That's "visual regression
 ## 12. Common Beginner Mistakes
 
 ```text
-‼️ 1. Forgetting to import global CSS in preview.ts.
+‼️ 1. Forgetting to import global CSS in preview.ts.‼️
    Components render as unstyled HTML. Storybook doesn't run main.tsx, so it never
    sees your `import './index.css'`. Add it to .storybook/preview.ts.
 
 ‼️ 2. Mismatched Storybook package versions.
-   storybook@10 with @storybook/react-vite@8 → strange errors on startup.
+   storybook@10 with @storybook/react-vite@8 → strange errors on startup.‼️
    Keep every storybook / @storybook/* package on the same version.
 
 ‼️ 3. Using old (Storybook 7/8) imports from tutorials.
@@ -547,9 +551,9 @@ import { expect, fn } from 'storybook/test';
 import { MyComponent } from './MyComponent';
 
 const meta = {
-  title: 'Folder/MyComponent',        // sidebar path (optional — defaults to file path)
+  title: 'Folder/MyComponent', // sidebar path (optional — defaults to file path)
   component: MyComponent,
-  args: { onClick: fn() },            // default props for all stories
+  args: { onClick: fn() }, // default props for all stories
   // tags: ['autodocs'],              // docs page (needs @storybook/addon-docs)
   // parameters: { layout: 'padded' },
   // decorators: [Story => <div style={{ width: 400 }}><Story /></div>],
@@ -559,7 +563,11 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
-export const Variant: Story = { args: { /* prop overrides */ } };
+export const Variant: Story = {
+  args: {
+    /* prop overrides */
+  },
+};
 export const Clicked: Story = {
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button'));
@@ -569,7 +577,7 @@ export const Clicked: Story = {
 
 // ── RULES ─────────────────────────────────────────────────────────────────────
 // 1. default export = component, named exports = states, args = props
-// 2. Global CSS + Providers go in .storybook/preview
+// 2. Global CSS + Providers go in .storybook/preview‼️
 // 3. fn() for every callback prop
 // 4. All Storybook packages on the same version
 // 5. Story the presentational components; mock or skip data-fetching ones
@@ -593,7 +601,7 @@ Q: "Have you used Storybook? What's it for?"
  accessibility, and Chromatic for visual regression on every PR.
 
  The thing that makes it work well is keeping components presentational — data in
- through props, events out through callbacks — so a story is just a set of args."
+ through props, ‼️ events out through callbacks — so a story is just a set of args."
 ```
 
 ---
