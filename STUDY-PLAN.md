@@ -32,6 +32,7 @@ spend the first session on its beginner guide (each takes 1–2 hours), then sta
 | 6 | Testing in general | `TESTING-BASICS.md` |
 | 6 | React component tests (Vitest) | `REACT-TESTING-BASICS.md` |
 | 6 | Component catalog / Storybook | `STORYBOOK-BASICS.md` |
+| 6 | How testing works on a team (QA, CI, environments, release) | `TESTING-ECOSYSTEM-BASICS.md` |
 | 6 | CSS layout | `CSS-BASICS.md` |
 | Any | Docker | `DOCKER-BASICS.md` |
 | Any | Terraform | `TERRAFORM-BASICS.md` |
