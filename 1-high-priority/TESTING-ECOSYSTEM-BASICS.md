@@ -58,8 +58,8 @@ On a real team, that's only one piece. Around it there's a whole system:
 WHY BOTHER LEARNING THIS AS A DEVELOPER?
   ✓ You'll work with QA every sprint — knowing their vocabulary saves a lot of confusion
   ✓ Interviewers ask "how do you make sure your code works?" — the good answer is
-    the whole system, not just "I write unit tests"
-  ✓ Senior engineers are expected to design this system, not just add tests to it
+    the whole system, not just "I write unit tests"‼️
+  ✓ Senior engineers are expected to design this system, not just add tests to it‼️
 ```
 
 ---
@@ -76,7 +76,7 @@ Every arrow is a place where something gets tested.
   2. CODING           Developer writes the code AND the automated tests
                         → unit, integration, component tests on their laptop
             │
-  3. PULL REQUEST     CI runs every automated test + lint + type-check
+  3. PULL REQUEST     CI runs every automated test + lint + type-check‼️
                         → teammate reviews code AND tests
                         → maybe a preview environment for this PR
             │
@@ -85,14 +85,14 @@ Every arrow is a place where something gets tested.
                         → QA does exploratory + regression testing
                         → PM checks it does what was asked (UAT)
             │
-  5. RELEASE          Go / no-go decision, release checklist
+  5. RELEASE          Go / no-go decision, release checklist‼️
                         → often a canary: release to 5% of users first
             │
-  6. PRODUCTION       Smoke tests right after deploy
+  6. PRODUCTION       Smoke tests right after deploy‼️
                         → monitoring and alerts keep "testing" forever
 
 ‼️ Bugs get MORE expensive at every step to the right. A bug found while coding costs
-   minutes. The same bug found by a customer costs a support ticket, a hotfix, and trust.
+   minutes. The same bug found by a customer costs a support ticket, a hotfix, and trust.‼️
    That's why most testing is pushed as far LEFT (early) as possible — "shift left".‼️
 ```
 
@@ -109,9 +109,9 @@ Every arrow is a place where something gets tested.
   QA automation / SDET       Builds and maintains the E2E suite      Playwright, Cypress, CI
   Product manager            "Is this what we asked for?" (UAT)      The app, the ticket
   Designer                   Looks right, matches the design         The app, Figma, Storybook
-  Security / SRE teams       Security scans, load, reliability       Snyk, k6, monitoring
+  Security / SRE teams  ‼️   Security scans, load, reliability       Snyk, k6, monitoring
 
-SDET = Software Development Engineer in Test — a developer whose product is the test suite.
+SDET = Software Development Engineer in Test — a developer whose product is the test suite.‼️
 ```
 
 ```text
@@ -135,12 +135,12 @@ TESTING STARTS BEFORE CODING — "THREE AMIGOS"
     Product  — what do we want?
     Dev      — how will we build it?
     QA       — how could it break? how will we know it works?
-  Output: clear acceptance criteria. Many bugs are prevented here, never written.
+  Output: clear acceptance criteria. Many bugs are prevented here, never written.‼️
 ```
 
 ```text
 ACCEPTANCE CRITERIA — the checklist of "this ticket is done when…"
-Often written in Given / When / Then form:
+Often written in Given / When / Then form:‼️
 
   Given  I am logged in and have a task
   When   I click "Delete" and confirm
@@ -167,7 +167,7 @@ If testing isn't in the DoD, it gets skipped when the sprint is tight.
 THE CLASSIC SPRINT PROBLEM
   Devs finish features on the last two days → QA has no time → testing squeezed or
   pushed to the next sprint.
-  FIXES: smaller tickets, finish (and hand over) work earlier, devs help test, and
+  FIXES: smaller tickets, ‼️ finish (and hand over) work earlier, devs help test, and
   more automation so QA isn't re-checking the same things by hand every sprint.
 ```
 
@@ -176,31 +176,31 @@ THE CLASSIC SPRINT PROBLEM
 ## 5. Manual Testing — The Words You'll Hear
 
 ```text
-These sound similar and get mixed up constantly. The difference is SCOPE and PURPOSE.
+These sound similar and get mixed up constantly. The difference is SCOPE and PURPOSE.‼️
 
-  SMOKE TEST        "Is it on fire?" A quick check that the basics work at all
+  SMOKE TEST        ‼️ "Is it on fire?" A quick check that the basics work at all
                     (app loads, can log in, main page shows). Run after every deploy.
                     If it fails, stop — nothing else is worth testing.‼️
 
-  SANITY TEST       A quick, narrow check of ONE area after a small change or fix.
+  SANITY TEST       A quick, narrow check of ONE area after a small change or fix.‼️
                     "They fixed the delete bug — does delete work now?"
 
   REGRESSION TEST   "Did we break anything that USED to work?" Re-checking existing
                     features after changes. Big and repetitive → the best thing to
                     automate.‼️
 
-  EXPLORATORY       No script. A tester uses the feature like a curious, impatient,
+  EXPLORATORY       ‼️ No script. A tester uses the feature like a curious, impatient,
                     or confused user and tries to break it: double-click, back
                     button, emoji in the title, slow network. Finds bugs no one
                     thought to write a test for.
 
   UAT               User Acceptance Testing. The business (PM, client, real users)
                     confirms it does what they asked. Not "does it work?" but
-                    "is it right?"
+                    "is it right?"‼️
 ```
 
 ```text
-TEST CASE vs TEST SCENARIO vs TEST PLAN
+TEST CASE vs TEST SCENARIO vs TEST PLAN‼️
 
   Test scenario   WHAT to test, one line         "User deletes a task"
   Test case       HOW, step by step + expected   1. Log in  2. Click Delete on "Buy milk"
@@ -208,7 +208,7 @@ TEST CASE vs TEST SCENARIO vs TEST PLAN
   Test plan       The whole strategy for a       scope, who tests, environments, schedule,
                   release or project             what's out of scope, exit criteria
 
-Teams that track test cases use tools like TestRail, Xray or Zephyr (often inside Jira).
+Teams that track test cases use tools like TestRail, Xray or Zephyr (often inside Jira).‼️
 ```
 
 ---
@@ -235,17 +235,17 @@ A GOOD BUG REPORT — someone else can reproduce it without asking you anything
 ‼️ SEVERITY vs PRIORITY — the classic interview question
 
   SEVERITY  = how BAD is the impact?         (set by QA / the reporter)
-  PRIORITY  = how SOON must we fix it?       (set by product / the team)
+  PRIORITY  = how SOON must we fix it?       (set by product / the team)‼️
 
   They're usually linked, but not always:
     High severity, low priority    App crashes on a page only 3 internal users ever open
     Low severity, high priority    Company name misspelled on the homepage before launch‼️
 
-  Typical severity levels:  Critical (data loss, outage, security) → Major → Minor → Trivial
+  Typical severity levels:  Critical (data loss, outage, security) → Major → Minor → Trivial‼️
 ```
 
 ```text
-BUG LIFECYCLE (usually a Jira workflow)
+BUG LIFECYCLE (usually a Jira workflow)‼️
 
   New → Triaged → In Progress → Fixed → Ready for QA → Verified → Closed
                       │                                  │
@@ -257,7 +257,7 @@ BUG LIFECYCLE (usually a Jira workflow)
 Two terms worth knowing:
   REGRESSION BUG    something that used to work and now doesn't — usually high priority,
                     and a sign a regression test is missing
-  ESCAPED DEFECT    a bug found in production that testing should have caught —
+  ESCAPED DEFECT    ‼️ a bug found in production that testing should have caught —
                     teams track these to see where their safety nets have holes
 ```
 
@@ -271,11 +271,11 @@ An "environment" is a full running copy of the app: frontend, backend, database,
   LOCAL      your laptop                    you, while coding
   DEV        shared, unstable, deploys      devs checking integration
              on every merge
-  PREVIEW    a temporary copy PER PULL      reviewers, QA, designers — test the PR
+  PREVIEW‼️  a temporary copy PER PULL      reviewers, QA, designers — test the PR
              REQUEST, deleted after merge   before it's merged (Vercel, Netlify do this)
   STAGING    as close to production as      E2E tests, QA, UAT, final checks
              possible
-  PRODUCTION the real thing, real users     smoke tests + monitoring only
+  PRODUCTION the real thing, real users     smoke tests + monitoring only‼️
 
 Code is PROMOTED left to right: the same build moves from dev → staging → production.
 ```
@@ -293,7 +293,7 @@ FEATURE FLAGS
   Ship the code to production turned OFF, then turn it on for testers only, then 5% of
   users, then everyone. Lets you test in the real environment with almost no risk —
   and if it misbehaves, turn the flag off instead of redeploying.
-  Tools: LaunchDarkly, Unleash, GrowthBook, or a simple config table.
+  Tools: LaunchDarkly, Unleash, GrowthBook, or a simple config table.‼️
 ```
 
 ---
@@ -303,8 +303,8 @@ FEATURE FLAGS
 ```text
 Tests need data: users, tasks, orders. Where it comes from matters a lot.
 
-  FACTORIES     A function that builds a valid object with sensible defaults,
-                and lets each test override what it cares about:
+  FACTORIES     ‼️ A function that builds a valid object with sensible defaults,
+                and lets each test override what it cares about:‼️
                   makeTask({ completed: true })
                 Keeps tests short and stops them breaking when a field is added.
 
@@ -320,7 +320,7 @@ Tests need data: users, tasks, orders. Where it comes from matters a lot.
 ```
 
 ```text
-‼️ NEVER COPY REAL PRODUCTION DATA INTO TEST ENVIRONMENTS AS-IS.
+‼️ NEVER COPY REAL PRODUCTION DATA INTO TEST ENVIRONMENTS AS-IS.‼️
    It contains real people's personal data (names, emails, payment info). Leaking it
    from a less-protected staging server is a privacy breach — and illegal under laws
    like GDPR. If you need realistic data, anonymize it first (replace names, emails,
@@ -369,19 +369,19 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci                # clean install from package-lock.json
+      - run: npm ci # clean install from package-lock.json‼️
       - run: npm run lint
-      - run: npx tsc --noEmit      # type-check
-      - run: npm test              # unit + integration tests
-      - run: npm audit --audit-level=high   # fail on known high-severity vulnerabilities
+      - run: npx tsc --noEmit # type-check‼️
+      - run: npm test # unit + integration tests‼️
+      - run: npm audit --audit-level=high # fail on known high-severity vulnerabilities‼️
       - run: npm run build
 ```
 
 ```text
-‼️ FLAKY TESTS — tests that sometimes pass and sometimes fail with no code change.
+‼️ FLAKY TESTS — tests that sometimes pass and sometimes fail with no code change.‼️
    Usual causes: timing (waiting a fixed 500ms instead of for the element), shared
    data between tests, tests depending on run order, real network calls.
-   Why they're dangerous: once people learn "just re-run it", they start ignoring
+   ‼️ Why they're dangerous: once people learn "just re-run it", they start ignoring
    real failures too. Fix them, or quarantine them (skip + ticket) quickly — never
    leave a flaky test in the main suite.‼️
 ```
@@ -413,14 +413,14 @@ and roughly which tool does it.
 ```
 
 ```text
-SECURITY TESTING — three acronyms you'll hear
+SECURITY TESTING — three acronyms you'll hear‼️
 
   SAST   Static — scans your SOURCE CODE for risky patterns    Semgrep, CodeQL, SonarQube
   DAST   Dynamic — attacks the RUNNING app from outside        OWASP ZAP, Burp Suite
   SCA    Software Composition — checks your DEPENDENCIES       npm audit, Dependabot, Snyk
          for known vulnerabilities
 
-  Plus PENETRATION TESTING: security experts try to break in by hand, usually yearly
+  Plus PENETRATION TESTING: ‼️ security experts try to break in by hand, usually yearly
   or before a big launch, and often required for compliance (banks, government).
 
 ‼️ Accessibility and dependency scanning are the two cheapest to add to CI today —
@@ -464,7 +464,7 @@ RELEASING SAFELY — don't flip it on for everyone at once
   SMOKE TESTS AFTER DEPLOY   A few automated checks the moment the release goes out:
                              homepage loads, login works, health endpoint returns 200.
   SYNTHETIC MONITORING       A robot runs a key flow (log in → create task) every few
-                             minutes, forever, and alerts if it fails. Checkly, Datadog.
+                             minutes, forever, and alerts if it fails. Checkly, Datadog.‼️
   REAL USER MONITORING       Measures what actual users experience: errors, page speed.
   ERROR TRACKING             Every crash in users' browsers/servers is reported (Sentry).
 
@@ -538,12 +538,12 @@ RELEASING SAFELY — don't flip it on for everyone at once
 
 ```text
 ── PEOPLE & PROCESS ─────────────────────────────────────────────────────────────
-QA                    Quality Assurance — people focused on product quality
+QA                    ‼️ Quality Assurance — people focused on product quality
 SDET                  Developer who builds test automation
 Three amigos          Product + dev + QA review a ticket before work starts
 Acceptance criteria   "Done when…" checklist for one ticket (Given/When/Then)
-Definition of Done    Checklist every ticket must meet
-UAT                   Business confirms it's what they asked for
+Definition of Done    Checklist every ticket must meet‼️
+UAT                   Business confirms it's what they asked for‼️
 Shift left            Test earlier, where bugs are cheaper
 
 ── KINDS OF TESTING ─────────────────────────────────────────────────────────────
@@ -551,13 +551,13 @@ Unit / integration / E2E     Code-level layers (see TESTING-BASICS.md)
 Smoke                 Is it alive at all?
 Sanity                Is this one change OK?
 Regression            Did we break what used to work?
-Exploratory           Unscripted "try to break it"
+Exploratory           Unscripted "try to break it"‼️
 Visual regression     Screenshot diffs
 Accessibility (a11y)  Usable with keyboard / screen reader
 Performance / load    Fast? Survives heavy traffic?
-SAST / DAST / SCA     Scan code / attack running app / check dependencies
+SAST / DAST / SCA     Scan code / attack running app / check dependencies‼️
 Contract              Do two services still agree on the API?
-Chaos                 What if something dies?
+Chaos                 What if something dies?‼️
 
 ── BUGS ─────────────────────────────────────────────────────────────────────────
 Severity              How bad
@@ -568,12 +568,12 @@ Escaped defect        Bug that reached production
 
 ── ENVIRONMENTS & RELEASE ───────────────────────────────────────────────────────
 Local → Dev → Staging → Production     (+ Preview per PR)
-Parity                Staging matches production
+Parity                Staging matches production‼️
 Feature flag          Turn code on/off without deploying
 Canary                Release to a small % first
-Blue-green            Two prod environments, switch traffic
+Blue-green            Two prod environments, switch traffic‼️
 Rollback / Hotfix     Go back / urgent fix
-Synthetic monitoring  A robot repeats key flows in production
+Synthetic monitoring  A robot repeats key flows in production‼️
 
 ── CI ───────────────────────────────────────────────────────────────────────────
 Pipeline gate         Must be green to merge / deploy
@@ -585,7 +585,7 @@ Flaky test            Passes and fails randomly — fix or quarantine
 ## 15. Interview Answer
 
 ```text
-Q: "How do you make sure your code works?" / "How does testing work on your team?"
+Q: "How do you make sure your code works?" / "How does testing work on your team?"‼️
 
 "I think of it as layers of safety nets, each catching what the previous one misses.
 
@@ -610,6 +610,6 @@ Q: "How do you make sure your code works?" / "How does testing work on your team
 - [TESTING-ECOSYSTEM-DEEP.md](TESTING-ECOSYSTEM-DEEP.md) — the full reference behind every section here: QA workflows, pipelines, k6, Pact, chaos, release management
 - [TESTING-BASICS.md](../2-medium-priority/TESTING-BASICS.md) — writing your first unit, API, database and E2E tests
 - [REACT-TESTING-BASICS.md](REACT-TESTING-BASICS.md) — Vitest + React Testing Library for components
-- [STORYBOOK-BASICS.md](STORYBOOK-BASICS.md) — stories as the base for visual regression and interaction tests
+- [STORYBOOK-BASICS.md](STORYBOOK-BASICS.md) — ‼️ stories as the base for visual regression and interaction tests
 - [JIRA-CONFLUENCE-AGILE-DEEP.md](JIRA-CONFLUENCE-AGILE-DEEP.md) — sprints, tickets and the Jira workflows bugs move through
 - [DEVOPS-INFRASTRUCTURE-DEEP.md](DEVOPS-INFRASTRUCTURE-DEEP.md) — CI/CD, deployments and environments
