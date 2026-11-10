@@ -1,14 +1,14 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-140 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+143 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    59 files — study these first, highest interview ROI
+1-high-priority/    62 files — study these first, highest interview ROI
 2-medium-priority/  43 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
@@ -55,6 +55,7 @@ Root files (start here):
 | [NODEJS-INTERNALS-DEEP.md](1-high-priority/NODEJS-INTERNALS-DEEP.md) | Event loop, streams, worker threads, cluster |
 | [NODEJS-REST-DEEP.md](1-high-priority/NODEJS-REST-DEEP.md) | REST API design with Node.js |
 | [EXPRESS-DEEP.md](1-high-priority/EXPRESS-DEEP.md) | Express internals, middleware pipeline, routing, errors, validation, auth, security, testing |
+| [FASTAPI-BASICS.md](1-high-priority/FASTAPI-BASICS.md) | Beginner guide for Express devs — routes, params, Pydantic bodies, errors, dependencies, async, CORS, TestClient |
 | [EXPRESS-TS-DEEP.md](1-high-priority/EXPRESS-TS-DEEP.md) | The same Express reference, fully typed with TypeScript |
 | [BEHAVIORAL-DEEP.md](1-high-priority/BEHAVIORAL-DEEP.md) | STAR stories, leadership, conflict, failure questions |
 | [BEHAVIORAL-STAR-STORIES.md](1-high-priority/BEHAVIORAL-STAR-STORIES.md) | The STAR framework, the 15 questions you will be asked, your personal story bank template |
@@ -78,6 +79,8 @@ Root files (start here):
 | [AI-AGENT-MEMORY-DEEP.md](1-high-priority/AI-AGENT-MEMORY-DEEP.md) | Short/long-term memory, vector memory, Mem0, cross-session persistence |
 | [AI-SYSTEM-DESIGN-DEEP.md](1-high-priority/AI-SYSTEM-DESIGN-DEEP.md) | Design: RAG system, chatbot, coding assistant, data analyst, doc processing |
 | [AI-TOOLS-BASICS.md](1-high-priority/AI-TOOLS-BASICS.md) | Beginner guide — coding agents, chat, UI generators, review bots, MCP, using AI well, interview answers |
+| [AI-AGENTS-BASICS.md](1-high-priority/AI-AGENTS-BASICS.md) | Beginner guide — what agents are, the loop, tool design, workflow patterns, memory, MCP, prompt injection, evals, frameworks (Python, free via Ollama) |
+| [AI-AGENTS-MORTGAGE-EXAMPLE.md](1-high-priority/AI-AGENTS-MORTGAGE-EXAMPLE.md) | Hands-on project — a mortgage loan-intake agent end to end: raw loop, approval, Agents SDK, FastAPI, evals, roadmap |
 | [FRONTEND-ARCHITECTURE-DEEP.md](1-high-priority/FRONTEND-ARCHITECTURE-DEEP.md) | Feature structure, state architecture, rendering strategies, monorepo, module boundaries |
 | [FRONTEND-SYSTEM-DESIGN-DEEP.md](1-high-priority/FRONTEND-SYSTEM-DESIGN-DEEP.md) | Design autocomplete, infinite scroll, collaborative editor, file uploader, drag-and-drop |
 
