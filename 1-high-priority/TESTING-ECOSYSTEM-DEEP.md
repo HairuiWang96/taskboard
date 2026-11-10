@@ -79,7 +79,7 @@
               /   Unit Tests    \  Many, fast, cheap, test logic in isolation
              /------------------\
 
-Ratio guideline: 70% unit / 20% integration / 10% E2E
+Ratio guideline: 70% unit / 20% integration / 10% E2E‼️
 
 Unit:        fast (ms), isolated, test one thing
 Integration: slower (s), test component interactions (real DB, real API)
@@ -99,7 +99,7 @@ Testing Trophy (modern React/JS):
    /──────────────\
   /    Static      \        ← TypeScript, ESLint (free)
 
-Key insight: integration tests give the best ROI for UI code.
+Key insight: integration tests give the best ROI for UI code.‼️
 They test real behaviour without the brittleness of E2E or
 the false confidence of heavily mocked unit tests.
 
@@ -110,7 +110,7 @@ the false confidence of heavily mocked unit tests.
 
 ```text
 ‼️ Testing is not about finding bugs — it's about preventing them and
-   enabling confident, fast delivery.
+   enabling confident, fast delivery.‼️
 
 Benefits of a good test suite:
   1. Confidence to refactor — change code without fear of breaking things
@@ -156,11 +156,11 @@ Shift-right testing: Continue testing AFTER deployment
   - Synthetic monitoring — automated checks in production
   - Canary deployments — deploy to 1% of users first
   - Feature flags — test in production safely
-  - Real user monitoring (RUM) — track actual user experience
+  - Real user monitoring (RUM) — track actual user experience‼️
   - A/B testing — validate changes with real traffic
-  - Chaos engineering — intentionally break things to find weaknesses
+  - Chaos engineering — intentionally break things to find weaknesses‼️
 
-‼️ Modern teams do BOTH — shift-left for prevention, shift-right for detection.
+‼️ Modern teams do BOTH — shift-left for prevention, shift-right for detection.‼️
 ```
 
 ### What to test
@@ -201,7 +201,7 @@ Integration tests:
   - These are the majority of your test suite
 
 E2E tests:
-  - Critical happy paths: signup, checkout, login
+  - Critical happy paths: signup, checkout, login‼️
   - Cross-browser issues
   - 5–20 tests max — not a replacement for integration
 
@@ -222,13 +222,13 @@ Type              What It Tests                          When to Use
 ──────────────────────────────────────────────────────────────────────────────────
 Unit              Single function/module in isolation    Always — fast feedback on logic
 Integration       Multiple modules working together      Always — catches wiring issues
-E2E (End-to-End)  Full user flows in real browser        Critical paths only — slow but high confidence
+E2E (End-to-End)  Full user flows in real browser        Critical paths only — slow but high confidence‼️
 Smoke             Basic "does it start?" checks          After every deployment — quick sanity
 Regression        Previously working features            Before every release — catch regressions
 Sanity            Focused check after a bug fix          After specific fix — verify the fix works
 Exploratory       Unscripted manual investigation        When requirements are unclear or new features
 Acceptance (UAT)  Business requirements met              Before release — stakeholder sign-off
-Performance       Speed, throughput, resource usage       Before major releases — ensure SLAs
+Performance       Speed, throughput, resource usage       Before major releases — ensure SLAs‼️
 Security          Vulnerabilities, attack vectors        Continuously — in CI and periodic audits
 Accessibility     Usable by people with disabilities     Continuously — legal requirement in many regions
 Chaos             System resilience under failure        Periodically — build confidence in fault tolerance
@@ -251,10 +251,10 @@ Example: testing a calculateDiscount() function with various inputs.
 
 ```text
 Tests how multiple modules work together with real dependencies.
-May use a real database, real HTTP calls (via MSW), real child components.
+May use a real database, real HTTP calls (via MSW), real child components.‼️
 Slower than unit tests but catches wiring bugs that unit tests miss.
 
-Example: testing an API endpoint that queries a real database and returns formatted JSON.
+Example: testing an API endpoint that queries a real database and returns formatted JSON.‼️
 ```
 
 ### E2E (End-to-End) testing
@@ -272,7 +272,7 @@ Example: user signs up → verifies email → logs in → creates a task → mar
 ```text
 A minimal set of tests that verify the application starts and core functions work.
 "Build verification test" — does the build work at all?
-Run after every deployment. Should take < 2 minutes.
+Run after every deployment. Should take < 2 minutes.‼️
 
 Example: homepage loads, login endpoint responds 200, main API returns data.
 ```
@@ -299,11 +299,11 @@ Example: bug fix for "user can't save profile" → sanity test: save profile and
 
 ```text
 Unscripted, investigative testing where the tester actively explores the application.
-Relies on tester's experience, intuition, and creativity.
+Relies on tester's experience, intuition, and creativity.‼️
 Finds bugs that scripted tests miss — especially UX issues and edge cases.
 
 Approaches:
-  - Session-based: time-boxed sessions (30-90 min) with a charter (goal)
+  - Session-based: time-boxed sessions (30-90 min) with a charter (goal)‼️
   - Ad-hoc: completely unstructured exploration
   - Pair exploratory: two testers explore together — one drives, one observes
 
@@ -326,7 +326,7 @@ and matches the requirements in the user story.
 
 ```text
 Measures how the system performs under various conditions — speed, scalability, stability.
-Sub-types: load, stress, spike, soak, scalability (detailed in section 24).
+Sub-types: load, stress, spike, soak, scalability (detailed in section 24).‼️
 
 Example: verify the API handles 1000 concurrent users with p95 response time < 500ms.
 ```
@@ -375,7 +375,7 @@ Contract test verifies the backend actually returns that shape.
 
 ## 3. Test-Driven Development (TDD)
 
-### The Red-Green-Refactor cycle
+### The Red-Green-Refactor cycle‼️
 
 ```text
 1. RED:    Write a failing test for the desired behavior
@@ -392,12 +392,12 @@ Benefits:
 
 When to use TDD:
   ✓ Business logic (calculations, rules, algorithms)
-  ✓ Bug fixes — write a test that reproduces the bug first
+  ✓ Bug fixes — write a test that reproduces the bug first‼️
   ✓ New features with clear requirements
   ✓ Pure functions / algorithms: easy to test-drive
   ✓ Complex state machines
 
-When NOT to use TDD:
+When NOT to use TDD:‼️
   ✗ Exploratory coding — when you don't know the API yet
   ✗ UI layout — hard to TDD pixel-perfect designs
   ✗ One-off scripts
@@ -521,7 +521,7 @@ Workflow:
   2. Three amigos discuss and refine the criteria together
   3. QA or developer writes automated acceptance tests from the criteria
   4. Developer writes code to make acceptance tests pass
-  5. Tests serve as living documentation of requirements
+  5. Tests serve as living documentation of requirements‼️
 
 Difference from BDD:
   - BDD focuses on behavior specification language (Gherkin)
@@ -608,14 +608,14 @@ it('adds task', () => {
   expect(tasks).toHaveLength(1);
 });
 
-// ✗ waitForSomethingToDisappear antipattern (race condition)
+// ✗ waitForSomethingToDisappear antipattern (race condition)‼️
 await waitFor(() => expect(spinner).not.toBeInTheDocument());
 // ✓ Instead: wait for what you expect to appear
 await screen.findByText('Task created'); // implicitly waits for spinner to finish
 
 // ✗ Magic numbers — unclear what they represent
 expect(result).toBe(86400);
-// ✓ Named constants
+// ✓ Named constants‼️
 const SECONDS_IN_A_DAY = 60 * 60 * 24;
 expect(result).toBe(SECONDS_IN_A_DAY);
 ```
@@ -640,20 +640,20 @@ expect(result).toBe(SECONDS_IN_A_DAY);
 ‼️ Flaky test: passes sometimes, fails sometimes — same code
 
 Common causes and fixes:
-  Async timing:     Use findBy* (waits) instead of getBy* after async action
+  Async timing:     Use findBy* (waits) instead of getBy* after async action‼️
   Shared state:     Clean up before/after each test (beforeEach, afterEach)
-  Test ordering:    Tests must be independent — any order should work
+  Test ordering:    Tests must be independent — any order should work‼️
   Real timers:      Use vi.useFakeTimers() for setTimeout/setInterval
-  Network calls:    Mock external APIs — real network is unreliable in CI
-  Date/time:        vi.setSystemTime() to freeze time
-  Random data:      Use fixed seeds or vi.spyOn(Math, 'random')
-  Race conditions:  Use waitFor() with assertions, not arbitrary sleeps
+  Network calls:    Mock external APIs — real network is unreliable in CI‼️
+  Date/time:        vi.setSystemTime() to freeze time‼️
+  Random data:      Use fixed seeds or vi.spyOn(Math, 'random')‼️
+  Race conditions:  Use waitFor() with assertions, not arbitrary sleeps‼️
   Port conflicts:   Use random available ports in test servers
-  File system:      Use temp directories, clean up after
+  File system:      Use temp directories, clean up after‼️
 
 Flaky test policy:
-  - Quarantine flaky tests immediately (move to a separate suite)
-  - Fix or delete within 1 sprint — don't let them rot
+  - Quarantine flaky tests immediately (move to a separate suite)‼️
+  - Fix or delete within 1 sprint — don't let them rot‼️
   - Track flaky test rate as a team metric
 ```
 
@@ -668,8 +668,8 @@ Flaky test policy:
 
 Techniques for isolation:
   - beforeEach/afterEach hooks for setup/teardown
-  - Fresh database state per test (truncate or transaction rollback)
-  - Unique test data per test (use factories with random IDs)
+  - Fresh database state per test (truncate or transaction rollback)‼️
+  - Unique test data per test (use factories with random IDs)‼️
   - Mock external dependencies (network, file system, time)
   - Container isolation (testcontainers for real databases)
 ```
@@ -684,7 +684,7 @@ Sources of non-determinism and fixes:
   Current date/time → vi.setSystemTime(new Date('2024-01-15'))
   Random values     → vi.spyOn(Math, 'random').mockReturnValue(0.5)
   UUID generation   → mock the UUID generator
-  Network requests  → use MSW or mocks
+  Network requests  → use MSW or mocks‼️
   Database state    → clean before each test
   File system       → use temp directories
   Environment vars  → set explicitly in test setup
@@ -709,8 +709,8 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    globals: true, // no need to import describe, it, expect
-    environment: 'node', // or 'jsdom' for browser-like environment
+    globals: true, // no need to import describe, it, expect‼️
+    environment: 'node', // or 'jsdom' for browser-like environment‼️
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
@@ -857,7 +857,7 @@ it.each`
 
 ```ts
 // Good for: stable outputs (serialized data, rendered HTML structure)
-// Bad for: anything that changes often — snapshots become noise
+// Bad for: anything that changes often — snapshots become noise‼️
 
 import { expect, it } from 'vitest';
 
@@ -888,7 +888,7 @@ it('serializes user to expected format', () => {
 ### Lifecycle hooks
 
 ```ts
-// beforeAll/afterAll — run once for the entire describe block
+// beforeAll/afterAll — run once for the entire describe block‼️
 // beforeEach/afterEach — run before/after each individual test
 
 describe('UserService', () => {
@@ -929,7 +929,7 @@ describe('UserService', () => {
 // and let the framework generate hundreds of random inputs to try to break them.
 // Libraries: fast-check (JS), hypothesis (Python)
 
-import fc from 'fast-check';
+import fc from 'fast-check';‼️
 
 // Property: sorting twice gives same result as sorting once
 fc.assert(
@@ -964,7 +964,7 @@ src/
     utils.ts
     utils.test.ts
 e2e/
-  checkout.spec.ts         ← Playwright E2E tests
+  checkout.spec.ts         ← Playwright E2E tests‼️
   auth.spec.ts
 ```
 
@@ -978,15 +978,15 @@ e2e/
 ‼️ Know the difference between each type:
 
 Dummy:   object passed but never used (filling parameter lists)
-Stub:    returns predefined responses ("when called with X, return Y")
-Fake:    working implementation, but simplified (in-memory DB instead of real)
-Mock:    stub + expectations ("verify that fetchUser was called with userId=123")
+Stub:    returns predefined responses ("when called with X, return Y")‼️
+Fake:    working implementation, but simplified (in-memory DB instead of real)‼️
+Mock:    stub + expectations ("verify that fetchUser was called with userId=123")‼️
 Spy:     wraps real implementation, records calls
 
 In practice with vi.fn():
-  - vi.fn() is both a stub and a mock — set return values AND assert on calls
+  - vi.fn() is both a stub and a mock — set return values AND assert on calls‼️
   - vi.spyOn() is a spy — wraps the real implementation, records calls
-  - The conceptual distinction matters: test behavior, not that specific methods were called
+  - The conceptual distinction matters: test behavior, not that specific methods were called‼️
 ```
 
 ```ts
@@ -1014,7 +1014,7 @@ spy.mockRestore();
   - Third-party SDKs (Stripe, SendGrid, S3)
   - Time (vi.useFakeTimers)
   - Randomness (vi.spyOn(Math, 'random'))
-  - Browser APIs not available in jsdom (IntersectionObserver, ResizeObserver)
+  - Browser APIs not available in jsdom (IntersectionObserver, ResizeObserver)‼️
 
 ❌ Don't Mock:
   - Your own application code (indicates poor separation of concerns)
@@ -1028,7 +1028,7 @@ spy.mockRestore();
 ```ts
 import { vi, expect, it } from 'vitest';
 
-// Auto-mock module (all exports become vi.fn())
+// Auto-mock module (all exports become vi.fn())‼️
 vi.mock('../emailService');
 
 // Manual mock — control exactly what each function does
@@ -1082,7 +1082,7 @@ vi.mock('../lib/stripe', () => ({
   createPaymentIntent: vi.fn().mockResolvedValue({ clientSecret: 'pi_test' }),
 }));
 
-// Mock with factory (runs before imports — hoisted)
+// Mock with factory (runs before imports — hoisted)‼️
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => '/dashboard',
@@ -1094,7 +1094,7 @@ vi.mock('next/navigation', () => ({
 ```text
 ‼️ MSW is the best practice for API mocking — intercepts real HTTP requests at the
    network layer. Your code exercises the real fetch logic. Works in both browser and Node.
-   Define handlers once, share across unit + integration + E2E tests.
+   Define handlers once, share across unit + integration + E2E tests.‼️
 ```
 
 ```ts
@@ -1176,7 +1176,7 @@ class UserService {
 
 // ✓ Easy to test — dependency is injected
 class UserService {
-  constructor(private db: Database) {}
+  constructor(private db: Database) {} ‼️
 
   async getUser(id: string) {
     return this.db.query('SELECT * FROM users WHERE id = $1', [id]);
@@ -4291,7 +4291,7 @@ Frequency: annually or before major releases
 # Add to CI pipeline
 security:
   runs-on: ubuntu-latest
-  container: semgrep/semgrep   # semgrep-action is deprecated; run the CLI image
+  container: semgrep/semgrep # semgrep-action is deprecated; run the CLI image
   steps:
     - uses: actions/checkout@v7
     # SAST
