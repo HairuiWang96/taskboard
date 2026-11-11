@@ -1,14 +1,14 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-146 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+147 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    65 files — study these first, highest interview ROI
+1-high-priority/    66 files — study these first, highest interview ROI
 2-medium-priority/  43 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
@@ -83,6 +83,7 @@ Root files (start here):
 | [AI-AGENTS-MORTGAGE-EXAMPLE.md](1-high-priority/AI-AGENTS-MORTGAGE-EXAMPLE.md) | Hands-on project — a mortgage loan-intake agent end to end: raw loop, approval, Agents SDK, FastAPI, evals, roadmap |
 | [AI-AGENTS-BASICS-JS.md](1-high-priority/AI-AGENTS-BASICS-JS.md) | The AI agents beginner guide in TypeScript/Node — same sections, plus a JS ↔ Python mapping |
 | [AI-AGENTS-MORTGAGE-EXAMPLE-JS.md](1-high-priority/AI-AGENTS-MORTGAGE-EXAMPLE-JS.md) | The mortgage agent project in TypeScript + Express + Vitest — build it in JS first, then in Python |
+| [AI-AGENTS-DELIVERY-QUOTE.md](1-high-priority/AI-AGENTS-DELIVERY-QUOTE.md) | The delivery quote chat agent in Python + FastAPI + pytest — same design as the JS version, with a JS ↔ Python table |
 | [AI-AGENTS-DELIVERY-QUOTE-JS.md](1-high-priority/AI-AGENTS-DELIVERY-QUOTE-JS.md) | Hands-on project — a multi-turn delivery quote chat agent with real map/weather APIs, built in 3 versions from real failures: grounding, code-side pricing, booking, Express, tests |
 | [FRONTEND-ARCHITECTURE-DEEP.md](1-high-priority/FRONTEND-ARCHITECTURE-DEEP.md) | Feature structure, state architecture, rendering strategies, monorepo, module boundaries |
 | [FRONTEND-SYSTEM-DESIGN-DEEP.md](1-high-priority/FRONTEND-SYSTEM-DESIGN-DEEP.md) | Design autocomplete, infinite scroll, collaborative editor, file uploader, drag-and-drop |

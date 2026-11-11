@@ -97,7 +97,7 @@ ollama pull qwen2.5:7b
 # The project
 mkdir delivery-agent && cd delivery-agent
 npm init -y
-npm pkg set type=module
+npm pkg set type=module  # It sets "type": "module" in package.json, so Node treats your .js/.ts files as ES modules (import/export).‼️
 npm install openai zod express
 npm install -D vitest supertest
 ```
@@ -138,7 +138,7 @@ THE FREE APIs — no account, no key, no credit card
   *.test.ts        Vitest tests
 
 ‼️ Look at the ratio: five files of ordinary code, one file of "AI". That's normal for a
-   reliable agent. The model is the conversational front door, not the engine.‼️
+   reliable agent. ‼️The model is the conversational front door, not the engine.‼️
 ```
 
 ---
@@ -154,17 +154,17 @@ type Vehicle = {
   label: string;
   maxWeightLb: number;
   maxVolumeCuFt: number;
-  maxLengthIn: number;     // longest item that fits
-  baseFee: number;         // $ per job
-  perMile: number;         // $ per mile (driver + vehicle wear)
-  perMinute: number;       // $ per minute of drive time
-  mpg: number;             // fuel economy
+  maxLengthIn: number; // longest item that fits
+  baseFee: number; // $ per job
+  perMile: number; // $ per mile (driver + vehicle wear)
+  perMinute: number; // $ per minute of drive time
+  mpg: number; // fuel economy
 };
 
 export const VEHICLES: Record<VehicleType, Vehicle> = {
-  car:       { label: 'Car',              maxWeightLb: 100,   maxVolumeCuFt: 12,  maxLengthIn: 40,  baseFee: 12, perMile: 1.10, perMinute: 0.25, mpg: 30 },
-  cargo_van: { label: 'Cargo van',        maxWeightLb: 2500,  maxVolumeCuFt: 250, maxLengthIn: 120, baseFee: 35, perMile: 1.60, perMinute: 0.45, mpg: 18 },
-  box_truck: { label: '16 ft box truck',  maxWeightLb: 6000,  maxVolumeCuFt: 800, maxLengthIn: 190, baseFee: 75, perMile: 2.40, perMinute: 0.70, mpg: 10 },
+  car: { label: 'Car', maxWeightLb: 100, maxVolumeCuFt: 12, maxLengthIn: 40, baseFee: 12, perMile: 1.1, perMinute: 0.25, mpg: 30 },
+  cargo_van: { label: 'Cargo van', maxWeightLb: 2500, maxVolumeCuFt: 250, maxLengthIn: 120, baseFee: 35, perMile: 1.6, perMinute: 0.45, mpg: 18 },
+  box_truck: { label: '16 ft box truck', maxWeightLb: 6000, maxVolumeCuFt: 800, maxLengthIn: 190, baseFee: 75, perMile: 2.4, perMinute: 0.7, mpg: 10 },
 };
 const ORDER: VehicleType[] = ['car', 'cargo_van', 'box_truck'];
 
@@ -183,12 +183,9 @@ export function chooseVehicle(items: Item[]) {
   const totalWeight = items.reduce((sum, i) => sum + i.weightLb * i.quantity, 0);
   // 1728 cubic inches in a cubic foot; ×1.3 because boxes never pack perfectly
   const totalVolume = items.reduce((sum, i) => sum + (i.lengthIn * i.widthIn * i.heightIn * i.quantity) / 1728, 0) * 1.3;
-  const longest = Math.max(...items.map((i) => Math.max(i.lengthIn, i.widthIn, i.heightIn)));
+  const longest = Math.max(...items.map(i => Math.max(i.lengthIn, i.widthIn, i.heightIn)));
 
-  const fit = ORDER.find((v) =>
-    totalWeight <= VEHICLES[v].maxWeightLb &&
-    totalVolume <= VEHICLES[v].maxVolumeCuFt &&
-    longest <= VEHICLES[v].maxLengthIn);
+  const fit = ORDER.find(v => totalWeight <= VEHICLES[v].maxWeightLb && totalVolume <= VEHICLES[v].maxVolumeCuFt && longest <= VEHICLES[v].maxLengthIn);
 
   const summary = { totalWeightLb: Math.round(totalWeight), totalVolumeCuFt: Math.round(totalVolume), longestIn: longest };
   if (!fit) return { error: 'Too big or heavy for a single vehicle — needs a freight quote from a human', ...summary };
@@ -196,7 +193,7 @@ export function chooseVehicle(items: Item[]) {
 }
 
 export type Weather = 'clear' | 'rain' | 'snow' | 'storm';
-const WEATHER_SURCHARGE: Record<Weather, number> = { clear: 0, rain: 0.10, snow: 0.25, storm: 0.35 };
+const WEATHER_SURCHARGE: Record<Weather, number> = { clear: 0, rain: 0.1, snow: 0.25, storm: 0.35 };
 
 export type QuoteInput = {
   vehicle: VehicleType;
@@ -204,8 +201,8 @@ export type QuoteInput = {
   durationMinutes: number;
   fuelPricePerGallon: number;
   weather: Weather;
-  helpers: number;          // extra people to carry heavy items (0–2)
-  pieces: number;           // how many items to load (each adds a handling fee)
+  helpers: number; // extra people to carry heavy items (0–2)
+  pieces: number; // how many items to load (each adds a handling fee)
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -252,7 +249,7 @@ REAL OUTPUT (the numbers the rest of the guide uses)
     lines: base 35 · distance 16.16 · time 8.10 · fuel 2.74 · helpers 40 · handling 3
     total: $105         (and $115.50 in the rain: +10%)
 
-WHY THIS FILE HAS NO AI IN IT
+WHY THIS FILE HAS NO AI IN IT‼️
   - It's testable: the same inputs always give the same price (section 12).
   - It's explainable: every line is visible, so support staff can answer "why $105?".
   - The business can change the rules (new vehicle, new surcharge) without touching prompts.
@@ -267,7 +264,7 @@ WHY THIS FILE HAS NO AI IN IT
 // OSRM (driving route) and Open-Meteo (weather). Section 11 shows the Google Maps swap.
 
 const USER_AGENT = 'delivery-quote-agent-tutorial/1.0'; // Nominatim requires an identifying User-Agent
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 type Place = { lat: number; lon: number; state: string; label: string };
 
@@ -294,11 +291,11 @@ export async function getRoute({ pickup, dropoff }: { pickup: string; dropoff: s
   const route = data.routes[0];
   return {
     distanceMiles: Math.round((route.distance / 1609.34) * 10) / 10, // OSRM gives metres
-    durationMinutes: Math.round(route.duration / 60),                // …and seconds
+    durationMinutes: Math.round(route.duration / 60), // …and seconds
     pickupState: from.state,
     pickupLatitude: from.lat,
     pickupLongitude: from.lon,
-    pickupFound: from.label,   // lets the agent confirm "did you mean…?"
+    pickupFound: from.label, // lets the agent confirm "did you mean…?"
     dropoffFound: to.label,
   };
 }
@@ -314,9 +311,12 @@ function toCondition(code: number) {
 export async function getWeather({ latitude, longitude, date }: { latitude: number; longitude: number; date: string }) {
   const url = new URL('https://api.open-meteo.com/v1/forecast');
   url.search = new URLSearchParams({
-    latitude: String(latitude), longitude: String(longitude),
+    latitude: String(latitude),
+    longitude: String(longitude),
     daily: 'weather_code,precipitation_probability_max',
-    timezone: 'auto', start_date: date, end_date: date,
+    timezone: 'auto',
+    start_date: date,
+    end_date: date,
   }).toString();
   const res = await fetch(url);
   const data = await res.json();
@@ -356,11 +356,11 @@ The obvious first design: give the model one tool per job and let it call them i
 // v1 (shortened) — each tool is ONE zod schema, used twice: turned into the JSON Schema the model sees
 // (z.toJSONSchema) AND used to validate the arguments the model sends back (safeParse)
 export const TOOL_DEFS = {
-  get_route:       { description: 'Driving distance and time between two addresses…', schema: z.object({ pickup: z.string(), dropoff: z.string() }), run: getRoute },
-  get_weather:     { description: 'Weather on the delivery date at the pickup…',      schema: z.object({ latitude: z.number(), longitude: z.number(), date: z.string() }), run: getWeather },
-  get_fuel_price:  { description: 'Fuel price per gallon in a US state…',              schema: z.object({ state: z.string() }), run: getFuelPrice },
-  choose_vehicle:  { description: 'Pick the smallest vehicle that fits all items…',    schema: z.object({ items: z.array(ItemSchema) }), run: ({ items }) => chooseVehicle(items) },
-  calculate_quote: { description: 'Calculate the price. Only call after the others…',  schema: QuoteInputSchema, run: storeAndReturnQuote },
+  get_route: { description: 'Driving distance and time between two addresses…', schema: z.object({ pickup: z.string(), dropoff: z.string() }), run: getRoute },
+  get_weather: { description: 'Weather on the delivery date at the pickup…', schema: z.object({ latitude: z.number(), longitude: z.number(), date: z.string() }), run: getWeather },
+  get_fuel_price: { description: 'Fuel price per gallon in a US state…', schema: z.object({ state: z.string() }), run: getFuelPrice },
+  choose_vehicle: { description: 'Pick the smallest vehicle that fits all items…', schema: z.object({ items: z.array(ItemSchema) }), run: ({ items }) => chooseVehicle(items) },
+  calculate_quote: { description: 'Calculate the price. Only call after the others…', schema: QuoteInputSchema, run: storeAndReturnQuote },
 };
 // System prompt: "…call the tools in this order: get_route, get_weather, get_fuel_price,
 // choose_vehicle, calculate_quote. NEVER state a price yourself… always include the quoteId."
@@ -432,8 +432,7 @@ export type StoredQuote = {
 export const QUOTES = new Map<string, StoredQuote>();
 export const QUOTE_TTL_MS = 30 * 60 * 1000; // quotes are valid for 30 minutes
 
-export async function getQuote({ pickup, dropoff, date, items }:
-  { pickup: string; dropoff: string; date: string; items: Item[] }) {
+export async function getQuote({ pickup, dropoff, date, items }: { pickup: string; dropoff: string; date: string; items: Item[] }) {
   // 1. Route — the step most likely to fail (unknown address), so do it first.
   //    Clean up what the model copies from the chat ("From the Ferry Building…")
   const clean = (a: string) => a.replace(/^\s*(from|to)\s+/i, '').replace(/\s+in\s+/i, ', ');
@@ -443,13 +442,10 @@ export async function getQuote({ pickup, dropoff, date, items }:
   // 2. Vehicle — and the HELPER RULE, in code: anything over 100 lb needs a second person
   const vehicle = chooseVehicle(items);
   if ('error' in vehicle) return vehicle;
-  const helpers = items.some((i) => i.weightLb > 100) ? 1 : 0;
+  const helpers = items.some(i => i.weightLb > 100) ? 1 : 0;
 
   // 3. Weather and fuel don't depend on each other → fetch them in parallel
-  const [weather, fuel] = await Promise.all([
-    getWeather({ latitude: route.pickupLatitude, longitude: route.pickupLongitude, date }),
-    Promise.resolve(getFuelPrice({ state: route.pickupState })),
-  ]);
+  const [weather, fuel] = await Promise.all([getWeather({ latitude: route.pickupLatitude, longitude: route.pickupLongitude, date }), Promise.resolve(getFuelPrice({ state: route.pickupState }))]);
   if ('error' in weather) return weather;
 
   // 4. Price
@@ -483,7 +479,7 @@ export async function getQuote({ pickup, dropoff, date, items }:
       dropoff: route.dropoffFound,
       // weekday computed in CODE — the model got "tomorrow is Wednesday" wrong once
       date: `${new Date(`${date}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long' })} ${date}`,
-      items: items.map((i) => `${i.quantity} × ${i.description}: ${i.lengthIn}×${i.widthIn}×${i.heightIn} in, ${i.weightLb} lb`),
+      items: items.map(i => `${i.quantity} × ${i.description}: ${i.lengthIn}×${i.widthIn}×${i.heightIn} in, ${i.weightLb} lb`),
     },
     validForMinutes: 30,
   };
@@ -561,8 +557,7 @@ THE IDEA
 // grounding.ts — check that tool arguments came from the CUSTOMER, not the model's imagination
 import type { Item } from './pricing.ts';
 
-const IGNORED = new Set(['from', 'to', 'the', 'in', 'at', 'of', 'and', 'usa', 'united', 'states', 'us',
-  'ca', 'california', 'st', 'street', 'ave', 'avenue', 'rd', 'road']);
+const IGNORED = new Set(['from', 'to', 'the', 'in', 'at', 'of', 'and', 'usa', 'united', 'states', 'us', 'ca', 'california', 'st', 'street', 'ave', 'avenue', 'rd', 'road']);
 const words = (s: string) => s.toLowerCase().match(/[a-z0-9]+/g) ?? [];
 
 /**
@@ -572,8 +567,8 @@ const words = (s: string) => s.toLowerCase().match(/[a-z0-9]+/g) ?? [];
  */
 function addressIsGrounded(address: string, customerText: string) {
   const said = new Set(words(customerText));
-  const important = words(address).filter((w) => !IGNORED.has(w));
-  return important.length > 0 && important.every((w) => said.has(w));
+  const important = words(address).filter(w => !IGNORED.has(w));
+  return important.length > 0 && important.every(w => said.has(w));
 }
 
 /** Every size and weight must be a number the customer actually typed. */
@@ -594,7 +589,10 @@ export function resolveDate(date: string, today = new Date()): string | null {
   const word = date.trim().toLowerCase();
   const d = new Date(today);
   if (word === 'today') return localDate(d);
-  if (word === 'tomorrow') { d.setDate(d.getDate() + 1); return localDate(d); }
+  if (word === 'tomorrow') {
+    d.setDate(d.getDate() + 1);
+    return localDate(d);
+  }
   const weekday = WEEKDAYS.indexOf(word);
   if (weekday !== -1) {
     const daysAhead = (weekday - d.getDay() + 7) % 7 || 7; // "Friday" = the NEXT Friday, never today
@@ -604,17 +602,12 @@ export function resolveDate(date: string, today = new Date()): string | null {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
 }
 
-export function checkGrounding(
-  args: { pickup: string; dropoff: string; date: string; items: Item[] },
-  customerText: string,
-): string[] {
+export function checkGrounding(args: { pickup: string; dropoff: string; date: string; items: Item[] }, customerText: string): string[] {
   const problems: string[] = [];
   if (!addressIsGrounded(args.pickup, customerText)) problems.push(`pickup address "${args.pickup}"`);
   if (!addressIsGrounded(args.dropoff, customerText)) problems.push(`drop-off address "${args.dropoff}"`);
   const dateWord = args.date.trim().toLowerCase();
-  const dateSaid = RELATIVE.includes(dateWord)
-    ? customerText.toLowerCase().includes(dateWord)
-    : customerText.includes(args.date);
+  const dateSaid = RELATIVE.includes(dateWord) ? customerText.toLowerCase().includes(dateWord) : customerText.includes(args.date);
   if (!dateSaid) problems.push(`date "${args.date}"`);
   for (const item of args.items) {
     for (const [field, value] of Object.entries({ lengthIn: item.lengthIn, widthIn: item.widthIn, heightIn: item.heightIn, weightLb: item.weightLb })) {
@@ -686,8 +679,8 @@ const ItemSchema = z.object({
 });
 
 const GetQuoteArgs = z.object({
-  pickup: z.string().min(3).describe('pickup address, in the customer\'s own words'),
-  dropoff: z.string().min(3).describe('drop-off address, in the customer\'s own words'),
+  pickup: z.string().min(3).describe("pickup address, in the customer's own words"),
+  dropoff: z.string().min(3).describe("drop-off address, in the customer's own words"),
   date: z.string().describe('"today", "tomorrow", a weekday like "friday", or YYYY-MM-DD — exactly as the customer said it'),
   items: z.array(ItemSchema).min(1).describe('EXACTLY the sizes and weights the customer gave'),
 });
@@ -721,14 +714,15 @@ customer, ask the customer for them.
 
 After get_quote, reply with the total, the quoteId, the vehicle and the "basedOn" details so the
 customer can check them. Never state a price yourself.
-${canBook
-    ? "To book, you need the quoteId plus the customer's name and phone number."
-    : 'You cannot book. To book, the customer presses "Book" on the quote card.'}`;
+${canBook ? "To book, you need the quoteId plus the customer's name and phone number." : 'You cannot book. To book, the customer presses "Book" on the quote card.'}`;
 }
 
 // The customer's own words — the ONLY source the tool arguments may come from
 const customerText = (messages: ChatCompletionMessageParam[]) =>
-  messages.filter((m) => m.role === 'user').map((m) => String(m.content)).join('\n');
+  messages
+    .filter(m => m.role === 'user')
+    .map(m => String(m.content))
+    .join('\n');
 
 export type Confirm = (question: string) => Promise<boolean>;
 
@@ -755,8 +749,7 @@ async function runTool(name: string, rawArgs: string, messages: ChatCompletionMe
     // ‼️ The price shown to the human comes from the STORED quote, never from the model
     const ok = await confirm(`Book ${quote.quoteId} for ${parsed.data.customerName} (${parsed.data.phone}) — $${quote.total}?`);
     if (!ok) return { error: 'The booking was not confirmed. Do not retry unless the customer asks again.' };
-    return { ...bookQuote(quote.quoteId, parsed.data.customerName, parsed.data.phone),
-             instruction: 'Show the customer the confirmation text exactly as written.' };
+    return { ...bookQuote(quote.quoteId, parsed.data.customerName, parsed.data.phone), instruction: 'Show the customer the confirmation text exactly as written.' };
   }
 
   return { error: `Unknown tool ${name}` };
@@ -767,7 +760,7 @@ async function runTool(name: string, rawArgs: string, messages: ChatCompletionMe
  * agent can only quote — the web app books through a normal endpoint instead (section 11).
  */
 export async function runTurn(messages: ChatCompletionMessageParam[], confirm?: Confirm, maxSteps = 6): Promise<string> {
-  const tools = confirm ? TOOLS : TOOLS.filter((t) => t.function.name !== 'book_delivery');
+  const tools = confirm ? TOOLS : TOOLS.filter(t => t.function.name !== 'book_delivery');
   let emptyRetries = 0;
   for (let step = 0; step < maxSteps; step++) {
     const message = (await client.chat.completions.create({ model: MODEL, messages, tools })).choices[0].message;
@@ -795,8 +788,7 @@ export async function runTurn(messages: ChatCompletionMessageParam[], confirm?: 
 }
 
 /** canBook: true for the terminal chat (agent can book, with a confirm step); false for the web app. */
-export const newConversation = (canBook = false): ChatCompletionMessageParam[] =>
-  [{ role: 'system', content: systemPrompt(canBook) }];
+export const newConversation = (canBook = false): ChatCompletionMessageParam[] => [{ role: 'system', content: systemPrompt(canBook) }];
 ```
 
 ```text
@@ -926,10 +918,11 @@ app.post('/chat', async (req, res) => {
   const reply = await runTurn(messages); // no confirm → the agent can quote but not book
 
   // The UI's quote card is built from the TOOL RESULT (data), not from the model's prose
-  const latestQuote = [...messages].reverse()
-    .filter((m) => m.role === 'tool')
-    .map((m) => JSON.parse(String(m.content)))
-    .find((r) => r.quoteId);
+  const latestQuote = [...messages]
+    .reverse()
+    .filter(m => m.role === 'tool')
+    .map(m => JSON.parse(String(m.content)))
+    .find(r => r.quoteId);
 
   res.json({ sessionId, reply, quote: latestQuote ?? null });
 });
@@ -1033,7 +1026,7 @@ describe('grounding', () => {
 import { afterEach, expect, it, vi } from 'vitest';
 
 // Fake the slow, external quote step — we're testing the AGENT's guard rails here
-vi.mock('./quote.ts', async (importOriginal) => ({
+vi.mock('./quote.ts', async importOriginal => ({
   ...(await importOriginal<typeof import('./quote.ts')>()),
   getQuote: vi.fn(async () => ({ quoteId: 'Q-test', total: 105 })),
 }));
@@ -1060,7 +1053,7 @@ it('blocks a quote built from details the customer never gave', async () => {
   expect(await runTurn(messages)).toMatch(/addresses/);
   expect(getQuote).not.toHaveBeenCalled(); // the guard stopped it
   // (mock.calls keeps a REFERENCE to the same messages array, so search it rather than use .at(-1))
-  const toolMessage = messages.find((m) => m.role === 'tool')!;
+  const toolMessage = messages.find(m => m.role === 'tool')!;
   const toolResult = JSON.parse(String(toolMessage.content));
   expect(toolResult.error).toMatch(/NOT given by the customer/);
 });
@@ -1088,7 +1081,7 @@ import { describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 
 // Replace the model turn with a fake that "quotes" by storing a real quote
-vi.mock('./agent.ts', async (importOriginal) => {
+vi.mock('./agent.ts', async importOriginal => {
   const { QUOTES } = await import('./quote.ts');
   return {
     ...(await importOriginal<typeof import('./agent.ts')>()),
@@ -1158,8 +1151,7 @@ free usage allowance; check current pricing).
 ```typescript
 // maps.google.ts — NOT run for this guide (needs a key + billing). Check the current
 // Routes API docs before relying on the exact field names.
-export async function getRouteGoogle({ pickup, dropoff, departureTime }:
-  { pickup: string; dropoff: string; departureTime?: string }) {
+export async function getRouteGoogle({ pickup, dropoff, departureTime }: { pickup: string; dropoff: string; departureTime?: string }) {
   const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
     method: 'POST',
     headers: {
@@ -1172,8 +1164,8 @@ export async function getRouteGoogle({ pickup, dropoff, departureTime }:
       origin: { address: pickup },
       destination: { address: dropoff },
       travelMode: 'DRIVE',
-      routingPreference: 'TRAFFIC_AWARE',          // live traffic
-      ...(departureTime && { departureTime }),      // e.g. '2026-11-12T15:00:00Z'
+      routingPreference: 'TRAFFIC_AWARE', // live traffic
+      ...(departureTime && { departureTime }), // e.g. '2026-11-12T15:00:00Z'
     }),
   });
   if (!res.ok) return { error: `Routing failed: HTTP ${res.status}` };
