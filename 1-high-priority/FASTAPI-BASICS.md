@@ -42,10 +42,10 @@
 
 ```text
 FastAPI = a Python web framework for building APIs. Think Express, but you DECLARE types
-and FastAPI does three jobs you'd normally wire up by hand:
+and FastAPI does three jobs you'd normally wire up by hand:‼️
 
   1. VALIDATION     Request bodies, params and headers are checked against your types.
-                    Bad input → automatic 422 with a clear error. (Express: add Zod/Joi.)
+                    Bad input → automatic 422 with a clear error. (Express: add Zod/Joi.)‼️
   2. CONVERSION     "?limit=5" arrives as the int 5, not the string "5".
   3. DOCS           An interactive API page at /docs, generated from your code.
                     (Express: hand-write a Swagger file.)
@@ -108,10 +108,10 @@ uv run fastapi dev main.py
 
   http://localhost:8000/hello/Harry  → {"message": "Hello Harry"}
   http://localhost:8000/docs         → interactive docs: every route, a "Try it out" button
-  http://localhost:8000/openapi.json → the machine-readable spec (generate a TS client from it!)
+  http://localhost:8000/openapi.json → the machine-readable spec (generate a TS client from it!)‼️
 
 ‼️ The @app.get(...) line is a DECORATOR. It registers the function below it as the handler
-   for that route. That's the whole trick; there's no app.listen(), the CLI runs the server.‼️
+   for that route. That's the whole trick; there's no app.listen(), ‼️the CLI runs the server.‼️
 ```
 
 ---
@@ -124,7 +124,7 @@ uv run fastapi dev main.py
   app.get('/tasks', handler)                @app.get("/tasks") above a function
   req.params.id                             a function argument named like {id} in the path
   req.query.limit                           a function argument NOT in the path
-  req.body + Zod schema                     a function argument typed as a Pydantic model
+  req.body + Zod schema                     a function argument typed as a Pydantic model‼️
   req.headers['x-api-key']                  x_api_key: str = Header()
   res.json(obj)                             return obj
   res.status(201).json(obj)                 @app.post(..., status_code=201)
@@ -137,7 +137,7 @@ uv run fastapi dev main.py
   supertest(app)                            TestClient(app)
   nodemon index.js                          fastapi dev main.py
 
-‼️ The big mindset shift: in Express you PULL data out of `req`. In FastAPI you DECLARE
+‼️ The big mindset shift: in Express you PULL data out of `req`. ‼️ In FastAPI you DECLARE
    function arguments, and FastAPI works out where each one comes from (path, query,
    body, header) and validates it before your function runs.‼️
 ```
@@ -200,7 +200,7 @@ def create_task(body: TaskCreate):      # typed as a model → read from the JSO
 ```
 
 ```python
-# SEPARATE MODELS FOR IN AND OUT — a very common pattern
+# SEPARATE MODELS FOR IN AND OUT — a very common pattern‼️
 class TaskCreate(BaseModel):      # what the client SENDS (no id, no timestamps)
     title: str
 
@@ -256,7 +256,7 @@ def get_task(task_id: str):
 ```text
   → 404 {"detail": "Task not found"}
 
-‼️ `raise`, not `return`. Raising stops the function immediately, from anywhere, even from
+‼️ `raise`, not `return`.‼️ Raising stops the function immediately, from anywhere, even from
    inside a helper function called by the route. That's why other routes can call
    get_task(task_id) to reuse the 404 check.‼️
 
@@ -313,7 +313,7 @@ Header() converts underscores: x_api_key ↔ the "x-api-key" header.
 
 ```python
 @app.get("/a")
-def a():                     # FastAPI runs it in a thread pool, so blocking calls are OK
+def a():                     # FastAPI runs it in a thread pool, so blocking calls are OK‼️
     return slow_sync_call()
 
 @app.get("/b")
@@ -329,7 +329,7 @@ async def b():               # runs on the event loop, like a Node handler
    - NEVER call blocking code inside async def. It freezes the event loop, and every
      other request waits, exactly like a synchronous loop in a Node handler.‼️
 
-When unsure, plain `def` is the safe default. FastAPI handles it correctly.
+When unsure, plain `def` is the safe default. FastAPI handles it correctly.‼️
 ```
 
 ---
@@ -425,8 +425,8 @@ def create_task(body: TaskCreate):
 
 @app.patch("/tasks/{task_id}", response_model=Task)
 def update_task(task_id: str, body: TaskUpdate):
-    task = get_task(task_id)                        # reuse the 404 logic
-    changes = body.model_dump(exclude_unset=True)   # only the fields the client sent
+    task = get_task(task_id)                        # reuse the 404 logic‼️
+    changes = body.model_dump(exclude_unset=True)   # only the fields the client sent‼️
     updated = task.model_copy(update=changes)
     TASKS[task_id] = updated
     return updated
@@ -440,11 +440,11 @@ def delete_task(task_id: str):
 ```text
 TWO LINES WORTH UNDERSTANDING
   body.model_dump(exclude_unset=True)
-      Turns the model into a dict, keeping only fields the client actually SENT.
+      ‼️ Turns the model into a dict, keeping only fields the client actually SENT.
       PATCH {"completed": true} → {"completed": True}; title is not touched.
       (Without exclude_unset you'd get {"title": None, "completed": True} and wipe the title.)‼️
   task.model_copy(update=changes)
-      A new Task with those fields replaced ≈ { ...task, ...changes } in JS.
+      A new Task with those fields replaced ≈ { ...task, ...changes } in JS.‼️
 ```
 
 ---
@@ -541,7 +541,7 @@ def test_delete_requires_api_key():
 
 ```text
 pytest basics for Vitest users
-  - Any function named test_* in a file named test_*.py is a test — no describe/it
+  - Any function named test_* in a file named test_*.py is a test — no describe/it‼️ T
   - Plain `assert` instead of expect(...).toBe(...); pytest shows a detailed diff on failure
   - setup_function() runs before each test (≈ beforeEach); pytest "fixtures" are the
     more powerful version
@@ -557,8 +557,8 @@ pytest basics for Vitest users
 ```python
 # Simple: environment variables (≈ process.env)
 import os
-API_KEY = os.getenv("LLM_API_KEY")                # None if not set
-MODEL = os.getenv("LLM_MODEL", "qwen2.5:7b")      # with a default
+API_KEY = os.getenv("LLM_API_KEY")                # None if not set‼️
+MODEL = os.getenv("LLM_MODEL", "qwen2.5:7b")      # with a default‼️
 ```
 
 ```python
@@ -584,17 +584,17 @@ settings = Settings()        # reads LLM_BASE_URL, LLM_MODEL, LLM_API_KEY (case-
 
 ```text
 ‼️ 1. Blocking calls inside async def.
-   time.sleep(), requests.get(), the sync OpenAI client → freezes every request.
+   time.sleep(), requests.get(), the sync OpenAI client → freezes every request.‼️
    Use plain def, or the async version of the library with await.
 
 ‼️ 2. Returning the error instead of raising it.
-   return HTTPException(...) sends a 200 with a weird body. Use raise.
+   return HTTPException(...) sends a 200 with a weird body. Use raise.‼️
 
 ‼️ 3. Forgetting response_model on routes that return DB objects.
    Internal fields (password_hash, internal notes) leak to the client.
 
 ‼️ 4. PATCH without exclude_unset=True.
-   Fields the client didn't send become None and overwrite real data.
+   Fields the client didn't send become None and overwrite real data.‼️
 
 ‼️ 5. Expecting a 400 for bad input.
    FastAPI uses 422 for validation errors. Handle 422 in the frontend.
@@ -603,11 +603,11 @@ settings = Settings()        # reads LLM_BASE_URL, LLM_MODEL, LLM_API_KEY (case-
    Works in /docs and curl, fails from React with a CORS error. Add CORSMiddleware.
 
 ‼️ 7. Business logic inside route functions.
-   Put it in services/ so you can test it (and reuse it from an agent tool) without HTTP.
+   Put it in services/ so you can test it (and reuse it from an agent tool) without HTTP.‼️
 
-‼️ 8. Mutable default arguments.
-   def f(items: list = []) shares ONE list across calls (a Python gotcha, not FastAPI's).
-   Use None and create the list inside, or Field(default_factory=list) in Pydantic.
+‼️ 8. Mutable default arguments.‼️
+   def f(items: list = []) shares ONE list across calls (a Python gotcha, not FastAPI's).‼️
+   Use None and create the list inside, or Field(default_factory=list) in Pydantic.‼️
 ```
 
 ---

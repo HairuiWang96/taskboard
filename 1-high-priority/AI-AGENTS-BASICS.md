@@ -69,7 +69,7 @@ AN AGENT — the model chooses which of YOUR functions to call, in a loop
    The model never runs anything. It replies with a structured REQUEST:
      { "name": "search_notes", "arguments": "{\"query\": \"deploy\"}" }
    YOUR code runs the function and sends the result back as a new message.
-   "Tool calling" (also called "function calling") is just that request/response format.
+   "Tool calling" (also called "function calling") is just that request/response format.‼️
    Every agent framework is a nicer way to write that loop.‼️
 ```
 
@@ -80,7 +80,7 @@ WHAT MAKES SOMETHING "AGENTIC" — a quick test
   ✓ It acts through tools: read data, call APIs, write files, send messages
   ✓ It decides when it's done
 
-A chatbot that only answers from its training data isn't an agent. A chatbot that looks
+‼️ A chatbot that only answers from its training data isn't an agent. A chatbot that looks
 up your order, sees it's delayed, and offers a refund through a tool is one.
 ```
 
@@ -102,13 +102,13 @@ Three levels of "using an LLM". Pick the LOWEST one that solves the problem.
                 "Sort out this customer's problem."  Flexible and handles surprises,
                 but slower, costlier, and harder to predict and test.
 
-‼️ The most common beginner mistake is reaching for an agent when a workflow would do.
+‼️ The most common beginner mistake is reaching for an agent when a workflow would do.‼️
    Ask: "Can I write the steps down in advance?" If yes → workflow. If the path
    really depends on what it finds along the way → agent.‼️
 ```
 
 ```text
-REAL PRODUCTS ARE MIXES
+REAL PRODUCTS ARE MIXES‼️
   A workflow at the top level, with an agent inside the one step that needs flexibility,
   and plain code everywhere the rules are fixed.
 ```
@@ -133,14 +133,14 @@ REAL PRODUCTS ARE MIXES
   │        messages.append(result)          ← what it learned │
   └───────────────────────────────────────────────────────────┘
 
-THE INGREDIENTS
+THE INGREDIENTS‼️
   Model             must support tool calling
   System prompt     the agent's job, rules, tone, limits
   Tools             functions + a schema/description for each
   The loop          + a step limit so it can't run forever
 
 Other names for the same loop: "ReAct" (Reason + Act), "tool-use loop",
-"think → act → observe".
+"think → act → observe".‼️
 ```
 
 ---
@@ -213,7 +213,7 @@ def search_notes(query: str) -> dict:
     hits = [text for key, text in NOTES.items() if key in query.lower() or query.lower() in text.lower()]
     return {"results": hits or ["No matching notes."]}
 
-# Only + - * / and brackets are allowed. Never use eval() on text from a model.
+# Only + - * / and brackets are allowed. Never use eval() on text from a model.‼️
 OPERATORS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv}
 
 def calculate(expression: str) -> dict:
