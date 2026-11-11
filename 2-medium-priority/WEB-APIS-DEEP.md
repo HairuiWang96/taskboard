@@ -147,6 +147,8 @@ self.addEventListener('activate', (event) => {
 // Intercept fetch — cache strategies
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  // Only GET can be cached — cache.put() throws for POST/PUT/DELETE
+  if (request.method !== 'GET') return; // let the browser handle it normally
 
   // Cache-first: for static assets (CSS, JS, images)
   if (request.destination === 'style' || request.destination === 'script') {
@@ -178,6 +180,7 @@ self.addEventListener('fetch', (event) => {
         cache.put(request, response.clone());
         return response;
       });
+      event.waitUntil(fetchPromise.catch(() => {})); // keep the SW alive for the background update
       return cached ?? fetchPromise;
     })
   );
@@ -195,7 +198,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // In practice: use Workbox (Google's library) instead of hand-rolling
-// npm install workbox-webpack-plugin
+// Vite: vite-plugin-pwa (uses Workbox) · webpack: workbox-webpack-plugin
 // Workbox handles caching strategies, versioning, and updates automatically
 ```
 
@@ -250,7 +253,10 @@ function useIntersectionObserver(
   return isIntersecting;
 }
 
-// Lazy image loading
+// Lazy image loading — for plain images, the browser does this for you now:
+//   <img src={src} alt={alt} loading="lazy" width={400} height={300} />
+// Use IntersectionObserver when you need custom behaviour (preload distance,
+// analytics, animations, lazy-loading components rather than images).
 function LazyImage({ src, alt }: { src: string; alt: string }) {
   const ref = useRef<HTMLImageElement>(null);
   const isVisible = useIntersectionObserver(ref, { rootMargin: '200px' });
@@ -383,10 +389,14 @@ async function queueOfflineAction(action: string, payload: unknown) {
 }
 
 window.addEventListener('online', async () => {
-  const queued = await db.getAll('offlineQueue');
-  for (const item of queued) {
+  // autoIncrement with no keyPath → the key is NOT inside the value (no item.id),
+  // so read the keys and values separately
+  const keys = await db.getAllKeys('offlineQueue');
+  for (const key of keys) {
+    const item = await db.get('offlineQueue', key);
+    if (!item) continue;
     await api.execute(item.action, item.payload);
-    await db.delete('offlineQueue', item.id);
+    await db.delete('offlineQueue', key);
   }
 });
 ```
@@ -416,11 +426,12 @@ async function copyToClipboard(text: string) {
   }
 }
 
-// Read from clipboard (requires user gesture + permission)
+// Read from clipboard (needs a user gesture; Chromium asks for permission,
+// Firefox/Safari show a "Paste" prompt instead). Don't pre-check with
+// navigator.permissions.query({ name: 'clipboard-read' }) — Firefox and Safari
+// don't support that permission name and throw.
 async function pasteFromClipboard(): Promise<string> {
-  const permission = await navigator.permissions.query({ name: 'clipboard-read' as PermissionName });
-  if (permission.state === 'denied') throw new Error('Clipboard permission denied');
-  return navigator.clipboard.readText();
+  return navigator.clipboard.readText(); // rejects if the user/browser says no
 }
 
 // Copy rich content (HTML)

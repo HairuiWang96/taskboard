@@ -900,7 +900,7 @@ const similarity = cosineSimilarity(vec1, vec2); // high — semantically relate
 
 // RAG: retrieve chunks most similar to query
 const queryVec = await embedText(userQuery);
-const relevant = await vectorDB.search(queryVec, topK: 5);
+const relevant = await vectorDB.search(queryVec, { topK: 5 });
 const context = relevant.map(r => r.text).join('\n');
 const answer = await llm.complete(`Context: ${context}\nQuestion: ${userQuery}`);
 ```

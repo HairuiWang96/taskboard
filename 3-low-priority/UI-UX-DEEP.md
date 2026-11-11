@@ -349,7 +349,8 @@ With tokens:
 ```text
 Style Dictionary (Amazon) — transforms tokens JSON to CSS/JS/iOS/Android
 Theo (Salesforce) — similar to Style Dictionary
-Figma Tokens plugin — sync design tokens between Figma and code
+Figma Variables (built in) + Tokens Studio plugin (formerly "Figma Tokens") —
+  define tokens in Figma and export/sync them to code
 Tailwind CSS — its config IS a token system (colors, spacing, fonts)
 
 Token lifecycle:

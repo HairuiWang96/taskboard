@@ -6,6 +6,13 @@
 > lifecycle, validation, persistence (TypeORM / Prisma / Mongoose), CQRS, microservices,
 > queues, WebSockets, GraphQL, caching, observability, testing, and production hardening.
 > Written for the interview question _"you say you know Nest — explain how it works."_
+>
+> Current major: **NestJS 12** (2026). The core ideas here are unchanged; the v12 changes worth
+> knowing: packages are ESM-only (CommonJS apps still load them via `require(esm)` on Node
+> 20.19+/22.12+), `@Body({ schema })` + `StandardSchemaValidationPipe` let you validate with Zod or
+> Valibot instead of class-validator, `ConfigModule`'s `validationSchema` accepts Standard Schema,
+> GraphiQL replaced the GraphQL playground, `subscriptions-transport-ws` support was removed (use
+> `graphql-ws`), and the CLI defaults to Rspack instead of webpack for monorepos.
 
 **New to NestJS? Start with [Part 0](#part-0--start-here-the-basics).** It assumes you know
 JavaScript and roughly what a web server does, and nothing else. Sections 1+ assume you have
@@ -1278,7 +1285,8 @@ export class UsersService {
 
     // Nest targets a modern Node runtime; ES2021+ is the usual baseline.
     "target": "ES2021",
-    "module": "commonjs",
+    "module": "commonjs",   // still works with Nest 12's ESM-only packages (via require(esm));
+                            // new projects can use "module": "nodenext" and ESM throughout
 
     // Recommended, not required. strictPropertyInitialization often fights with
     // TypeORM entities and DTOs, so many Nest codebases disable just that flag.
@@ -4420,10 +4428,10 @@ notifications(@CurrentUser('id') userId: string): Observable<MessageEvent> {
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true, // deterministic output, so schema diffs are readable
 
-      // ‼️ Turn off introspection and the playground in production: they let
+      // ‼️ Turn off introspection and the in-browser IDE in production: they let
       // anyone enumerate your entire API surface, including admin mutations.
       introspection: process.env.NODE_ENV !== 'production',
-      playground: false,
+      graphiql: process.env.NODE_ENV !== 'production', // Nest 12: GraphiQL (was `playground`)
 
       // The context is per-request and is where DataLoaders must live (below).
       context: ({ req, res }) => ({ req, res, loaders: createLoaders() }),
@@ -4845,7 +4853,7 @@ describe('Users (e2e)', () => {
 let container: StartedPostgreSqlContainer;
 
 beforeAll(async () => {
-  container = await new PostgreSqlContainer('postgres:16-alpine').start();
+  container = await new PostgreSqlContainer('postgres:18-alpine').start();
   process.env.DATABASE_URL = container.getConnectionUri();
 
   const module = await Test.createTestingModule({ imports: [AppModule] }).compile();

@@ -43,7 +43,9 @@ Under the hood:
   express() → returns a Function with extra methods (.use, .get, .listen, etc.)
   app.listen(3000) → shorthand for http.createServer(app).listen(3000)
 
-There is NO magic — Express is ~600 lines of core code.
+There is NO magic — Express is a small library (its core is a few thousand lines).
+Express 5 has been the default `npm install express` version since 2025 (5.1);
+Express 4 is in maintenance. Section 3 shows the difference that matters most.
 ```
 
 ### The req/res objects
@@ -55,7 +57,8 @@ There is NO magic — Express is ~600 lines of core code.
 // req additions (not in vanilla Node):
 req.params     // { id: '123' } — from :id route params
 req.query      // { page: '1' } — from ?page=1 query string
-req.body       // parsed body — only available AFTER body-parser middleware
+req.body       // parsed body — only set AFTER a parser such as express.json()
+               // (Express 5: undefined when no parser ran; Express 4 gave {})
 req.ip         // client IP (respects X-Forwarded-For if trust proxy set)
 req.path       // '/users/123' — URL path without query string
 req.get('header-name')  // get a request header
@@ -189,7 +192,7 @@ app.get('/user/:id', (req, res) => {
 // For async errors, you MUST either:
 //   1. Call next(err) manually in .catch()
 //   2. Use an async wrapper
-//   3. Use Express 5 (which supports async natively)
+//   3. Use Express 5 (the current default — supports async natively)
 
 // ✗ WRONG — unhandled rejection, Express never sees this error
 app.get('/users', async (req, res) => {
@@ -345,7 +348,9 @@ router.post('/', validateUser, createUser);
    Fastify:  Hooks are tied to the request lifecycle — each hook runs only at its
              designated stage. Less overhead per request.
 
-Benchmark: Fastify handles ~30,000 req/s; Express ~15,000 req/s on same hardware.
+Benchmark: on a "hello world" route Fastify typically does 2–5× the requests/second of
+Express (exact numbers depend on hardware and versions). In a real app the database
+usually dominates, so the gap shrinks a lot.
 ```
 
 ### Basic Fastify setup
@@ -1281,6 +1286,9 @@ Choose Fastify when:
   ✓ You want structured logging (pino) by default
   ✓ TypeScript-first without the NestJS complexity
 
+Choose Hono when:
+  ✓ You need to run on edge runtimes (Cloudflare Workers, Deno, Bun) as well as Node
+  ✓ You want a tiny, Web-standard (Request/Response) framework with good TypeScript types
 Choose NestJS when:
   ✓ Large team — enforced structure prevents architecture drift
   ✓ Enterprise app with complex domain (auth, roles, multi-module)

@@ -2102,7 +2102,7 @@ describe('OrderRepository integration', () => {
 
   beforeAll(async () => {
     // Start a real Postgres container for the test
-    container = await new GenericContainer('postgres:15')
+    container = await new GenericContainer('postgres:18')
       .withEnvironment({ POSTGRES_PASSWORD: 'test', POSTGRES_DB: 'orders_test' })
       .withExposedPorts(5432)
       .start();

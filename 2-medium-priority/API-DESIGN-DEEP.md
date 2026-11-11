@@ -87,6 +87,10 @@ interface ApiError {
     requestId?: string;     // for support/debugging
 }
 
+// ‼️ There is also a STANDARD shape: RFC 9457 "Problem Details" (Content-Type:
+// application/problem+json) with type, title, status, detail, instance + your own fields.
+// Many frameworks support it out of the box — a good default for a new public API.
+
 // Examples:
 { "error": "Task not found", "code": "TASK_NOT_FOUND" }
 {
@@ -125,13 +129,13 @@ GET /tasks?limit=20&cursor=eyJpZCI6IjEwMCJ9  // cursor = base64 encoded last ite
 // Implementation
 async function getTasks(cursor?: string, limit = 20) {
     const decodedCursor = cursor ? JSON.parse(atob(cursor)) : null;
-    const tasks = await db.select().from(tasks)
+    const rows = await db.select().from(tasks)   // `tasks` is the table — don't reuse the name
         .where(decodedCursor ? lt(tasks.id, decodedCursor.id) : undefined)
         .orderBy(desc(tasks.id))
         .limit(limit + 1); // fetch one extra to know if there's a next page
 
-    const hasMore = tasks.length > limit;
-    const items = hasMore ? tasks.slice(0, limit) : tasks;
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
     const nextCursor = hasMore ? btoa(JSON.stringify({ id: items[items.length - 1].id })) : null;
 
     return { data: items, pagination: { hasMore, nextCursor, limit } };
@@ -218,6 +222,17 @@ await fetch('/payments', {
 // Safe to retry with same key
 ```
 
+```text
+‼️ What the simple version above misses (worth saying in an interview):
+  - RACE: two retries arriving at once both miss the cache and both charge.
+    Fix: atomically claim the key first (Redis SET key "processing" NX EX …), and
+    return 409 to a second request while the first is still running.
+  - Store the STATUS CODE with the body, so a retry gets the same 201, not a 200.
+  - Scope keys per client/user, and store a hash of the request body — the same key
+    with a DIFFERENT body should be rejected (422), not silently answered.
+  The Idempotency-Key header is being standardised by the IETF (Stripe popularised it).
+```
+
 ---
 
 ### Rate Limiting Response Headers
@@ -227,6 +242,9 @@ X-RateLimit-Limit: 100           // requests allowed per window
 X-RateLimit-Remaining: 42        // requests remaining this window
 X-RateLimit-Reset: 1716600000    // Unix timestamp when window resets
 Retry-After: 60                  // seconds to wait (returned with 429)
+
+// X-RateLimit-* is a convention, not a standard. The IETF draft standard uses
+// RateLimit-Policy and RateLimit headers instead (express-rate-limit can send either).
 ```
 
 ---
@@ -243,8 +261,8 @@ Retry-After: 60                  // seconds to wait (returned with 429)
    Short-lived (15min) + refresh token (7 days, stored in HttpOnly cookie)
 
 3. OAuth 2.0 — delegated authorization ("Login with Google")
-   Flows: Authorization Code (web apps), Client Credentials (server-to-server),
-          PKCE (mobile/SPA — no client secret)
+   Flows: Authorization Code + PKCE (web, mobile, SPA — PKCE is now recommended for
+          every client), Client Credentials (server-to-server)
 
 4. Session cookies — traditional, stateful
    Set-Cookie: session=abc123; HttpOnly; Secure; SameSite=Lax
@@ -256,7 +274,7 @@ Retry-After: 60                  // seconds to wait (returned with 429)
 
 ```yaml
 # openapi.yaml — machine-readable API contract
-openapi: 3.0.0
+openapi: 3.1.0       # 3.1 aligns with JSON Schema; 3.2 (2025) is the newest
 info:
   title: Tasks API
   version: 1.0.0
@@ -271,6 +289,7 @@ paths:
           schema: { type: string, enum: [pending, done] }
       responses:
         '200':
+          description: A list of tasks   # description is REQUIRED on every response
           content:
             application/json:
               schema:

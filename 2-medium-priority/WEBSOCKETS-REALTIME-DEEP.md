@@ -32,7 +32,8 @@ Server-Sent Events (SSE):
 - Server → Client only (one-directional)
 - Standard HTTP, auto-reconnects, works through proxies
 - Great for: live feeds, notifications, progress updates (no client data needed)
-- Limited browser connections (6 per domain)
+- Over HTTP/1.1 browsers allow only ~6 connections per domain (shared by all tabs);
+  over HTTP/2 or HTTP/3 the streams are multiplexed, so the limit is effectively gone
 
 WebSocket:
 - Full duplex — both sides send anytime
@@ -87,6 +88,17 @@ wss.on('connection', (ws, req) => {
     // Send initial connection confirmation
     ws.send(JSON.stringify({ type: 'connected', userId: user.id }));
 });
+```
+
+```text
+‼️ Two things this minimal server still needs in production:
+  1. TOKEN IN THE URL gets written to proxy/server access logs. Prefer a short-lived,
+     single-use "ticket" from an authenticated HTTP call, a session cookie (checked on the
+     upgrade request, together with the Origin header), or auth as the first message.
+  2. HEARTBEATS. A client that vanishes (laptop closed, network dropped) may never send a
+     close frame, so the server keeps a dead socket forever. ws supports protocol-level
+     ping/pong: every ~30s call ws.ping(); if no 'pong' arrived since the last round,
+     ws.terminate().
 ```
 
 ---
@@ -170,6 +182,7 @@ class RealtimeClient {
     private maxReconnectAttempts = 10;
     private listeners = new Map<string, ((data: unknown) => void)[]>();
     private pingInterval: ReturnType<typeof setInterval> | null = null;
+    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     connect(token: string) {
         const url = `${process.env.WS_URL}?token=${token}`;
@@ -193,11 +206,13 @@ class RealtimeClient {
         this.ws.onclose = (event) => {
             this.stopPing();
             if (!event.wasClean && this.reconnectAttempts < this.maxReconnectAttempts) {
-                // Exponential backoff: 1s, 2s, 4s, 8s... up to 30s
-                const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 30_000);
+                // Exponential backoff: 1s, 2s, 4s, 8s... up to 30s, ±20% jitter so all
+                // clients don't reconnect at the same instant after a server restart
+                const base = Math.min(1000 * 2 ** this.reconnectAttempts, 30_000);
+                const delay = Math.round(base * (0.8 + Math.random() * 0.4));
                 this.reconnectAttempts++;
                 console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
-                setTimeout(() => this.connect(token), delay);
+                this.reconnectTimer = setTimeout(() => this.connect(token), delay);
             }
         };
 
@@ -215,6 +230,17 @@ class RealtimeClient {
     on(type: string, handler: (data: unknown) => void) {
         (this.listeners.get(type) ?? this.listeners.set(type, []).get(type)!).push(handler);
         return () => this.off(type, handler); // return unsubscribe function
+    }
+
+    off(type: string, handler: (data: unknown) => void) {
+        const handlers = this.listeners.get(type);
+        if (handlers) this.listeners.set(type, handlers.filter(h => h !== handler));
+    }
+
+    close() {
+        if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+        this.stopPing();
+        this.ws?.close(1000, 'Client closed'); // 1000 = normal → wasClean, so no reconnect
     }
 
     private emit(type: string, data: unknown) {
@@ -248,7 +274,12 @@ function useWebSocket(roomId: string) {
         clientRef.current = client;
 
         const unsubscribers = [
-            client.on('connected', () => setConnected(true)),
+            // ‼️ Join only once the server confirms the connection. Sending right after
+            // connect() would be dropped — the socket isn't OPEN yet.
+            client.on('connected', () => {
+                setConnected(true);
+                client.send({ type: 'join_room', roomId });
+            }),
             client.on('message', (data: any) => {
                 if (data.roomId === roomId) {
                     setMessages(prev => [...prev, data]);
@@ -257,17 +288,21 @@ function useWebSocket(roomId: string) {
             client.on('typing', (data: any) => {
                 setTypingUsers(prev => new Set([...prev, data.userId]));
                 setTimeout(() => {
-                    setTypingUsers(prev => { prev.delete(data.userId); return new Set(prev); });
+                    setTypingUsers(prev => {           // copy, never mutate state
+                        const next = new Set(prev);
+                        next.delete(data.userId);
+                        return next;
+                    });
                 }, 3000);
             }),
         ];
 
         client.connect(getToken());
-        client.send({ type: 'join_room', roomId });
 
         return () => {
             unsubscribers.forEach(unsub => unsub());
             client.send({ type: 'leave_room', roomId });
+            client.close();   // otherwise every roomId change leaks a socket
         };
     }, [roomId]);
 
@@ -284,8 +319,8 @@ function useWebSocket(roomId: string) {
 ## Scaling WebSockets
 
 ```
-Single server: works up to ~10k concurrent connections
-(each connection = file descriptor + memory overhead)
+Single server: tens of thousands of connections (100k+ with tuning) — the limits are
+memory per connection, file descriptors (ulimit -n) and how much work each message needs
 
 Multiple servers problem:
 - User A connects to Server 1
@@ -303,9 +338,11 @@ Server 2 ← Redis (SUBSCRIBE room:123) → broadcasts to B
 ```
 
 ```ts
-// Redis Pub/Sub for multi-server WebSocket
-const redisPub = createRedisClient();
-const redisSub = createRedisClient();
+// Redis Pub/Sub for multi-server WebSocket (node-redis v4+)
+// A subscribed connection can't run other commands, so use a separate client for it
+const redisPub = createClient({ url: process.env.REDIS_URL });
+const redisSub = redisPub.duplicate();
+await Promise.all([redisPub.connect(), redisSub.connect()]);
 
 // When client sends a message, publish to Redis
 async function onClientMessage(roomId: string, message: object) {
@@ -313,7 +350,9 @@ async function onClientMessage(roomId: string, message: object) {
 }
 
 // All servers subscribe — broadcast to their local clients
-redisSub.subscribe('room:*', (message, channel) => {
+// ‼️ pSubscribe (PATTERN subscribe) — plain subscribe('room:*') would only match a channel
+// literally named "room:*"
+await redisSub.pSubscribe('room:*', (message, channel) => {
     const roomId = channel.replace('room:', '');
     const parsed = JSON.parse(message);
     // Broadcast to all local clients in this room

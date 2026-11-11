@@ -1,6 +1,11 @@
 # C — Senior Developer Deep Reference
 
 > Covers memory model, pointers, dynamic allocation, structs, preprocessor, file I/O, and systems programming patterns.
+>
+> Current standard: **C23** (ISO/IEC 9899:2024). Worth knowing what it added: `bool`/`true`/`false`
+> as real keywords (no `<stdbool.h>` needed), `nullptr`, `constexpr` objects, `typeof`, `#embed`
+> (include a binary file as data), `[[nodiscard]]`-style attributes, and binary literals `0b1010`.
+> GCC 15 compiles C23 by default; much existing code still targets C11/C17.
 
 ---
 
@@ -154,6 +159,8 @@ char *s2  = "hello";        // pointer to string literal — ‼️ IMMUTABLE (U
 #include <string.h>
 char dst[64];
 strncpy(dst, src, sizeof(dst) - 1); dst[sizeof(dst)-1] = '\0'; // always null-terminate ‼️
+// Simpler and always terminated: snprintf(dst, sizeof(dst), "%s", src);
+// (strlcpy/strlcat are also standard in POSIX 2024 and glibc 2.38+)
 strncat(dst, src, sizeof(dst) - strlen(dst) - 1);
 
 // ‼️ Common vulnerabilities:
@@ -269,7 +276,8 @@ if (!arr) { perror("malloc"); exit(EXIT_FAILURE); } // ‼️ always check NULL
 int *zeroed = calloc(10, sizeof(int)); // 10 ints, all zero
 
 // realloc — resize allocation
-arr = realloc(arr, 20 * sizeof(int));
+// ✗ arr = realloc(arr, 20 * sizeof(int));  — if realloc fails it returns NULL,
+//   arr is overwritten, and the original block leaks
 // ‼️ realloc may return NULL while old block still valid — use temp variable
 int *tmp = realloc(arr, 20 * sizeof(int));
 if (!tmp) { free(arr); exit(EXIT_FAILURE); } // don't leak original block ‼️

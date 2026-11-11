@@ -128,7 +128,8 @@ if [ "$name" = "Alice" ]; then ...   # ✓ safe
 if [ $name = "Alice" ]; then ...     # ✗ breaks if name is empty or has spaces
 
 # [[ ]] vs [ ] ‼️
-[[ "$name" == "Al*" ]]    # glob matching, no word splitting, no quoting issues
+[[ $name == Al* ]]        # glob matching — the PATTERN must be unquoted ("Al*" would
+                          # match the literal text Al*); no word splitting on $name
 [[ "$a" -lt "$b" && "$b" -lt "$c" ]]  # && works inside [[ ]]
 [ "$a" -lt "$b" ] && [ "$b" -lt "$c" ]  # [ ] needs separate commands for &&
 ```

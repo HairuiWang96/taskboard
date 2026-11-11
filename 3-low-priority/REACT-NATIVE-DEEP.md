@@ -3,7 +3,8 @@
 
 > Covers: how React Native works, core components, styling, navigation, native modules, platform differences, and interview questions.
 >
-> Reviewed October 2026 — React Native 0.87, Expo SDK 57, React 19.
+> Reviewed October 2026 — React Native 0.87, Expo SDK 57, React 19. (Current in November 2026:
+> React Native 0.88 / Expo SDK 58 — check their changelogs for anything newer.)
 
 ---
 
@@ -88,8 +89,11 @@ npx create-expo-app@latest MyApp
 import {
   View, Text, Image, TextInput, TouchableOpacity,
   ScrollView, FlatList, Modal, ActivityIndicator,
-  SafeAreaView, StyleSheet, Platform
+  StyleSheet, Platform
 } from 'react-native';
+// ‼️ The built-in SafeAreaView is deprecated (iOS-only, being removed) — use the
+// community package that Expo ships by default:
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // View = <div> — the fundamental container
 // Text = <p>/<span> — ALL text MUST be in <Text>
@@ -427,7 +431,7 @@ const styles = StyleSheet.create({
 // iOS:     status bar, notch/dynamic island, back gesture (swipe right)
 // Android: hardware back button, different keyboard behavior
 //          overdraw concerns, different default fonts
-// Both:    SafeAreaView handles status bar + notch
+// Both:    SafeAreaView (react-native-safe-area-context) handles status bar + notch
 //          Keyboard.dismiss() to dismiss keyboard
 ```
 
@@ -549,7 +553,7 @@ function AnimatedCard() {
 
 ### "What are the main differences between iOS and Android in React Native?"
 
-> Key differences: shadows work differently (iOS: shadowColor/shadowOffset/shadowOpacity, Android: elevation). Navigation back behavior (iOS: swipe right, Android: hardware back button — handle with `BackHandler`). Font rendering (iOS uses San Francisco, Android uses Roboto by default). Keyboard behavior (Android back button closes keyboard, iOS requires explicit Keyboard.dismiss()). Permission request flows differ. `SafeAreaView` handles the platform-specific notch/status bar areas. The `Platform.OS` check lets you apply platform-specific code or styles.
+> Key differences: shadows used to differ (iOS: shadowColor/shadowOffset/shadowOpacity, Android: elevation) — with the New Architecture the CSS-style `boxShadow` prop works on both. Navigation back behavior (iOS: swipe right, Android: hardware back button — handle with `BackHandler`). Font rendering (iOS uses San Francisco, Android uses Roboto by default). Keyboard behavior (Android back button closes keyboard, iOS requires explicit Keyboard.dismiss()). Permission request flows differ. `SafeAreaView` from react-native-safe-area-context handles the notch/status bar areas on both platforms. The `Platform.OS` check lets you apply platform-specific code or styles.
 
 ---
 

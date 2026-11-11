@@ -8,6 +8,14 @@
 >
 > Assumes you know TypeScript basics and roughly what a database table is. No prior
 > ORM experience needed.
+>
+> ‼️ Written for **TypeORM 1.x** (1.0 shipped in 2026 after years on 0.3). If you meet older
+> code: `Connection`/`createConnection`/`getRepository()` globals are gone (use a `DataSource`
+> and `dataSource.getRepository()`), `findByIds`/`findOneById` were removed, `exist()` became
+> `exists()`, ormconfig/`TYPEORM_*` env loading was dropped, and Node 20+ is required. Most
+> importantly, an invalid `where` value (like `{ id: undefined }`) now THROWS — in 0.3 it was
+> silently ignored and could match the first row. `npx @typeorm/codemod v1 src/` automates most
+> of the upgrade.
 
 ---
 

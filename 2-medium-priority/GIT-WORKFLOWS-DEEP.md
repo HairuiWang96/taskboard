@@ -58,8 +58,10 @@ Repository:         committed history
 
 git add file.ts        # working directory → staging
 git commit             # staging → repository
-git checkout file.ts   # repository → working directory (discard changes)
-git reset HEAD file.ts # staging → working directory (unstage)
+git restore file.ts           # repository → working directory (discard changes)
+git restore --staged file.ts  # staging → working directory (unstage)
+# Older equivalents you'll still see: git checkout -- file.ts / git reset HEAD file.ts
+# (git switch <branch> is likewise the modern way to change branches)
 ```
 
 ### Merging vs Rebasing
@@ -449,7 +451,9 @@ git bisect reset                   # done
 # Reflog — recover "lost" commits (your safety net)‼️
 git reflog                         # all recent HEAD positions
 git checkout abc1234               # recover any commit
-# Even after git reset --hard, commits are in reflog for 90 days‼️
+# Even after git reset --hard, commits stay recoverable via the reflog: entries for
+# commits no longer on any branch expire after 30 days by default (90 days for
+# commits still reachable) — then git gc can delete them‼️
 
 # Worktree — check out multiple branches simultaneously‼️
 git worktree add ../hotfix hotfix/issue-123
@@ -510,6 +514,9 @@ git rebase -i HEAD~4
 # Rebase onto latest main (incorporate changes before merging)
 git fetch origin
 git rebase origin/main             # replay your commits on top of latest main
+# A rebased branch that was already pushed needs a force push. Use the safe form —
+# it refuses if someone else pushed in the meantime:
+#   git push --force-with-lease
 # If conflicts: resolve, git add, git rebase --continue
 
 # Keep feature branch up to date (merge vs rebase)

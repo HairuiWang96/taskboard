@@ -239,7 +239,7 @@ writes to it, but deleting the container leaves the volume alone.‼️
 
 ```bash
 # Named volume — Docker manages where it lives. Use for databases.
-docker run -d -v pgdata:/var/lib/postgresql/data -e POSTGRES_PASSWORD=secret postgres:17
+docker run -d -v pgdata:/var/lib/postgresql -e POSTGRES_PASSWORD=secret postgres:18
 #                │      └─ folder INSIDE the container where Postgres keeps data
 #                └─ volume name (created automatically)
 
@@ -252,8 +252,10 @@ docker run -v $(pwd)/src:/app/src my-app
 ‼️ -v follows the same OUTSIDE:INSIDE order as -p.
 
 ‼️ "Folder INSIDE the container" — but isn't the container disposable?
-   ‼️The PATH is inside, the DATA is not. Postgres always writes to
-   /var/lib/postgresql/data. -v plugs the volume into that folder, so
+   ‼️The PATH is inside, the DATA is not. The Postgres image keeps its data
+   under /var/lib/postgresql (since Postgres 18; older images used
+   /var/lib/postgresql/data — mounting that path on 18+ silently loses data
+   when the container is recreated). -v plugs the volume into that folder, so
    whatever Postgres writes there actually lands in the volume, outside.
 
    Like a USB drive: the laptop sees it as a folder, the files live on the
@@ -288,12 +290,12 @@ services:
         condition: service_healthy # wait until Postgres is actually ready‼️
 
   db:
-    image: postgres:17
+    image: postgres:18
     environment:
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: app
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql   # Postgres 18+ path
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
@@ -379,7 +381,7 @@ dist
    ENV API_KEY=... is visible to anyone with the image. Pass at run time.
 
 ‼️ 10. Using :latest tags.
-   The image changes without warning. Pin versions: node:24-alpine, postgres:17.
+   The image changes without warning. Pin versions: node:24-alpine, postgres:18.
 
 ‼️ 11. Disk filling up.
    Old images and stopped containers pile up. Run `docker system prune`
@@ -395,7 +397,7 @@ dist
 docker build -t my-app .            # build from Dockerfile
 docker images                       # list
 docker rmi my-app                   # delete
-docker pull postgres:17             # download from Docker Hub
+docker pull postgres:18             # download from Docker Hub
 
 # ── CONTAINERS ────────────────────────────────────────────────────────────
 docker run -d -p 3000:3000 --name api --env-file .env my-app

@@ -318,6 +318,8 @@ with ThreadPoolExecutor(max_workers=10) as executor:
     results = [f.result() for f in futures]
 
 # Multiprocessing — CPU-bound work (separate processes, bypass GIL)
+# (Python 3.14 officially supports a FREE-THREADED build with no GIL — threads can then
+#  run CPU-bound Python in parallel; the default build still has the GIL)
 with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
     results = list(executor.map(cpu_intensive_task, data))
 

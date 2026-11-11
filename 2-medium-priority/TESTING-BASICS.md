@@ -787,7 +787,7 @@ describe('UserRepository', () => {
     beforeAll(async () => {
         // Starts a real Postgres in Docker. The first run pulls the image, hence
         // the generous timeout; after that it is a few seconds.
-        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+        container = await new PostgreSqlContainer('postgres:18-alpine').start();
 
         const db = await connect(container.getConnectionUri());
 

@@ -154,8 +154,10 @@ Authorization Server: issues tokens (often same as resource server for simple ca
    PKCE (Proof Key for Code Exchange):
      code_verifier = random 43–128 char string
      code_challenge = BASE64URL(SHA256(code_verifier))
-     Prevents authorization code interception attack (public clients)
-     Required for SPAs and mobile apps (no client secret)
+     Prevents authorization code interception attack
+     Required for SPAs and mobile apps (no client secret) — and the current best
+     practice (RFC 9700, 2025; OAuth 2.1 draft) is PKCE for EVERY client, even
+     server-side apps that also have a client secret
 
 2. Client Credentials — for machine-to-machine (no user)
    POST /token { grant_type=client_credentials, client_id, client_secret }
@@ -265,9 +267,18 @@ Node.js:
   const hash = await bcrypt.hash(password, 12)         // cost=12
   const match = await bcrypt.compare(plaintext, hash)   // timing-safe
 
-  import { hash, verify } from 'argon2'
-  const hash = await hash(password)
-  const match = await verify(hash, plaintext)
+  import argon2 from 'argon2'
+  const hashed = await argon2.hash(password)            // argon2id by default
+  const ok = await argon2.verify(hashed, plaintext)
+
+‼️ bcrypt only uses the first 72 BYTES of the password — longer input is silently cut.
+   Argon2id has no such limit (another reason to prefer it for new systems).
+   OWASP minimums: Argon2id m=19 MiB, t=2, p=1 — or bcrypt cost ≥ 10.
+
+Password POLICY (NIST SP 800-63B rev 4, 2025):
+  - Length over complexity: min 15 chars if the password is the only factor, 8 with MFA
+  - No forced composition rules (1 upper, 1 symbol…) and no forced periodic rotation
+  - DO check new passwords against breached-password lists (e.g. Have I Been Pwned)
 ```
 
 ### Multi-Factor Authentication (MFA)
@@ -277,7 +288,7 @@ TOTP (Time-based One-Time Password — Google Authenticator):
   Secret shared at setup: user scans QR code (base32-encoded secret)
   TOTP = HOTP(secret, floor(time / 30))  → 6-digit code valid 30s
   Server recomputes with same secret — match → auth
-  Library: otplib (Node), speakeasy
+  Library: otplib (Node) — speakeasy is unmaintained
 
 SMS OTP: less secure (SIM swap attacks), avoid for high-security apps
 Push notification: Duo, Okta Verify
@@ -309,6 +320,7 @@ Cross-Site Request Forgery: malicious site triggers state-changing request using
 Mitigations:
   1. SameSite=Strict on cookies: cookie not sent on cross-site requests (best defence)
      SameSite=Lax: sent for top-level navigations (GET) but not POST — safe for most cases
+     (Chromium treats cookies with no SameSite attribute as Lax by default)
   2. CSRF token: server issues per-session token, sent in hidden form field or X-CSRF-Token header
      Malicious site can't read it (same-origin policy)
   3. Origin/Referer header validation
@@ -348,6 +360,8 @@ A: localStorage is accessible to any JS on the page — XSS steals token permane
    HttpOnly cookie: inaccessible to JS; browser handles automatically.
    Needs SameSite=Strict + CSRF protection.
    Alternatively: memory-only (lost on refresh) for high-security SPAs.
+   Current OAuth guidance for browser apps favours a BFF (Backend-for-Frontend): the
+   server does the OAuth flow and keeps the tokens; the SPA only gets a session cookie.
 
 Q: How do you revoke a JWT before expiry?
 A: Options:

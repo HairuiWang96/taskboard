@@ -177,10 +177,14 @@ Frontend roles often include a CSS round: build a layout from scratch, fix broke
 
 ### Modal / Dialog
 ```html
+<!-- Modern alternative: the native <dialog> element. dialog.showModal() gives you the
+     backdrop (::backdrop), focus trapping, Esc-to-close and correct screen-reader
+     semantics for free. If you hand-roll it like below, add role="dialog",
+     aria-modal="true", aria-labelledby, and move focus into the modal yourself. -->
 <div class="modal-overlay">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <button class="modal-close" aria-label="Close">×</button>
-    <h2>Title</h2>
+    <h2 id="modal-title">Title</h2>
     <p>Content here.</p>
     <div class="modal-actions">
       <button class="btn-secondary">Cancel</button>
@@ -546,7 +550,8 @@ body {
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;   /* dvh = the visible viewport; 100vh is too tall on mobile when
+                       the browser's address bar is showing */
 }
 
 .header { flex-shrink: 0; height: 64px; }

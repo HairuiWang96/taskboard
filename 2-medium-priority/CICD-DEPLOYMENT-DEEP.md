@@ -142,7 +142,7 @@ jobs:
 
     services:                    # spin up Docker containers for tests
       postgres:
-        image: postgres:16
+        image: postgres:18
         env:
           POSTGRES_DB: testdb
           POSTGRES_PASSWORD: postgres
@@ -155,7 +155,7 @@ jobs:
           --health-retries 5
 
       redis:
-        image: redis:7
+        image: redis:8
         ports:
           - 6379:6379
 
@@ -434,14 +434,14 @@ services:
           target: /app/src
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_DB: app
       POSTGRES_PASSWORD: postgres
     ports:
       - '5432:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # persist data
+      - postgres_data:/var/lib/postgresql  # persist data (Postgres 18+ path — not .../data)
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
@@ -449,7 +449,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - '6379:6379'
     command: redis-server --appendonly yes   # persist data

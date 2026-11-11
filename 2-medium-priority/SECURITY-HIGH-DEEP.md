@@ -26,17 +26,25 @@
 OWASP (Open Web Application Security Project) publishes the top 10 most
 critical web security risks. Know these — they come up in every security interview.
 
-2021 list:
-  A01 Broken Access Control      ← #1 most common. Users accessing other users' data.
-  A02 Cryptographic Failures     ← Sensitive data in plaintext, weak encryption.
-  A03 Injection                  ← SQL, OS command, LDAP injection.
-  A04 Insecure Design            ← Missing threat modeling, no rate limiting.
-  A05 Security Misconfiguration  ← Default creds, open S3 buckets, verbose errors.
-  A06 Vulnerable Components      ← Using packages with known CVEs.
-  A07 Auth Failures              ← Weak passwords, no MFA, brute force possible.
-  A08 Software & Data Integrity  ← Unverified dependencies, insecure CI/CD.
-  A09 Logging Failures           ← No audit trail, login failures not logged.
-  A10 SSRF                       ← Server fetching URLs controlled by attacker.
+2025 list (current — replaced the 2021 edition):
+  A01 Broken Access Control        ← #1 again. Users accessing other users' data.
+                                     SSRF (A10 in 2021) is now folded in here.
+  A02 Security Misconfiguration    ← Default creds, open S3 buckets, verbose errors.
+  A03 Software Supply Chain        ← NEW. Compromised/vulnerable dependencies, build
+      Failures                       systems and CI/CD (replaces "Vulnerable Components").
+  A04 Cryptographic Failures       ← Sensitive data in plaintext, weak encryption.
+  A05 Injection                    ← SQL, OS command, LDAP — and XSS.
+  A06 Insecure Design              ← Missing threat modeling, no rate limiting.
+  A07 Authentication Failures      ← Weak passwords, no MFA, brute force possible.
+  A08 Software or Data Integrity   ← Unverified updates, unsafe deserialisation.
+      Failures
+  A09 Security Logging & Alerting  ← No audit trail, nobody alerted on attacks.
+      Failures
+  A10 Mishandling of Exceptional   ← NEW. Failing OPEN, leaking details in errors,
+      Conditions                     unhandled edge cases.
+
+Many companies and older material still quote the 2021 list — the big moves are
+Misconfiguration up to #2, supply chain as its own category, and SSRF merged into A01.
 ```
 
 ---
@@ -122,6 +130,8 @@ Example:
   3. evil.com's page has: <img src="https://bank.com/transfer?to=attacker&amount=1000">
   4. The browser makes a GET request to bank.com — WITH the session cookie
   5. Bank transfers the money
+
+(Step 3 also shows a second bug: GET requests must never change state.)
 ```
 
 ### Prevention
@@ -242,14 +252,15 @@ if (!requested.startsWith(uploadsDir + path.sep)) {
 // ✓ Use bcrypt, argon2, or scrypt — slow by design
 import bcrypt from 'bcrypt';
 
-const ROUNDS = 12; // cost factor — higher = slower = more secure (12-14 is standard)
+const ROUNDS = 12; // cost factor — higher = slower = more secure (OWASP minimum is 10)
 
 // On registration
 const hash = await bcrypt.hash(password, ROUNDS);
 await db.insert(users).values({ email, passwordHash: hash });
 
 // On login
-const user = await db.select().from(users).where(eq(users.email, email)).get();
+const [user] = await db.select().from(users).where(eq(users.email, email));
+if (!user) return reply.code(401).send({ error: 'Invalid credentials' }); // see timing note below
 const valid = await bcrypt.compare(password, user.passwordHash);
 if (!valid) return reply.code(401).send({ error: 'Invalid credentials' });
 
@@ -269,7 +280,7 @@ import rateLimit from '@fastify/rate-limit';
 app.register(rateLimit, { max: 100, timeWindow: '1 minute' });
 
 // Tighter limit on auth routes
-fastify.post('/auth/login', {
+app.post('/auth/login', {
   config: { rateLimit: { max: 5, timeWindow: '15 minutes' } }
 }, async (req, reply) => { ... });
 
@@ -282,8 +293,12 @@ fastify.post('/auth/login', {
 
 // Timing attack: use bcrypt.compare even when user not found
 // (otherwise timing difference reveals which emails exist)
+// DUMMY_HASH = a REAL bcrypt hash of a random string, computed once at startup —
+// a made-up/malformed hash may be rejected instantly, which brings the timing leak back
+const DUMMY_HASH = await bcrypt.hash(crypto.randomUUID(), ROUNDS);
+
 const user = await findUser(email);
-const hash = user?.passwordHash ?? '$2b$12$invalid_hash_to_prevent_timing_attack';
+const hash = user?.passwordHash ?? DUMMY_HASH;
 const valid = await bcrypt.compare(password, hash);
 if (!user || !valid) return reply.code(401).send({ error: 'Invalid email or password' });
 ```
@@ -348,7 +363,8 @@ app.register(helmet, {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],        // only scripts from own origin
-      styleSrc: ["'self'", "'unsafe-inline'"], // Tailwind needs inline styles
+      styleSrc: ["'self'", "'unsafe-inline'"], // for style="" attributes (SSR'd style props,
+                                               // some CSS-in-JS) — Tailwind's CSS file doesn't need it
       imgSrc: ["'self'", 'data:', 'https:'],
       connectSrc: ["'self'"],       // fetch/XHR only to own origin
       frameAncestors: ["'none'"],   // equivalent of X-Frame-Options: DENY
@@ -400,8 +416,9 @@ Permissions-Policy (formerly Feature-Policy)
 
 // ✓ Validate with Zod at the route level
 const CreateUserSchema = z.object({
-  email: z.string().email().toLowerCase().trim(),
-  name: z.string().min(1).max(100).trim(),
+  // trim BEFORE validating — otherwise " Ada@x.com" fails the email check
+  email: z.string().trim().toLowerCase().pipe(z.email()),   // Zod 4: z.email()
+  name: z.string().trim().min(1).max(100),
   age: z.number().int().min(0).max(150),
   role: z.enum(['user', 'admin']),  // whitelist, never accept raw role strings from client
 });
@@ -460,7 +477,7 @@ const SECRET = process.env.JWT_SECRET;
 import { z } from 'zod';
 const env = z.object({
   JWT_SECRET: z.string().min(32),
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),   // Zod 4 style (z.string().url() is deprecated)
   NODE_ENV: z.enum(['development', 'production', 'test']),
 }).parse(process.env);
 
@@ -503,12 +520,13 @@ HIPAA requires these technical controls for any system handling PHI:
    - Who accessed what PHI, when, from where
    - Immutable audit log (append-only — even admins can't delete)
    - Log: user ID, timestamp, resource accessed, action (view/edit/delete)
-   - Retain logs for 6 years minimum
+   - Retain for 6 years (HIPAA's documentation-retention period — the common standard)
 
 3. Integrity
    - Protect PHI from improper alteration/destruction
    - Checksums on sensitive files
-   - Soft deletes (mark deleted, never hard-delete PHI records)
+   - Soft deletes / retention rules so PHI isn't destroyed improperly (state law sets
+     how long medical records must be kept)
 
 4. Transmission Security
    - Encrypt PHI in transit — TLS 1.2+ minimum, TLS 1.3 preferred
@@ -516,6 +534,9 @@ HIPAA requires these technical controls for any system handling PHI:
    - No PHI in error messages or logs
 
 5. Encryption at Rest
+   (Today the rule calls encryption "addressable" — required unless you document an
+    equivalent alternative. HHS's January 2025 proposed update would make it mandatory;
+    in practice, treat it as required.)
    - Database encryption (AWS RDS with encryption enabled)
    - S3 bucket encryption (SSE-S3 or SSE-KMS)
    - Backups encrypted
@@ -542,13 +563,12 @@ const record = await db.select()
   .from(records)
   .where(
     and(eq(records.id, recordId), eq(records.patientId, req.user.userId))
-  )
-  .get();
+  );
 // Even if an attacker manipulates recordId, they can only get their own records
 
 // ✓ Audit log on every PHI access
 async function getPatientRecord(recordId: string, actorId: string) {
-  const record = await db.select().from(records).where(eq(records.id, recordId)).get();
+  const [record] = await db.select().from(records).where(eq(records.id, recordId));
 
   // Audit log — always, even on failure
   await db.insert(auditLog).values({
@@ -598,7 +618,7 @@ async function getPatientRecord(recordId: string, actorId: string) {
 
 ### "What is the OWASP Top 10 and which are most important to know?"
 
-> The OWASP Top 10 is the standard list of most critical web security risks. Most important: **Injection** (SQL, command — use parameterized queries). **Broken Authentication** (weak sessions, no rate limiting). **XSS** (injecting scripts — sanitize output). **Broken Access Control** (users accessing other users' data — always authorize server-side). **Security Misconfiguration** (default passwords, open S3 buckets, debug mode in prod). **SSRF** (server making requests to internal services based on user input).
+> The OWASP Top 10 is the standard list of most critical web security risks. The current edition is 2025. Most important: **Broken Access Control** (#1 — users reaching other users' data). **Injection** (SQL, command, and XSS — parameterized queries, output encoding). **Authentication Failures** (weak sessions, no rate limiting, no MFA). **Software Supply Chain Failures** (new in 2025 — compromised packages and build pipelines). Always authorize server-side. **Security Misconfiguration** (default passwords, open S3 buckets, debug mode in prod). **SSRF** (server making requests to internal services based on user input — part of Broken Access Control since 2025).
 
 ### "What is XSS and how do you prevent it?"
 

@@ -164,7 +164,7 @@ cat /proc/sys/vm/overcommit_memory # memory overcommit setting
 /etc       — configuration files (text, editable)
 /var       — variable data — logs, spool, databases
 /var/log   — log files
-/tmp       — temporary files (cleared on boot, or via tmpwatch)
+/tmp       — temporary files (often cleared on boot; systemd-tmpfiles cleans old files)
 /dev       — device files (block and character devices)
 /proc      — virtual filesystem — kernel/process info
 /sys       — virtual filesystem — hardware/driver info
@@ -263,6 +263,9 @@ nmap -p 80,443 host         # port scan (need permission to scan)
 ### Firewall — iptables & nftables
 
 ```bash
+# ‼️ nftables is the modern framework and the default backend on current Debian, Ubuntu
+# and RHEL — the `iptables` command there is usually iptables-nft, a compatibility layer
+# that writes nftables rules. Commands below still work; new setups often use nft or ufw/firewalld.
 # iptables — Linux packet filtering (still widely used)
 # Tables: filter, nat, mangle, raw
 # Chains: INPUT, OUTPUT, FORWARD (in filter table)
@@ -273,7 +276,7 @@ iptables -L -n -v --line-numbers   # list rules with packet counts
 # Allow SSH
 iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 # Allow established connections
-iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT  # (-m state is the old form)
 # Drop everything else
 iptables -P INPUT DROP
 
@@ -293,6 +296,10 @@ ufw allow 'Nginx Full'
 ufw deny 3306
 ufw enable
 ufw status verbose
+
+# nftables directly
+nft list ruleset                   # show everything
+# RHEL/Fedora: firewalld (firewall-cmd --add-service=https --permanent)
 ```
 
 ---

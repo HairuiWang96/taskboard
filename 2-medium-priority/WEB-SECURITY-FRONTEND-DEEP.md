@@ -564,7 +564,8 @@ SameSite=Strict:
   they arrive NOT logged in (session cookie not sent on the navigation).
   Best for: admin dashboards, banking, high-security apps.
 
-SameSite=Lax (DEFAULT in modern browsers):
+SameSite=Lax (the DEFAULT in Chromium browsers when no SameSite is set —
+Firefox and Safari do NOT apply Lax by default, which is why you set it yourself):
   Cookie is sent on cross-site TOP-LEVEL navigations (link clicks, redirects)
   but NOT on cross-site sub-requests (img, iframe, fetch, form POST).
   Protects against CSRF for most practical attacks while preserving UX.
@@ -621,7 +622,9 @@ Double Submit Cookie Pattern (stateless alternative):
      (e.g., X-CSRF-Token: <value>)
   3. Server verifies cookie value === header value
   4. Attacker's site cannot READ your cookie (same-origin policy) so cannot set the header
-  Note: this breaks if there's a subdomain XSS vulnerability
+  Note: this breaks if there's a subdomain XSS vulnerability — a subdomain can SET
+  cookies for the parent domain. OWASP now recommends the SIGNED double-submit variant:
+  token = HMAC(server secret, session id + random value), so a forged cookie fails.
 
 When CSRF does NOT apply:
   - JSON APIs where Content-Type: application/json is required
@@ -917,7 +920,9 @@ The answer for most production apps:
 
 Memory (in-memory variable):
   Stored in a React state variable or module-level variable.
-  + Not accessible via XSS (XSS can't access module scope)
+  + Much harder for XSS to read directly (not in any storage API) — but XSS running
+    in your page can still call your API as the user, or hook fetch() to grab the
+    token. httpOnly/memory storage limits token THEFT; only preventing XSS stops abuse.
   + Not sent automatically (no CSRF risk)
   - Lost on page refresh — requires refresh token to restore
   - Complex to implement correctly
@@ -947,7 +952,7 @@ app.post('/auth/login', async (req, res) => {
   const refreshToken = jwt.sign(
     { sub: user.id, type: 'refresh' },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '7d', issuer: 'myapp' } // must match what /auth/refresh verifies
   );
 
   // Refresh token: httpOnly cookie (JS cannot read)
@@ -971,6 +976,7 @@ app.post('/auth/refresh', async (req, res) => {
   try {
     const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, {
       issuer: 'myapp',
+      algorithms: ['HS256'],   // always pin the algorithm
     });
 
     // Check refresh token hasn't been revoked (database lookup)
@@ -988,7 +994,7 @@ app.post('/auth/refresh', async (req, res) => {
     const newRefreshToken = jwt.sign(
       { sub: payload.sub, type: 'refresh' },
       process.env.JWT_REFRESH_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '7d', issuer: 'myapp' }
     );
     await revokeToken(refreshToken);
 
@@ -1179,7 +1185,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'nonce-<generated>'"],
+      // The nonce must be NEW on every response — use a function, not a fixed string:
+      scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
       // ... full CSP config
     }
   },
@@ -1189,14 +1196,13 @@ app.use(helmet({
     preload: true,
   },
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  permissionsPolicy: {
-    features: {
-      camera: ["'none'"],
-      microphone: ["'none'"],
-      geolocation: ["'self'"],
-    }
-  },
 }));
+
+// helmet does NOT set Permissions-Policy — add it yourself:
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+  next();
+});
 ```
 
 ---
@@ -1317,6 +1323,8 @@ Cross-origin isolation is required for:
 
 Downside: ALL third-party resources (images, scripts from CDNs) must have
 CORS headers or CORP: cross-origin. This breaks lazy third-party integrations.
+Easier option: COEP: credentialless — cross-origin requests without opt-in still load,
+but WITHOUT cookies (supported in Chromium and Firefox; check Safari before relying on it).
 Test thoroughly before enabling in production.
 ```
 
@@ -1527,6 +1535,12 @@ to inject malicious code. Real examples:
   - left-pad (2016): deletion caused mass breakage (availability, not security)
   - colors/faker (2022): maintainer intentionally broke their own packages
   - node-ipc (2022): anti-war protest code, destructive on Russian IPs
+  - xz-utils (2024): a backdoor slipped into a Linux compression library by a
+    "maintainer" who had built trust over two years — caught by chance before release
+  - chalk / debug (Sept 2025): a maintainer was phished; malware that rewrote crypto
+    wallet addresses was published to packages with billions of weekly downloads
+  - Shai-Hulud (Sept & Nov 2025): a self-spreading npm WORM — it stole npm tokens from
+    developers' machines and CI, then published infected versions of their packages
 ```
 
 ```bash
@@ -1557,7 +1571,7 @@ npm list --depth=0
 {
   "dependencies": {
     "jsonwebtoken": "9.0.2",     // pinned — not "^9.0.2"
-    "express": "^4.18.2"        // caret ok for well-maintained frameworks
+    "express": "^5.1.0"         // caret ok for well-maintained frameworks
   }
 }
 ```
@@ -1614,6 +1628,15 @@ snyk monitor     # continuously monitor (sends to Snyk dashboard)
 # Audit scripts in package.json — malicious packages often use postinstall
 # to run code when you install them:
 npm install --ignore-scripts  # skip lifecycle scripts (postinstall, etc.)
+# Recent npm and pnpm versions go further: dependency install scripts are BLOCKED by
+# default unless the package is on an allow-list (npm "allowScripts", pnpm
+# "onlyBuiltDependencies"). Keep that list short.
+
+# Defences added after the 2025 worms:
+#   - Publish with npm TRUSTED PUBLISHING (OIDC from CI, no long-lived npm tokens)
+#     and provenance; require 2FA for maintainers
+#   - Don't install brand-new versions instantly — e.g. pnpm minimumReleaseAge lets a
+#     release "age" a day or more so the community can spot a compromised one first
 ```
 
 ### Lockfile security
@@ -1710,6 +1733,9 @@ In Node.js: TLS configuration is handled at the server level.
 In production, terminate TLS at a load balancer/reverse proxy (nginx, AWS ALB)
 and configure TLS there — simpler and more maintainable.
 
+Certificate lifetimes are shrinking (CA/Browser Forum, 2025 vote): max 200 days from
+March 2026, 100 days from 2027, 47 days from 2029. Manual renewal stops being possible —
+automate it (ACME: certbot, Caddy, cert-manager, or your cloud's managed certificates).
 Test your TLS configuration:
   ssllabs.com/ssltest  — comprehensive TLS analysis
   testssl.sh           — command-line TLS tester
@@ -1719,7 +1745,8 @@ Test your TLS configuration:
 ```nginx
 # nginx TLS configuration (production-grade)
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
+    http2 on;      # nginx 1.25.1+ (the old "listen 443 ssl http2" form is deprecated)
     server_name myapp.com;
 
     ssl_certificate     /etc/letsencrypt/live/myapp.com/fullchain.pem;
@@ -1735,9 +1762,10 @@ server {
     # HSTS
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
-    # OCSP Stapling (faster cert validation for clients)
-    ssl_stapling on;
-    ssl_stapling_verify on;
+    # OCSP stapling: only useful if your CA still runs OCSP. Let's Encrypt shut its OCSP
+    # service down in 2025 (revocation now relies on CRLs), so with LE certs leave it off.
+    # ssl_stapling on;
+    # ssl_stapling_verify on;
 }
 
 # Redirect HTTP to HTTPS
@@ -1827,6 +1855,11 @@ PKCE fixes this:
   5. When SPA exchanges the code, it sends the original code_verifier
   6. AS verifies: SHA256(code_verifier) === stored code_challenge
   7. If an attacker intercepts the code, they don't have the code_verifier → exchange fails
+
+‼️ Current guidance (IETF "OAuth 2.0 for Browser-Based Applications") prefers a
+   BFF — Backend-for-Frontend — over a pure-SPA flow: a small server does the code +
+   PKCE exchange, keeps the tokens server-side, and gives the SPA only an httpOnly
+   session cookie. Pure-SPA PKCE (below) is still valid when you have no backend.
 ```
 
 ```js
@@ -2006,7 +2039,8 @@ Input / Output:
   [ ] Sanitize HTML content with DOMPurify before dangerouslySetInnerHTML
   [ ] Validate URL schemes before using in href/src (block javascript:)
   [ ] Use textContent / innerText instead of innerHTML for user content
-  [ ] Set rel="noopener noreferrer" on all target="_blank" links
+  [ ] target="_blank" links: browsers now imply rel="noopener"; add "noreferrer" if
+      you also don't want to send the Referer
 
 State / Auth:
   [ ] Store access tokens in memory (React state/context), not localStorage
@@ -2042,7 +2076,7 @@ Headers:
   [ ] Set Referrer-Policy: strict-origin-when-cross-origin
 
 Auth & Sessions:
-  [ ] Hash passwords with bcrypt (saltRounds >= 12) — never MD5/SHA1
+  [ ] Hash passwords with Argon2id or bcrypt (cost >= 10, 12 is common) — never MD5/SHA1
   [ ] Set httpOnly + Secure + SameSite on session/token cookies
   [ ] Implement rate limiting on auth endpoints (express-rate-limit)
   [ ] Validate JWT: signature, exp, iss, aud, algorithms

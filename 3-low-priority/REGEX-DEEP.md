@@ -154,13 +154,17 @@ html.match(/<[^>]+>/g);  // ['<b>', '</b>', '<i>', '</i>'] — more precise
 '100px 200em 300px'.match(/\d+(?=px)/g);  // ['100', '300'] — numbers before "px"
 
 // Negative lookahead — match X only if NOT followed by Y
-'100px 200em'.match(/\d+(?!px)\b/g);  // ['200'] — numbers NOT before "px"
+'100px 200em'.match(/\b\d+(?!\d|px)/g);  // ['200'] — numbers NOT before "px"
+// ‼️ (?!\d|px) — without the \d, the engine backtracks: "10" in "100px" is
+// "not followed by px" (it's followed by 0), so it would wrongly match
 
 // Positive lookbehind — match X only if preceded by Y
 '$100 £200 $300'.match(/(?<=\$)\d+/g);  // ['100', '300'] — numbers after "$"
 
 // Negative lookbehind
-'$100 £200'.match(/(?<!\$)\d+/g);  // ['200'] — numbers NOT after "$"
+'$100 £200'.match(/(?<![$\d])\d+/g);  // ['200'] — numbers NOT after "$"
+// ‼️ The plain (?<!\$)\d+ returns ['00', '200']: "00" in "$100" is preceded by
+// "1", not "$". Also exclude digits in the lookbehind so a match can't start mid-number
 
 // Real use: format number with commas (insert comma before every group of 3 digits)
 '1234567'.replace(/\B(?=(\d{3})+(?!\d))/g, ',');  // '1,234,567'

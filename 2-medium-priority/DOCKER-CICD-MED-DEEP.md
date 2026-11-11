@@ -272,7 +272,7 @@ server {
 services:
   # PostgreSQL database
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -280,7 +280,7 @@ services:
     ports:
       - "5432:5432"    # host:container
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # persist data across restarts
+      - postgres_data:/var/lib/postgresql  # persist data (Postgres 18+ path — not .../data)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -289,7 +289,7 @@ services:
 
   # Redis
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - "6379:6379"
     volumes:
@@ -374,7 +374,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -757,13 +757,13 @@ services:
     depends_on: [db, redis]
 
   db:
-    image: postgres:16-alpine
-    volumes: [postgres_data:/var/lib/postgresql/data]
+    image: postgres:18-alpine
+    volumes: [postgres_data:/var/lib/postgresql]   # Postgres 18+ path
     environment:
       POSTGRES_PASSWORD: password
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
 
 volumes:
   postgres_data:

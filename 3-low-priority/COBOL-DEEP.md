@@ -415,7 +415,12 @@
 ‼️ COBOL is NOT dead — it processes an estimated $3 trillion in daily commerce.
    Banks, insurance companies, government agencies run mission-critical COBOL on IBM z/OS mainframes.
    ~220 billion lines of COBOL code still in production worldwide.
-   Modern COBOL (COBOL 2002, 2014) supports OOP, Unicode, XML/JSON processing.
+   (Both numbers are widely quoted estimates from ~2017 — treat them as "a lot", not exact.)
+   Standards: COBOL 2002 added OOP and Unicode; the latest is COBOL 2023 (ISO/IEC 1989:2023).
+   JSON/XML handling comes from vendor compilers — e.g. IBM Enterprise COBOL's
+   JSON GENERATE / JSON PARSE and XML statements. GnuCOBOL is the free open-source compiler.
+   Modernisation today often uses AI-assisted code explanation/translation (e.g. IBM's
+   watsonx Code Assistant for Z) alongside the classic "wrap it in APIs" approach.
 
 Mainframe context:
   z/OS  — IBM's mainframe OS, primary COBOL runtime

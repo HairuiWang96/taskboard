@@ -499,7 +499,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: postgres:18
         env: { POSTGRES_PASSWORD: test }
     steps:
       - run: npm test -- --coverage

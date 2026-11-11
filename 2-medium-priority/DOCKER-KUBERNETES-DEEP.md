@@ -251,7 +251,7 @@ Smaller images = faster pulls, smaller attack surface, less egress cost.
 
 ```dockerfile
 # Multi-stage for a Go service — final image has NO Go toolchain
-FROM golang:1.21-alpine AS builder
+FROM golang:1.27-alpine AS builder
 WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download                      # cache deps layer
@@ -333,10 +333,10 @@ services:
       REDIS_URL: redis://cache:6379
 
   db:
-    image: postgres:15
+    image: postgres:18
 
   cache:
-    image: redis:7
+    image: redis:8
 # Docker Compose creates a default bridge network and registers each
 # service name as a DNS entry pointing to that container's IP.
 ```
@@ -371,9 +371,9 @@ services:
 # docker-compose volumes
 services:
   db:
-    image: postgres:15
+    image: postgres:18
     volumes:
-      - pgdata:/var/lib/postgresql/data   # named volume — persists
+      - pgdata:/var/lib/postgresql   # named volume — persists (18+ path)
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # bind mount
 
   api:
@@ -919,9 +919,9 @@ volumes:
       claimName: postgres-pvc
 containers:
   - name: postgres
-    image: postgres:15
+    image: postgres:18
     volumeMounts:
-      - mountPath: /var/lib/postgresql/data
+      - mountPath: /var/lib/postgresql   # Postgres 18+ path
         name: postgres-data
 ```
 
@@ -955,10 +955,10 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:15
+          image: postgres:18
           volumeMounts:
             - name: data
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql   # Postgres 18+ path
   volumeClaimTemplates:     # each pod gets its own PVC automatically
     - metadata:
         name: data

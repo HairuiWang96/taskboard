@@ -13,6 +13,8 @@ Traces   → record of a request's journey across services
            "Where is it slow / where did it fail?"
 
 Together: metrics alert you, logs tell you what happened, traces show you where.
+OpenTelemetry is now the standard way to produce all three (profiles are being added
+as a fourth signal), so one SDK feeds whichever backend you use.
 ```
 
 ---
@@ -214,21 +216,23 @@ import { trace, SpanStatusCode } from '@opentelemetry/api';
 
 const tracer = trace.getTracer('tasks-service');
 
+// ‼️ startActiveSpan (not startSpan) makes this span the CURRENT one, so spans created
+// inside it — e.g. the auto-instrumented Postgres query — become its children.
+// startSpan creates a span but child spans won't attach to it.
 async function createTask(title: string) {
-    const span = tracer.startSpan('createTask');
-    span.setAttribute('task.title', title);
-
-    try {
-        const task = await db.insert(tasks).values({ title }).returning();
-        span.setStatus({ code: SpanStatusCode.OK });
-        return task[0];
-    } catch (err) {
-        span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
-        span.recordException(err);
-        throw err;
-    } finally {
-        span.end();
-    }
+    return tracer.startActiveSpan('createTask', async (span) => {
+        span.setAttribute('task.title_length', title.length); // avoid raw user content/PII
+        try {
+            const task = await db.insert(tasks).values({ title }).returning();
+            return task[0];   // leave status UNSET on success (OTel's recommendation)
+        } catch (err) {
+            span.setStatus({ code: SpanStatusCode.ERROR, message: (err as Error).message });
+            span.recordException(err as Error);
+            throw err;
+        } finally {
+            span.end();
+        }
+    });
 }
 ```
 

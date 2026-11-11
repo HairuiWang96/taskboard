@@ -468,10 +468,10 @@ services:
       REDIS_URL: redis://cache:6379
 
   db:
-    image: postgres:15
+    image: postgres:18
 
   cache:
-    image: redis:7
+    image: redis:8
 # Docker Compose creates a default bridge network and registers each
 # service name as a DNS entry pointing to that container's IP.
 ```
@@ -502,9 +502,13 @@ services:
 # docker-compose volumes
 services:
   db:
-    image: postgres:15
+    image: postgres:18
     volumes:
-      - pgdata:/var/lib/postgresql/data # named volume — persists
+      - pgdata:/var/lib/postgresql # named volume — persists
+      # ‼️ Postgres 18+ images keep data under /var/lib/postgresql (in .../18/docker).
+      #    Mounting the old /var/lib/postgresql/data path on 18+ means the data lands
+      #    in an anonymous volume and is LOST when the container is recreated.
+      #    Postgres 17 and older still use /var/lib/postgresql/data.
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql # bind mount
 
   api:
@@ -531,7 +535,7 @@ volumes:
 services:
   # PostgreSQL database
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -539,7 +543,7 @@ services:
     ports:
       - '5432:5432' # host:container
     volumes:
-      - postgres_data:/var/lib/postgresql/data # persist data across restarts
+      - postgres_data:/var/lib/postgresql # persist data (Postgres 18+ path)
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
@@ -548,7 +552,7 @@ services:
 
   # Redis
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - '6379:6379'
     volumes:
@@ -1082,10 +1086,10 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:15
+          image: postgres:18
           volumeMounts:
             - name: data
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql # Postgres 18+ path
   volumeClaimTemplates: # each pod gets its own PVC automatically
     - metadata:
         name: data
@@ -1584,9 +1588,9 @@ volumes:
       claimName: postgres-pvc
 containers:
   - name: postgres
-    image: postgres:15
+    image: postgres:18
     volumeMounts:
-      - mountPath: /var/lib/postgresql/data
+      - mountPath: /var/lib/postgresql # Postgres 18+ path
         name: postgres-data
 ```
 
@@ -3750,12 +3754,12 @@ lint:
 unit_test:
   stage: test
   services:
-    - name: postgres:16-alpine
+    - name: postgres:18-alpine
       alias: postgres # accessible as hostname "postgres"
       variables:
         POSTGRES_DB: testdb
         POSTGRES_PASSWORD: postgres
-    - name: redis:7-alpine
+    - name: redis:8-alpine
       alias: redis
   variables:
     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/testdb
@@ -5515,8 +5519,8 @@ unit_test:
 integration_test:
   stage: test
   services:
-    - postgres:16-alpine
-    - redis:7-alpine
+    - postgres:18-alpine
+    - redis:8-alpine
   variables:
     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/testdb
     REDIS_URL: redis://redis:6379
@@ -5542,7 +5546,7 @@ describe('User repository', () => {
 
   beforeAll(async () => {
     // Spin up a real Postgres container for the test suite
-    container = await new PostgreSqlContainer('postgres:16').withDatabase('testdb').start();
+    container = await new PostgreSqlContainer('postgres:18').withDatabase('testdb').start();
 
     db = createConnection(container.getConnectionUri());
     await runMigrations(db);
