@@ -217,7 +217,7 @@ def search_notes(query: str) -> dict:
     hits = [text for key, text in NOTES.items() if key in query.lower() or query.lower() in text.lower()]
     return {"results": hits or ["No matching notes."]}
 
-# Only + - * / and brackets are allowed. Never use eval() on text from a model.‼️
+# Only + - * / and brackets are allowed. ‼️ Never use eval() on text from a model.‼️
 OPERATORS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv}
 
 def calculate(expression: str) -> dict:

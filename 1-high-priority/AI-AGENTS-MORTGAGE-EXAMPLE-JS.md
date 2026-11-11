@@ -1183,6 +1183,7 @@ When you move to [AI-AGENTS-MORTGAGE-EXAMPLE.md](AI-AGENTS-MORTGAGE-EXAMPLE.md):
 
 ## Related Files
 
+- [AI-AGENTS-DELIVERY-QUOTE-JS.md](AI-AGENTS-DELIVERY-QUOTE-JS.md) — a second, harder project: a multi-turn delivery quote chat with real map and weather APIs
 - [AI-AGENTS-MORTGAGE-EXAMPLE.md](AI-AGENTS-MORTGAGE-EXAMPLE.md) — the same project in Python + FastAPI
 - [AI-AGENTS-BASICS-JS.md](AI-AGENTS-BASICS-JS.md) — the general guide in JavaScript
 - [AI-AGENTS-BASICS.md](AI-AGENTS-BASICS.md) — the general guide in Python

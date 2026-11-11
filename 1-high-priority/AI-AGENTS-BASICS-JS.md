@@ -1085,6 +1085,7 @@ When you switch to [AI-AGENTS-BASICS.md](AI-AGENTS-BASICS.md), these are the onl
 
 ## Related Files
 
+- [AI-AGENTS-DELIVERY-QUOTE-JS.md](AI-AGENTS-DELIVERY-QUOTE-JS.md) — a second, harder project: a multi-turn delivery quote chat with real map and weather APIs
 - [AI-AGENTS-BASICS.md](AI-AGENTS-BASICS.md) — the same guide in Python
 - [AI-AGENTS-MORTGAGE-EXAMPLE-JS.md](AI-AGENTS-MORTGAGE-EXAMPLE-JS.md) — a full worked project in TypeScript + Express
 - [AI-AGENTS-MORTGAGE-EXAMPLE.md](AI-AGENTS-MORTGAGE-EXAMPLE.md) — the same project in Python + FastAPI
