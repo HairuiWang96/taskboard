@@ -1,14 +1,14 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-143 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+145 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    62 files — study these first, highest interview ROI
+1-high-priority/    64 files — study these first, highest interview ROI
 2-medium-priority/  43 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
@@ -81,6 +81,8 @@ Root files (start here):
 | [AI-TOOLS-BASICS.md](1-high-priority/AI-TOOLS-BASICS.md) | Beginner guide — coding agents, chat, UI generators, review bots, MCP, using AI well, interview answers |
 | [AI-AGENTS-BASICS.md](1-high-priority/AI-AGENTS-BASICS.md) | Beginner guide — what agents are, the loop, tool design, workflow patterns, memory, MCP, prompt injection, evals, frameworks (Python, free via Ollama) |
 | [AI-AGENTS-MORTGAGE-EXAMPLE.md](1-high-priority/AI-AGENTS-MORTGAGE-EXAMPLE.md) | Hands-on project — a mortgage loan-intake agent end to end: raw loop, approval, Agents SDK, FastAPI, evals, roadmap |
+| [AI-AGENTS-BASICS-JS.md](1-high-priority/AI-AGENTS-BASICS-JS.md) | The AI agents beginner guide in TypeScript/Node — same sections, plus a JS ↔ Python mapping |
+| [AI-AGENTS-MORTGAGE-EXAMPLE-JS.md](1-high-priority/AI-AGENTS-MORTGAGE-EXAMPLE-JS.md) | The mortgage agent project in TypeScript + Express + Vitest — build it in JS first, then in Python |
 | [FRONTEND-ARCHITECTURE-DEEP.md](1-high-priority/FRONTEND-ARCHITECTURE-DEEP.md) | Feature structure, state architecture, rendering strategies, monorepo, module boundaries |
 | [FRONTEND-SYSTEM-DESIGN-DEEP.md](1-high-priority/FRONTEND-SYSTEM-DESIGN-DEEP.md) | Design autocomplete, infinite scroll, collaborative editor, file uploader, drag-and-drop |
 

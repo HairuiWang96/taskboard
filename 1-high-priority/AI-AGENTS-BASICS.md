@@ -11,6 +11,10 @@
 > For a full worked project built on these ideas, see
 > [AI-AGENTS-MORTGAGE-EXAMPLE.md](AI-AGENTS-MORTGAGE-EXAMPLE.md).
 >
+> ‼️ Prefer JavaScript? [AI-AGENTS-BASICS-JS.md](AI-AGENTS-BASICS-JS.md) is this exact guide in
+> TypeScript/Node — same sections and examples. Read it first, then come back here; its §22 maps
+> the JS code to the Python below line by line.
+>
 > The code here was run against a local `qwen2.5:7b` model via Ollama (November 2026), and the
 > "real output" blocks are what it actually printed. Library APIs and model names change. If
 > something doesn't match, check the library's docs.
@@ -936,6 +940,7 @@ Q: "What is an AI agent, and how would you build one?"
 
 ## Related Files
 
+- [AI-AGENTS-BASICS-JS.md](AI-AGENTS-BASICS-JS.md) — this guide in JavaScript/TypeScript
 - [AI-AGENTS-MORTGAGE-EXAMPLE.md](AI-AGENTS-MORTGAGE-EXAMPLE.md) — a full worked project using these ideas: loan intake, approval, FastAPI, evals, roadmap
 - [FASTAPI-BASICS.md](FASTAPI-BASICS.md) — serving an agent as an API, for Express developers
 - [AI-ENGINEERING-AGENTS-DEEP.md](AI-ENGINEERING-AGENTS-DEEP.md) — the next level: TypeScript examples, frameworks, multi-agent, production RAG, guardrails

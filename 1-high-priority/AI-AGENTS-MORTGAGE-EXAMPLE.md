@@ -11,6 +11,10 @@
 > MCP, prompt injection, provider differences), read [AI-AGENTS-BASICS.md](AI-AGENTS-BASICS.md)
 > first or alongside.
 >
+> ‼️ Prefer JavaScript? [AI-AGENTS-MORTGAGE-EXAMPLE-JS.md](AI-AGENTS-MORTGAGE-EXAMPLE-JS.md) is this
+> exact project in TypeScript + Express (with Vitest tests). Build it there first, then rebuild it
+> here to learn Python; its §18 is the JS → Python translation table.
+>
 > Assumes you know JavaScript/TypeScript and have called the OpenAI API. Python basics help;
 > see [PYTHON-DEEP.md](../3-low-priority/PYTHON-DEEP.md) §1 for the JS → Python mental model.
 > To serve the agent over HTTP, see [FASTAPI-BASICS.md](FASTAPI-BASICS.md).
@@ -882,6 +886,7 @@ Q: "Have you built AI agents? How do they work?"
 
 ## Related Files
 
+- [AI-AGENTS-MORTGAGE-EXAMPLE-JS.md](AI-AGENTS-MORTGAGE-EXAMPLE-JS.md) — this project in TypeScript + Express
 - [AI-AGENTS-BASICS.md](AI-AGENTS-BASICS.md) — the general guide: agent concepts and patterns for any domain
 - [FASTAPI-BASICS.md](FASTAPI-BASICS.md) — serving the agent as an API, for Express developers
 - [AI-ENGINEERING-AGENTS-DEEP.md](AI-ENGINEERING-AGENTS-DEEP.md) — the next level: tool use in TypeScript, frameworks, multi-agent, RAG, evals, guardrails

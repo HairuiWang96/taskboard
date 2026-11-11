@@ -38,8 +38,8 @@ spend the first session on its beginner guide (each takes 1–2 hours), then sta
 | Any | Terraform | `TERRAFORM-BASICS.md` |
 | Any | Tracing / observability | `OPENTELEMETRY-BASICS.md` |
 | Any | AI tools — and how to talk about them in interviews | `AI-TOOLS-BASICS.md` |
-| Any | AI agents — concepts and patterns | `AI-AGENTS-BASICS.md` |
-| Any | AI agents — hands-on project (mortgage example) | `AI-AGENTS-MORTGAGE-EXAMPLE.md` |
+| Any | AI agents — concepts and patterns (JS first, then Python) | `AI-AGENTS-BASICS-JS.md` → `AI-AGENTS-BASICS.md` |
+| Any | AI agents — hands-on project (JS + Express first, then Python + FastAPI) | `AI-AGENTS-MORTGAGE-EXAMPLE-JS.md` → `AI-AGENTS-MORTGAGE-EXAMPLE.md` |
 | Any | FastAPI (if you know Express) | `FASTAPI-BASICS.md` |
 
 ---
