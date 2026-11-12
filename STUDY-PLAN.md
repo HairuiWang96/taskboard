@@ -41,6 +41,11 @@ spend the first session on its beginner guide (each takes 1–2 hours), then sta
 | Any | AI agents — concepts and patterns (JS first, then Python) | `AI-AGENTS-BASICS-JS.md` → `AI-AGENTS-BASICS.md` |
 | Any | AI agents — hands-on project (JS + Express first, then Python + FastAPI) | `AI-AGENTS-MORTGAGE-EXAMPLE-JS.md` → `AI-AGENTS-MORTGAGE-EXAMPLE.md` |
 | Any | AI agents — second project: multi-turn chat, real APIs, grounding | `AI-AGENTS-DELIVERY-QUOTE-JS.md` → `AI-AGENTS-DELIVERY-QUOTE.md` |
+| Any | LLM API fundamentals (read before or alongside the agent guides) | `AI-LLM-API-BASICS.md` |
+| Any | RAG — chat with your documents | `AI-RAG-BASICS.md` |
+| Any | Evals — measuring AI quality | `AI-EVALS-DEEP.md` |
+| Any | MCP — tools for any AI app | `AI-MCP-BASICS.md` |
+| Any | AI security, React AI UIs, LangGraph, prompt engineering | `AI-SECURITY-DEEP.md` · `AI-FRONTEND-REACT.md` · `AI-LANGGRAPH-BASICS.md` · `AI-PROMPT-ENGINEERING.md` |
 | Any | FastAPI (if you know Express) | `FASTAPI-BASICS.md` → `FASTAPI-DEEP.md` |
 
 ---

@@ -1,15 +1,15 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-148 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+156 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    67 files — study these first, highest interview ROI
-2-medium-priority/  43 files — once high-priority is solid
+1-high-priority/    71 files — study these first, highest interview ROI
+2-medium-priority/  47 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
 
@@ -85,6 +85,10 @@ Root files (start here):
 | [AI-AGENTS-BASICS-JS.md](1-high-priority/AI-AGENTS-BASICS-JS.md) | The AI agents beginner guide in TypeScript/Node — same sections, plus a JS ↔ Python mapping |
 | [AI-AGENTS-MORTGAGE-EXAMPLE-JS.md](1-high-priority/AI-AGENTS-MORTGAGE-EXAMPLE-JS.md) | The mortgage agent project in TypeScript + Express + Vitest — build it in JS first, then in Python |
 | [AI-AGENTS-DELIVERY-QUOTE.md](1-high-priority/AI-AGENTS-DELIVERY-QUOTE.md) | The delivery quote chat agent in Python + FastAPI + pytest — same design as the JS version, with a JS ↔ Python table |
+| [AI-LLM-API-BASICS.md](1-high-priority/AI-LLM-API-BASICS.md) | LLM API fundamentals, measured — tokens, context windows (and silent truncation), temperature, max_tokens, streaming, retries, cost, caching, batch, model choice |
+| [AI-RAG-BASICS.md](1-high-priority/AI-RAG-BASICS.md) | RAG hands-on — chunking, embeddings, pgvector (PGlite), vector/keyword/hybrid search, reranking, citations, retrieval evals, fixes tested |
+| [AI-EVALS-DEEP.md](1-high-priority/AI-EVALS-DEEP.md) | LLM evals — datasets, code graders, LLM-as-judge (validated), component vs end-to-end, CI gates, statistics, agents, production |
+| [AI-MCP-BASICS.md](1-high-priority/AI-MCP-BASICS.md) | MCP hands-on — servers and clients in TS and Python (mcp 2.x), stdio + HTTP, an agent using MCP tools, Claude Code/Cursor setup, security |
 | [AI-AGENTS-DELIVERY-QUOTE-JS.md](1-high-priority/AI-AGENTS-DELIVERY-QUOTE-JS.md) | Hands-on project — a multi-turn delivery quote chat agent with real map/weather APIs, built in 3 versions from real failures: grounding, code-side pricing, booking, Express, tests |
 | [FRONTEND-ARCHITECTURE-DEEP.md](1-high-priority/FRONTEND-ARCHITECTURE-DEEP.md) | Feature structure, state architecture, rendering strategies, monorepo, module boundaries |
 | [FRONTEND-SYSTEM-DESIGN-DEEP.md](1-high-priority/FRONTEND-SYSTEM-DESIGN-DEEP.md) | Design autocomplete, infinite scroll, collaborative editor, file uploader, drag-and-drop |
@@ -136,6 +140,10 @@ Root files (start here):
 | [PDF-RENDERING-INTERNALS.md](2-medium-priority/PDF-RENDERING-INTERNALS.md) | PDF file format, PDF.js rendering pipeline, generation strategies, architecture, libraries |
 | [AI-FINE-TUNING-DEEP.md](2-medium-priority/AI-FINE-TUNING-DEEP.md) | LoRA, QLoRA, when to fine-tune, data prep, OpenAI and Together fine-tuning APIs |
 | [AI-OBSERVABILITY-DEEP.md](2-medium-priority/AI-OBSERVABILITY-DEEP.md) | LangSmith, Helicone, Braintrust, tracing agents, prompt versioning, alerting |
+| [AI-SECURITY-DEEP.md](2-medium-priority/AI-SECURITY-DEEP.md) | OWASP Top 10 for LLMs (2025) + real attacks measured — prompt leakage, indirect injection, excessive agency, and the defences that held |
+| [AI-FRONTEND-REACT.md](2-medium-priority/AI-FRONTEND-REACT.md) | AI in React with the Vercel AI SDK v7 — streaming chat, generative UI, tool approvals, tested with the real component and model |
+| [AI-LANGGRAPH-BASICS.md](2-medium-priority/AI-LANGGRAPH-BASICS.md) | LangGraph hands-on (Python) — state graphs, interrupts, durable resume across processes, streaming, create_agent + HITL middleware |
+| [AI-PROMPT-ENGINEERING.md](2-medium-priority/AI-PROMPT-ENGINEERING.md) | Prompt and context engineering — techniques measured (definitions, examples, reasoning, placement, JSON), context design, prompts as code |
 | [BUILD-TOOLS-DEEP.md](2-medium-priority/BUILD-TOOLS-DEEP.md) | Vite, Webpack, esbuild, tree shaking, code splitting, bundle analysis, Module Federation |
 | [WEB-APIS-DEEP.md](2-medium-priority/WEB-APIS-DEEP.md) | Web Workers, Service Workers, IntersectionObserver, IndexedDB, Clipboard, BroadcastChannel |
 
