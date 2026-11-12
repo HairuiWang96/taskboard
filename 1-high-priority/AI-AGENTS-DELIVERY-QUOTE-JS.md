@@ -411,8 +411,8 @@ THE CHANGE
   get_quote({ pickup, dropoff, date, items }) — just the things only the customer knows.
   Code decides the helpers, the vehicle, the order, and builds the price.
 
-  This is the "workflow inside an agent" pattern (AI-AGENTS-BASICS-JS.md §2): the
-  conversation is open-ended (agent), the quoting is a fixed sequence (workflow).
+  ‼️ This is the "workflow inside an agent" pattern (AI-AGENTS-BASICS-JS.md §2): the
+  conversation is open-ended (agent), the quoting is a fixed sequence (workflow).‼️
 ```
 
 ```typescript
@@ -533,7 +533,7 @@ agent> Here is your quote: Total: $115.50 … Delivery date: Friday, 2026-11-13 
    - Turn 2: when the real pickup failed to geocode, the model quietly replaced it with
      "900 Main Street" — an address nobody said — and moved the date to Friday.
    The system prompt said "Never make up addresses, sizes or weights" in capital letters.
-   It didn't matter. A rule in a prompt is a request, not a guarantee.‼️
+   ‼️ It didn't matter. A rule in a prompt is a request, not a guarantee.‼️
 ```
 
 ---
@@ -787,7 +787,7 @@ export async function runTurn(messages: ChatCompletionMessageParam[], confirm?: 
   return 'Sorry, I got stuck working that out. A teammate will follow up.';
 }
 
-/** canBook: true for the terminal chat (agent can book, with a confirm step); false for the web app. */
+/** canBook: true for the terminal chat (agent can book, with a confirm step); false for the web app. */‼️
 export const newConversation = (canBook = false): ChatCompletionMessageParam[] => [{ role: 'system', content: systemPrompt(canBook) }];
 ```
 
@@ -801,7 +801,7 @@ THE PARTS THAT MATTER
   Booking             the model can only pass a quoteId. The price the human confirms comes
                       from the STORED quote, so the model can't change it. A quote books once.
   confirm             passed in from outside: the terminal asks y/N; the web app doesn't give
-                      the agent a booking tool at all (section 11).
+                      the agent a booking tool at all (section 11).‼️
   emptyRetries        the "1 in 8 empty replies" fix from section 7.
 ```
 
