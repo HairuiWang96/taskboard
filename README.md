@@ -1,14 +1,14 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-156 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+157 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    71 files — study these first, highest interview ROI
+1-high-priority/    72 files — study these first, highest interview ROI
 2-medium-priority/  47 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
@@ -29,6 +29,7 @@ Root files (start here):
 | [JS-ASYNC-DEEP.md](1-high-priority/JS-ASYNC-DEEP.md) | Promises, async/await edge cases, generators, observables |
 | [JS-RUNTIME-BASICS.md](1-high-priority/JS-RUNTIME-BASICS.md) | Beginner guide — engine vs runtime, browser/Node/Deno/Bun/edge, event loop, where React runs |
 | [JS-INTERVIEW-LIVE-CODING.md](1-high-priority/JS-INTERVIEW-LIVE-CODING.md) | 25 JS live coding implementations |
+| [BROWSER-DOM-EVENTS-DEEP.md](1-high-priority/BROWSER-DOM-EVENTS-DEEP.md) | DOM manipulation, every common event (click/pointer/keyboard/focus/input/scroll/resize), sizes & positions, observers, reflow, timing, page lifecycle — and the React side: refs, native listeners, stale closures, useLayoutEffect, portals, SSR, recipes, TS types, debugging, testing |
 | [TYPESCRIPT-DEEP.md](1-high-priority/TYPESCRIPT-DEEP.md) | TS fundamentals for JS devs |
 | [TYPESCRIPT-ADVANCED-DEEP.md](1-high-priority/TYPESCRIPT-ADVANCED-DEEP.md) | Generics, conditional/mapped types, infer, branded types |
 | [REACT-DEEP.md](1-high-priority/REACT-DEEP.md) | React core concepts |
