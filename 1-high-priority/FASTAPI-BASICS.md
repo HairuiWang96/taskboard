@@ -656,6 +656,7 @@ uv run pytest                   # tests (TestClient)
 
 ## Related Files
 
+- [FASTAPI-DEEP.md](FASTAPI-DEEP.md) — the next level: concurrency, DI, Pydantic v2, streaming, async SQLAlchemy, JWT, testing, deployment
 - [AI-AGENTS-BASICS.md](AI-AGENTS-BASICS.md) — what AI agents are and how they work
 - [AI-AGENTS-MORTGAGE-EXAMPLE.md](AI-AGENTS-MORTGAGE-EXAMPLE.md) — an agent project that ends with a FastAPI endpoint
 - [EXPRESS-DEEP.md](EXPRESS-DEEP.md) — the Express side of every comparison here

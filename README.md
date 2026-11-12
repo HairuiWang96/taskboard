@@ -1,14 +1,14 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-147 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+148 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    66 files — study these first, highest interview ROI
+1-high-priority/    67 files — study these first, highest interview ROI
 2-medium-priority/  43 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
@@ -56,6 +56,7 @@ Root files (start here):
 | [NODEJS-REST-DEEP.md](1-high-priority/NODEJS-REST-DEEP.md) | REST API design with Node.js |
 | [EXPRESS-DEEP.md](1-high-priority/EXPRESS-DEEP.md) | Express internals, middleware pipeline, routing, errors, validation, auth, security, testing |
 | [FASTAPI-BASICS.md](1-high-priority/FASTAPI-BASICS.md) | Beginner guide for Express devs — routes, params, Pydantic bodies, errors, dependencies, async, CORS, TestClient |
+| [FASTAPI-DEEP.md](1-high-priority/FASTAPI-DEEP.md) | Senior FastAPI — ASGI and def vs async def (measured), DI, Pydantic v2, streaming (SSE/JSONL), middleware, lifespan, async SQLAlchemy, JWT, testing, built-in OpenTelemetry, deployment |
 | [EXPRESS-TS-DEEP.md](1-high-priority/EXPRESS-TS-DEEP.md) | The same Express reference, fully typed with TypeScript |
 | [BEHAVIORAL-DEEP.md](1-high-priority/BEHAVIORAL-DEEP.md) | STAR stories, leadership, conflict, failure questions |
 | [BEHAVIORAL-STAR-STORIES.md](1-high-priority/BEHAVIORAL-STAR-STORIES.md) | The STAR framework, the 15 questions you will be asked, your personal story bank template |
