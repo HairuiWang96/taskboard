@@ -1,15 +1,15 @@
 # Interview Prep — JS/Fullstack Senior Engineer
 
 A complete self-study system for senior JavaScript / fullstack engineering interviews.
-157 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
+162 reference files organised by priority, plus a study plan, mock Q&A, and process templates.
 
 ---
 
 ## Folder Structure
 
 ```
-1-high-priority/    72 files — study these first, highest interview ROI
-2-medium-priority/  47 files — once high-priority is solid
+1-high-priority/    75 files — study these first, highest interview ROI
+2-medium-priority/  49 files — once high-priority is solid
 3-low-priority/     38 files — situational / role-specific
 ```
 
@@ -30,6 +30,7 @@ Root files (start here):
 | [JS-RUNTIME-BASICS.md](1-high-priority/JS-RUNTIME-BASICS.md) | Beginner guide — engine vs runtime, browser/Node/Deno/Bun/edge, event loop, where React runs |
 | [JS-INTERVIEW-LIVE-CODING.md](1-high-priority/JS-INTERVIEW-LIVE-CODING.md) | 25 JS live coding implementations |
 | [BROWSER-DOM-EVENTS-DEEP.md](1-high-priority/BROWSER-DOM-EVENTS-DEEP.md) | DOM manipulation, every common event (click/pointer/keyboard/focus/input/scroll/resize), sizes & positions, observers, reflow, timing, page lifecycle — and the React side: refs, native listeners, stale closures, useLayoutEffect, portals, SSR, recipes, TS types, debugging, testing |
+| [JS-DATES-TIME-INTL-DEEP.md](1-high-priority/JS-DATES-TIME-INTL-DEEP.md) | Instants vs calendar dates, parsing traps, DST-safe math, time zones, storing dates in APIs/DBs, every Intl formatter (dates, numbers, currency, plurals, lists, collation), money, Temporal, date-fns, date inputs, hydration, testing with fake clocks |
 | [TYPESCRIPT-DEEP.md](1-high-priority/TYPESCRIPT-DEEP.md) | TS fundamentals for JS devs |
 | [TYPESCRIPT-ADVANCED-DEEP.md](1-high-priority/TYPESCRIPT-ADVANCED-DEEP.md) | Generics, conditional/mapped types, infer, branded types |
 | [REACT-DEEP.md](1-high-priority/REACT-DEEP.md) | React core concepts |
@@ -38,6 +39,8 @@ Root files (start here):
 | [REACT-INTERVIEW-LIVE-CODING-TS.md](1-high-priority/REACT-INTERVIEW-LIVE-CODING-TS.md) | React live coding in TypeScript |
 | [REACT-INTERVIEW-LIVE-CODING.md](1-high-priority/REACT-INTERVIEW-LIVE-CODING.md) | React live coding in JS |
 | [STATE-MANAGEMENT-DEEP.md](1-high-priority/STATE-MANAGEMENT-DEEP.md) | Redux, Zustand, Jotai, TanStack Query |
+| [REACT-FORMS-DEEP.md](1-high-priority/REACT-FORMS-DEEP.md) | Controlled vs uncontrolled, React Hook Form + Zod, validation timing, Controller, field arrays, async validation, server errors, edit forms, React 19 actions, server actions, wizards, uploads, autosave, accessibility, testing |
+| [REACT-ROUTING-DEEP.md](1-high-priority/REACT-ROUTING-DEEP.md) | React Router v7 (declarative/data/framework modes), nested layouts, params & search params as state, loaders/actions/fetchers, errors, auth guards, lazy routes, scroll & focus, blocking, TanStack Router, Next.js comparison, deployment 404s, testing |
 | [TANSTACK-QUERY-BASICS.md](1-high-priority/TANSTACK-QUERY-BASICS.md) | Beginner guide — server state, useQuery/useMutation, keys, caching, invalidation |
 | [ZUSTAND-BASICS.md](1-high-priority/ZUSTAND-BASICS.md) | Beginner guide — stores, selectors, set, persist, when to use it |
 | [REACT-TESTING-BASICS.md](1-high-priority/REACT-TESTING-BASICS.md) | Beginner guide — Vitest + React Testing Library: queries, userEvent, mocks, async, providers, hooks |
@@ -119,6 +122,7 @@ Root files (start here):
 | [REDIS-CACHING-DEEP.md](2-medium-priority/REDIS-CACHING-DEEP.md) | Caching strategies, data structures, pub/sub |
 | [CSS-BASICS.md](2-medium-priority/CSS-BASICS.md) | Beginner guide — box model, units, Flexbox, Grid, centring, responsive, reading Tailwind, troubleshooting |
 | [CSS-DEEP.md](2-medium-priority/CSS-DEEP.md) | Flexbox, Grid, specificity, animations |
+| [ANIMATION-DEEP.md](2-medium-priority/ANIMATION-DEEP.md) | Cheap vs janky properties, easing & timing, transitions, keyframes, @starting-style, height: auto, WAAPI, FLIP, Motion (AnimatePresence, layout, layoutId, gestures, scroll), View Transitions, reduced motion, debugging, testing |
 | [BROWSER-INTERNALS-DEEP.md](2-medium-priority/BROWSER-INTERNALS-DEEP.md) | Rendering pipeline, critical path, reflow/repaint |
 | [BROWSER-COMPATIBILITY-DEEP.md](2-medium-priority/BROWSER-COMPATIBILITY-DEEP.md) | Engines (Blink/WebKit/Gecko), Chrome/Safari/Firefox/Edge/Samsung quirks, iOS vs Android, in-app browsers, support policy, cross-browser testing |
 | [PERFORMANCE-DEEP.md](2-medium-priority/PERFORMANCE-DEEP.md) | Core Web Vitals, bundle optimisation, lazy loading |
@@ -147,6 +151,7 @@ Root files (start here):
 | [AI-PROMPT-ENGINEERING.md](2-medium-priority/AI-PROMPT-ENGINEERING.md) | Prompt and context engineering — techniques measured (definitions, examples, reasoning, placement, JSON), context design, prompts as code |
 | [BUILD-TOOLS-DEEP.md](2-medium-priority/BUILD-TOOLS-DEEP.md) | Vite, Webpack, esbuild, tree shaking, code splitting, bundle analysis, Module Federation |
 | [WEB-APIS-DEEP.md](2-medium-priority/WEB-APIS-DEEP.md) | Web Workers, Service Workers, IntersectionObserver, IndexedDB, Clipboard, BroadcastChannel |
+| [I18N-DEEP.md](2-medium-priority/I18N-DEEP.md) | i18n vs l10n, locale negotiation, messages & ICU plurals, react-i18next, react-intl, next-intl, formatting with Intl, rich text, RTL with logical CSS, fonts & text expansion, lazy loading, typed keys, TMS workflow, pseudo-localization, SEO |
 
 ---
 
